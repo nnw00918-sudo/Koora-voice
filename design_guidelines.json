@@ -1,0 +1,113 @@
+{
+  "identity": {
+    "name": "KoraVerse",
+    "persona": "The Digital Stadium",
+    "vibe": "Electric, Passionate, Night-Match Atmosphere",
+    "audience": "Arabic-speaking Football Fans",
+    "theme_mode": "dark"
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Cairo, sans-serif",
+      "body": "Almarai, sans-serif",
+      "numbers": "Chivo, sans-serif"
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+      "h2": "text-3xl font-bold",
+      "h3": "text-2xl font-semibold",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm text-slate-400"
+    },
+    "import_instructions": "Import 'Cairo' (Weights: 400, 700, 900) and 'Almarai' (Weights: 400, 700) from Google Fonts in index.css"
+  },
+  "colors": {
+    "palette": {
+      "background": {
+        "default": "#020617",
+        "paper": "#0F172A",
+        "subtle": "#1E293B"
+      },
+      "primary": {
+        "main": "#A3E635",
+        "hover": "#BEF264",
+        "text_contrast": "#0F172A"
+      },
+      "secondary": {
+        "main": "#38BDF8",
+        "hover": "#7DD3FC"
+      },
+      "text": {
+        "primary": "#F8FAFC",
+        "secondary": "#94A3B8",
+        "disabled": "#475569"
+      },
+      "status": {
+        "success": "#22C55E",
+        "error": "#EF4444",
+        "warning": "#F59E0B"
+      }
+    },
+    "usage": {
+      "page_background": "bg-slate-950",
+      "card_background": "bg-slate-900/50 backdrop-blur-md border border-slate-800",
+      "primary_action": "bg-lime-400 hover:bg-lime-300 text-slate-900 font-bold",
+      "secondary_action": "bg-slate-800 hover:bg-slate-700 text-white",
+      "divider": "border-slate-800"
+    }
+  },
+  "components": {
+    "buttons": {
+      "default": "rounded-lg px-6 py-3 font-bold transition-all active:scale-95",
+      "primary": "bg-lime-400 text-slate-950 hover:shadow-[0_0_20px_rgba(163,230,53,0.3)]",
+      "ghost": "hover:bg-slate-800 text-slate-300"
+    },
+    "inputs": {
+      "default": "bg-slate-900 border-slate-700 focus:border-lime-400 rounded-lg text-white placeholder:text-slate-500"
+    },
+    "cards": {
+      "room_card": "relative overflow-hidden rounded-xl border border-slate-800 hover:border-lime-400/50 transition-all group cursor-pointer h-48",
+      "glass": "bg-white/5 backdrop-blur-lg border border-white/10"
+    },
+    "avatars": {
+      "speaking": "ring-4 ring-lime-500 ring-opacity-50 animate-pulse",
+      "silent": "ring-2 ring-slate-700"
+    }
+  },
+  "layout": {
+    "container": "max-w-md mx-auto min-h-screen bg-slate-950 relative overflow-hidden shadow-2xl",
+    "grid": "grid grid-cols-1 md:grid-cols-2 gap-4 p-4",
+    "navigation": "fixed bottom-0 w-full max-w-md bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 p-4 flex justify-around z-50"
+  },
+  "image_urls": {
+    "rooms": {
+      "general": "https://images.unsplash.com/photo-1762013315117-1c8005ad2b41",
+      "fantasy": "https://images.unsplash.com/photo-1761853320977-bcd046cfaea9",
+      "games": "https://images.unsplash.com/photo-1766051666522-9cfa12675f5b",
+      "analysis": "https://images.unsplash.com/photo-1556056504-dc77ff4d11b0",
+      "podcast": "https://images.unsplash.com/photo-1709846486154-f9172678be6f",
+      "transfers": "https://images.unsplash.com/photo-1643917367212-018cf11bf790"
+    },
+    "users": {
+      "avatar_placeholder": "https://images.unsplash.com/photo-1761358531581-06e457ed7744"
+    }
+  },
+  "motion": {
+    "page_transition": {
+      "initial": { "opacity": 0, "y": 20 },
+      "animate": { "opacity": 1, "y": 0 },
+      "exit": { "opacity": 0, "y": -20 },
+      "transition": { "duration": 0.3 }
+    }
+  },
+  "universal_guidelines": [
+    "Always assume Dark Mode. Do not implement a light mode toggle unless specifically asked.",
+    "Use 'Cairo' font for all Arabic text to maintain the modern sports feel.",
+    "Ensure high contrast for accessibility: Lime-400 on Slate-900 is excellent.",
+    "Room cards should have a dark gradient overlay (bg-gradient-to-t from-slate-950 to-transparent) to ensure text readability over images.",
+    "Voice indicators are critical: Use the 'speaking' ring animation when a user is talking.",
+    "Use Lucide-React icons with stroke-width={1.5} for a sleek look.",
+    "Keep the UI 'App-like': Hide scrollbars, use fixed headers/footers where appropriate for a mobile feel."
+  ],
+  "instructions_to_main_agent": "1. Install 'framer-motion' for animations. 2. Add the Google Fonts link to public/index.html immediately. 3. Update tailwind.config.js to include the custom colors (slate-950, lime-400). 4. Create a 'Layout' component that enforces the mobile-app width limit on desktop (max-w-md mx-auto) to simulate a mobile experience."
+}
