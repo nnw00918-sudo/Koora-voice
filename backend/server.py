@@ -1,72 +1,289 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
-
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from typing import List, Optional
+from datetime import datetime, timezone, timedelta
+from jose import jwt, JWTError
+from passlib.context import CryptContext
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
 app = FastAPI()
-
-# Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+security = HTTPBearer()
 
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "koraverse_secret_key_change_in_production")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+ROOMS = [
+    {"id": "general", "name": "عام", "name_en": "General", "description": "نقاشات عامة عن كرة القدم", "image": "https://images.unsplash.com/photo-1762013315117-1c8005ad2b41"},
+    {"id": "fantasy", "name": "فانتسي", "name_en": "Fantasy", "description": "فانتسي الدوريات العالمية", "image": "https://images.unsplash.com/photo-1761853320977-bcd046cfaea9"},
+    {"id": "games", "name": "ألعاب", "name_en": "Games", "description": "ألعاب وتحديات كروية", "image": "https://images.unsplash.com/photo-1766051666522-9cfa12675f5b"},
+    {"id": "analysis", "name": "تحليل مباريات", "name_en": "Analysis", "description": "تحليل فني للمباريات", "image": "https://images.unsplash.com/photo-1556056504-dc77ff4d11b0"},
+    {"id": "podcast", "name": "بودكاست", "name_en": "Podcast", "description": "حلقات صوتية رياضية", "image": "https://images.unsplash.com/photo-1709846486154-f9172678be6f"},
+    {"id": "transfers", "name": "انتقالات", "name_en": "Transfers", "description": "أخبار وشائعات الانتقالات", "image": "https://images.unsplash.com/photo-1643917367212-018cf11bf790"}
+]
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+    username: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    email: str
+    username: str
+    avatar: Optional[str] = None
+    created_at: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: User
+
+class Message(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    room_id: str
+    user_id: str
+    username: str
+    avatar: Optional[str] = None
+    content: str
+    timestamp: str
+
+class MessageCreate(BaseModel):
+    content: str
+
+class RoomParticipant(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    username: str
+    avatar: Optional[str] = None
+    is_speaking: bool = False
+    joined_at: str
+
+class Room(BaseModel):
+    id: str
+    name: str
+    name_en: str
+    description: str
+    image: str
+    participants_count: int = 0
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        if user is None:
+            raise HTTPException(status_code=401, detail="User not found")
+        return User(**user)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@api_router.post("/auth/register", response_model=Token)
+async def register(user_data: UserRegister):
+    existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="البريد الإلكتروني مسجل بالفعل")
     
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
+    existing_username = await db.users.find_one({"username": user_data.username}, {"_id": 0})
+    if existing_username:
+        raise HTTPException(status_code=400, detail="اسم المستخدم مستخدم بالفعل")
     
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
+    from uuid import uuid4
+    user_id = str(uuid4())
+    hashed_password = get_password_hash(user_data.password)
     
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+    user_doc = {
+        "id": user_id,
+        "email": user_data.email,
+        "username": user_data.username,
+        "password": hashed_password,
+        "avatar": f"https://ui-avatars.com/api/?name={user_data.username}&background=A3E635&color=0F172A&bold=true",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "followers": [],
+        "following": []
+    }
+    
+    await db.users.insert_one(user_doc)
+    
+    access_token = create_access_token(data={"sub": user_id})
+    user = User(**{k: v for k, v in user_doc.items() if k != "password"})
+    
+    return Token(access_token=access_token, token_type="bearer", user=user)
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+@api_router.post("/auth/login", response_model=Token)
+async def login(user_data: UserLogin):
+    user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if not user or not verify_password(user_data.password, user["password"]):
+        raise HTTPException(status_code=401, detail="البريد الإلكتروني أو كلمة المرور غير صحيحة")
     
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    access_token = create_access_token(data={"sub": user["id"]})
+    user_obj = User(**{k: v for k, v in user.items() if k != "password"})
     
-    return status_checks
+    return Token(access_token=access_token, token_type="bearer", user=user_obj)
 
-# Include the router in the main app
+@api_router.get("/rooms", response_model=List[Room])
+async def get_rooms():
+    rooms_with_counts = []
+    for room in ROOMS:
+        count = await db.room_participants.count_documents({"room_id": room["id"]})
+        rooms_with_counts.append({**room, "participants_count": count})
+    return rooms_with_counts
+
+@api_router.get("/rooms/{room_id}", response_model=Room)
+async def get_room(room_id: str):
+    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    count = await db.room_participants.count_documents({"room_id": room_id})
+    return {**room, "participants_count": count}
+
+@api_router.post("/rooms/{room_id}/join")
+async def join_room(room_id: str, current_user: User = Depends(get_current_user)):
+    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    existing = await db.room_participants.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    
+    if not existing:
+        participant_doc = {
+            "room_id": room_id,
+            "user_id": current_user.id,
+            "username": current_user.username,
+            "avatar": current_user.avatar,
+            "is_speaking": False,
+            "joined_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.room_participants.insert_one(participant_doc)
+    
+    return {"message": "انضممت للغرفة بنجاح"}
+
+@api_router.post("/rooms/{room_id}/leave")
+async def leave_room(room_id: str, current_user: User = Depends(get_current_user)):
+    await db.room_participants.delete_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    })
+    return {"message": "غادرت الغرفة"}
+
+@api_router.get("/rooms/{room_id}/participants", response_model=List[RoomParticipant])
+async def get_room_participants(room_id: str):
+    participants = await db.room_participants.find({"room_id": room_id}, {"_id": 0}).to_list(100)
+    return [RoomParticipant(**p) for p in participants]
+
+@api_router.post("/rooms/{room_id}/messages", response_model=Message)
+async def send_message(room_id: str, message_data: MessageCreate, current_user: User = Depends(get_current_user)):
+    from uuid import uuid4
+    message_id = str(uuid4())
+    
+    message_doc = {
+        "id": message_id,
+        "room_id": room_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "content": message_data.content,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.messages.insert_one(message_doc)
+    return Message(**message_doc)
+
+@api_router.get("/rooms/{room_id}/messages", response_model=List[Message])
+async def get_room_messages(room_id: str, limit: int = 50):
+    messages = await db.messages.find(
+        {"room_id": room_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    
+    messages.reverse()
+    return [Message(**m) for m in messages]
+
+@api_router.get("/users/me", response_model=User)
+async def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@api_router.post("/users/{user_id}/follow")
+async def follow_user(user_id: str, current_user: User = Depends(get_current_user)):
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="لا يمكنك متابعة نفسك")
+    
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$addToSet": {"following": user_id}}
+    )
+    await db.users.update_one(
+        {"id": user_id},
+        {"$addToSet": {"followers": current_user.id}}
+    )
+    
+    return {"message": "تمت المتابعة بنجاح"}
+
+@api_router.delete("/users/{user_id}/follow")
+async def unfollow_user(user_id: str, current_user: User = Depends(get_current_user)):
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$pull": {"following": user_id}}
+    )
+    await db.users.update_one(
+        {"id": user_id},
+        {"$pull": {"followers": current_user.id}}
+    )
+    
+    return {"message": "تم إلغاء المتابعة"}
+
+@api_router.get("/users", response_model=List[User])
+async def get_users(limit: int = 20):
+    users = await db.users.find({}, {"_id": 0, "password": 0}).limit(limit).to_list(limit)
+    return [User(**u) for u in users]
+
 app.include_router(api_router)
 
 app.add_middleware(
@@ -77,7 +294,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
