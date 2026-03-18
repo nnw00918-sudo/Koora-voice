@@ -14,7 +14,8 @@ import {
   Gift,
   LogIn,
   LogOut as SignOut,
-  Crown
+  Crown,
+  UserX
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -39,6 +40,9 @@ const YallaLiveRoom = ({ user }) => {
   const [userCoins, setUserCoins] = useState(user.coins || 1000);
   const [remoteUsers, setRemoteUsers] = useState([]);
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
+  const [seatRequests, setSeatRequests] = useState([]);
+  const [pendingRequest, setPendingRequest] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(user.role === 'admin' || user.role === 'moderator');
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const agoraClient = useRef(null);
@@ -140,6 +144,9 @@ const YallaLiveRoom = ({ user }) => {
       fetchSeats();
       fetchMessages();
       fetchParticipants();
+      if (isAdmin) {
+        fetchSeatRequests();
+      }
     }, 3000);
   };
 
@@ -223,6 +230,17 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  const fetchSeatRequests = async () => {
+    try {
+      const response = await axios.get(`${API}/rooms/${roomId}/seat/requests`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSeatRequests(response.data.requests);
+    } catch (error) {
+      console.error('Failed to fetch seat requests');
+    }
+  };
+
   const joinRoom = async () => {
     try {
       await axios.post(
@@ -250,15 +268,90 @@ const YallaLiveRoom = ({ user }) => {
   const handleTakeSeat = async () => {
     try {
       const response = await axios.post(
-        `${API}/rooms/${roomId}/seat/take`,
+        `${API}/rooms/${roomId}/seat/request`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(response.data.message);
-      setOnStage(true);
-      fetchSeats();
+      setPendingRequest(true);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل الصعود للمنصة');
+      toast.error(error.response?.data?.detail || 'فشل إرسال الطلب');
+    }
+  };
+
+  const handleApproveSeat = async (userId) => {
+    try {
+      await axios.post(
+        `${API}/rooms/${roomId}/seat/approve/${userId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تمت الموافقة على الطلب');
+      fetchSeats();
+      fetchSeatRequests();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشلت الموافقة');
+    }
+  };
+
+  const handleRejectSeat = async (userId) => {
+    try {
+      await axios.post(
+        `${API}/rooms/${roomId}/seat/reject/${userId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.info('تم رفض الطلب');
+      fetchSeatRequests();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل الرفض');
+    }
+  };
+
+  const handleKickUser = async (userId) => {
+    if (!window.confirm('هل أنت متأكد من طرد هذا العضو؟')) return;
+    
+    try {
+      await axios.post(
+        `${API}/rooms/${roomId}/kick/${userId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم طرد العضو');
+      fetchSeats();
+      fetchParticipants();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل الطرد');
+    }
+  };
+
+  const handleMuteUser = async (userId) => {
+    try {
+      await axios.post(
+        `${API}/rooms/${roomId}/mute/${userId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم كتم العضو');
+      fetchSeats();
+      fetchParticipants();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل الكتم');
+    }
+  };
+
+  const handleUnmuteUser = async (userId) => {
+    try {
+      await axios.post(
+        `${API}/rooms/${roomId}/unmute/${userId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم إلغاء كتم العضو');
+      fetchSeats();
+      fetchParticipants();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل إلغاء الكتم');
     }
   };
 
@@ -411,7 +504,7 @@ const YallaLiveRoom = ({ user }) => {
                 key={seat.seat_number}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="flex flex-col items-center gap-1"
+                className="flex flex-col items-center gap-1 relative group"
               >
                 {seat.occupied ? (
                   <>
@@ -430,7 +523,12 @@ const YallaLiveRoom = ({ user }) => {
                       {seat.user.room_role === 'owner' && (
                         <Crown className="absolute -top-1 -right-1 w-4 h-4 text-yellow-400" strokeWidth={2} />
                       )}
-                      {seat.user.can_speak && seat.user.user_id === user.id && isMicOn && (
+                      {seat.user.is_muted && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                          <MicOff className="w-3 h-3 text-white" strokeWidth={2} />
+                        </div>
+                      )}
+                      {seat.user.can_speak && seat.user.user_id === user.id && isMicOn && !seat.user.is_muted && (
                         <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-lime-400 rounded-full flex items-center justify-center">
                           <Mic className="w-3 h-3 text-slate-950" strokeWidth={2} />
                         </div>
@@ -439,6 +537,36 @@ const YallaLiveRoom = ({ user }) => {
                     <p className="text-xs text-slate-300 font-almarai max-w-[60px] truncate text-center">
                       {seat.user.username}
                     </p>
+                    
+                    {/* Admin Controls */}
+                    {isAdmin && seat.user.user_id !== user.id && (
+                      <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-1 bg-slate-900 rounded-lg p-1 shadow-lg">
+                        {seat.user.is_muted ? (
+                          <button
+                            onClick={() => handleUnmuteUser(seat.user.user_id)}
+                            className="bg-green-500 hover:bg-green-600 text-white rounded p-1"
+                            title="إلغاء كتم"
+                          >
+                            <Mic className="w-3 h-3" strokeWidth={2} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleMuteUser(seat.user.user_id)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white rounded p-1"
+                            title="كتم"
+                          >
+                            <MicOff className="w-3 h-3" strokeWidth={2} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleKickUser(seat.user.user_id)}
+                          className="bg-red-500 hover:bg-red-600 text-white rounded p-1"
+                          title="طرد"
+                        >
+                          <UserX className="w-3 h-3" strokeWidth={2} />
+                        </button>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
@@ -482,16 +610,72 @@ const YallaLiveRoom = ({ user }) => {
               </>
             ) : (
               <Button
-                data-testid="take-seat-btn"
+                data-testid="request-seat-btn"
                 onClick={handleTakeSeat}
-                className="bg-lime-400 hover:bg-lime-300 text-slate-950 rounded-full px-8 py-2 font-cairo font-bold"
+                disabled={pendingRequest}
+                className={`${
+                  pendingRequest
+                    ? 'bg-slate-700 cursor-not-allowed'
+                    : 'bg-lime-400 hover:bg-lime-300'
+                } text-slate-950 rounded-full px-8 py-2 font-cairo font-bold`}
               >
-                <LogIn className="w-4 h-4 ml-2" strokeWidth={2} />
-                اصعد للمنصة
+                {pendingRequest ? (
+                  <>⏳ طلبك قيد المراجعة</>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 ml-2" strokeWidth={2} />
+                    طلب الصعود للمنصة
+                  </>
+                )}
               </Button>
             )}
           </div>
         </div>
+
+        {/* Admin: Seat Requests */}
+        {isAdmin && seatRequests.length > 0 && (
+          <div className="bg-yellow-500/10 border-y border-yellow-500/30 p-4 flex-shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-yellow-400 font-almarai">
+                {seatRequests.length} طلب جديد
+              </span>
+              <p className="text-sm text-yellow-200 font-cairo font-bold">طلبات الصعود</p>
+            </div>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {seatRequests.map((request) => (
+                <div
+                  key={request.request_id}
+                  className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-2"
+                >
+                  <div className="flex gap-1">
+                    <Button
+                      onClick={() => handleApproveSeat(request.user_id)}
+                      size="sm"
+                      className="bg-green-500 hover:bg-green-600 text-white rounded-lg px-3 py-1 text-xs"
+                    >
+                      قبول
+                    </Button>
+                    <Button
+                      onClick={() => handleRejectSeat(request.user_id)}
+                      size="sm"
+                      className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1 text-xs"
+                    >
+                      رفض
+                    </Button>
+                  </div>
+                  <div className="flex-1 text-right flex items-center gap-2">
+                    <p className="text-sm text-white font-almarai">{request.username}</p>
+                    <img
+                      src={request.avatar}
+                      alt={request.username}
+                      className="w-8 h-8 rounded-full ring-1 ring-slate-700"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Listeners List */}
         {listeners.length > 0 && (

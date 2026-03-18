@@ -103,6 +103,17 @@ class RoomParticipant(BaseModel):
     seat_number: Optional[int] = None
     room_role: str = "listener"
     can_speak: bool = False
+    is_muted: bool = False
+
+class SeatRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    request_id: str
+    room_id: str
+    user_id: str
+    username: str
+    avatar: Optional[str] = None
+    status: str = "pending"
+    created_at: str
 
 class Room(BaseModel):
     id: str
@@ -242,8 +253,8 @@ async def join_room(room_id: str, current_user: User = Depends(get_current_user)
     
     return {"message": "انضممت للغرفة بنجاح"}
 
-@api_router.post("/rooms/{room_id}/seat/take")
-async def take_seat(room_id: str, current_user: User = Depends(get_current_user)):
+@api_router.post("/rooms/{room_id}/seat/request")
+async def request_seat(room_id: str, current_user: User = Depends(get_current_user)):
     room = next((r for r in ROOMS if r["id"] == room_id), None)
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
@@ -258,6 +269,62 @@ async def take_seat(room_id: str, current_user: User = Depends(get_current_user)
     
     if participant.get("seat_number") is not None:
         raise HTTPException(status_code=400, detail="أنت بالفعل على المنصة")
+    
+    existing_request = await db.seat_requests.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id,
+        "status": "pending"
+    }, {"_id": 0})
+    
+    if existing_request:
+        raise HTTPException(status_code=400, detail="لديك طلب قيد الانتظار بالفعل")
+    
+    from uuid import uuid4
+    request_id = str(uuid4())
+    
+    request_doc = {
+        "request_id": request_id,
+        "room_id": room_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.seat_requests.insert_one(request_doc)
+    
+    return {"message": "تم إرسال طلبك، بانتظار موافقة المشرف", "request_id": request_id}
+
+@api_router.get("/rooms/{room_id}/seat/requests")
+async def get_seat_requests(room_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "moderator"]:
+        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    
+    requests = await db.seat_requests.find({
+        "room_id": room_id,
+        "status": "pending"
+    }, {"_id": 0}).sort("created_at", 1).to_list(50)
+    
+    return {"requests": [SeatRequest(**r) for r in requests]}
+
+@api_router.post("/rooms/{room_id}/seat/approve/{user_id}")
+async def approve_seat_request(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "moderator"]:
+        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    
+    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    request = await db.seat_requests.find_one({
+        "room_id": room_id,
+        "user_id": user_id,
+        "status": "pending"
+    }, {"_id": 0})
+    
+    if not request:
+        raise HTTPException(status_code=404, detail="الطلب غير موجود")
     
     occupied_seats = await db.room_participants.find({
         "room_id": room_id,
@@ -276,7 +343,7 @@ async def take_seat(room_id: str, current_user: User = Depends(get_current_user)
         raise HTTPException(status_code=400, detail="المنصة ممتلئة")
     
     await db.room_participants.update_one(
-        {"room_id": room_id, "user_id": current_user.id},
+        {"room_id": room_id, "user_id": user_id},
         {"$set": {
             "seat_number": available_seat,
             "room_role": "speaker",
@@ -284,7 +351,78 @@ async def take_seat(room_id: str, current_user: User = Depends(get_current_user)
         }}
     )
     
-    return {"message": "صعدت للمنصة بنجاح", "seat_number": available_seat}
+    await db.seat_requests.update_one(
+        {"request_id": request["request_id"]},
+        {"$set": {"status": "approved"}}
+    )
+    
+    return {"message": "تمت الموافقة على الطلب", "seat_number": available_seat}
+
+@api_router.post("/rooms/{room_id}/seat/reject/{user_id}")
+async def reject_seat_request(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "moderator"]:
+        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    
+    result = await db.seat_requests.update_one(
+        {"room_id": room_id, "user_id": user_id, "status": "pending"},
+        {"$set": {"status": "rejected"}}
+    )
+    
+    if result.modified_count > 0:
+        return {"message": "تم رفض الطلب"}
+    raise HTTPException(status_code=404, detail="الطلب غير موجود")
+
+@api_router.post("/rooms/{room_id}/kick/{user_id}")
+async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "moderator"]:
+        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    
+    result = await db.room_participants.delete_one({
+        "room_id": room_id,
+        "user_id": user_id
+    })
+    
+    if result.deleted_count > 0:
+        return {"message": "تم طرد العضو من الغرفة"}
+    raise HTTPException(status_code=404, detail="العضو غير موجود في الغرفة")
+
+@api_router.post("/rooms/{room_id}/mute/{user_id}")
+async def mute_user(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "moderator"]:
+        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    
+    result = await db.room_participants.update_one(
+        {"room_id": room_id, "user_id": user_id},
+        {"$set": {"is_muted": True, "can_speak": False}}
+    )
+    
+    if result.modified_count > 0:
+        return {"message": "تم كتم العضو"}
+    raise HTTPException(status_code=404, detail="العضو غير موجود")
+
+@api_router.post("/rooms/{room_id}/unmute/{user_id}")
+async def unmute_user(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "moderator"]:
+        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    
+    participant = await db.room_participants.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    
+    if not participant:
+        raise HTTPException(status_code=404, detail="العضو غير موجود")
+    
+    can_speak = participant.get("seat_number") is not None
+    
+    result = await db.room_participants.update_one(
+        {"room_id": room_id, "user_id": user_id},
+        {"$set": {"is_muted": False, "can_speak": can_speak}}
+    )
+    
+    if result.modified_count > 0:
+        return {"message": "تم إلغاء كتم العضو"}
+    raise HTTPException(status_code=404, detail="العضو غير موجود")
 
 @api_router.post("/rooms/{room_id}/seat/leave")
 async def leave_seat(room_id: str, current_user: User = Depends(get_current_user)):
