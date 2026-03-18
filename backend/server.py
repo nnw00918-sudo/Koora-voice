@@ -34,12 +34,21 @@ AGORA_APP_CERTIFICATE = os.environ.get("AGORA_APP_CERTIFICATE", "")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ROOMS = [
-    {"id": "general", "name": "عام", "name_en": "General", "description": "نقاشات عامة عن كرة القدم", "image": "https://images.unsplash.com/photo-1762013315117-1c8005ad2b41", "is_closed": False},
-    {"id": "fantasy", "name": "فانتسي", "name_en": "Fantasy", "description": "فانتسي الدوريات العالمية", "image": "https://images.unsplash.com/photo-1761853320977-bcd046cfaea9", "is_closed": False},
-    {"id": "games", "name": "ألعاب", "name_en": "Games", "description": "ألعاب وتحديات كروية", "image": "https://images.unsplash.com/photo-1766051666522-9cfa12675f5b", "is_closed": False},
-    {"id": "analysis", "name": "تحليل مباريات", "name_en": "Analysis", "description": "تحليل فني للمباريات", "image": "https://images.unsplash.com/photo-1556056504-dc77ff4d11b0", "is_closed": False},
-    {"id": "podcast", "name": "بودكاست", "name_en": "Podcast", "description": "حلقات صوتية رياضية", "image": "https://images.unsplash.com/photo-1709846486154-f9172678be6f", "is_closed": False},
-    {"id": "transfers", "name": "انتقالات", "name_en": "Transfers", "description": "أخبار وشائعات الانتقالات", "image": "https://images.unsplash.com/photo-1643917367212-018cf11bf790", "is_closed": False}
+    {"id": "general", "name": "عام", "name_en": "General", "description": "نقاشات عامة عن كرة القدم", "image": "https://images.unsplash.com/photo-1762013315117-1c8005ad2b41", "is_closed": False, "total_seats": 12},
+    {"id": "fantasy", "name": "فانتسي", "name_en": "Fantasy", "description": "فانتسي الدوريات العالمية", "image": "https://images.unsplash.com/photo-1761853320977-bcd046cfaea9", "is_closed": False, "total_seats": 12},
+    {"id": "games", "name": "ألعاب", "name_en": "Games", "description": "ألعاب وتحديات كروية", "image": "https://images.unsplash.com/photo-1766051666522-9cfa12675f5b", "is_closed": False, "total_seats": 12},
+    {"id": "analysis", "name": "تحليل مباريات", "name_en": "Analysis", "description": "تحليل فني للمباريات", "image": "https://images.unsplash.com/photo-1556056504-dc77ff4d11b0", "is_closed": False, "total_seats": 12},
+    {"id": "podcast", "name": "بودكاست", "name_en": "Podcast", "description": "حلقات صوتية رياضية", "image": "https://images.unsplash.com/photo-1709846486154-f9172678be6f", "is_closed": False, "total_seats": 12},
+    {"id": "transfers", "name": "انتقالات", "name_en": "Transfers", "description": "أخبار وشائعات الانتقالات", "image": "https://images.unsplash.com/photo-1643917367212-018cf11bf790", "is_closed": False, "total_seats": 12}
+]
+
+GIFTS = [
+    {"id": "rose", "name": "وردة", "icon": "🌹", "coins": 10},
+    {"id": "heart", "name": "قلب", "icon": "❤️", "coins": 50},
+    {"id": "trophy", "name": "كأس", "icon": "🏆", "coins": 100},
+    {"id": "football", "name": "كرة", "icon": "⚽", "coins": 150},
+    {"id": "star", "name": "نجمة", "icon": "⭐", "coins": 200},
+    {"id": "crown", "name": "تاج", "icon": "👑", "coins": 500},
 ]
 
 class UserRegister(BaseModel):
@@ -61,6 +70,10 @@ class User(BaseModel):
     role: str = "user"
     is_banned: bool = False
     banned_rooms: List[str] = []
+    coins: int = 1000
+    level: int = 1
+    xp: int = 0
+    badges: List[str] = []
 
 class Token(BaseModel):
     access_token: str
@@ -87,6 +100,9 @@ class RoomParticipant(BaseModel):
     avatar: Optional[str] = None
     is_speaking: bool = False
     joined_at: str
+    seat_number: Optional[int] = None
+    room_role: str = "listener"
+    can_speak: bool = False
 
 class Room(BaseModel):
     id: str
@@ -156,6 +172,10 @@ async def register(user_data: UserRegister):
         "role": user_role,
         "is_banned": False,
         "banned_rooms": [],
+        "coins": 1000,
+        "level": 1,
+        "xp": 0,
+        "badges": [],
         "followers": [],
         "following": []
     }
@@ -213,11 +233,149 @@ async def join_room(room_id: str, current_user: User = Depends(get_current_user)
             "username": current_user.username,
             "avatar": current_user.avatar,
             "is_speaking": False,
-            "joined_at": datetime.now(timezone.utc).isoformat()
+            "joined_at": datetime.now(timezone.utc).isoformat(),
+            "seat_number": None,
+            "room_role": "listener",
+            "can_speak": False
         }
         await db.room_participants.insert_one(participant_doc)
     
     return {"message": "انضممت للغرفة بنجاح"}
+
+@api_router.post("/rooms/{room_id}/seat/take")
+async def take_seat(room_id: str, current_user: User = Depends(get_current_user)):
+    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    participant = await db.room_participants.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    
+    if not participant:
+        raise HTTPException(status_code=404, detail="يجب الانضمام للغرفة أولاً")
+    
+    if participant.get("seat_number") is not None:
+        raise HTTPException(status_code=400, detail="أنت بالفعل على المنصة")
+    
+    occupied_seats = await db.room_participants.find({
+        "room_id": room_id,
+        "seat_number": {"$ne": None}
+    }, {"_id": 0, "seat_number": 1}).to_list(room["total_seats"])
+    
+    occupied_numbers = [p["seat_number"] for p in occupied_seats]
+    available_seat = None
+    
+    for i in range(1, room["total_seats"] + 1):
+        if i not in occupied_numbers:
+            available_seat = i
+            break
+    
+    if available_seat is None:
+        raise HTTPException(status_code=400, detail="المنصة ممتلئة")
+    
+    await db.room_participants.update_one(
+        {"room_id": room_id, "user_id": current_user.id},
+        {"$set": {
+            "seat_number": available_seat,
+            "room_role": "speaker",
+            "can_speak": True
+        }}
+    )
+    
+    return {"message": "صعدت للمنصة بنجاح", "seat_number": available_seat}
+
+@api_router.post("/rooms/{room_id}/seat/leave")
+async def leave_seat(room_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.room_participants.update_one(
+        {"room_id": room_id, "user_id": current_user.id},
+        {"$set": {
+            "seat_number": None,
+            "room_role": "listener",
+            "can_speak": False,
+            "is_speaking": False
+        }}
+    )
+    
+    if result.modified_count > 0:
+        return {"message": "نزلت من المنصة"}
+    raise HTTPException(status_code=404, detail="لست على المنصة")
+
+@api_router.get("/rooms/{room_id}/seats")
+async def get_room_seats(room_id: str):
+    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    speakers = await db.room_participants.find({
+        "room_id": room_id,
+        "seat_number": {"$ne": None}
+    }, {"_id": 0}).to_list(room["total_seats"])
+    
+    seats = []
+    for i in range(1, room["total_seats"] + 1):
+        speaker = next((s for s in speakers if s.get("seat_number") == i), None)
+        if speaker:
+            seats.append({
+                "seat_number": i,
+                "user": RoomParticipant(**speaker).model_dump(),
+                "occupied": True
+            })
+        else:
+            seats.append({
+                "seat_number": i,
+                "user": None,
+                "occupied": False
+            })
+    
+    return {"seats": seats, "total_seats": room["total_seats"]}
+
+class SendGift(BaseModel):
+    gift_id: str
+    recipient_id: str
+
+@api_router.post("/rooms/{room_id}/gift")
+async def send_gift(room_id: str, gift_data: SendGift, current_user: User = Depends(get_current_user)):
+    gift = next((g for g in GIFTS if g["id"] == gift_data.gift_id), None)
+    if not gift:
+        raise HTTPException(status_code=404, detail="الهدية غير موجودة")
+    
+    sender = await db.users.find_one({"id": current_user.id}, {"_id": 0})
+    if sender["coins"] < gift["coins"]:
+        raise HTTPException(status_code=400, detail="رصيدك غير كافٍ")
+    
+    recipient = await db.users.find_one({"id": gift_data.recipient_id}, {"_id": 0})
+    if not recipient:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$inc": {"coins": -gift["coins"]}}
+    )
+    
+    await db.users.update_one(
+        {"id": gift_data.recipient_id},
+        {"$inc": {"coins": gift["coins"], "xp": gift["coins"] // 10}}
+    )
+    
+    from uuid import uuid4
+    gift_message = {
+        "id": str(uuid4()),
+        "room_id": room_id,
+        "user_id": "system",
+        "username": "النظام",
+        "avatar": "https://ui-avatars.com/api/?name=Gift&background=FFD700&color=fff",
+        "content": f"{current_user.username} أرسل {gift['icon']} {gift['name']} إلى {recipient['username']}",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.messages.insert_one(gift_message)
+    
+    return {"message": "تم إرسال الهدية بنجاح", "remaining_coins": sender["coins"] - gift["coins"]}
+
+@api_router.get("/gifts")
+async def get_gifts():
+    return {"gifts": GIFTS}
 
 @api_router.post("/rooms/{room_id}/leave")
 async def leave_room(room_id: str, current_user: User = Depends(get_current_user)):
