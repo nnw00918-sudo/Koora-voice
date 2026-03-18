@@ -89,38 +89,30 @@ const DashboardPage = ({ user, onLogout }) => {
           </div>
         </div>
 
-        {/* Welcome Banner */}
-        <div className="p-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-lime-400/20 to-sky-400/20 backdrop-blur-md border border-lime-400/30 rounded-xl p-6 text-center mb-4"
+        {/* Header Actions */}
+        <div className="p-4 flex items-center justify-between">
+          <Button
+            onClick={() => navigate('/create-room')}
+            className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-6 py-2 rounded-full"
           >
-            <Radio className="w-12 h-12 text-lime-400 mx-auto mb-3" strokeWidth={1.5} />
-            <h2 className="text-2xl font-cairo font-bold text-white mb-2">
-              مرحباً في كورة فيرس
-            </h2>
-            <p className="text-slate-300 font-almarai text-sm mb-4">
-              انضم للغرف أو أنشئ غرفتك الخاصة
-            </p>
-            <Button
-              onClick={() => navigate('/create-room')}
-              className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-8 py-2 rounded-xl"
-            >
-              + إنشاء غرفة جديدة
-            </Button>
-          </motion.div>
+            + إنشاء غرفة
+          </Button>
+          <h2 className="text-2xl font-cairo font-black text-white">
+            الغرف المباشرة
+          </h2>
+        </div>
 
-          {/* Categories */}
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar mb-4 pb-2">
+        {/* Categories */}
+        <div className="px-4 pb-4">
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-lg font-cairo font-bold whitespace-nowrap transition-all ${
+                className={`px-4 py-2 rounded-full font-cairo font-bold whitespace-nowrap transition-all ${
                   selectedCategory === cat
                     ? 'bg-lime-400 text-slate-950'
-                    : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                    : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
                 }`}
               >
                 {cat}
@@ -129,15 +121,12 @@ const DashboardPage = ({ user, onLogout }) => {
           </div>
         </div>
 
-        {/* Rooms Grid */}
-        <div className="px-4 pb-6">
-          <h3 className="text-lg font-cairo font-bold text-white mb-4 text-right">
-            الغرف المتاحة ({rooms.length})
-          </h3>
+        {/* Rooms Feed */}
+        <div className="px-4 pb-24">
           {loading ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-32 bg-slate-900/50 rounded-xl animate-pulse"></div>
+                <div key={i} className="h-64 bg-slate-900/50 rounded-2xl animate-pulse"></div>
               ))}
             </div>
           ) : rooms.length === 0 ? (
@@ -151,63 +140,78 @@ const DashboardPage = ({ user, onLogout }) => {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-4">
               {rooms.map((room, index) => (
                 <motion.div
                   key={room.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => handleRoomClick(room.id)}
-                  className="bg-slate-900/50 backdrop-blur-md border border-slate-800 hover:border-lime-400/50 rounded-xl overflow-hidden transition-all cursor-pointer"
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-slate-900/70 backdrop-blur-md border border-slate-800 hover:border-lime-400/50 rounded-2xl overflow-hidden transition-all group"
                 >
-                  <div className="flex gap-3 p-4">
-                    {/* Image */}
+                  {/* Cover Image */}
+                  <div className="relative h-48 overflow-hidden">
                     <img
                       src={room.image}
                       alt={room.title}
-                      className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                     
-                    {/* Content */}
-                    <div className="flex-1 text-right min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          {room.is_live && (
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                              <span className="text-xs text-red-400 font-almarai">مباشر</span>
-                            </div>
-                          )}
-                          <span className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300 font-almarai">
-                            {room.category}
-                          </span>
-                        </div>
-                        <h4 className="text-base font-cairo font-bold text-white truncate">
-                          {room.title}
-                        </h4>
+                    {/* Live Badge */}
+                    {room.is_live && (
+                      <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-500 px-3 py-1.5 rounded-full">
+                        <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                        <span className="text-white font-cairo font-bold text-sm">مباشر</span>
                       </div>
-                      
-                      <p className="text-xs text-slate-400 font-almarai mb-2 line-clamp-2">
-                        {room.description}
-                      </p>
-                      
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1 text-sky-400">
-                            <Users className="w-3 h-3" strokeWidth={1.5} />
-                            <span className="font-chivo">{room.participant_count}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-500 font-almarai">{room.owner_name}</span>
-                          <img
-                            src={room.owner_avatar}
-                            alt={room.owner_name}
-                            className="w-5 h-5 rounded-full ring-1 ring-slate-700"
-                          />
+                    )}
+                    
+                    {/* Participants Count */}
+                    <div className="absolute top-4 right-4 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                      <span className="text-white font-chivo font-bold">{room.participant_count}</span>
+                      <Users className="w-4 h-4 text-white" strokeWidth={2} />
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4">
+                    {/* Category */}
+                    <span className="inline-block px-3 py-1 rounded-full bg-lime-400/20 text-lime-400 text-xs font-cairo font-bold mb-2">
+                      {room.category}
+                    </span>
+
+                    {/* Title */}
+                    <h3 className="text-xl font-cairo font-black text-white mb-2 text-right line-clamp-2">
+                      {room.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-sm text-slate-400 font-almarai mb-4 text-right line-clamp-2">
+                      {room.description}
+                    </p>
+
+                    {/* Host & Join Button */}
+                    <div className="flex items-center justify-between">
+                      {/* Host */}
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={room.owner_avatar}
+                          alt={room.owner_name}
+                          className="w-8 h-8 rounded-full ring-2 ring-lime-400"
+                        />
+                        <div className="text-left">
+                          <p className="text-xs text-slate-500 font-almarai">المضيف</p>
+                          <p className="text-sm text-white font-cairo font-bold">{room.owner_name}</p>
                         </div>
                       </div>
+
+                      {/* Join Button */}
+                      <Button
+                        onClick={() => handleRoomClick(room.id)}
+                        className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-6 py-2 rounded-full"
+                      >
+                        انضم الآن
+                      </Button>
                     </div>
                   </div>
                 </motion.div>
