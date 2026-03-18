@@ -29,6 +29,7 @@ SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "koraverse_secret_key_change_in_pr
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 AGORA_APP_ID = os.environ.get("AGORA_APP_ID", "")
+AGORA_APP_CERTIFICATE = os.environ.get("AGORA_APP_CERTIFICATE", "")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -306,7 +307,7 @@ async def generate_agora_token(request: AgoraTokenRequest, current_user: User = 
         
         token = RtcTokenBuilder.buildTokenWithUid(
             appId=AGORA_APP_ID,
-            appCertificate="",
+            appCertificate=AGORA_APP_CERTIFICATE,
             channelName=request.channel_name,
             uid=request.uid,
             role=1,
