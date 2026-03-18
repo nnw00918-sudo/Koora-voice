@@ -56,17 +56,21 @@ const RoomPage = ({ user }) => {
       agoraClient.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       
       agoraClient.current.on('user-published', async (remoteUser, mediaType) => {
-        await agoraClient.current.subscribe(remoteUser, mediaType);
-        
-        if (mediaType === 'audio') {
-          remoteUser.audioTrack?.play();
-          setRemoteUsers(prev => {
-            const exists = prev.find(u => u.uid === remoteUser.uid);
-            if (!exists) {
-              return [...prev, remoteUser];
-            }
-            return prev;
-          });
+        try {
+          await agoraClient.current.subscribe(remoteUser, mediaType);
+          
+          if (mediaType === 'audio') {
+            remoteUser.audioTrack?.play();
+            setRemoteUsers(prev => {
+              const exists = prev.find(u => u.uid === remoteUser.uid);
+              if (!exists) {
+                return [...prev, remoteUser];
+              }
+              return prev;
+            });
+          }
+        } catch (err) {
+          console.error('Error subscribing to remote user:', err);
         }
       });
 
@@ -96,7 +100,8 @@ const RoomPage = ({ user }) => {
         generatedUid
       );
 
-      toast.success('تم الاتصال بالغرفة الصوتية');
+      console.log('✅ Agora connected successfully');
+      toast.success('✅ تم الاتصال بالغرفة الصوتية بنجاح');
     } catch (error) {
       console.error('Agora initialization error:', error);
       toast.error('فشل الاتصال بالخدمة الصوتية');
@@ -209,14 +214,33 @@ const RoomPage = ({ user }) => {
     }
   };
 
+  const checkMicrophonePermission = async () => {
+    try {
+      const result = await navigator.permissions.query({ name: 'microphone' });
+      return result.state;
+    } catch (error) {
+      return 'unknown';
+    }
+  };
+
   const toggleMic = async () => {
     try {
       if (!isMicOn) {
-        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        if (!agoraClient.current) {
+          toast.error('لم يتم الاتصال بالخدمة الصوتية بعد');
+          return;
+        }
+
+        toast.info('جاري طلب إذن الميكروفون...');
+        
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+          encoderConfig: 'music_standard',
+        });
+        
         setLocalAudioTrack(audioTrack);
         await agoraClient.current.publish([audioTrack]);
         setIsMicOn(true);
-        toast.success('تم تشغيل الميكروفون');
+        toast.success('✅ تم تشغيل الميكروفون - الآن يمكن للآخرين سماعك!');
       } else {
         if (localAudioTrack) {
           await agoraClient.current.unpublish([localAudioTrack]);
@@ -229,7 +253,20 @@ const RoomPage = ({ user }) => {
       }
     } catch (error) {
       console.error('Error toggling mic:', error);
-      toast.error('فشل تشغيل الميكروفون');
+      
+      let errorMessage = 'فشل تشغيل الميكروفون';
+      
+      if (error.code === 'PERMISSION_DENIED' || error.name === 'NotAllowedError') {
+        errorMessage = '❌ تم رفض إذن الميكروفون. يرجى السماح بالوصول للميكروفون من إعدادات المتصفح';
+      } else if (error.code === 'DEVICE_NOT_FOUND' || error.name === 'NotFoundError') {
+        errorMessage = '❌ لم يتم العثور على ميكروفون. تأكد من توصيل ميكروفون بجهازك';
+      } else if (error.code === 'NOT_READABLE' || error.name === 'NotReadableError') {
+        errorMessage = '❌ الميكروفون مستخدم من تطبيق آخر. أغلق التطبيقات الأخرى وحاول مرة أخرى';
+      } else if (error.message) {
+        errorMessage = `خطأ: ${error.message}`;
+      }
+      
+      toast.error(errorMessage, { duration: 5000 });
     }
   };
 
