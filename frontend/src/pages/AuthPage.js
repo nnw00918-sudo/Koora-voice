@@ -44,7 +44,7 @@ const AuthPage = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-slate-950 overflow-hidden">
-      <div className="relative max-w-md mx-auto min-h-screen flex flex-col justify-center px-6 py-12">
+      <div className="relative max-w-[600px] mx-auto min-h-screen flex flex-col justify-center px-6 py-12">
         {/* Background Effect */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-lime-400/10 rounded-full blur-3xl"></div>

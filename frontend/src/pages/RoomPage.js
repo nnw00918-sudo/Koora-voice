@@ -365,7 +365,7 @@ const YallaLiveRoom = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-slate-950 fixed inset-0 overflow-hidden room-container">
-      <div className="max-w-md mx-auto h-screen flex flex-col">
+      <div className="max-w-[600px] mx-auto h-screen flex flex-col">
         {/* Header */}
         <div className="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 p-4 sticky top-0 z-40">
           <div className="flex items-center gap-3">
@@ -620,7 +620,7 @@ const YallaLiveRoom = ({ user }) => {
                 initial={{ y: 300 }}
                 animate={{ y: 0 }}
                 exit={{ y: 300 }}
-                className="bg-slate-900 w-full max-w-md mx-auto rounded-t-3xl p-6"
+                className="bg-slate-900 w-full max-w-[600px] mx-auto rounded-t-3xl p-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 className="text-xl font-cairo font-bold text-white mb-4 text-right">

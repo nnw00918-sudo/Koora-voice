@@ -10,7 +10,7 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-slate-950 overflow-hidden">
       {/* Hero Section */}
-      <div className="relative max-w-md mx-auto min-h-screen flex flex-col">
+      <div className="relative max-w-[600px] mx-auto min-h-screen flex flex-col">
         {/* Background Effect */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-lime-400/10 rounded-full blur-3xl"></div>

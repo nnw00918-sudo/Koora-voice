@@ -35,7 +35,7 @@ const DashboardPage = ({ user, onLogout }) => {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <div className="max-w-md mx-auto min-h-screen pb-24">
+      <div className="max-w-[600px] mx-auto min-h-screen pb-24">
         {/* Header */}
         <div className="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 p-4 sticky top-0 z-40">
           <div className="flex items-center justify-between">
@@ -149,7 +149,7 @@ const DashboardPage = ({ user, onLogout }) => {
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 z-50">
-        <div className="max-w-md mx-auto flex justify-around p-4">
+        <div className="max-w-[600px] mx-auto flex justify-around p-4">
           <button
             data-testid="nav-rooms-btn"
             className="flex flex-col items-center gap-1 text-lime-400"
