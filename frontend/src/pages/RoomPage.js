@@ -160,7 +160,14 @@ const YallaLiveRoom = ({ user }) => {
 
       setRoom(roomRes.data);
       setSeats(seatsRes.data.seats);
-      setMessages(messagesRes.data);
+      
+      const filteredMessages = messagesRes.data.filter(msg => 
+        !msg.content?.toLowerCase().includes('test message') &&
+        !msg.content?.toLowerCase().includes('voice test') &&
+        !msg.username?.toLowerCase().includes('test_user')
+      );
+      setMessages(filteredMessages);
+      
       setParticipants(participantsRes.data);
       
       const myParticipant = participantsRes.data.find(p => p.user_id === user.id);
@@ -187,7 +194,12 @@ const YallaLiveRoom = ({ user }) => {
   const fetchMessages = async () => {
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/messages`);
-      setMessages(response.data);
+      const filteredMessages = response.data.filter(msg => 
+        !msg.content?.toLowerCase().includes('test message') &&
+        !msg.content?.toLowerCase().includes('voice test') &&
+        !msg.username?.toLowerCase().includes('test_user')
+      );
+      setMessages(filteredMessages);
     } catch (error) {
       console.error('Failed to fetch messages');
     }
