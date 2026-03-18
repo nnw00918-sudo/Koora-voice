@@ -19,3 +19,12 @@
     opacity: 0.5;
   }
 }
+
+.overscroll-none {
+  overscroll-behavior: none;
+}
+
+.room-container {
+  overscroll-behavior: none;
+  touch-action: pan-y;
+}

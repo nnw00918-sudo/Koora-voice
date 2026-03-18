@@ -352,8 +352,8 @@ const YallaLiveRoom = ({ user }) => {
   const listeners = participants.filter(p => p.seat_number === null);
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <div className="max-w-md mx-auto min-h-screen flex flex-col">
+    <div className="min-h-screen bg-slate-950 fixed inset-0 overflow-hidden room-container">
+      <div className="max-w-md mx-auto h-screen flex flex-col">
         {/* Header */}
         <div className="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 p-4 sticky top-0 z-40">
           <div className="flex items-center gap-3">
@@ -380,7 +380,7 @@ const YallaLiveRoom = ({ user }) => {
         </div>
 
         {/* Stage - المنصة */}
-        <div className="bg-gradient-to-b from-slate-900/50 to-slate-950 border-b border-slate-800 p-4">
+        <div className="bg-gradient-to-b from-slate-900/50 to-slate-950 border-b border-slate-800 p-4 flex-shrink-0 overflow-y-auto" style={{maxHeight: '45vh'}}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
@@ -483,7 +483,7 @@ const YallaLiveRoom = ({ user }) => {
 
         {/* Listeners List */}
         {listeners.length > 0 && (
-          <div className="bg-slate-900/30 border-b border-slate-800 p-3">
+          <div className="bg-slate-900/30 border-b border-slate-800 p-3 flex-shrink-0">
             <p className="text-xs text-slate-400 font-almarai mb-2">المستمعين ({listeners.length})</p>
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               {listeners.slice(0, 10).map((listener) => (
@@ -505,7 +505,7 @@ const YallaLiveRoom = ({ user }) => {
         )}
 
         {/* Chat */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 hide-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 overscroll-none" style={{WebkitOverflowScrolling: 'touch'}}>
           {messages.map((message) => {
             const isOwnMessage = message.user_id === user.id;
             const isSystem = message.user_id === 'system';
@@ -569,7 +569,7 @@ const YallaLiveRoom = ({ user }) => {
         </div>
 
         {/* Message Input */}
-        <div className="bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 p-4">
+        <div className="bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 p-4 flex-shrink-0">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex items-center gap-2 text-yellow-400">
               <span className="text-sm font-chivo font-bold">{userCoins}</span>
