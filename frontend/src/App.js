@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import RoomPage from './pages/RoomPage';
 import ProfilePage from './pages/ProfilePage';
 import UsersPage from './pages/UsersPage';
+import AdminDashboard from './pages/AdminDashboard';
 import { Toaster } from 'sonner';
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
           <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
           <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
           <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
+          <Route path="/admin" element={user ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-center" theme="dark" richColors />

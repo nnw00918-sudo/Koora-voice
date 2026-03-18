@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
-import { Radio, Users, LogOut, User } from 'lucide-react';
+import { Radio, Users, LogOut, User, Shield } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -50,15 +50,29 @@ const DashboardPage = ({ user, onLogout }) => {
                 <p className="text-xs text-slate-400 font-almarai">متصل</p>
               </div>
             </div>
-            <Button
-              data-testid="logout-btn"
-              onClick={onLogout}
-              variant="ghost"
-              size="icon"
-              className="hover:bg-slate-800 text-slate-400 hover:text-red-400"
-            >
-              <LogOut className="w-5 h-5" strokeWidth={1.5} />
-            </Button>
+            <div className="flex gap-2">
+              {user.role === 'admin' && (
+                <Button
+                  data-testid="admin-dashboard-btn"
+                  onClick={() => navigate('/admin')}
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-slate-800 text-lime-400"
+                  title="لوحة تحكم Admin"
+                >
+                  <Shield className="w-5 h-5" strokeWidth={1.5} />
+                </Button>
+              )}
+              <Button
+                data-testid="logout-btn"
+                onClick={onLogout}
+                variant="ghost"
+                size="icon"
+                className="hover:bg-slate-800 text-slate-400 hover:text-red-400"
+              >
+                <LogOut className="w-5 h-5" strokeWidth={1.5} />
+              </Button>
+            </div>
           </div>
         </div>
 

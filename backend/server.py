@@ -34,12 +34,12 @@ AGORA_APP_CERTIFICATE = os.environ.get("AGORA_APP_CERTIFICATE", "")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ROOMS = [
-    {"id": "general", "name": "عام", "name_en": "General", "description": "نقاشات عامة عن كرة القدم", "image": "https://images.unsplash.com/photo-1762013315117-1c8005ad2b41"},
-    {"id": "fantasy", "name": "فانتسي", "name_en": "Fantasy", "description": "فانتسي الدوريات العالمية", "image": "https://images.unsplash.com/photo-1761853320977-bcd046cfaea9"},
-    {"id": "games", "name": "ألعاب", "name_en": "Games", "description": "ألعاب وتحديات كروية", "image": "https://images.unsplash.com/photo-1766051666522-9cfa12675f5b"},
-    {"id": "analysis", "name": "تحليل مباريات", "name_en": "Analysis", "description": "تحليل فني للمباريات", "image": "https://images.unsplash.com/photo-1556056504-dc77ff4d11b0"},
-    {"id": "podcast", "name": "بودكاست", "name_en": "Podcast", "description": "حلقات صوتية رياضية", "image": "https://images.unsplash.com/photo-1709846486154-f9172678be6f"},
-    {"id": "transfers", "name": "انتقالات", "name_en": "Transfers", "description": "أخبار وشائعات الانتقالات", "image": "https://images.unsplash.com/photo-1643917367212-018cf11bf790"}
+    {"id": "general", "name": "عام", "name_en": "General", "description": "نقاشات عامة عن كرة القدم", "image": "https://images.unsplash.com/photo-1762013315117-1c8005ad2b41", "is_closed": False},
+    {"id": "fantasy", "name": "فانتسي", "name_en": "Fantasy", "description": "فانتسي الدوريات العالمية", "image": "https://images.unsplash.com/photo-1761853320977-bcd046cfaea9", "is_closed": False},
+    {"id": "games", "name": "ألعاب", "name_en": "Games", "description": "ألعاب وتحديات كروية", "image": "https://images.unsplash.com/photo-1766051666522-9cfa12675f5b", "is_closed": False},
+    {"id": "analysis", "name": "تحليل مباريات", "name_en": "Analysis", "description": "تحليل فني للمباريات", "image": "https://images.unsplash.com/photo-1556056504-dc77ff4d11b0", "is_closed": False},
+    {"id": "podcast", "name": "بودكاست", "name_en": "Podcast", "description": "حلقات صوتية رياضية", "image": "https://images.unsplash.com/photo-1709846486154-f9172678be6f", "is_closed": False},
+    {"id": "transfers", "name": "انتقالات", "name_en": "Transfers", "description": "أخبار وشائعات الانتقالات", "image": "https://images.unsplash.com/photo-1643917367212-018cf11bf790", "is_closed": False}
 ]
 
 class UserRegister(BaseModel):
@@ -58,6 +58,9 @@ class User(BaseModel):
     username: str
     avatar: Optional[str] = None
     created_at: str
+    role: str = "user"
+    is_banned: bool = False
+    banned_rooms: List[str] = []
 
 class Token(BaseModel):
     access_token: str
@@ -121,6 +124,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+async def get_admin_user(current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
 @api_router.post("/auth/register", response_model=Token)
 async def register(user_data: UserRegister):
     existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
@@ -135,6 +143,9 @@ async def register(user_data: UserRegister):
     user_id = str(uuid4())
     hashed_password = get_password_hash(user_data.password)
     
+    total_users = await db.users.count_documents({})
+    user_role = "admin" if total_users == 0 else "user"
+    
     user_doc = {
         "id": user_id,
         "email": user_data.email,
@@ -142,6 +153,9 @@ async def register(user_data: UserRegister):
         "password": hashed_password,
         "avatar": f"https://ui-avatars.com/api/?name={user_data.username}&background=A3E635&color=0F172A&bold=true",
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "role": user_role,
+        "is_banned": False,
+        "banned_rooms": [],
         "followers": [],
         "following": []
     }
@@ -287,6 +301,145 @@ async def unfollow_user(user_id: str, current_user: User = Depends(get_current_u
 async def get_users(limit: int = 20):
     users = await db.users.find({}, {"_id": 0, "password": 0}).limit(limit).to_list(limit)
     return [User(**u) for u in users]
+
+class RoomCreate(BaseModel):
+    id: str
+    name: str
+    name_en: str
+    description: str
+    image: str
+
+class RoomUpdate(BaseModel):
+    name: Optional[str] = None
+    name_en: Optional[str] = None
+    description: Optional[str] = None
+    image: Optional[str] = None
+    is_closed: Optional[bool] = None
+
+class UserRoleUpdate(BaseModel):
+    role: str
+
+class BroadcastMessage(BaseModel):
+    message: str
+
+@api_router.post("/admin/rooms", dependencies=[Depends(get_admin_user)])
+async def create_room(room: RoomCreate):
+    new_room = room.model_dump()
+    new_room["is_closed"] = False
+    ROOMS.append(new_room)
+    return {"message": "تم إنشاء الغرفة بنجاح", "room": new_room}
+
+@api_router.put("/admin/rooms/{room_id}", dependencies=[Depends(get_admin_user)])
+async def update_room(room_id: str, updates: RoomUpdate):
+    for i, room in enumerate(ROOMS):
+        if room["id"] == room_id:
+            update_data = updates.model_dump(exclude_none=True)
+            ROOMS[i].update(update_data)
+            return {"message": "تم تحديث الغرفة بنجاح", "room": ROOMS[i]}
+    raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+
+@api_router.delete("/admin/rooms/{room_id}", dependencies=[Depends(get_admin_user)])
+async def delete_room(room_id: str):
+    for i, room in enumerate(ROOMS):
+        if room["id"] == room_id:
+            ROOMS.pop(i)
+            await db.room_participants.delete_many({"room_id": room_id})
+            await db.messages.delete_many({"room_id": room_id})
+            return {"message": "تم حذف الغرفة بنجاح"}
+    raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+
+@api_router.post("/admin/rooms/{room_id}/toggle", dependencies=[Depends(get_admin_user)])
+async def toggle_room(room_id: str):
+    for room in ROOMS:
+        if room["id"] == room_id:
+            room["is_closed"] = not room.get("is_closed", False)
+            status = "مغلقة" if room["is_closed"] else "مفتوحة"
+            return {"message": f"الغرفة الآن {status}", "room": room}
+    raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+
+@api_router.post("/admin/users/{user_id}/kick/{room_id}", dependencies=[Depends(get_admin_user)])
+async def kick_user_from_room(user_id: str, room_id: str):
+    result = await db.room_participants.delete_one({"room_id": room_id, "user_id": user_id})
+    if result.deleted_count > 0:
+        return {"message": "تم طرد المستخدم من الغرفة"}
+    raise HTTPException(status_code=404, detail="المستخدم غير موجود في الغرفة")
+
+@api_router.post("/admin/users/{user_id}/ban", dependencies=[Depends(get_admin_user)])
+async def ban_user(user_id: str):
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"is_banned": True}}
+    )
+    if result.modified_count > 0:
+        await db.room_participants.delete_many({"user_id": user_id})
+        return {"message": "تم حظر المستخدم"}
+    raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+
+@api_router.post("/admin/users/{user_id}/unban", dependencies=[Depends(get_admin_user)])
+async def unban_user(user_id: str):
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"is_banned": False, "banned_rooms": []}}
+    )
+    if result.modified_count > 0:
+        return {"message": "تم إلغاء حظر المستخدم"}
+    raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+
+@api_router.post("/admin/users/{user_id}/role", dependencies=[Depends(get_admin_user)])
+async def update_user_role(user_id: str, role_data: UserRoleUpdate):
+    if role_data.role not in ["user", "moderator", "admin"]:
+        raise HTTPException(status_code=400, detail="صلاحية غير صحيحة")
+    
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"role": role_data.role}}
+    )
+    if result.modified_count > 0:
+        return {"message": f"تم تحديث الصلاحية إلى {role_data.role}"}
+    raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+
+@api_router.get("/admin/stats", dependencies=[Depends(get_admin_user)])
+async def get_admin_stats():
+    total_users = await db.users.count_documents({})
+    total_messages = await db.messages.count_documents({})
+    active_users = await db.room_participants.count_documents({})
+    
+    room_stats = []
+    for room in ROOMS:
+        count = await db.room_participants.count_documents({"room_id": room["id"]})
+        room_stats.append({
+            "room_id": room["id"],
+            "room_name": room["name"],
+            "active_users": count,
+            "is_closed": room.get("is_closed", False)
+        })
+    
+    return {
+        "total_users": total_users,
+        "total_messages": total_messages,
+        "active_users_now": active_users,
+        "rooms": room_stats,
+        "total_rooms": len(ROOMS)
+    }
+
+@api_router.post("/admin/broadcast", dependencies=[Depends(get_admin_user)])
+async def broadcast_message(broadcast: BroadcastMessage):
+    from uuid import uuid4
+    message_id = str(uuid4())
+    
+    for room in ROOMS:
+        message_doc = {
+            "id": f"{message_id}_{room['id']}",
+            "room_id": room["id"],
+            "user_id": "system",
+            "username": "الإدارة",
+            "avatar": "https://ui-avatars.com/api/?name=Admin&background=EF4444&color=fff&bold=true",
+            "content": f"📢 إعلان: {broadcast.message}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        await db.messages.insert_one(message_doc)
+    
+    return {"message": "تم إرسال الإعلان لجميع الغرف"}
 
 class AgoraTokenRequest(BaseModel):
     channel_name: str
