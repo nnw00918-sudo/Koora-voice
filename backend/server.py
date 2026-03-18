@@ -33,15 +33,6 @@ AGORA_APP_CERTIFICATE = os.environ.get("AGORA_APP_CERTIFICATE", "")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-ROOMS = [
-    {"id": "general", "name": "عام", "name_en": "General", "description": "نقاشات عامة عن كرة القدم", "image": "https://images.unsplash.com/photo-1762013315117-1c8005ad2b41", "is_closed": False, "total_seats": 12},
-    {"id": "fantasy", "name": "فانتسي", "name_en": "Fantasy", "description": "فانتسي الدوريات العالمية", "image": "https://images.unsplash.com/photo-1761853320977-bcd046cfaea9", "is_closed": False, "total_seats": 12},
-    {"id": "games", "name": "ألعاب", "name_en": "Games", "description": "ألعاب وتحديات كروية", "image": "https://images.unsplash.com/photo-1766051666522-9cfa12675f5b", "is_closed": False, "total_seats": 12},
-    {"id": "analysis", "name": "تحليل مباريات", "name_en": "Analysis", "description": "تحليل فني للمباريات", "image": "https://images.unsplash.com/photo-1556056504-dc77ff4d11b0", "is_closed": False, "total_seats": 12},
-    {"id": "podcast", "name": "بودكاست", "name_en": "Podcast", "description": "حلقات صوتية رياضية", "image": "https://images.unsplash.com/photo-1709846486154-f9172678be6f", "is_closed": False, "total_seats": 12},
-    {"id": "transfers", "name": "انتقالات", "name_en": "Transfers", "description": "أخبار وشائعات الانتقالات", "image": "https://images.unsplash.com/photo-1643917367212-018cf11bf790", "is_closed": False, "total_seats": 12}
-]
-
 GIFTS = [
     {"id": "rose", "name": "وردة", "icon": "🌹", "coins": 10},
     {"id": "heart", "name": "قلب", "icon": "❤️", "coins": 50},
@@ -50,6 +41,8 @@ GIFTS = [
     {"id": "star", "name": "نجمة", "icon": "⭐", "coins": 200},
     {"id": "crown", "name": "تاج", "icon": "👑", "coins": 500},
 ]
+
+CATEGORIES = ["رياضة", "ترفيه", "تكنولوجيا", "ثقافة", "أخبار", "ألعاب"]
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -134,6 +127,28 @@ class Room(BaseModel):
     description: str
     image: str
     participants_count: int = 0
+
+class RoomFull(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    title: str
+    description: str
+    category: str
+    image: str
+    owner_id: str
+    owner_name: str
+    owner_avatar: Optional[str] = None
+    is_live: bool = True
+    is_closed: bool = False
+    total_seats: int = 12
+    participant_count: int = 0
+    created_at: str
+
+class RoomCreate(BaseModel):
+    title: str
+    description: str
+    category: str
+    image: str
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -221,26 +236,81 @@ async def login(user_data: UserLogin):
     
     return Token(access_token=access_token, token_type="bearer", user=user_obj)
 
-@api_router.get("/rooms", response_model=List[Room])
-async def get_rooms():
-    rooms_with_counts = []
-    for room in ROOMS:
+@api_router.get("/rooms", response_model=List[RoomFull])
+async def get_rooms(category: Optional[str] = None):
+    query = {}
+    if category and category != "الكل":
+        query["category"] = category
+    
+    rooms = await db.rooms.find(query, {"_id": 0}).to_list(100)
+    
+    for room in rooms:
         count = await db.room_participants.count_documents({"room_id": room["id"]})
-        rooms_with_counts.append({**room, "participants_count": count})
-    return rooms_with_counts
+        room["participant_count"] = count
+    
+    return [RoomFull(**r) for r in rooms]
 
-@api_router.get("/rooms/{room_id}", response_model=Room)
+@api_router.post("/rooms/create", response_model=RoomFull)
+async def create_room(room_data: RoomCreate, current_user: User = Depends(get_current_user)):
+    from uuid import uuid4
+    room_id = str(uuid4())[:8]
+    
+    room_doc = {
+        "id": room_id,
+        "title": room_data.title,
+        "description": room_data.description,
+        "category": room_data.category,
+        "image": room_data.image,
+        "owner_id": current_user.id,
+        "owner_name": current_user.username,
+        "owner_avatar": current_user.avatar,
+        "is_live": True,
+        "is_closed": False,
+        "total_seats": 12,
+        "participant_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.rooms.insert_one(room_doc)
+    
+    return RoomFull(**room_doc)
+
+@api_router.get("/categories")
+async def get_categories():
+    return {"categories": CATEGORIES}
+
+@api_router.post("/rooms/{room_id}/end")
+async def end_room(room_id: str, current_user: User = Depends(get_current_user)):
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if room["owner_id"] != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه إنهاءها")
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"is_live": False, "is_closed": True}}
+    )
+    
+    await db.room_participants.delete_many({"room_id": room_id})
+    
+    return {"message": "تم إنهاء الغرفة"}
+
+@api_router.get("/rooms/{room_id}", response_model=RoomFull)
 async def get_room(room_id: str):
-    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
     count = await db.room_participants.count_documents({"room_id": room_id})
-    return {**room, "participants_count": count}
+    room["participant_count"] = count
+    
+    return RoomFull(**room)
 
 @api_router.post("/rooms/{room_id}/join")
 async def join_room(room_id: str, current_user: User = Depends(get_current_user)):
-    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
@@ -267,7 +337,7 @@ async def join_room(room_id: str, current_user: User = Depends(get_current_user)
 
 @api_router.post("/rooms/{room_id}/seat/request")
 async def request_seat(room_id: str, current_user: User = Depends(get_current_user)):
-    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
@@ -325,7 +395,7 @@ async def approve_seat_request(room_id: str, user_id: str, current_user: User = 
     if current_user.role not in ["admin", "moderator"]:
         raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
     
-    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
@@ -441,7 +511,7 @@ async def invite_to_seat(room_id: str, user_id: str, current_user: User = Depend
     if current_user.role not in ["admin", "moderator"]:
         raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
     
-    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
@@ -496,7 +566,7 @@ async def get_my_invites(room_id: str, current_user: User = Depends(get_current_
 
 @api_router.post("/rooms/{room_id}/seat/invites/{invite_id}/accept")
 async def accept_invite(room_id: str, invite_id: str, current_user: User = Depends(get_current_user)):
-    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
@@ -576,7 +646,7 @@ async def leave_seat(room_id: str, current_user: User = Depends(get_current_user
 
 @api_router.get("/rooms/{room_id}/seats")
 async def get_room_seats(room_id: str):
-    room = next((r for r in ROOMS if r["id"] == room_id), None)
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     

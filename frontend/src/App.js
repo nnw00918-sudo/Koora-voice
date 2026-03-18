@@ -8,6 +8,7 @@ import RoomPage from './pages/RoomPage';
 import ProfilePage from './pages/ProfilePage';
 import UsersPage from './pages/UsersPage';
 import AdminDashboard from './pages/AdminDashboard';
+import CreateRoomPage from './pages/CreateRoomPage';
 import { Toaster } from 'sonner';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
           <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
           <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
           <Route path="/dashboard" element={user ? <DashboardPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+          <Route path="/create-room" element={user ? <CreateRoomPage user={user} /> : <Navigate to="/" />} />
           <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
           <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
           <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
