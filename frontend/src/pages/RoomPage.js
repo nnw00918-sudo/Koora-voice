@@ -43,6 +43,8 @@ const YallaLiveRoom = ({ user }) => {
   const [seatRequests, setSeatRequests] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(false);
   const [isAdmin, setIsAdmin] = useState(user.role === 'admin' || user.role === 'moderator');
+  const [myInvites, setMyInvites] = useState([]);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const agoraClient = useRef(null);
@@ -147,6 +149,7 @@ const YallaLiveRoom = ({ user }) => {
       if (isAdmin) {
         fetchSeatRequests();
       }
+      fetchMyInvites();
     }, 3000);
   };
 
@@ -238,6 +241,21 @@ const YallaLiveRoom = ({ user }) => {
       setSeatRequests(response.data.requests);
     } catch (error) {
       console.error('Failed to fetch seat requests');
+    }
+  };
+
+  const fetchMyInvites = async () => {
+    try {
+      const response = await axios.get(`${API}/rooms/${roomId}/seat/invites/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const invites = response.data.invites;
+      setMyInvites(invites);
+      if (invites.length > 0 && !showInviteModal) {
+        setShowInviteModal(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch invites');
     }
   };
 
@@ -352,6 +370,51 @@ const YallaLiveRoom = ({ user }) => {
       fetchParticipants();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل إلغاء الكتم');
+    }
+  };
+
+  const handleInviteUser = async (userId, username) => {
+    try {
+      await axios.post(
+        `${API}/rooms/${roomId}/seat/invite/${userId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`تم إرسال دعوة إلى ${username}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل إرسال الدعوة');
+    }
+  };
+
+  const handleAcceptInvite = async (inviteId) => {
+    try {
+      const response = await axios.post(
+        `${API}/rooms/${roomId}/seat/invites/${inviteId}/accept`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      setOnStage(true);
+      setShowInviteModal(false);
+      fetchSeats();
+      fetchMyInvites();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل قبول الدعوة');
+    }
+  };
+
+  const handleRejectInvite = async (inviteId) => {
+    try {
+      await axios.post(
+        `${API}/rooms/${roomId}/seat/invites/${inviteId}/reject`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.info('رفضت الدعوة');
+      setShowInviteModal(false);
+      fetchMyInvites();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل رفض الدعوة');
     }
   };
 
@@ -683,12 +746,23 @@ const YallaLiveRoom = ({ user }) => {
             <p className="text-xs text-slate-400 font-almarai mb-2">المستمعين ({listeners.length})</p>
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               {listeners.slice(0, 10).map((listener) => (
-                <div key={listener.user_id} className="flex flex-col items-center gap-1">
+                <div key={listener.user_id} className="flex flex-col items-center gap-1 relative group">
                   <img
                     src={listener.avatar}
                     alt={listener.username}
                     className="w-10 h-10 rounded-full ring-1 ring-slate-700"
                   />
+                  <p className="text-xs text-slate-300 font-almarai max-w-[60px] truncate">{listener.username}</p>
+                  
+                  {/* Admin: Invite Button */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleInviteUser(listener.user_id, listener.username)}
+                      className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-lime-500 hover:bg-lime-600 text-white rounded-full px-2 py-1 text-xs font-cairo whitespace-nowrap"
+                    >
+                      دعوة للمنصة
+                    </button>
+                  )}
                 </div>
               ))}
               {listeners.length > 10 && (
@@ -832,6 +906,52 @@ const YallaLiveRoom = ({ user }) => {
                   <p className="text-sm text-slate-400 font-almarai">
                     رصيدك: <span className="text-yellow-400 font-chivo">{userCoins}</span> عملة
                   </p>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Invite Modal */}
+        <AnimatePresence>
+          {showInviteModal && myInvites.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="bg-slate-900 w-full max-w-[400px] mx-4 rounded-2xl p-6 border-2 border-lime-400"
+              >
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-lime-400/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <LogIn className="w-8 h-8 text-lime-400" strokeWidth={2} />
+                  </div>
+                  <h3 className="text-xl font-cairo font-bold text-white mb-2">
+                    دعوة للصعود للمنصة!
+                  </h3>
+                  <p className="text-slate-300 font-almarai text-sm">
+                    {myInvites[0].invited_by_name} يدعوك للصعود للمنصة والتحدث
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => handleRejectInvite(myInvites[0].invite_id)}
+                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-cairo font-bold py-3 rounded-xl"
+                  >
+                    رفض
+                  </Button>
+                  <Button
+                    onClick={() => handleAcceptInvite(myInvites[0].invite_id)}
+                    className="flex-1 bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold py-3 rounded-xl"
+                  >
+                    قبول والصعود
+                  </Button>
                 </div>
               </motion.div>
             </motion.div>
