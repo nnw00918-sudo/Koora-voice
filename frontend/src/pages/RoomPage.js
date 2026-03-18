@@ -6,9 +6,11 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ArrowLeft, Mic, MicOff, Send, Users } from 'lucide-react';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const AGORA_APP_ID = process.env.REACT_APP_AGORA_APP_ID;
 
 const RoomPage = ({ user }) => {
   const { roomId } = useParams();
@@ -19,12 +21,17 @@ const RoomPage = ({ user }) => {
   const [newMessage, setNewMessage] = useState('');
   const [isMicOn, setIsMicOn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [remoteUsers, setRemoteUsers] = useState([]);
+  const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
+  const agoraClient = useRef(null);
+  const agoraUid = useRef(null);
 
   const token = localStorage.getItem('token');
 
   useEffect(() => {
+    initializeAgora();
     joinRoom();
     fetchRoomData();
     startPolling();
@@ -32,6 +39,7 @@ const RoomPage = ({ user }) => {
     return () => {
       leaveRoom();
       stopPolling();
+      cleanupAgora();
     };
   }, [roomId]);
 
@@ -41,6 +49,72 @@ const RoomPage = ({ user }) => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const initializeAgora = async () => {
+    try {
+      agoraClient.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      
+      agoraClient.current.on('user-published', async (remoteUser, mediaType) => {
+        await agoraClient.current.subscribe(remoteUser, mediaType);
+        
+        if (mediaType === 'audio') {
+          remoteUser.audioTrack?.play();
+          setRemoteUsers(prev => {
+            const exists = prev.find(u => u.uid === remoteUser.uid);
+            if (!exists) {
+              return [...prev, remoteUser];
+            }
+            return prev;
+          });
+        }
+      });
+
+      agoraClient.current.on('user-unpublished', (remoteUser, mediaType) => {
+        if (mediaType === 'audio') {
+          setRemoteUsers(prev => prev.filter(u => u.uid !== remoteUser.uid));
+        }
+      });
+
+      agoraClient.current.on('user-left', (remoteUser) => {
+        setRemoteUsers(prev => prev.filter(u => u.uid !== remoteUser.uid));
+      });
+
+      const generatedUid = Math.floor(Math.random() * 1000000);
+      agoraUid.current = generatedUid;
+
+      const tokenResponse = await axios.post(
+        `${API}/agora/token`,
+        { channel_name: roomId, uid: generatedUid },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      await agoraClient.current.join(
+        AGORA_APP_ID,
+        roomId,
+        tokenResponse.data.token,
+        generatedUid
+      );
+
+      toast.success('تم الاتصال بالغرفة الصوتية');
+    } catch (error) {
+      console.error('Agora initialization error:', error);
+      toast.error('فشل الاتصال بالخدمة الصوتية');
+    }
+  };
+
+  const cleanupAgora = async () => {
+    try {
+      if (localAudioTrack) {
+        localAudioTrack.stop();
+        localAudioTrack.close();
+      }
+      if (agoraClient.current) {
+        await agoraClient.current.leave();
+      }
+    } catch (error) {
+      console.error('Error cleaning up Agora:', error);
+    }
   };
 
   const startPolling = () => {
@@ -135,9 +209,28 @@ const RoomPage = ({ user }) => {
     }
   };
 
-  const toggleMic = () => {
-    setIsMicOn(!isMicOn);
-    toast.info(isMicOn ? 'تم كتم الميكروفون' : 'تم تشغيل الميكروفون');
+  const toggleMic = async () => {
+    try {
+      if (!isMicOn) {
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        setLocalAudioTrack(audioTrack);
+        await agoraClient.current.publish([audioTrack]);
+        setIsMicOn(true);
+        toast.success('تم تشغيل الميكروفون');
+      } else {
+        if (localAudioTrack) {
+          await agoraClient.current.unpublish([localAudioTrack]);
+          localAudioTrack.stop();
+          localAudioTrack.close();
+          setLocalAudioTrack(null);
+        }
+        setIsMicOn(false);
+        toast.info('تم كتم الميكروفون');
+      }
+    } catch (error) {
+      console.error('Error toggling mic:', error);
+      toast.error('فشل تشغيل الميكروفون');
+    }
   };
 
   if (loading) {
@@ -169,7 +262,7 @@ const RoomPage = ({ user }) => {
             </div>
             <div className="flex items-center gap-1 text-sky-400">
               <Users className="w-4 h-4" strokeWidth={1.5} />
-              <span className="text-sm font-chivo">{participants.length}</span>
+              <span className="text-sm font-chivo">{participants.length + remoteUsers.length}</span>
             </div>
           </div>
         </div>
@@ -177,30 +270,49 @@ const RoomPage = ({ user }) => {
         {/* Voice Stage */}
         <div className="bg-slate-900/30 border-b border-slate-800 p-6">
           <div className="flex flex-wrap justify-center gap-4">
-            {participants.slice(0, 8).map((participant) => (
+            {/* Local User */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <div
+                className={`relative ${
+                  isMicOn
+                    ? 'ring-4 ring-lime-400 ring-opacity-50 speaking-pulse'
+                    : 'ring-2 ring-slate-700'
+                } rounded-full`}
+              >
+                <img
+                  src={user.avatar}
+                  alt={user.username}
+                  className="w-16 h-16 rounded-full"
+                />
+                {isMicOn && (
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-lime-400 rounded-full flex items-center justify-center">
+                    <Mic className="w-3 h-3 text-slate-950" strokeWidth={2} />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-slate-300 font-almarai max-w-[70px] truncate">
+                {user.username}
+              </p>
+            </motion.div>
+
+            {/* Remote Users from participants list */}
+            {participants.slice(0, 7).map((participant) => (
               <motion.div
                 key={participant.user_id}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 className="flex flex-col items-center gap-2"
               >
-                <div
-                  className={`relative ${
-                    participant.is_speaking
-                      ? 'ring-4 ring-lime-400 ring-opacity-50 speaking-pulse'
-                      : 'ring-2 ring-slate-700'
-                  } rounded-full`}
-                >
+                <div className="relative ring-2 ring-slate-700 rounded-full">
                   <img
                     src={participant.avatar}
                     alt={participant.username}
                     className="w-16 h-16 rounded-full"
                   />
-                  {participant.user_id === user.id && isMicOn && (
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-lime-400 rounded-full flex items-center justify-center">
-                      <Mic className="w-3 h-3 text-slate-950" strokeWidth={2} />
-                    </div>
-                  )}
                 </div>
                 <p className="text-xs text-slate-300 font-almarai max-w-[70px] truncate">
                   {participant.username}
@@ -227,6 +339,14 @@ const RoomPage = ({ user }) => {
               )}
             </Button>
           </div>
+
+          {remoteUsers.length > 0 && (
+            <div className="mt-4 text-center">
+              <p className="text-xs text-lime-400 font-almarai">
+                🔊 {remoteUsers.length} مستخدم متصل بالصوت
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Chat Messages */}

@@ -313,6 +313,49 @@ class KoraVerseAPITester:
 
         return True
 
+    def test_agora_token_generation(self):
+        """Test Agora token generation for voice functionality"""
+        print(f"\n🔍 Testing Agora Token Generation...")
+        
+        # Test token generation for voice room
+        token_request_data = {
+            'channel_name': 'general',
+            'uid': 123456
+        }
+        
+        response = self.make_request('POST', '/agora/token', token_request_data)
+        
+        if response and response.status_code == 200:
+            token_data = response.json()
+            required_fields = ['token', 'app_id', 'channel', 'uid']
+            
+            # Check if all required fields are present
+            if all(field in token_data for field in required_fields):
+                # Validate field values
+                if (token_data['app_id'] == 'b2c1cf7c621b48f2b1bf68cdf13f6bed' and
+                    token_data['channel'] == 'general' and
+                    token_data['uid'] == 123456 and
+                    token_data['token'] and len(token_data['token']) > 50):  # Agora tokens are typically long
+                    
+                    self.log_test("Agora Token Generation", True, 
+                                f"- Token generated successfully (length: {len(token_data['token'])})")
+                    return True
+                else:
+                    self.log_test("Agora Token Generation", False, 
+                                f"- Invalid token data: app_id={token_data.get('app_id')}, "
+                                f"channel={token_data.get('channel')}, uid={token_data.get('uid')}, "
+                                f"token_length={len(token_data.get('token', ''))}")
+                    return False
+            else:
+                missing_fields = [field for field in required_fields if field not in token_data]
+                self.log_test("Agora Token Generation", False, f"- Missing fields: {missing_fields}")
+                return False
+        else:
+            status = response.status_code if response else "No response"
+            error = response.json().get('detail', 'Unknown error') if response else "Connection error"
+            self.log_test("Agora Token Generation", False, f"- Status: {status}, Error: {error}")
+            return False
+
     def run_all_tests(self):
         """Run complete backend API test suite"""
         print("🚀 Starting KoraVerse Backend API Tests")
@@ -348,6 +391,10 @@ class KoraVerseAPITester:
         # Follow System Tests
         if not self.test_follow_system():
             print("\n❌ Follow system failed - continuing with other tests")
+
+        # Agora Voice Tests
+        if not self.test_agora_token_generation():
+            print("\n❌ Agora token generation failed - continuing with other tests")
 
         # Print final results
         print("\n" + "=" * 60)

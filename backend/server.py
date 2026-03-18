@@ -11,6 +11,8 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from jose import jwt, JWTError
 from passlib.context import CryptContext
+from agora_token_builder import RtcTokenBuilder
+import time
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -26,6 +28,7 @@ security = HTTPBearer()
 SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "koraverse_secret_key_change_in_production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
+AGORA_APP_ID = os.environ.get("AGORA_APP_ID", "")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -283,6 +286,41 @@ async def unfollow_user(user_id: str, current_user: User = Depends(get_current_u
 async def get_users(limit: int = 20):
     users = await db.users.find({}, {"_id": 0, "password": 0}).limit(limit).to_list(limit)
     return [User(**u) for u in users]
+
+class AgoraTokenRequest(BaseModel):
+    channel_name: str
+    uid: int
+
+class AgoraTokenResponse(BaseModel):
+    token: str
+    app_id: str
+    channel: str
+    uid: int
+
+@api_router.post("/agora/token", response_model=AgoraTokenResponse)
+async def generate_agora_token(request: AgoraTokenRequest, current_user: User = Depends(get_current_user)):
+    try:
+        expiration_time_in_seconds = 3600
+        current_timestamp = int(time.time())
+        privilege_expired_ts = current_timestamp + expiration_time_in_seconds
+        
+        token = RtcTokenBuilder.buildTokenWithUid(
+            appId=AGORA_APP_ID,
+            appCertificate="",
+            channelName=request.channel_name,
+            uid=request.uid,
+            role=1,
+            privilegeExpiredTs=privilege_expired_ts
+        )
+        
+        return AgoraTokenResponse(
+            token=token,
+            app_id=AGORA_APP_ID,
+            channel=request.channel_name,
+            uid=request.uid
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"فشل توليد Token: {str(e)}")
 
 app.include_router(api_router)
 
