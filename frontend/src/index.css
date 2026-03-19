@@ -189,3 +189,222 @@
   z-index: 9999;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* ============================================
+   Mobile Responsive Room Styles
+   ============================================ */
+
+/* Room page responsive container */
+.room-responsive {
+  width: 100%;
+  max-width: 100vw;
+  margin: 0 auto;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Safe area handling for notched devices */
+.room-header-safe {
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+
+.room-footer-safe {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+/* Room cards responsive grid */
+.room-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .room-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Speaker avatars responsive sizing */
+.speaker-avatar {
+  width: 56px;
+  height: 56px;
+}
+
+@media (min-width: 375px) {
+  .speaker-avatar {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+@media (min-width: 414px) {
+  .speaker-avatar {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+/* Reaction buttons responsive */
+.reaction-btn {
+  width: 44px;
+  height: 44px;
+}
+
+@media (min-width: 375px) {
+  .reaction-btn {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Chat area responsive */
+.chat-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Control bar responsive */
+.control-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+@media (min-width: 375px) {
+  .control-bar {
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Control buttons responsive */
+.control-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 375px) {
+  .control-btn {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* Message input responsive */
+.message-input-container {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.message-input {
+  flex: 1;
+  height: 44px;
+  min-height: 44px;
+}
+
+/* Dashboard room cards */
+.dashboard-room-card {
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-room-card:active {
+  transform: scale(0.98);
+}
+
+/* Room image responsive height */
+.room-card-image {
+  height: 160px;
+}
+
+@media (min-width: 375px) {
+  .room-card-image {
+    height: 180px;
+  }
+}
+
+@media (min-width: 414px) {
+  .room-card-image {
+    height: 200px;
+  }
+}
+
+/* Bottom nav responsive */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  z-index: 50;
+}
+
+/* Modal responsive */
+.modal-content {
+  max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);
+  overflow-y: auto;
+}
+
+/* Dropdown responsive positioning */
+.dropdown-menu {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+@media (max-height: 600px) {
+  .dropdown-menu {
+    max-height: 200px;
+  }
+}
+
+/* Landscape mode adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .speaker-avatar {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .control-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+  
+  .room-card-image {
+    height: 120px;
+  }
+}
+
+/* Small phones (iPhone SE, etc) */
+@media (max-width: 350px) {
+  .speaker-avatar {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .control-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+  
+  .reaction-btn {
+    width: 40px;
+    height: 40px;
+  }
+}

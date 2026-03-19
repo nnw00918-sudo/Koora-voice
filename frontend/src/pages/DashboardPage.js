@@ -288,10 +288,10 @@ const DashboardPage = ({ user, onLogout }) => {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-slate-900/70 backdrop-blur-md border border-slate-800 hover:border-lime-400/50 rounded-2xl overflow-hidden transition-all group"
+                  className="bg-slate-900/70 backdrop-blur-md border border-slate-800 hover:border-lime-400/50 rounded-xl sm:rounded-2xl overflow-hidden transition-all group dashboard-room-card"
                 >
                   {/* Cover Image */}
-                  <div className="relative h-48 overflow-hidden">
+                  <div className="relative h-36 sm:h-44 md:h-48 overflow-hidden room-card-image">
                     <img
                       src={room.image}
                       alt={room.title}
@@ -301,63 +301,63 @@ const DashboardPage = ({ user, onLogout }) => {
                     
                     {/* Live Badge */}
                     {room.is_live && !room.is_closed && (
-                      <div className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} flex items-center gap-2 bg-red-500 px-3 py-1.5 rounded-full`}>
-                        <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-                        <span className="text-white font-cairo font-bold text-sm">{t('live')}</span>
+                      <div className={`absolute top-2 sm:top-4 ${isRTL ? 'left-2 sm:left-4' : 'right-2 sm:right-4'} flex items-center gap-1.5 sm:gap-2 bg-red-500 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full`}>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white animate-pulse"></div>
+                        <span className="text-white font-cairo font-bold text-xs sm:text-sm">{t('live')}</span>
                       </div>
                     )}
                     
                     {/* Closed Badge */}
                     {room.is_closed && (
-                      <div className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} flex items-center gap-2 bg-orange-500 px-3 py-1.5 rounded-full`}>
-                        <Lock className="w-4 h-4 text-white" />
-                        <span className="text-white font-cairo font-bold text-sm">{isRTL ? 'مغلقة' : 'Closed'}</span>
+                      <div className={`absolute top-2 sm:top-4 ${isRTL ? 'left-2 sm:left-4' : 'right-2 sm:right-4'} flex items-center gap-1.5 sm:gap-2 bg-orange-500 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full`}>
+                        <Lock className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                        <span className="text-white font-cairo font-bold text-xs sm:text-sm">{isRTL ? 'مغلقة' : 'Closed'}</span>
                       </div>
                     )}
                     
                     {/* Participants Count */}
-                    <div className={`absolute top-4 ${isRTL ? 'right-4' : 'left-4'} flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full`}>
-                      <Users className="w-4 h-4 text-lime-400" strokeWidth={2} />
-                      <span className="text-white font-chivo font-bold">{room.participant_count || 0}</span>
+                    <div className={`absolute top-2 sm:top-4 ${isRTL ? 'right-2 sm:right-4' : 'left-2 sm:left-4'} flex items-center gap-1 sm:gap-1.5 bg-black/60 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full`}>
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4 text-lime-400" strokeWidth={2} />
+                      <span className="text-white font-chivo font-bold text-xs sm:text-sm">{room.participant_count || 0}</span>
                     </div>
                   </div>
 
                   {/* Content */}
-                  <div className="p-4">
+                  <div className="p-3 sm:p-4">
                     {/* Category */}
-                    <span className="inline-block px-3 py-1 rounded-full bg-lime-400/20 text-lime-400 text-xs font-cairo font-bold mb-2">
+                    <span className="inline-block px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-lime-400/20 text-lime-400 text-[10px] sm:text-xs font-cairo font-bold mb-1.5 sm:mb-2">
                       {room.category}
                     </span>
 
                     {/* Title */}
-                    <h3 className={`text-xl font-cairo font-black text-white mb-2 ${isRTL ? 'text-right' : 'text-left'} line-clamp-2`}>
+                    <h3 className={`text-base sm:text-lg md:text-xl font-cairo font-black text-white mb-1.5 sm:mb-2 ${isRTL ? 'text-right' : 'text-left'} line-clamp-2`}>
                       {room.title}
                     </h3>
 
                     {/* Description */}
-                    <p className={`text-sm text-slate-400 font-almarai mb-4 ${isRTL ? 'text-right' : 'text-left'} line-clamp-2`}>
+                    <p className={`text-xs sm:text-sm text-slate-400 font-almarai mb-3 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'} line-clamp-2`}>
                       {room.description}
                     </p>
 
                     {/* Host & Join Button */}
                     <div className={`flex items-center justify-between ${isRTL ? '' : 'flex-row-reverse'}`}>
                       {/* Host */}
-                      <div className={`flex items-center gap-2 ${isRTL ? '' : 'flex-row-reverse'}`}>
+                      <div className={`flex items-center gap-1.5 sm:gap-2 ${isRTL ? '' : 'flex-row-reverse'}`}>
                         <img
                           src={room.owner_avatar}
                           alt={room.owner_name}
-                          className="w-8 h-8 rounded-full ring-2 ring-lime-400"
+                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-full ring-2 ring-lime-400"
                         />
                         <div className={isRTL ? 'text-left' : 'text-right'}>
-                          <p className="text-xs text-slate-500 font-almarai">{t('host')}</p>
-                          <p className="text-sm text-white font-cairo font-bold">{room.owner_name}</p>
+                          <p className="text-[10px] sm:text-xs text-slate-500 font-almarai">{t('host')}</p>
+                          <p className="text-xs sm:text-sm text-white font-cairo font-bold">{room.owner_name}</p>
                         </div>
                       </div>
 
                       {/* Join Button */}
                       <Button
                         onClick={() => handleRoomClick(room.id)}
-                        className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-6 py-2 rounded-full"
+                        className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm"
                       >
                         {t('joinNow')}
                       </Button>
@@ -371,46 +371,46 @@ const DashboardPage = ({ user, onLogout }) => {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 z-50">
-        <div className={`max-w-[600px] mx-auto flex justify-around p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 z-50 bottom-nav">
+        <div className={`max-w-[600px] mx-auto flex justify-around py-2 sm:py-4 px-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex flex-col items-center gap-1 text-lime-400"
+            className="flex flex-col items-center gap-0.5 sm:gap-1 text-lime-400 min-w-[50px]"
           >
-            <Home className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('home')}</span>
+            <Home className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+            <span className="text-[10px] sm:text-xs font-almarai">{t('home')}</span>
           </button>
           <button
             data-testid="nav-threads-btn"
             onClick={() => navigate('/threads')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+            className="flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-sky-400 transition-colors min-w-[50px]"
           >
-            <MessageSquare className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('threads')}</span>
+            <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+            <span className="text-[10px] sm:text-xs font-almarai">{t('threads')}</span>
           </button>
           <button
             data-testid="nav-matches-btn"
             onClick={() => navigate('/matches')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+            className="flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-sky-400 transition-colors min-w-[50px]"
           >
-            <Trophy className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('matches')}</span>
+            <Trophy className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+            <span className="text-[10px] sm:text-xs font-almarai">{t('matches')}</span>
           </button>
           <button
             data-testid="nav-profile-btn"
             onClick={() => navigate('/profile')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+            className="flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-sky-400 transition-colors min-w-[50px]"
           >
-            <User className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('profile')}</span>
+            <User className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+            <span className="text-[10px] sm:text-xs font-almarai">{t('profile')}</span>
           </button>
           <button
             data-testid="nav-settings-btn"
             onClick={() => navigate('/settings')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+            className="flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-sky-400 transition-colors min-w-[50px]"
           >
-            <Settings className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('settings')}</span>
+            <Settings className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+            <span className="text-[10px] sm:text-xs font-almarai">{t('settings')}</span>
           </button>
         </div>
       </div>

@@ -577,21 +577,21 @@ const YallaLiveRoom = ({ user }) => {
   const listeners = participants.filter(p => p.seat_number === null);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] fixed inset-0 overflow-hidden room-container">
-      <div className="max-w-[500px] mx-auto h-screen flex flex-col relative">
+    <div className="bg-[#0a0a0a] fixed inset-0 overflow-hidden room-container">
+      <div className="w-full max-w-[500px] mx-auto h-[100dvh] flex flex-col relative room-responsive">
         
         {/* Header - Fixed Top Bar */}
-        <div className="bg-[#0a0a0a] px-4 py-3 flex items-center justify-between border-b border-gray-800/50 safe-area-top">
+        <div className="bg-[#0a0a0a] px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between border-b border-gray-800/50 room-header-safe">
           {/* Left: Participant Count */}
-          <div className="flex items-center gap-2 relative">
+          <div className="flex items-center gap-1 sm:gap-2 relative">
             <button 
               onClick={() => setShowConnectedList(!showConnectedList)}
-              className="flex items-center gap-2 bg-purple-600/20 border border-purple-500/40 rounded-full px-3 py-1.5 hover:bg-purple-600/30 transition-colors"
+              className="flex items-center gap-1 sm:gap-2 bg-purple-600/20 border border-purple-500/40 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 hover:bg-purple-600/30 transition-colors"
               data-testid="connected-count-btn"
             >
-              <Users className="w-4 h-4 text-purple-400" />
-              <span className="text-purple-300 font-bold text-sm font-chivo">{participants.length}</span>
-              <span className="text-purple-400/70 text-xs font-almarai">متصل</span>
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
+              <span className="text-purple-300 font-bold text-xs sm:text-sm font-chivo">{participants.length}</span>
+              <span className="text-purple-400/70 text-[10px] sm:text-xs font-almarai hidden xs:inline">متصل</span>
               <ChevronDown className={`w-3 h-3 text-purple-400 transition-transform ${showConnectedList ? 'rotate-180' : ''}`} />
             </button>
             
@@ -649,32 +649,32 @@ const YallaLiveRoom = ({ user }) => {
           </div>
 
           {/* Center: Room Name */}
-          <h1 className="text-white font-cairo font-bold text-lg truncate max-w-[150px]">{room?.title || room?.name || 'الغرفة'}</h1>
+          <h1 className="text-white font-cairo font-bold text-sm sm:text-lg truncate max-w-[100px] sm:max-w-[150px] text-center">{room?.title || room?.name || 'الغرفة'}</h1>
 
           {/* Right: Power & Close Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {isOwner && (
               <button
                 onClick={() => setShowRoomSettings(true)}
-                className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-600 flex items-center justify-center control-btn"
                 data-testid="room-settings-btn"
               >
-                <Power className="w-5 h-5 text-white" strokeWidth={2} />
+                <Power className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
               </button>
             )}
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center control-btn"
               data-testid="close-room-btn"
             >
-              <X className="w-5 h-5 text-white" strokeWidth={2} />
+              <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
             </button>
           </div>
         </div>
 
         {/* Speakers Section */}
-        <div className="px-4 py-4 bg-gradient-to-b from-[#0a0a0a] to-transparent">
-          <div className="flex justify-center gap-4 flex-wrap">
+        <div className="px-3 sm:px-4 py-3 sm:py-4 bg-gradient-to-b from-[#0a0a0a] to-transparent">
+          <div className="flex justify-center gap-2 sm:gap-4 flex-wrap">
             {speakers.map((seat, index) => (
               <motion.div
                 key={seat.seat_number}
@@ -689,7 +689,7 @@ const YallaLiveRoom = ({ user }) => {
                       setShowUserMenu(showUserMenu === seat.user.user_id ? null : seat.user.user_id);
                     }
                   }}
-                  className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all ${
+                  className={`w-14 h-14 sm:w-16 sm:h-16 speaker-avatar rounded-full overflow-hidden border-2 transition-all ${
                     seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
                       ? 'border-green-400 shadow-lg shadow-green-400/30'
                       : seat.user.is_muted
@@ -703,17 +703,17 @@ const YallaLiveRoom = ({ user }) => {
                 
                 {/* Mic Status */}
                 {seat.user.is_muted ? (
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center border-2 border-[#0a0a0a]">
-                    <MicOff className="w-3 h-3 text-white" strokeWidth={2} />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-red-500 rounded-full flex items-center justify-center border-2 border-[#0a0a0a]">
+                    <MicOff className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" strokeWidth={2} />
                   </div>
                 ) : (seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)) && (
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-[#0a0a0a]">
-                    <Mic className="w-3 h-3 text-white" strokeWidth={2} />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-[#0a0a0a]">
+                    <Mic className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" strokeWidth={2} />
                   </div>
                 )}
                 
                 {/* Username */}
-                <p className="text-[11px] text-gray-400 text-center mt-1 truncate max-w-[64px] font-almarai">
+                <p className="text-[10px] sm:text-[11px] text-gray-400 text-center mt-1 truncate max-w-[56px] sm:max-w-[64px] font-almarai">
                   {seat.user.username}
                 </p>
 
@@ -762,47 +762,47 @@ const YallaLiveRoom = ({ user }) => {
             
             {/* Empty Slots */}
             {speakers.length < 4 && Array.from({ length: Math.min(4 - speakers.length, 4) }).map((_, i) => (
-              <div key={`empty-${i}`} className="w-16 h-16 rounded-full bg-gray-800/30 border-2 border-dashed border-gray-700 flex items-center justify-center">
-                <Users className="w-6 h-6 text-gray-600" strokeWidth={1.5} />
+              <div key={`empty-${i}`} className="w-14 h-14 sm:w-16 sm:h-16 speaker-avatar rounded-full bg-gray-800/30 border-2 border-dashed border-gray-700 flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" strokeWidth={1.5} />
               </div>
             ))}
           </div>
           
           {/* Live Stats Bar */}
-          <div className="flex items-center justify-center gap-4 mt-3 pb-2">
-            <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 rounded-full px-3 py-1">
-              <Mic className="w-3.5 h-3.5 text-green-400" />
-              <span className="text-green-400 text-xs font-bold">{speakers.length}</span>
-              <span className="text-green-400/70 text-xs">متحدث</span>
+          <div className="flex items-center justify-center gap-2 sm:gap-4 mt-2 sm:mt-3 pb-2">
+            <div className="flex items-center gap-1 sm:gap-1.5 bg-green-500/10 border border-green-500/30 rounded-full px-2 sm:px-3 py-0.5 sm:py-1">
+              <Mic className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-400" />
+              <span className="text-green-400 text-[10px] sm:text-xs font-bold">{speakers.length}</span>
+              <span className="text-green-400/70 text-[10px] sm:text-xs">متحدث</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/30 rounded-full px-3 py-1">
-              <Headphones className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-blue-400 text-xs font-bold">{listeners.length}</span>
-              <span className="text-blue-400/70 text-xs">مستمع</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 bg-blue-500/10 border border-blue-500/30 rounded-full px-2 sm:px-3 py-0.5 sm:py-1">
+              <Headphones className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-400" />
+              <span className="text-blue-400 text-[10px] sm:text-xs font-bold">{listeners.length}</span>
+              <span className="text-blue-400/70 text-[10px] sm:text-xs">مستمع</span>
             </div>
           </div>
         </div>
 
         {/* Main Content - Chat & Reactions */}
-        <div className="flex-1 relative overflow-hidden">
+        <div className="flex-1 relative overflow-hidden chat-area">
           
           {/* Left Side - Reaction Buttons */}
-          <div className="absolute left-3 top-4 z-20 flex flex-col gap-3">
+          <div className="absolute left-2 sm:left-3 top-3 sm:top-4 z-20 flex flex-col gap-2 sm:gap-3">
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => sendReaction('❤️')}
-              className="w-12 h-12 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center hover:bg-red-500/30 transition-all"
+              className="w-10 h-10 sm:w-12 sm:h-12 reaction-btn rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center hover:bg-red-500/30 transition-all"
               data-testid="reaction-heart"
             >
-              <span className="text-2xl">❤️</span>
+              <span className="text-xl sm:text-2xl">❤️</span>
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setShowReactions(!showReactions)}
-              className="w-12 h-12 rounded-full bg-gray-800/60 border border-gray-700 flex items-center justify-center hover:bg-gray-700/60 transition-all"
+              className="w-10 h-10 sm:w-12 sm:h-12 reaction-btn rounded-full bg-gray-800/60 border border-gray-700 flex items-center justify-center hover:bg-gray-700/60 transition-all"
               data-testid="reaction-emoji"
             >
-              <span className="text-2xl">😊</span>
+              <span className="text-xl sm:text-2xl">😊</span>
             </motion.button>
             
             <AnimatePresence>
@@ -811,16 +811,16 @@ const YallaLiveRoom = ({ user }) => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="flex flex-col gap-2"
+                  className="flex flex-col gap-1.5 sm:gap-2"
                 >
                   {['🎉', '😮', '💯', '👏', '🔥', '😂'].map((emoji) => (
                     <motion.button
                       key={emoji}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => { sendReaction(emoji); setShowReactions(false); }}
-                      className="w-12 h-12 rounded-full bg-gray-800/60 border border-gray-700 flex items-center justify-center hover:bg-gray-700/60 transition-all"
+                      className="w-10 h-10 sm:w-12 sm:h-12 reaction-btn rounded-full bg-gray-800/60 border border-gray-700 flex items-center justify-center hover:bg-gray-700/60 transition-all"
                     >
-                      <span className="text-xl">{emoji}</span>
+                      <span className="text-lg sm:text-xl">{emoji}</span>
                     </motion.button>
                   ))}
                 </motion.div>
@@ -829,7 +829,7 @@ const YallaLiveRoom = ({ user }) => {
           </div>
 
           {/* Chat Messages */}
-          <div className="h-full overflow-y-auto px-4 pl-20 py-4 space-y-3 hide-scrollbar" style={{WebkitOverflowScrolling: 'touch'}}>
+          <div className="h-full overflow-y-auto px-3 sm:px-4 pl-14 sm:pl-20 py-3 sm:py-4 space-y-2 sm:space-y-3 hide-scrollbar" style={{WebkitOverflowScrolling: 'touch'}}>
 
             {messages.map((message) => {
               const isOwnMessage = message.user_id === user.id;
@@ -872,9 +872,9 @@ const YallaLiveRoom = ({ user }) => {
                         </>
                       )}
                     </div>
-                    <div className={`px-4 py-2 rounded-2xl max-w-[220px] ${
+                    <div className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl max-w-[180px] sm:max-w-[220px] ${
                       isOwnMessage ? 'bg-orange-500 text-white' : 'bg-gray-800 text-white'
-                    } font-almarai text-sm`}>
+                    } font-almarai text-xs sm:text-sm`}>
                       {message.content}
                     </div>
                   </div>
@@ -885,13 +885,13 @@ const YallaLiveRoom = ({ user }) => {
           </div>
 
           {/* Right Side - Q&A Area with user badge */}
-          <div className="absolute right-3 bottom-4 flex flex-col items-end gap-2">
+          <div className="absolute right-2 sm:right-3 bottom-3 sm:bottom-4 flex flex-col items-end gap-1.5 sm:gap-2">
             {participants.slice(0, 2).map((p, i) => (
               <motion.div key={p.user_id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }} className="flex items-center gap-2 bg-gray-800/60 rounded-full px-2 py-1">
-                <span className="text-xs text-gray-400 font-almarai">{p.username?.slice(0, 4)}</span>
-                <span className="text-[10px] bg-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded">#{i + 1}</span>
-                <img src={p.avatar} alt="" className="w-6 h-6 rounded-full" />
+                transition={{ delay: i * 0.1 }} className="flex items-center gap-1.5 sm:gap-2 bg-gray-800/60 rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1">
+                <span className="text-[10px] sm:text-xs text-gray-400 font-almarai">{p.username?.slice(0, 4)}</span>
+                <span className="text-[8px] sm:text-[10px] bg-purple-500/30 text-purple-300 px-1 sm:px-1.5 py-0.5 rounded">#{i + 1}</span>
+                <img src={p.avatar} alt="" className="w-5 h-5 sm:w-6 sm:h-6 rounded-full" />
               </motion.div>
             ))}
           </div>
@@ -899,24 +899,24 @@ const YallaLiveRoom = ({ user }) => {
 
         {/* Seat Requests Bar (Admin/Mod only) */}
         {canManageStage && seatRequests.length > 0 && (
-          <div className="bg-orange-500/10 border-t border-orange-500/30 px-4 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-orange-400 font-almarai">{seatRequests.length} طلب</span>
-              <p className="text-sm text-orange-200 font-cairo font-bold">طلبات الصعود</p>
+          <div className="bg-orange-500/10 border-t border-orange-500/30 px-3 sm:px-4 py-2 sm:py-3">
+            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+              <span className="text-xs sm:text-sm text-orange-400 font-almarai">{seatRequests.length} طلب</span>
+              <p className="text-xs sm:text-sm text-orange-200 font-cairo font-bold">طلبات الصعود</p>
             </div>
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar">
               {seatRequests.map((request) => (
-                <div key={request.request_id} className="flex-shrink-0 flex items-center gap-2 bg-gray-900/50 rounded-full px-3 py-2">
+                <div key={request.request_id} className="flex-shrink-0 flex items-center gap-1.5 sm:gap-2 bg-gray-900/50 rounded-full px-2 sm:px-3 py-1.5 sm:py-2">
                   <button onClick={() => handleRejectSeat(request.user_id)}
-                    className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center">
-                    <X className="w-4 h-4 text-white" />
+                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center">
+                    <X className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </button>
                   <button onClick={() => handleApproveSeat(request.user_id)}
-                    className="w-7 h-7 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-white" />
+                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center">
+                    <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </button>
-                  <span className="text-sm text-white font-almarai">{request.username}</span>
-                  <img src={request.avatar} alt={request.username} className="w-8 h-8 rounded-full" />
+                  <span className="text-xs sm:text-sm text-white font-almarai">{request.username}</span>
+                  <img src={request.avatar} alt={request.username} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full" />
                 </div>
               ))}
             </div>
@@ -924,17 +924,17 @@ const YallaLiveRoom = ({ user }) => {
         )}
 
         {/* Bottom Control Bar */}
-        <div className="bg-[#0a0a0a] border-t border-gray-800 px-4 py-3 safe-area-bottom">
-          <div className="flex items-center gap-3">
+        <div className="bg-[#0a0a0a] border-t border-gray-800 px-3 sm:px-4 py-2 sm:py-3 room-footer-safe">
+          <div className="flex items-center gap-2 sm:gap-3">
             
             {/* Gift Button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => { if (speakers.length > 0) { setSelectedUser(speakers[0].user); setShowGiftModal(true); } }}
-              className="w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center transition-colors"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center transition-colors flex-shrink-0"
               data-testid="gift-btn"
             >
-              <Gift className="w-6 h-6 text-white" strokeWidth={2} />
+              <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2} />
             </motion.button>
 
             {/* Request to Speak / Stage Controls */}
@@ -943,23 +943,23 @@ const YallaLiveRoom = ({ user }) => {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={toggleMic}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
                     isMicOn ? 'bg-green-500' : 'bg-gray-700'
                   }`}
                   data-testid="toggle-mic-btn"
                 >
-                  {isMicOn ? <Mic className="w-6 h-6 text-white" /> : <MicOff className="w-6 h-6 text-white" />}
+                  {isMicOn ? <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-white" /> : <MicOff className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={handleLeaveSeat}
-                  className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors"
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors flex-shrink-0"
                   data-testid="leave-stage-btn"
                 >
-                  <SignOut className="w-6 h-6 text-white" />
+                  <SignOut className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </motion.button>
-                <div className="flex-1 text-center">
-                  <span className="text-green-400 font-cairo font-bold text-sm">أنت على المنصة</span>
+                <div className="flex-1 text-center min-w-0">
+                  <span className="text-green-400 font-cairo font-bold text-xs sm:text-sm">أنت على المنصة</span>
                 </div>
               </>
             ) : (
@@ -967,36 +967,36 @@ const YallaLiveRoom = ({ user }) => {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsAudioMuted(!isAudioMuted)}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
                     isAudioMuted ? 'bg-red-500' : 'bg-orange-500'
                   }`}
                   data-testid="volume-btn"
                 >
-                  {isAudioMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
+                  {isAudioMuted ? <VolumeX className="w-5 h-5 sm:w-6 sm:h-6 text-white" /> : <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
                 </motion.button>
                 
                 {canJoinStageDirect ? (
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={handleJoinStageDirect}
-                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold transition-colors"
+                    className="flex-1 min-w-0 bg-gray-700 hover:bg-gray-600 text-white py-2.5 sm:py-3 rounded-full flex items-center justify-center gap-1.5 sm:gap-2 font-cairo font-bold text-xs sm:text-sm transition-colors"
                     data-testid="join-stage-direct-btn"
                   >
-                    <Hand className="w-5 h-5" />
-                    <span>Request to speak</span>
+                    <Hand className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <span className="truncate">طلب التحدث</span>
                   </motion.button>
                 ) : (
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={handleTakeSeat}
                     disabled={pendingRequest}
-                    className={`flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold transition-colors ${
+                    className={`flex-1 min-w-0 py-2.5 sm:py-3 rounded-full flex items-center justify-center gap-1.5 sm:gap-2 font-cairo font-bold text-xs sm:text-sm transition-colors ${
                       pendingRequest ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gray-700 hover:bg-gray-600 text-white'
                     }`}
                     data-testid="request-seat-btn"
                   >
-                    <Hand className="w-5 h-5" />
-                    <span>{pendingRequest ? 'طلبك قيد المراجعة...' : 'Request to speak'}</span>
+                    <Hand className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <span className="truncate">{pendingRequest ? 'قيد المراجعة...' : 'طلب التحدث'}</span>
                   </motion.button>
                 )}
               </>
@@ -1004,22 +1004,22 @@ const YallaLiveRoom = ({ user }) => {
           </div>
 
           {/* Message Input */}
-          <form onSubmit={handleSendMessage} className="flex gap-2 mt-3">
+          <form onSubmit={handleSendMessage} className="flex gap-2 mt-2 sm:mt-3">
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="إرسال رسالة..."
-              className="flex-1 bg-gray-800 border-gray-700 focus:border-purple-400 rounded-full text-white text-right font-almarai h-11"
+              className="flex-1 min-w-0 bg-gray-800 border-gray-700 focus:border-purple-400 rounded-full text-white text-right font-almarai h-10 sm:h-11 text-sm"
               dir="rtl"
               data-testid="message-input"
             />
             <Button
               type="submit"
               disabled={!newMessage.trim()}
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-11 h-11 p-0 flex-shrink-0"
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-10 h-10 sm:w-11 sm:h-11 p-0 flex-shrink-0"
               data-testid="send-message-btn"
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </form>
         </div>
