@@ -1627,6 +1627,131 @@ async def like_thread(
         )
         return {"liked": True}
 
+class ReplyCreate(BaseModel):
+    content: str
+
+@api_router.post("/threads/{thread_id}/reply")
+async def reply_to_thread(
+    thread_id: str,
+    reply_data: ReplyCreate,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Reply to a thread"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    thread = await db.threads.find_one({"id": thread_id})
+    if not thread:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    
+    if not reply_data.content.strip():
+        raise HTTPException(status_code=400, detail="Reply cannot be empty")
+    
+    reply_id = str(int(time.time() * 1000))
+    new_reply = {
+        "id": reply_id,
+        "parent_thread_id": thread_id,
+        "author_id": user_id,
+        "content": reply_data.content.strip(),
+        "likes_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.thread_replies.insert_one(new_reply)
+    
+    # Update thread replies count
+    await db.threads.update_one(
+        {"id": thread_id},
+        {"$inc": {"replies_count": 1}}
+    )
+    
+    # Add XP for replying
+    await db.users.update_one(
+        {"id": user_id},
+        {"$inc": {"xp": 2}}
+    )
+    
+    return {"message": "Reply added", "reply_id": reply_id}
+
+@api_router.get("/threads/{thread_id}/replies")
+async def get_thread_replies(
+    thread_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get replies for a thread"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    replies_cursor = db.thread_replies.find({"parent_thread_id": thread_id}).sort("created_at", 1).limit(100)
+    replies = await replies_cursor.to_list(length=100)
+    
+    result = []
+    for reply in replies:
+        author = await db.users.find_one({"id": reply["author_id"]})
+        if author:
+            result.append({
+                "id": reply["id"],
+                "content": reply["content"],
+                "author": {
+                    "id": author["id"],
+                    "username": author["username"],
+                    "name": author.get("name", author["username"]),
+                    "avatar": author.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={author['username']}")
+                },
+                "likes_count": reply.get("likes_count", 0),
+                "created_at": reply["created_at"]
+            })
+    
+    return {"replies": result}
+
+@api_router.post("/threads/{thread_id}/repost")
+async def repost_thread(
+    thread_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Repost a thread"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    thread = await db.threads.find_one({"id": thread_id})
+    if not thread:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    
+    # Check if already reposted
+    existing_repost = await db.thread_reposts.find_one({
+        "thread_id": thread_id,
+        "user_id": user_id
+    })
+    
+    if existing_repost:
+        # Un-repost
+        await db.thread_reposts.delete_one({"_id": existing_repost["_id"]})
+        await db.threads.update_one(
+            {"id": thread_id},
+            {"$inc": {"reposts_count": -1}}
+        )
+        return {"reposted": False}
+    else:
+        # Repost
+        await db.thread_reposts.insert_one({
+            "thread_id": thread_id,
+            "user_id": user_id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        await db.threads.update_one(
+            {"id": thread_id},
+            {"$inc": {"reposts_count": 1}}
+        )
+        return {"reposted": True}
+
 @api_router.delete("/threads/{thread_id}")
 async def delete_thread(
     thread_id: str,

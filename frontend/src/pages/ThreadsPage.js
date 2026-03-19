@@ -24,6 +24,13 @@ const ThreadsPage = ({ user }) => {
   const [activeTab, setActiveTab] = useState('forYou');
   const [showDeleteMenu, setShowDeleteMenu] = useState(null);
   
+  // Reply states
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [showReplies, setShowReplies] = useState(null);
+  const [threadReplies, setThreadReplies] = useState({});
+  const [loadingReplies, setLoadingReplies] = useState(false);
+  
   // Media states
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
@@ -72,6 +79,13 @@ const ThreadsPage = ({ user }) => {
       deleted: 'تم الحذف',
       everyone: 'الجميع يمكنهم الرد',
       drafts: 'مقالي',
+      replyTo: 'الرد على',
+      writeReply: 'اكتب ردك...',
+      sendReply: 'رد',
+      viewReplies: 'عرض الردود',
+      hideReplies: 'إخفاء الردود',
+      reposted: 'تمت إعادة النشر',
+      unreposted: 'تم إلغاء إعادة النشر',
     },
     en: {
       threads: 'Threads',
@@ -105,6 +119,13 @@ const ThreadsPage = ({ user }) => {
       deleted: 'Deleted',
       everyone: 'Everyone can reply',
       drafts: 'Drafts',
+      replyTo: 'Reply to',
+      writeReply: 'Write your reply...',
+      sendReply: 'Reply',
+      viewReplies: 'View replies',
+      hideReplies: 'Hide replies',
+      reposted: 'Reposted',
+      unreposted: 'Unreposted',
     }
   }[language];
 
@@ -245,6 +266,69 @@ const ThreadsPage = ({ user }) => {
     }
   };
 
+  const handleReply = async (threadId) => {
+    if (!replyContent.trim()) return;
+    try {
+      await axios.post(`${API}/threads/${threadId}/reply`, {
+        content: replyContent
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setReplyContent('');
+      setReplyingTo(null);
+      // Refresh replies
+      fetchReplies(threadId);
+      // Update thread replies count
+      setThreads(prev => prev.map(t => 
+        t.id === threadId ? { ...t, replies_count: (t.replies_count || 0) + 1 } : t
+      ));
+      toast.success(isRTL ? 'تم الرد' : 'Reply sent');
+    } catch (error) {
+      toast.error(isRTL ? 'فشل الرد' : 'Failed to reply');
+    }
+  };
+
+  const fetchReplies = async (threadId) => {
+    setLoadingReplies(true);
+    try {
+      const res = await axios.get(`${API}/threads/${threadId}/replies`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setThreadReplies(prev => ({ ...prev, [threadId]: res.data.replies || [] }));
+    } catch (error) {
+      console.error('Error fetching replies');
+    } finally {
+      setLoadingReplies(false);
+    }
+  };
+
+  const toggleReplies = (threadId) => {
+    if (showReplies === threadId) {
+      setShowReplies(null);
+    } else {
+      setShowReplies(threadId);
+      if (!threadReplies[threadId]) {
+        fetchReplies(threadId);
+      }
+    }
+  };
+
+  const handleRepost = async (threadId) => {
+    try {
+      const res = await axios.post(`${API}/threads/${threadId}/repost`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setThreads(prev => prev.map(t => 
+        t.id === threadId 
+          ? { ...t, reposted: res.data.reposted, reposts_count: res.data.reposted ? (t.reposts_count || 0) + 1 : (t.reposts_count || 1) - 1 }
+          : t
+      ));
+      toast.success(res.data.reposted ? txt.reposted : txt.unreposted);
+    } catch (error) {
+      console.error('Repost failed');
+    }
+  };
+
   const handleLike = async (threadId) => {
     try {
       await axios.post(`${API}/threads/${threadId}/like`, {}, {
@@ -373,11 +457,17 @@ const ThreadsPage = ({ user }) => {
             )}
             
             <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <button className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors">
+              <button 
+                onClick={() => setReplyingTo(replyingTo === thread.id ? null : thread.id)}
+                className={`flex items-center gap-1 transition-colors ${replyingTo === thread.id ? 'text-sky-400' : 'text-slate-500 hover:text-sky-400'}`}
+              >
                 <MessageCircle className="w-4 h-4" />
                 <span className="text-xs">{thread.replies_count || 0}</span>
               </button>
-              <button className="flex items-center gap-1 text-slate-500 hover:text-green-400 transition-colors">
+              <button 
+                onClick={() => handleRepost(thread.id)}
+                className={`flex items-center gap-1 transition-colors ${thread.reposted ? 'text-green-500' : 'text-slate-500 hover:text-green-400'}`}
+              >
                 <Repeat2 className="w-4 h-4" />
                 <span className="text-xs">{thread.reposts_count || 0}</span>
               </button>
@@ -395,6 +485,75 @@ const ThreadsPage = ({ user }) => {
                 <Bookmark className="w-4 h-4" />
               </button>
             </div>
+            
+            {/* Reply Input */}
+            {replyingTo === thread.id && (
+              <div className={`mt-4 pt-4 border-t border-slate-800 ${isRTL ? 'text-right' : 'text-left'}`}>
+                <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
+                  <div className="flex-1">
+                    <textarea
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      placeholder={txt.writeReply}
+                      className={`w-full bg-transparent text-white font-almarai outline-none resize-none text-sm ${isRTL ? 'text-right' : 'text-left'}`}
+                      rows={2}
+                      maxLength={280}
+                    />
+                    <div className={`flex items-center justify-between mt-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <span className="text-slate-500 text-xs">{replyContent.length}/280</span>
+                      <button
+                        onClick={() => handleReply(thread.id)}
+                        disabled={!replyContent.trim()}
+                        className="px-4 py-1.5 bg-sky-500 text-white text-sm font-cairo font-bold rounded-full disabled:opacity-50"
+                      >
+                        {txt.sendReply}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* View Replies Button */}
+            {thread.replies_count > 0 && (
+              <button
+                onClick={() => toggleReplies(thread.id)}
+                className={`mt-3 text-sky-400 text-sm font-almarai ${isRTL ? 'text-right w-full' : 'text-left'}`}
+              >
+                {showReplies === thread.id ? txt.hideReplies : `${txt.viewReplies} (${thread.replies_count})`}
+              </button>
+            )}
+            
+            {/* Replies List */}
+            {showReplies === thread.id && (
+              <div className="mt-3 space-y-3">
+                {loadingReplies ? (
+                  <div className="flex justify-center py-4">
+                    <div className="w-5 h-5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  threadReplies[thread.id]?.map((reply) => (
+                    <div key={reply.id} className={`flex gap-3 p-3 bg-slate-900/50 rounded-xl ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <img 
+                        src={reply.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.author?.username}`} 
+                        alt="" 
+                        className="w-8 h-8 rounded-full flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                          <span className="font-cairo font-bold text-white text-sm">{reply.author?.name || reply.author?.username}</span>
+                          <span className="text-slate-500 text-xs" dir="ltr">@{reply.author?.username}</span>
+                          <span className="text-slate-600 text-xs">·</span>
+                          <span className="text-slate-500 text-xs">{formatTime(reply.created_at)}</span>
+                        </div>
+                        <p className={`text-white font-almarai text-sm ${isRTL ? 'text-right' : 'text-left'}`}>{reply.content}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
         
