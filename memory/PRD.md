@@ -78,6 +78,18 @@ Building a football-themed social media application with voice chat, threads, us
 - **WebSocket sync** for read status
 - Created route templates in `/backend/routes/`
 
+### Phase 8: Stories Feature ✅ (March 19, 2026)
+- **Full Stories system** like Instagram/Snapchat
+- Stories auto-expire after 24 hours
+- Create stories with images or videos
+- Add captions to stories
+- View other users' stories
+- Story progress bar and auto-advance
+- See who viewed your story
+- Delete your own stories
+- Gradient ring for unviewed stories
+- Pause/play functionality
+
 ---
 
 ## Technical Architecture
@@ -151,18 +163,19 @@ Building a football-themed social media application with voice chat, threads, us
 ---
 
 ## P0 - Upcoming Tasks
-None - All priority tasks completed!
+None - All major features completed!
 
 ## P1 - Priority Backlog
 1. Complete server.py refactoring into route modules
 2. Add push notifications (PWA)
-3. Add message search functionality
+3. Add story reactions/replies
 
 ## P2 - Future Features
 1. User leveling/ranking system with badges
-2. Push notifications
-3. Media optimization
-4. Stories feature
+2. Push notifications (PWA)
+3. Story reactions and replies
+4. Highlights (save stories permanently)
+5. Audio/Video calls
 
 ---
 

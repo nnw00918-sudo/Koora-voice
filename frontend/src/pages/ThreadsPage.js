@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
+import Stories from '../components/Stories';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
   Share2, MoreHorizontal, Image, X, Video, MapPin, Smile, CalendarDays,
@@ -599,32 +600,35 @@ const ThreadsPage = ({ user }) => {
               {txt.threads}
             </h1>
           </div>
+        </div>
+        
+        {/* Stories */}
+        <Stories user={user} />
           
-          {/* Tabs */}
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('forYou')}
-              className={`flex-1 py-3 text-center font-cairo font-medium transition-colors relative ${
-                activeTab === 'forYou' ? 'text-white' : 'text-slate-500'
-              }`}
-            >
-              {txt.forYou}
-              {activeTab === 'forYou' && (
-                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-sky-500 rounded-full" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('following')}
-              className={`flex-1 py-3 text-center font-cairo font-medium transition-colors relative ${
-                activeTab === 'following' ? 'text-white' : 'text-slate-500'
-              }`}
-            >
-              {txt.following}
-              {activeTab === 'following' && (
-                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-sky-500 rounded-full" />
-              )}
-            </button>
-          </div>
+        {/* Tabs */}
+        <div className="flex border-b border-slate-800">
+          <button
+            onClick={() => setActiveTab('forYou')}
+            className={`flex-1 py-3 text-center font-cairo font-medium transition-colors relative ${
+              activeTab === 'forYou' ? 'text-white' : 'text-slate-500'
+            }`}
+          >
+            {txt.forYou}
+            {activeTab === 'forYou' && (
+              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-sky-500 rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('following')}
+            className={`flex-1 py-3 text-center font-cairo font-medium transition-colors relative ${
+              activeTab === 'following' ? 'text-white' : 'text-slate-500'
+            }`}
+          >
+            {txt.following}
+            {activeTab === 'following' && (
+              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-sky-500 rounded-full" />
+            )}
+          </button>
         </div>
 
         {/* Composer Button */}

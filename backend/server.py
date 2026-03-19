@@ -2402,6 +2402,210 @@ async def mark_notification_read(
     
     return {"message": "Notification marked as read"}
 
+# ==================== STORIES ====================
+
+@api_router.get("/stories")
+async def get_stories(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get stories from users the current user follows + own stories"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    current_user = await db.users.find_one({"id": user_id})
+    if not current_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get following list + self
+    following_ids = current_user.get("following", [])
+    user_ids = [user_id] + following_ids
+    
+    # Stories expire after 24 hours
+    cutoff_time = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    
+    # Get all active stories
+    stories_cursor = db.stories.find({
+        "author_id": {"$in": user_ids},
+        "created_at": {"$gt": cutoff_time}
+    }).sort("created_at", -1)
+    stories = await stories_cursor.to_list(length=500)
+    
+    # Get viewed stories by current user
+    viewed_cursor = db.story_views.find({"user_id": user_id})
+    viewed = await viewed_cursor.to_list(length=1000)
+    viewed_story_ids = {v["story_id"] for v in viewed}
+    
+    # Group stories by user
+    users_stories = {}
+    for story in stories:
+        author_id = story["author_id"]
+        if author_id not in users_stories:
+            author = await db.users.find_one({"id": author_id})
+            if author:
+                users_stories[author_id] = {
+                    "user": {
+                        "id": author["id"],
+                        "username": author["username"],
+                        "name": author.get("name", author["username"]),
+                        "avatar": author.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={author['username']}")
+                    },
+                    "stories": [],
+                    "has_unviewed": False,
+                    "is_own": author_id == user_id
+                }
+        
+        if author_id in users_stories:
+            story_data = {
+                "id": story["id"],
+                "media_url": story["media_url"],
+                "media_type": story.get("media_type", "image"),
+                "caption": story.get("caption", ""),
+                "created_at": story["created_at"],
+                "views_count": story.get("views_count", 0),
+                "viewed": story["id"] in viewed_story_ids
+            }
+            users_stories[author_id]["stories"].append(story_data)
+            if not story_data["viewed"]:
+                users_stories[author_id]["has_unviewed"] = True
+    
+    # Sort: own stories first, then unviewed, then viewed
+    result = list(users_stories.values())
+    result.sort(key=lambda x: (not x["is_own"], not x["has_unviewed"]))
+    
+    return {"stories": result}
+
+@api_router.post("/stories")
+async def create_story(
+    media_url: str = Form(...),
+    media_type: str = Form("image"),
+    caption: str = Form(""),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Create a new story"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    story_id = str(int(time.time() * 1000))
+    new_story = {
+        "id": story_id,
+        "author_id": user_id,
+        "media_url": media_url,
+        "media_type": media_type,
+        "caption": caption.strip()[:200] if caption else "",
+        "views_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.stories.insert_one(new_story)
+    
+    # Add XP for creating story
+    await db.users.update_one({"id": user_id}, {"$inc": {"xp": 3}})
+    
+    return {"message": "Story created", "story_id": story_id}
+
+@api_router.post("/stories/{story_id}/view")
+async def view_story(
+    story_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Mark a story as viewed"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    story = await db.stories.find_one({"id": story_id})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    # Don't count self views
+    if story["author_id"] == user_id:
+        return {"message": "Own story"}
+    
+    # Check if already viewed
+    existing_view = await db.story_views.find_one({"story_id": story_id, "user_id": user_id})
+    if existing_view:
+        return {"message": "Already viewed"}
+    
+    # Add view
+    await db.story_views.insert_one({
+        "story_id": story_id,
+        "user_id": user_id,
+        "viewed_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Increment view count
+    await db.stories.update_one({"id": story_id}, {"$inc": {"views_count": 1}})
+    
+    return {"message": "Story viewed"}
+
+@api_router.delete("/stories/{story_id}")
+async def delete_story(
+    story_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Delete a story"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    story = await db.stories.find_one({"id": story_id})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    if story["author_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.stories.delete_one({"id": story_id})
+    await db.story_views.delete_many({"story_id": story_id})
+    
+    return {"message": "Story deleted"}
+
+@api_router.get("/stories/{story_id}/viewers")
+async def get_story_viewers(
+    story_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get list of users who viewed a story (only for story owner)"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    story = await db.stories.find_one({"id": story_id})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    if story["author_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    views_cursor = db.story_views.find({"story_id": story_id}).sort("viewed_at", -1)
+    views = await views_cursor.to_list(length=100)
+    
+    viewers = []
+    for view in views:
+        viewer = await db.users.find_one({"id": view["user_id"]})
+        if viewer:
+            viewers.append({
+                "id": viewer["id"],
+                "username": viewer["username"],
+                "name": viewer.get("name", viewer["username"]),
+                "avatar": viewer.get("avatar"),
+                "viewed_at": view["viewed_at"]
+            })
+    
+    return {"viewers": viewers, "total": len(viewers)}
+
 # Helper function to create notification
 async def create_notification(user_id: str, notif_type: str, from_user_id: str, thread_id: str = None, message: str = None):
     """Create a notification and send via WebSocket if user is online"""
