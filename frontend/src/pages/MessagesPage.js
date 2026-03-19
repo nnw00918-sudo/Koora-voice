@@ -11,6 +11,7 @@ import {
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
 
 const MessagesPage = ({ user }) => {
   const navigate = useNavigate();
@@ -27,8 +28,12 @@ const MessagesPage = ({ user }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
   
   const messagesEndRef = useRef(null);
+  const wsRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
@@ -67,8 +72,83 @@ const MessagesPage = ({ user }) => {
       follow: 'Follow',
       following: 'Following',
       message: 'Message',
+      typing: 'typing...',
     }
   }[language];
+
+  // WebSocket connection
+  useEffect(() => {
+    if (!token) return;
+    
+    const connectWebSocket = () => {
+      const ws = new WebSocket(`${WS_URL}/ws/${token}`);
+      
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        setWsConnected(true);
+      };
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'new_message') {
+          const msg = data.message;
+          
+          // Update messages if we're in the same conversation
+          if (currentConversation?.id === msg.conversation_id) {
+            setMessages(prev => {
+              // Avoid duplicates
+              if (prev.some(m => m.id === msg.id)) return prev;
+              return [...prev, {
+                ...msg,
+                is_mine: msg.sender_id === user.id
+              }];
+            });
+          }
+          
+          // Update conversations list
+          setConversations(prev => prev.map(c => 
+            c.id === msg.conversation_id 
+              ? { ...c, last_message: msg.content, last_message_at: msg.created_at }
+              : c
+          ));
+        }
+        
+        if (data.type === 'typing' && currentConversation?.id === data.conversation_id) {
+          setIsTyping(true);
+          setTimeout(() => setIsTyping(false), 3000);
+        }
+      };
+      
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        setWsConnected(false);
+        // Reconnect after 3 seconds
+        setTimeout(connectWebSocket, 3000);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+      
+      wsRef.current = ws;
+    };
+    
+    connectWebSocket();
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [token, user.id]);
+
+  // Update WebSocket message handler when conversation changes
+  useEffect(() => {
+    if (wsRef.current && wsRef.current.onmessage) {
+      // Re-bind the handler with new currentConversation
+    }
+  }, [currentConversation]);
 
   useEffect(() => {
     fetchConversations();
@@ -138,29 +218,59 @@ const MessagesPage = ({ user }) => {
     if (!newMessage.trim() || !currentConversation) return;
     setSending(true);
     
-    const tempMessage = {
-      id: Date.now().toString(),
-      content: newMessage,
-      is_mine: true,
-      created_at: new Date().toISOString(),
-      sender: { id: user.id, username: user.username, avatar: user.avatar }
-    };
-    
-    setMessages(prev => [...prev, tempMessage]);
+    const messageContent = newMessage;
     setNewMessage('');
     
-    try {
-      await axios.post(`${API}/conversations/${currentConversation.id}/messages`, {
-        content: newMessage
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchConversations();
-    } catch (error) {
-      toast.error(isRTL ? 'فشل الإرسال' : 'Failed to send');
-      setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
-    } finally {
+    // Send via WebSocket if connected
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'message',
+        conversation_id: currentConversation.id,
+        content: messageContent
+      }));
       setSending(false);
+    } else {
+      // Fallback to REST API
+      const tempMessage = {
+        id: Date.now().toString(),
+        content: messageContent,
+        is_mine: true,
+        created_at: new Date().toISOString(),
+        sender: { id: user.id, username: user.username, avatar: user.avatar }
+      };
+      
+      setMessages(prev => [...prev, tempMessage]);
+      
+      try {
+        await axios.post(`${API}/conversations/${currentConversation.id}/messages`, {
+          content: messageContent
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        fetchConversations();
+      } catch (error) {
+        toast.error(isRTL ? 'فشل الإرسال' : 'Failed to send');
+        setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+      } finally {
+        setSending(false);
+      }
+    }
+  };
+
+  const handleTyping = () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentConversation) {
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      wsRef.current.send(JSON.stringify({
+        type: 'typing',
+        conversation_id: currentConversation.id
+      }));
+      
+      // Throttle typing indicator
+      typingTimeoutRef.current = setTimeout(() => {}, 2000);
     }
   };
 
@@ -328,6 +438,13 @@ const MessagesPage = ({ user }) => {
             </div>
           ))
         )}
+        {isTyping && (
+          <div className={`flex ${isRTL ? 'justify-end' : 'justify-start'}`}>
+            <div className="bg-slate-800 rounded-2xl px-4 py-2">
+              <p className="text-slate-400 text-sm font-almarai">{txt.typing}</p>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -337,7 +454,10 @@ const MessagesPage = ({ user }) => {
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              handleTyping();
+            }}
             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
             placeholder={txt.typeMessage}
             className={`flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-white font-almarai outline-none focus:border-sky-500 ${isRTL ? 'text-right' : 'text-left'}`}

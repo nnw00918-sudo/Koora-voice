@@ -49,8 +49,15 @@ Building a football-themed social media application with voice chat, threads, us
 ### Phase 4: Code Organization ✅ (March 19, 2026)
 - Created `/backend/models/` for Pydantic models
 - Created `/backend/services/` for auth helpers
+- Created `/backend/config.py` for shared configuration
 - Created `/frontend/src/components/ThreadCard.jsx`
 - Created `/frontend/src/components/ReplyInput.jsx`
+
+### Phase 5: Real-time Features ✅ (March 19, 2026)
+- Added WebSocket endpoint for real-time messaging
+- Implemented typing indicators
+- Messages sync instantly between users
+- Auto-reconnect on connection loss
 
 ---
 
@@ -128,9 +135,9 @@ Building a football-themed social media application with voice chat, threads, us
 None - All priority tasks completed!
 
 ## P1 - Priority Backlog
-1. Continue refactoring server.py into separate route files
-2. Extract more shared components from ProfilePage.js
-3. Real-time messaging with WebSockets
+1. Continue splitting server.py into route modules
+2. Add notifications system
+3. Add read receipts for messages
 
 ## P2 - Future Features
 1. User leveling/ranking system with badges

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, File, Form, UploadFile
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, File, Form, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -9,12 +9,13 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime, timezone, timedelta
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from agora_token_builder import RtcTokenBuilder
 import time
+import json
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -32,6 +33,30 @@ db = client[os.environ['DB_NAME']]
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
+
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+    
+    async def connect(self, websocket: WebSocket, user_id: str):
+        await websocket.accept()
+        self.active_connections[user_id] = websocket
+    
+    def disconnect(self, user_id: str):
+        if user_id in self.active_connections:
+            del self.active_connections[user_id]
+    
+    async def send_personal_message(self, message: dict, user_id: str):
+        if user_id in self.active_connections:
+            await self.active_connections[user_id].send_json(message)
+    
+    async def broadcast_to_users(self, message: dict, user_ids: List[str]):
+        for user_id in user_ids:
+            if user_id in self.active_connections:
+                await self.active_connections[user_id].send_json(message)
+
+ws_manager = ConnectionManager()
 
 SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "koraverse_secret_key_change_in_production")
 ALGORITHM = "HS256"
@@ -2268,3 +2293,105 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+# ==================== WEBSOCKET ENDPOINTS ====================
+
+@app.websocket("/ws/{token}")
+async def websocket_endpoint(websocket: WebSocket, token: str):
+    """WebSocket endpoint for real-time messaging"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        await websocket.close(code=4001)
+        return
+    
+    await ws_manager.connect(websocket, user_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            
+            if data.get("type") == "message":
+                conversation_id = data.get("conversation_id")
+                content = data.get("content", "").strip()
+                
+                if not content or not conversation_id:
+                    continue
+                
+                # Get conversation to find recipient
+                conversation = await db.conversations.find_one({"id": conversation_id})
+                if not conversation:
+                    continue
+                
+                # Find the other participant
+                other_user_id = None
+                for p_id in conversation.get("participants", []):
+                    if p_id != user_id:
+                        other_user_id = p_id
+                        break
+                
+                # Save message to database
+                message_id = str(int(time.time() * 1000))
+                new_message = {
+                    "id": message_id,
+                    "conversation_id": conversation_id,
+                    "sender_id": user_id,
+                    "content": content,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "read": False
+                }
+                await db.messages.insert_one(new_message)
+                
+                # Update conversation
+                await db.conversations.update_one(
+                    {"id": conversation_id},
+                    {"$set": {
+                        "last_message": content,
+                        "last_message_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                
+                # Get sender info
+                sender = await db.users.find_one({"id": user_id})
+                
+                # Prepare message for broadcast
+                message_data = {
+                    "type": "new_message",
+                    "message": {
+                        "id": message_id,
+                        "conversation_id": conversation_id,
+                        "sender_id": user_id,
+                        "sender": {
+                            "id": sender["id"],
+                            "username": sender["username"],
+                            "name": sender.get("name", sender["username"]),
+                            "avatar": sender.get("avatar")
+                        } if sender else None,
+                        "content": content,
+                        "created_at": new_message["created_at"]
+                    }
+                }
+                
+                # Send to both sender and recipient
+                await ws_manager.send_personal_message(message_data, user_id)
+                if other_user_id:
+                    await ws_manager.send_personal_message(message_data, other_user_id)
+            
+            elif data.get("type") == "typing":
+                conversation_id = data.get("conversation_id")
+                conversation = await db.conversations.find_one({"id": conversation_id})
+                if conversation:
+                    for p_id in conversation.get("participants", []):
+                        if p_id != user_id:
+                            await ws_manager.send_personal_message({
+                                "type": "typing",
+                                "conversation_id": conversation_id,
+                                "user_id": user_id
+                            }, p_id)
+                            
+    except WebSocketDisconnect:
+        ws_manager.disconnect(user_id)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        ws_manager.disconnect(user_id)
+
