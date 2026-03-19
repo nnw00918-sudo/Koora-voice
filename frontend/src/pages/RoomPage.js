@@ -70,6 +70,7 @@ const YallaLiveRoom = ({ user }) => {
   const [showUserMenu, setShowUserMenu] = useState(null);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [selectedPromoteUser, setSelectedPromoteUser] = useState(null);
+  const [showParticipants, setShowParticipants] = useState(false);
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const agoraClient = useRef(null);
@@ -725,10 +726,15 @@ const YallaLiveRoom = ({ user }) => {
           
           <h2 className="text-white font-cairo font-bold text-sm">المحادثة المباشرة</h2>
           
-          <div className="flex items-center gap-2 bg-slate-800 rounded-full px-3 py-1.5">
+          {/* Participants Button - Clickable for Owner */}
+          <button
+            onClick={() => isOwner && setShowParticipants(true)}
+            className={`flex items-center gap-2 bg-slate-800 rounded-full px-3 py-1.5 ${isOwner ? 'hover:bg-slate-700 cursor-pointer' : ''}`}
+          >
             <Users className="w-4 h-4 text-slate-400" strokeWidth={2} />
             <span className="text-sm text-white font-chivo">{participants.length}</span>
-          </div>
+            {isOwner && <Settings className="w-3 h-3 text-purple-400" strokeWidth={2} />}
+          </button>
         </div>
 
         {/* Main Content Area - Chat + Reactions */}
@@ -1176,6 +1182,139 @@ const YallaLiveRoom = ({ user }) => {
                 >
                   إلغاء
                 </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Participants Modal (Owner Only) */}
+        <AnimatePresence>
+          {showParticipants && isOwner && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50"
+              onClick={() => setShowParticipants(false)}
+            >
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="absolute bottom-0 left-0 right-0 bg-[#1a1a1a] rounded-t-3xl max-h-[80vh] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="sticky top-0 bg-[#1a1a1a] p-4 border-b border-slate-800 flex items-center justify-between">
+                  <button
+                    onClick={() => setShowParticipants(false)}
+                    className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400"
+                  >
+                    <X className="w-5 h-5" strokeWidth={2} />
+                  </button>
+                  <h3 className="text-white font-cairo font-bold text-lg">المشاركين ({participants.length})</h3>
+                  <div className="w-8" />
+                </div>
+
+                {/* Participants List */}
+                <div className="overflow-y-auto max-h-[calc(80vh-70px)] p-4 space-y-2">
+                  {participants.map((participant) => {
+                    const isOnStage = participant.seat_number !== null;
+                    const isSelf = participant.user_id === user.id;
+                    
+                    return (
+                      <div
+                        key={participant.user_id}
+                        className="bg-slate-800/50 rounded-xl p-3 flex items-center gap-3"
+                      >
+                        <img
+                          src={participant.avatar}
+                          alt={participant.username}
+                          className={`w-12 h-12 rounded-full ${isOnStage ? 'ring-2 ring-lime-400' : ''}`}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-white font-cairo font-bold text-sm">{participant.username}</p>
+                            {isOnStage && (
+                              <span className="text-[10px] bg-lime-500/20 text-lime-400 px-2 py-0.5 rounded-full font-almarai">
+                                على المنصة
+                              </span>
+                            )}
+                            {participant.role === 'owner' && (
+                              <Crown className="w-4 h-4 text-purple-400" strokeWidth={2} />
+                            )}
+                            {participant.role === 'admin' && (
+                              <Shield className="w-4 h-4 text-red-400" strokeWidth={2} />
+                            )}
+                            {participant.role === 'mod' && (
+                              <Star className="w-4 h-4 text-yellow-400" strokeWidth={2} />
+                            )}
+                          </div>
+                          <p className="text-slate-500 text-xs font-almarai">
+                            {participant.role === 'owner' ? 'أونر' : 
+                             participant.role === 'admin' ? 'أدمن' : 
+                             participant.role === 'mod' ? 'مود' : 'مستخدم'}
+                          </p>
+                        </div>
+                        
+                        {/* Control Buttons - Not for self or other owners */}
+                        {!isSelf && participant.role !== 'owner' && (
+                          <div className="flex gap-2">
+                            {/* Mute/Unmute (only if on stage) */}
+                            {isOnStage && (
+                              participant.is_muted ? (
+                                <button
+                                  onClick={() => handleUnmuteUser(participant.user_id)}
+                                  className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 hover:bg-green-500/30 transition-colors"
+                                >
+                                  <Mic className="w-5 h-5" strokeWidth={2} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleMuteUser(participant.user_id)}
+                                  className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 hover:bg-yellow-500/30 transition-colors"
+                                >
+                                  <MicOff className="w-5 h-5" strokeWidth={2} />
+                                </button>
+                              )
+                            )}
+                            
+                            {/* Kick */}
+                            <button
+                              onClick={() => handleKickUser(participant.user_id)}
+                              className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/30 transition-colors"
+                            >
+                              <UserX className="w-5 h-5" strokeWidth={2} />
+                            </button>
+                            
+                            {/* Promote */}
+                            <button
+                              onClick={() => {
+                                setSelectedPromoteUser(participant);
+                                setShowPromoteModal(true);
+                                setShowParticipants(false);
+                              }}
+                              className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 hover:bg-purple-500/30 transition-colors"
+                            >
+                              <Shield className="w-5 h-5" strokeWidth={2} />
+                            </button>
+                            
+                            {/* Invite to Stage (if not on stage) */}
+                            {!isOnStage && (
+                              <button
+                                onClick={() => handleInviteUser(participant.user_id, participant.username)}
+                                className="w-10 h-10 rounded-full bg-lime-500/20 flex items-center justify-center text-lime-400 hover:bg-lime-500/30 transition-colors"
+                              >
+                                <Hand className="w-5 h-5" strokeWidth={2} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </motion.div>
             </motion.div>
           )}
