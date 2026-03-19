@@ -1,0 +1,457 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { useLanguage } from '../contexts/LanguageContext';
+import { 
+  Home, Trophy, Settings, MessageSquare, User, ArrowRight, ArrowLeft,
+  Search, Send, Check, CheckCheck, MoreHorizontal, X, MessageCircle
+} from 'lucide-react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const MessagesPage = ({ user }) => {
+  const navigate = useNavigate();
+  const { conversationId } = useParams();
+  const { language, t } = useLanguage();
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState(conversationId ? 'chat' : 'list');
+  const [currentConversation, setCurrentConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  
+  const messagesEndRef = useRef(null);
+  const isRTL = language === 'ar';
+  const token = localStorage.getItem('token');
+  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+
+  const txt = {
+    ar: {
+      messages: 'الرسائل',
+      searchUsers: 'ابحث عن مستخدم...',
+      noConversations: 'لا توجد محادثات',
+      startChat: 'ابدأ محادثة جديدة',
+      typeMessage: 'اكتب رسالة...',
+      you: 'أنت',
+      noMessages: 'لا توجد رسائل',
+      sayHi: 'قل مرحباً!',
+      online: 'متصل',
+      lastSeen: 'آخر ظهور',
+      search: 'بحث',
+      noResults: 'لا توجد نتائج',
+      follow: 'متابعة',
+      following: 'متابَع',
+      message: 'رسالة',
+    },
+    en: {
+      messages: 'Messages',
+      searchUsers: 'Search users...',
+      noConversations: 'No conversations',
+      startChat: 'Start a new chat',
+      typeMessage: 'Type a message...',
+      you: 'You',
+      noMessages: 'No messages yet',
+      sayHi: 'Say hi!',
+      online: 'Online',
+      lastSeen: 'Last seen',
+      search: 'Search',
+      noResults: 'No results',
+      follow: 'Follow',
+      following: 'Following',
+      message: 'Message',
+    }
+  }[language];
+
+  useEffect(() => {
+    fetchConversations();
+    if (conversationId) {
+      loadConversation(conversationId);
+    }
+  }, [conversationId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const fetchConversations = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API}/conversations`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversations(res.data.conversations || []);
+    } catch (error) {
+      console.error('Error fetching conversations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadConversation = async (convoId) => {
+    try {
+      const res = await axios.get(`${API}/conversations/${convoId}/messages`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessages(res.data.messages || []);
+      
+      // Find conversation details
+      const convo = conversations.find(c => c.id === convoId);
+      if (convo) {
+        setCurrentConversation(convo);
+      }
+      setCurrentView('chat');
+    } catch (error) {
+      console.error('Error loading conversation');
+    }
+  };
+
+  const startConversation = async (otherUserId) => {
+    try {
+      const res = await axios.post(`${API}/conversations/${otherUserId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const convoId = res.data.conversation_id;
+      setShowSearch(false);
+      setSearchQuery('');
+      setSearchResults([]);
+      navigate(`/messages/${convoId}`);
+      loadConversation(convoId);
+      fetchConversations();
+    } catch (error) {
+      toast.error(isRTL ? 'فشل بدء المحادثة' : 'Failed to start conversation');
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !currentConversation) return;
+    setSending(true);
+    
+    const tempMessage = {
+      id: Date.now().toString(),
+      content: newMessage,
+      is_mine: true,
+      created_at: new Date().toISOString(),
+      sender: { id: user.id, username: user.username, avatar: user.avatar }
+    };
+    
+    setMessages(prev => [...prev, tempMessage]);
+    setNewMessage('');
+    
+    try {
+      await axios.post(`${API}/conversations/${currentConversation.id}/messages`, {
+        content: newMessage
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchConversations();
+    } catch (error) {
+      toast.error(isRTL ? 'فشل الإرسال' : 'Failed to send');
+      setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const searchUsers = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const res = await axios.get(`${API}/users/search?q=${encodeURIComponent(query)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSearchResults(res.data.users || []);
+    } catch (error) {
+      console.error('Search error');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) searchUsers(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return isRTL ? 'الآن' : 'now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}${isRTL ? 'د' : 'm'}`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}${isRTL ? 'س' : 'h'}`;
+    return date.toLocaleDateString();
+  };
+
+  // Conversations List View
+  const ConversationsList = () => (
+    <div className="min-h-screen bg-black pb-24">
+      {/* Header */}
+      <div className="sticky top-0 bg-black/95 backdrop-blur-xl border-b border-slate-800 z-10">
+        <div className={`flex items-center justify-between p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <h1 className="text-xl font-cairo font-bold text-white">{txt.messages}</h1>
+          <button 
+            onClick={() => setShowSearch(true)}
+            className="w-10 h-10 flex items-center justify-center text-white hover:bg-slate-800 rounded-full"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Conversations */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : conversations.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 px-4">
+          <div className="w-20 h-20 rounded-full bg-slate-900 flex items-center justify-center mb-4">
+            <MessageCircle className="w-10 h-10 text-slate-700" />
+          </div>
+          <h3 className="text-white font-cairo font-bold text-lg mb-2">{txt.noConversations}</h3>
+          <button 
+            onClick={() => setShowSearch(true)}
+            className="text-sky-400 font-almarai"
+          >
+            {txt.startChat}
+          </button>
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-800">
+          {conversations.map((convo) => (
+            <button
+              key={convo.id}
+              onClick={() => {
+                setCurrentConversation(convo);
+                navigate(`/messages/${convo.id}`);
+                loadConversation(convo.id);
+              }}
+              className={`w-full p-4 hover:bg-slate-900/50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
+            >
+              <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="relative">
+                  <img src={convo.user.avatar} alt="" className="w-12 h-12 rounded-full" />
+                  {convo.unread_count > 0 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-sky-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">{convo.unread_count}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <span className="font-cairo font-bold text-white">{convo.user.name}</span>
+                    <span className="text-slate-500 text-xs">{formatTime(convo.last_message?.created_at)}</span>
+                  </div>
+                  <p className={`text-slate-400 text-sm truncate ${isRTL ? 'text-right' : 'text-left'}`}>
+                    {convo.last_message?.is_mine && <span className="text-slate-500">{txt.you}: </span>}
+                    {convo.last_message?.content || ''}
+                  </p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Bottom Navigation */}
+      <BottomNav />
+    </div>
+  );
+
+  // Chat View
+  const ChatView = () => (
+    <div className="min-h-screen bg-black flex flex-col">
+      {/* Header */}
+      <div className="sticky top-0 bg-black/95 backdrop-blur-xl border-b border-slate-800 z-10">
+        <div className={`flex items-center gap-3 p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <button 
+            onClick={() => {
+              setCurrentView('list');
+              navigate('/messages');
+            }}
+            className="w-10 h-10 flex items-center justify-center"
+          >
+            <BackIcon className="w-6 h-6 text-white" />
+          </button>
+          {currentConversation && (
+            <button 
+              onClick={() => navigate(`/user/${currentConversation.user.id}`)}
+              className={`flex items-center gap-3 flex-1 ${isRTL ? 'flex-row-reverse' : ''}`}
+            >
+              <img src={currentConversation.user.avatar} alt="" className="w-10 h-10 rounded-full" />
+              <div className={`${isRTL ? 'text-right' : 'text-left'}`}>
+                <p className="font-cairo font-bold text-white">{currentConversation.user.name}</p>
+                <p className="text-slate-500 text-xs" dir="ltr">@{currentConversation.user.username}</p>
+              </div>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <p className="text-slate-500 font-almarai">{txt.noMessages}</p>
+            <p className="text-slate-600 text-sm">{txt.sayHi}</p>
+          </div>
+        ) : (
+          messages.map((msg) => (
+            <div key={msg.id} className={`flex ${msg.is_mine ? (isRTL ? 'justify-start' : 'justify-end') : (isRTL ? 'justify-end' : 'justify-start')}`}>
+              <div className={`max-w-[75%] ${msg.is_mine ? 'order-1' : 'order-2'}`}>
+                <div className={`rounded-2xl px-4 py-2 ${msg.is_mine ? 'bg-sky-500 text-white' : 'bg-slate-800 text-white'}`}>
+                  <p className="font-almarai text-sm">{msg.content}</p>
+                </div>
+                <p className={`text-slate-600 text-xs mt-1 ${msg.is_mine ? (isRTL ? 'text-left' : 'text-right') : (isRTL ? 'text-right' : 'text-left')}`}>
+                  {formatTime(msg.created_at)}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="border-t border-slate-800 p-4 bg-black">
+        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            placeholder={txt.typeMessage}
+            className={`flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-white font-almarai outline-none focus:border-sky-500 ${isRTL ? 'text-right' : 'text-left'}`}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!newMessage.trim() || sending}
+            className="w-10 h-10 bg-sky-500 rounded-full flex items-center justify-center disabled:opacity-50"
+          >
+            <Send className={`w-5 h-5 text-white ${isRTL ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Search Modal
+  const SearchModal = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black z-50"
+    >
+      <div className="sticky top-0 bg-black border-b border-slate-800 p-4">
+        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <button onClick={() => { setShowSearch(false); setSearchQuery(''); setSearchResults([]); }}>
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <div className="flex-1 relative">
+            <Search className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 ${isRTL ? 'right-3' : 'left-3'}`} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={txt.searchUsers}
+              className={`w-full bg-slate-900 border border-slate-700 rounded-full py-2 text-white font-almarai outline-none focus:border-sky-500 ${isRTL ? 'pr-10 pl-4 text-right' : 'pl-10 pr-4 text-left'}`}
+              autoFocus
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="divide-y divide-slate-800">
+        {searchLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : searchResults.length === 0 && searchQuery ? (
+          <p className="text-center text-slate-500 py-10 font-almarai">{txt.noResults}</p>
+        ) : (
+          searchResults.map((u) => (
+            <div key={u.id} className={`flex items-center justify-between p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <button 
+                onClick={() => navigate(`/user/${u.id}`)}
+                className={`flex items-center gap-3 flex-1 ${isRTL ? 'flex-row-reverse' : ''}`}
+              >
+                <img src={u.avatar} alt="" className="w-12 h-12 rounded-full" />
+                <div className={`${isRTL ? 'text-right' : 'text-left'}`}>
+                  <p className="font-cairo font-bold text-white">{u.name}</p>
+                  <p className="text-slate-500 text-sm" dir="ltr">@{u.username}</p>
+                </div>
+              </button>
+              <button
+                onClick={() => startConversation(u.id)}
+                className="px-4 py-2 bg-sky-500 text-white font-cairo font-bold rounded-full text-sm"
+              >
+                {txt.message}
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </motion.div>
+  );
+
+  // Bottom Navigation
+  const BottomNav = () => (
+    <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl border-t border-slate-800 z-40">
+      <div className={`max-w-[600px] mx-auto flex justify-around p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <button onClick={() => navigate('/dashboard')} className="flex flex-col items-center gap-1 text-slate-400">
+          <Home className="w-6 h-6" strokeWidth={1.5} />
+          <span className="text-xs font-almarai">{t('home')}</span>
+        </button>
+        <button onClick={() => navigate('/threads')} className="flex flex-col items-center gap-1 text-slate-400">
+          <MessageSquare className="w-6 h-6" strokeWidth={1.5} />
+          <span className="text-xs font-almarai">{t('threads')}</span>
+        </button>
+        <button className="flex flex-col items-center gap-1 text-white">
+          <MessageCircle className="w-6 h-6" strokeWidth={2} />
+          <span className="text-xs font-almarai">{txt.messages}</span>
+        </button>
+        <button onClick={() => navigate('/profile')} className="flex flex-col items-center gap-1 text-slate-400">
+          <User className="w-6 h-6" strokeWidth={1.5} />
+          <span className="text-xs font-almarai">{t('profile')}</span>
+        </button>
+        <button onClick={() => navigate('/settings')} className="flex flex-col items-center gap-1 text-slate-400">
+          <Settings className="w-6 h-6" strokeWidth={1.5} />
+          <span className="text-xs font-almarai">{t('settings')}</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {currentView === 'list' && <ConversationsList />}
+      {currentView === 'chat' && <ChatView />}
+      
+      <AnimatePresence>
+        {showSearch && <SearchModal />}
+      </AnimatePresence>
+    </>
+  );
+};
+
+export default MessagesPage;

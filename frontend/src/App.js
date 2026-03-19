@@ -12,6 +12,8 @@ import CreateRoomPage from './pages/CreateRoomPage';
 import MatchesPage from './pages/MatchesPage';
 import ThreadsPage from './pages/ThreadsPage';
 import SettingsPage from './pages/SettingsPage';
+import MessagesPage from './pages/MessagesPage';
+import UserProfilePage from './pages/UserProfilePage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { SettingsProvider } from './contexts/SettingsContext';
