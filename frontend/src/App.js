@@ -81,6 +81,9 @@ function App() {
             <Route path="/matches" element={user ? <MatchesPage user={user} /> : <Navigate to="/" />} />
             <Route path="/threads" element={user ? <ThreadsPage user={user} /> : <Navigate to="/" />} />
             <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+            <Route path="/messages" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
+            <Route path="/messages/:conversationId" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
+            <Route path="/user/:userId" element={user ? <UserProfilePage currentUser={user} /> : <Navigate to="/" />} />
           </Routes>
           <PWAInstallPrompt />
         </BrowserRouter>

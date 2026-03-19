@@ -68,8 +68,10 @@ const UserProfilePage = ({ currentUser }) => {
       const res = await axios.get(`${API}/users/${userId}/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUser(res.data.user);
-      setIsFollowing(res.data.user.is_following);
+      // Handle both API response formats
+      const userData = res.data.user || res.data;
+      setUser(userData);
+      setIsFollowing(userData.is_following);
     } catch (error) {
       toast.error(txt.userNotFound);
       navigate(-1);
