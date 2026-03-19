@@ -794,49 +794,46 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         </div>
 
-        {/* Control Header Bar */}
-        <div className="bg-[#1a1a1a] px-4 py-3 flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center gap-2">
+        {/* Control Header Bar - Compact for Mobile */}
+        <div className="bg-[#1a1a1a] px-2 py-2 flex items-center justify-between border-b border-slate-800 gap-1">
+          {/* Left Side */}
+          <div className="flex items-center gap-1">
             <button
               data-testid="close-btn"
               onClick={() => navigate('/dashboard')}
-              className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-slate-700 transition-colors"
+              className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-slate-700 transition-colors flex-shrink-0"
             >
-              <X className="w-5 h-5" strokeWidth={2} />
+              <X className="w-4 h-4" strokeWidth={2} />
             </button>
             {/* Owner: Room Settings Button */}
             {isOwner && (
               <button
                 onClick={() => setShowRoomSettings(true)}
-                className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 hover:bg-purple-500/30 transition-colors"
+                className="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 hover:bg-purple-500/30 transition-colors flex-shrink-0"
               >
-                <Power className="w-5 h-5" strokeWidth={2} />
+                <Power className="w-4 h-4" strokeWidth={2} />
               </button>
             )}
-            <div className="flex items-center gap-2 bg-slate-800 rounded-full px-3 py-1.5">
-              <div className="w-4 h-4 bg-purple-500 rounded flex items-center justify-center">
-                <Star className="w-2.5 h-2.5 text-white" strokeWidth={2} fill="white" />
-              </div>
-              <span className="text-sm text-white font-chivo">{userCoins} XP</span>
-            </div>
-            {/* Room Status Badge */}
-            {room?.is_closed && (
-              <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full font-almarai flex items-center gap-1">
-                <Lock className="w-3 h-3" strokeWidth={2} />
-                مغلقة
-              </span>
-            )}
+          </div>
+
+          {/* Center - XP */}
+          <div className="flex items-center gap-1 bg-slate-800 rounded-full px-2 py-1">
+            <Star className="w-3 h-3 text-purple-400" strokeWidth={2} fill="currentColor" />
+            <span className="text-xs text-white font-chivo">{userCoins}</span>
           </div>
           
-          <h2 className="text-white font-cairo font-bold text-sm">{room?.name || 'المحادثة المباشرة'}</h2>
+          {/* Room Name */}
+          <h2 className="text-white font-cairo font-bold text-xs truncate max-w-[100px]">
+            {room?.name || 'المحادثة'}
+          </h2>
           
-          {/* Participants Button - Clickable for Owner */}
+          {/* Right Side - Participants */}
           <button
             onClick={() => isOwner && setShowParticipants(true)}
-            className={`flex items-center gap-2 bg-slate-800 rounded-full px-3 py-1.5 ${isOwner ? 'hover:bg-slate-700 cursor-pointer' : ''}`}
+            className={`flex items-center gap-1 bg-slate-800 rounded-full px-2 py-1 flex-shrink-0 ${isOwner ? 'hover:bg-slate-700 cursor-pointer' : ''}`}
           >
-            <Users className="w-4 h-4 text-slate-400" strokeWidth={2} />
-            <span className="text-sm text-white font-chivo">{participants.length}</span>
+            <Users className="w-3 h-3 text-slate-400" strokeWidth={2} />
+            <span className="text-xs text-white font-chivo">{participants.length}</span>
             {isOwner && <Settings className="w-3 h-3 text-purple-400" strokeWidth={2} />}
           </button>
         </div>
