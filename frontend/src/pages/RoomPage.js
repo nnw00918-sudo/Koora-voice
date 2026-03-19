@@ -591,7 +591,7 @@ const YallaLiveRoom = ({ user }) => {
             >
               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
               <span className="text-purple-300 font-bold text-xs sm:text-sm font-chivo">{participants.length}</span>
-              <span className="text-purple-400/70 text-[10px] sm:text-xs font-almarai hidden xs:inline">متصل</span>
+              <span className="text-purple-400/70 text-[10px] sm:text-xs font-almarai">متصل</span>
               <ChevronDown className={`w-3 h-3 text-purple-400 transition-transform ${showConnectedList ? 'rotate-180' : ''}`} />
             </button>
             
