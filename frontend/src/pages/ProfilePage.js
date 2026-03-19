@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { 
   Home, Trophy, Settings, MessageSquare, User, ArrowRight, ArrowLeft,
   Shield, Share2, Grid3X3, Bookmark, Heart, Camera, MoreHorizontal,
-  Image, Shuffle, X, Repeat2
+  Image, Shuffle, X, Repeat2, Trash2, Bell
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -48,8 +48,7 @@ const ProfilePage = ({ user: initialUser }) => {
       profile: 'الملف الشخصي',
       editProfile: 'تعديل الملف الشخصي',
       followers: 'متابِعون',
-      following: 'متابَعون',
-      likes: 'إعجاب',
+      following: 'أتابع',
       myPosts: 'منشوراتي',
       myLikes: 'إعجاباتي',
       myReplies: 'ردودي',
@@ -72,13 +71,17 @@ const ProfilePage = ({ user: initialUser }) => {
       threads: 'ثريد',
       matches: 'المباريات',
       settings: 'الإعدادات',
+      delete: 'حذف',
+      deleted: 'تم الحذف',
+      unliked: 'تم إلغاء الإعجاب',
+      unreposted: 'تم إلغاء إعادة النشر',
+      notifications: 'الإشعارات',
     },
     en: {
       profile: 'Profile',
       editProfile: 'Edit Profile',
       followers: 'Followers',
       following: 'Following',
-      likes: 'Likes',
       myPosts: 'Posts',
       myLikes: 'Likes',
       myReplies: 'Replies',
@@ -101,6 +104,11 @@ const ProfilePage = ({ user: initialUser }) => {
       threads: 'Threads',
       matches: 'Matches',
       settings: 'Settings',
+      delete: 'Delete',
+      deleted: 'Deleted',
+      unliked: 'Unliked',
+      unreposted: 'Unreposted',
+      notifications: 'Notifications',
     }
   }[language];
 
@@ -211,6 +219,55 @@ const ProfilePage = ({ user: initialUser }) => {
     reader.readAsDataURL(file);
   };
 
+  // Delete functions for profile items
+  const handleDeletePost = async (threadId) => {
+    try {
+      await axios.delete(`${API}/threads/${threadId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMyPosts(prev => prev.filter(p => p.id !== threadId));
+      toast.success(txt.deleted);
+    } catch (error) {
+      toast.error(isRTL ? 'فشل الحذف' : 'Delete failed');
+    }
+  };
+
+  const handleUnlike = async (threadId) => {
+    try {
+      await axios.post(`${API}/threads/${threadId}/like`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMyLikes(prev => prev.filter(p => p.id !== threadId));
+      toast.success(txt.unliked);
+    } catch (error) {
+      toast.error(isRTL ? 'فشلت العملية' : 'Failed');
+    }
+  };
+
+  const handleDeleteReply = async (replyId) => {
+    try {
+      await axios.delete(`${API}/replies/${replyId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMyReplies(prev => prev.filter(r => r.id !== replyId));
+      toast.success(txt.deleted);
+    } catch (error) {
+      toast.error(isRTL ? 'فشل الحذف' : 'Delete failed');
+    }
+  };
+
+  const handleUnrepost = async (threadId) => {
+    try {
+      await axios.post(`${API}/threads/${threadId}/repost`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMyReposts(prev => prev.filter(p => p.id !== threadId));
+      toast.success(txt.unreposted);
+    } catch (error) {
+      toast.error(isRTL ? 'فشلت العملية' : 'Failed');
+    }
+  };
+
   const generateRandomAvatar = () => {
     const seed = Math.random().toString(36).substring(7);
     const newAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
@@ -253,7 +310,7 @@ const ProfilePage = ({ user: initialUser }) => {
   );
 
   // Thread Card Component
-  const ThreadCard = ({ thread, isRepost }) => (
+  const ThreadCard = ({ thread, isRepost, showDelete = false, onDelete }) => (
     <div className="p-4">
       {isRepost && (
         <div className={`flex items-center gap-2 text-slate-500 text-xs mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -275,6 +332,17 @@ const ProfilePage = ({ user: initialUser }) => {
             <span className="text-slate-500 text-sm" dir="ltr">@{thread.author?.username}</span>
             <span className="text-slate-600">·</span>
             <span className="text-slate-500 text-sm">{formatTime(thread.created_at)}</span>
+            
+            {/* Delete button */}
+            {showDelete && onDelete && (
+              <button 
+                onClick={() => onDelete(thread.id)}
+                className={`${isRTL ? 'mr-auto' : 'ml-auto'} p-1 text-slate-500 hover:text-red-500 transition-colors`}
+                data-testid={`delete-${thread.id}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
           
           {thread.content && (
@@ -321,7 +389,7 @@ const ProfilePage = ({ user: initialUser }) => {
   );
 
   // Reply Card Component
-  const ReplyCard = ({ reply }) => (
+  const ReplyCard = ({ reply, showDelete = false, onDelete }) => (
     <div className="p-4">
       <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <img 
@@ -337,6 +405,17 @@ const ProfilePage = ({ user: initialUser }) => {
             <span className="text-slate-500 text-sm" dir="ltr">@{reply.author?.username}</span>
             <span className="text-slate-600">·</span>
             <span className="text-slate-500 text-sm">{formatTime(reply.created_at)}</span>
+            
+            {/* Delete button */}
+            {showDelete && onDelete && (
+              <button 
+                onClick={() => onDelete(reply.id)}
+                className={`${isRTL ? 'mr-auto' : 'ml-auto'} p-1 text-slate-500 hover:text-red-500 transition-colors`}
+                data-testid={`delete-reply-${reply.id}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
           
           <p className={`text-white font-almarai leading-relaxed whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`}>
@@ -481,10 +560,6 @@ const ProfilePage = ({ user: initialUser }) => {
             <p className="text-xl font-chivo font-bold text-white">{userStats.followers_count}</p>
             <p className="text-slate-500 text-xs font-almarai">{txt.followers}</p>
           </button>
-          <div className="text-center">
-            <p className="text-xl font-chivo font-bold text-white">{user.coins || 0}</p>
-            <p className="text-slate-500 text-xs font-almarai">{txt.likes}</p>
-          </div>
         </div>
 
         {/* Action Buttons */}
@@ -553,7 +628,7 @@ const ProfilePage = ({ user: initialUser }) => {
                 <EmptyState icon={<Grid3X3 className="w-8 h-8 text-slate-600" />} message={txt.noPosts} />
               ) : (
                 <div className="divide-y divide-slate-800">
-                  {myPosts.map(thread => <ThreadCard key={thread.id} thread={thread} />)}
+                  {myPosts.map(thread => <ThreadCard key={thread.id} thread={thread} showDelete onDelete={handleDeletePost} />)}
                 </div>
               )
             )}
@@ -564,7 +639,7 @@ const ProfilePage = ({ user: initialUser }) => {
                 <EmptyState icon={<Heart className="w-8 h-8 text-slate-600" />} message={txt.noLikes} />
               ) : (
                 <div className="divide-y divide-slate-800">
-                  {myLikes.map(thread => <ThreadCard key={thread.id} thread={thread} />)}
+                  {myLikes.map(thread => <ThreadCard key={thread.id} thread={thread} showDelete onDelete={handleUnlike} />)}
                 </div>
               )
             )}
@@ -575,7 +650,7 @@ const ProfilePage = ({ user: initialUser }) => {
                 <EmptyState icon={<MessageSquare className="w-8 h-8 text-slate-600" />} message={txt.noReplies} />
               ) : (
                 <div className="divide-y divide-slate-800">
-                  {myReplies.map(reply => <ReplyCard key={reply.id} reply={reply} />)}
+                  {myReplies.map(reply => <ReplyCard key={reply.id} reply={reply} showDelete onDelete={handleDeleteReply} />)}
                 </div>
               )
             )}
@@ -586,7 +661,7 @@ const ProfilePage = ({ user: initialUser }) => {
                 <EmptyState icon={<Repeat2 className="w-8 h-8 text-slate-600" />} message={txt.noReposts} />
               ) : (
                 <div className="divide-y divide-slate-800">
-                  {myReposts.map(thread => <ThreadCard key={thread.id} thread={thread} isRepost />)}
+                  {myReposts.map(thread => <ThreadCard key={thread.id} thread={thread} isRepost showDelete onDelete={handleUnrepost} />)}
                 </div>
               )
             )}

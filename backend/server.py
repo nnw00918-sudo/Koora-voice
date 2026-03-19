@@ -1776,6 +1776,36 @@ async def get_thread_replies(
     
     return {"replies": result}
 
+@api_router.delete("/replies/{reply_id}")
+async def delete_reply(
+    reply_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Delete a reply"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    reply = await db.thread_replies.find_one({"id": reply_id})
+    if not reply:
+        raise HTTPException(status_code=404, detail="Reply not found")
+    
+    if reply["author_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get parent thread to decrement replies count
+    thread_id = reply.get("parent_thread_id")
+    
+    await db.thread_replies.delete_one({"id": reply_id})
+    
+    # Decrement replies count on parent thread
+    if thread_id:
+        await db.threads.update_one({"id": thread_id}, {"$inc": {"replies_count": -1}})
+    
+    return {"message": "Reply deleted"}
+
 @api_router.post("/threads/{thread_id}/repost")
 async def repost_thread(
     thread_id: str,
