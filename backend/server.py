@@ -904,12 +904,14 @@ async def get_admin_stats():
     total_messages = await db.messages.count_documents({})
     active_users = await db.room_participants.count_documents({})
     
+    rooms = await db.rooms.find({}, {"_id": 0}).to_list(100)
+    
     room_stats = []
-    for room in ROOMS:
+    for room in rooms:
         count = await db.room_participants.count_documents({"room_id": room["id"]})
         room_stats.append({
             "room_id": room["id"],
-            "room_name": room["name"],
+            "room_name": room.get("title", room.get("name", "غرفة")),
             "active_users": count,
             "is_closed": room.get("is_closed", False)
         })
@@ -919,7 +921,7 @@ async def get_admin_stats():
         "total_messages": total_messages,
         "active_users_now": active_users,
         "rooms": room_stats,
-        "total_rooms": len(ROOMS)
+        "total_rooms": len(rooms)
     }
 
 @api_router.post("/admin/broadcast", dependencies=[Depends(get_admin_user)])
