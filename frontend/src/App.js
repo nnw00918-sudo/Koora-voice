@@ -9,6 +9,8 @@ import ProfilePage from './pages/ProfilePage';
 import UsersPage from './pages/UsersPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CreateRoomPage from './pages/CreateRoomPage';
+import MatchesPage from './pages/MatchesPage';
+import SettingsPage from './pages/SettingsPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { Toaster } from 'sonner';
 
@@ -70,6 +72,8 @@ function App() {
           <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
           <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
           <Route path="/admin" element={user ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
+          <Route path="/matches" element={user ? <MatchesPage user={user} /> : <Navigate to="/" />} />
+          <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
         </Routes>
         <PWAInstallPrompt />
       </BrowserRouter>

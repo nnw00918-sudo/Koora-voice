@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
-import { Radio, Users, LogOut, User, Shield } from 'lucide-react';
+import { Radio, Users, LogOut, User, Shield, Home, Trophy, Settings } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -225,27 +225,27 @@ const DashboardPage = ({ user, onLogout }) => {
       <div className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 z-50">
         <div className="max-w-[600px] mx-auto flex justify-around p-4">
           <button
-            data-testid="nav-rooms-btn"
+            data-testid="nav-settings-btn"
+            onClick={() => navigate('/settings')}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+          >
+            <Settings className="w-6 h-6" strokeWidth={1.5} />
+            <span className="text-xs font-almarai">الإعدادات</span>
+          </button>
+          <button
+            data-testid="nav-matches-btn"
+            onClick={() => navigate('/matches')}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+          >
+            <Trophy className="w-6 h-6" strokeWidth={1.5} />
+            <span className="text-xs font-almarai">المباريات</span>
+          </button>
+          <button
+            data-testid="nav-home-btn"
             className="flex flex-col items-center gap-1 text-lime-400"
           >
-            <Radio className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">الغرف</span>
-          </button>
-          <button
-            data-testid="nav-users-btn"
-            onClick={() => navigate('/users')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
-          >
-            <Users className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">المستخدمين</span>
-          </button>
-          <button
-            data-testid="nav-profile-btn"
-            onClick={() => navigate('/profile')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
-          >
-            <User className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">الملف الشخصي</span>
+            <Home className="w-6 h-6" strokeWidth={1.5} />
+            <span className="text-xs font-almarai">الرئيسية</span>
           </button>
         </div>
       </div>
