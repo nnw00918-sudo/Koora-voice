@@ -6,8 +6,8 @@ import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
-  Share2, MoreHorizontal, Image, X, Video, Link2, Play,
-  Repeat2, Bookmark, Twitter, ExternalLink, Trash2
+  Share2, MoreHorizontal, Image, X, Video, MapPin, Smile, CalendarDays,
+  Repeat2, Bookmark, Twitter, ExternalLink, Trash2, Globe
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,17 +22,19 @@ const ThreadsPage = ({ user }) => {
   const [newThread, setNewThread] = useState('');
   const [posting, setPosting] = useState(false);
   const [activeTab, setActiveTab] = useState('forYou');
+  const [showDeleteMenu, setShowDeleteMenu] = useState(null);
   
   // Media states
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
-  const [mediaType, setMediaType] = useState(null); // 'image' or 'video'
+  const [mediaType, setMediaType] = useState(null);
   const [twitterUrl, setTwitterUrl] = useState('');
   const [showTwitterInput, setShowTwitterInput] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   
   const fileInputRef = useRef(null);
   const videoInputRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
@@ -42,11 +44,11 @@ const ThreadsPage = ({ user }) => {
       threads: 'ثريد',
       forYou: 'لك',
       following: 'المتابَعون',
-      whatsNew: 'ما الجديد؟',
+      whatsNew: 'ماذا يحدث؟!',
       post: 'نشر',
       noThreads: 'لا توجد منشورات بعد',
       beFirst: 'كن أول من ينشر',
-      startThread: 'ابدأ ثريد...',
+      startThread: 'ماذا يحدث؟!',
       reply: 'رد',
       repost: 'إعادة نشر',
       like: 'إعجاب',
@@ -57,24 +59,29 @@ const ThreadsPage = ({ user }) => {
       minutesAgo: 'د',
       hoursAgo: 'س',
       daysAgo: 'ي',
-      addImage: 'إضافة صورة',
-      addVideo: 'إضافة فيديو',
-      addTwitter: 'إضافة تغريدة',
+      addImage: 'صورة',
+      addVideo: 'فيديو',
+      addTwitter: 'تغريدة',
       twitterPlaceholder: 'الصق رابط التغريدة هنا...',
       add: 'إضافة',
       cancel: 'إلغاء',
       uploading: 'جاري الرفع...',
       fromTwitter: 'من تويتر',
+      delete: 'حذف',
+      deleteConfirm: 'هل تريد حذف هذا الثريد؟',
+      deleted: 'تم الحذف',
+      everyone: 'الجميع يمكنهم الرد',
+      drafts: 'المسودات',
     },
     en: {
       threads: 'Threads',
       forYou: 'For You',
       following: 'Following',
-      whatsNew: "What's new?",
+      whatsNew: "What's happening?!",
       post: 'Post',
       noThreads: 'No threads yet',
       beFirst: 'Be the first to post',
-      startThread: 'Start a thread...',
+      startThread: "What's happening?!",
       reply: 'Reply',
       repost: 'Repost',
       like: 'Like',
@@ -85,20 +92,33 @@ const ThreadsPage = ({ user }) => {
       minutesAgo: 'm',
       hoursAgo: 'h',
       daysAgo: 'd',
-      addImage: 'Add Image',
-      addVideo: 'Add Video',
-      addTwitter: 'Add Tweet',
+      addImage: 'Image',
+      addVideo: 'Video',
+      addTwitter: 'Tweet',
       twitterPlaceholder: 'Paste tweet URL here...',
       add: 'Add',
       cancel: 'Cancel',
       uploading: 'Uploading...',
       fromTwitter: 'From Twitter',
+      delete: 'Delete',
+      deleteConfirm: 'Delete this thread?',
+      deleted: 'Deleted',
+      everyone: 'Everyone can reply',
+      drafts: 'Drafts',
     }
   }[language];
 
   useEffect(() => {
     fetchThreads();
   }, [activeTab]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [newThread]);
 
   const fetchThreads = async () => {
     setLoading(true);
@@ -119,7 +139,6 @@ const ThreadsPage = ({ user }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file size (10MB for images, 50MB for videos)
     const maxSize = type === 'video' ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error(isRTL ? 'الملف كبير جداً' : 'File is too large');
@@ -144,7 +163,6 @@ const ThreadsPage = ({ user }) => {
   };
 
   const extractTwitterId = (url) => {
-    // Extract tweet ID from various Twitter/X URL formats
     const patterns = [
       /twitter\.com\/\w+\/status\/(\d+)/,
       /x\.com\/\w+\/status\/(\d+)/,
@@ -176,7 +194,6 @@ const ThreadsPage = ({ user }) => {
     try {
       let mediaUrl = null;
       
-      // Upload media if selected
       if (selectedMedia) {
         setUploadingMedia(true);
         const formData = new FormData();
@@ -215,6 +232,19 @@ const ThreadsPage = ({ user }) => {
     }
   };
 
+  const handleDeleteThread = async (threadId) => {
+    try {
+      await axios.delete(`${API}/threads/${threadId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setThreads(prev => prev.filter(t => t.id !== threadId));
+      setShowDeleteMenu(null);
+      toast.success(txt.deleted);
+    } catch (error) {
+      toast.error(isRTL ? 'فشل الحذف' : 'Failed to delete');
+    }
+  };
+
   const handleLike = async (threadId) => {
     try {
       await axios.post(`${API}/threads/${threadId}/like`, {}, {
@@ -243,7 +273,6 @@ const ThreadsPage = ({ user }) => {
     return `${days}${txt.daysAgo}`;
   };
 
-  // Twitter Embed Component
   const TwitterEmbed = ({ url }) => {
     const tweetId = extractTwitterId(url);
     if (!tweetId) return null;
@@ -267,99 +296,131 @@ const ThreadsPage = ({ user }) => {
     );
   };
 
-  const ThreadCard = ({ thread }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="border-b border-slate-800 p-4"
-    >
-      <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-        {/* Avatar */}
-        <img 
-          src={thread.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${thread.author?.username}`} 
-          alt="" 
-          className="w-10 h-10 rounded-full flex-shrink-0"
-        />
-        
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <span className="font-cairo font-bold text-white truncate">
-              {thread.author?.name || thread.author?.username}
-            </span>
-            <span className="text-slate-500 text-sm" dir="ltr">@{thread.author?.username}</span>
-            <span className="text-slate-600">·</span>
-            <span className="text-slate-500 text-sm">{formatTime(thread.created_at)}</span>
-            <button className={`${isRTL ? 'mr-auto' : 'ml-auto'} text-slate-500 hover:text-white`}>
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-          </div>
+  const ThreadCard = ({ thread }) => {
+    const isOwner = thread.author?.id === user.id;
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="border-b border-slate-800 p-4 relative"
+      >
+        <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <img 
+            src={thread.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${thread.author?.username}`} 
+            alt="" 
+            className="w-10 h-10 rounded-full flex-shrink-0"
+          />
           
-          {/* Thread Content */}
-          {thread.content && (
-            <p className={`text-white font-almarai leading-relaxed mb-3 whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`}>
-              {thread.content}
-            </p>
-          )}
-          
-          {/* Thread Media */}
-          {thread.media_url && thread.media_type === 'image' && (
-            <div className="rounded-xl overflow-hidden mb-3">
-              <img src={thread.media_url} alt="" className="w-full max-h-[400px] object-cover" />
+          <div className="flex-1 min-w-0">
+            <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <span className="font-cairo font-bold text-white truncate">
+                {thread.author?.name || thread.author?.username}
+              </span>
+              <span className="text-slate-500 text-sm" dir="ltr">@{thread.author?.username}</span>
+              <span className="text-slate-600">·</span>
+              <span className="text-slate-500 text-sm">{formatTime(thread.created_at)}</span>
+              
+              {/* More Options Button */}
+              <div className={`${isRTL ? 'mr-auto' : 'ml-auto'} relative`}>
+                <button 
+                  onClick={() => setShowDeleteMenu(showDeleteMenu === thread.id ? null : thread.id)}
+                  className="text-slate-500 hover:text-white p-1 rounded-full hover:bg-slate-800"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                
+                {/* Delete Menu */}
+                {showDeleteMenu === thread.id && isOwner && (
+                  <div className={`absolute top-8 ${isRTL ? 'left-0' : 'right-0'} bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-20 overflow-hidden min-w-[150px]`}>
+                    <button
+                      onClick={() => handleDeleteThread(thread.id)}
+                      className={`w-full px-4 py-3 text-red-500 hover:bg-slate-800 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="font-medium">{txt.delete}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          
-          {thread.media_url && thread.media_type === 'video' && (
-            <div className="rounded-xl overflow-hidden mb-3 relative bg-black">
-              <video 
-                src={thread.media_url} 
-                controls 
-                className="w-full max-h-[400px]"
-                preload="metadata"
-              />
+            
+            {thread.content && (
+              <p className={`text-white font-almarai leading-relaxed mb-3 whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`}>
+                {thread.content}
+              </p>
+            )}
+            
+            {thread.media_url && thread.media_type === 'image' && (
+              <div className="rounded-xl overflow-hidden mb-3">
+                <img src={thread.media_url} alt="" className="w-full max-h-[400px] object-cover" />
+              </div>
+            )}
+            
+            {thread.media_url && thread.media_type === 'video' && (
+              <div className="rounded-xl overflow-hidden mb-3 relative bg-black">
+                <video 
+                  src={thread.media_url} 
+                  controls 
+                  className="w-full max-h-[400px]"
+                  preload="metadata"
+                />
+              </div>
+            )}
+            
+            {thread.twitter_url && (
+              <TwitterEmbed url={thread.twitter_url} />
+            )}
+            
+            <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <button className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors">
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-xs">{thread.replies_count || 0}</span>
+              </button>
+              <button className="flex items-center gap-1 text-slate-500 hover:text-green-400 transition-colors">
+                <Repeat2 className="w-4 h-4" />
+                <span className="text-xs">{thread.reposts_count || 0}</span>
+              </button>
+              <button 
+                onClick={() => handleLike(thread.id)}
+                className={`flex items-center gap-1 transition-colors ${thread.liked ? 'text-red-500' : 'text-slate-500 hover:text-red-400'}`}
+              >
+                <Heart className={`w-4 h-4 ${thread.liked ? 'fill-current' : ''}`} />
+                <span className="text-xs">{thread.likes_count || 0}</span>
+              </button>
+              <button className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors">
+                <Share2 className="w-4 h-4" />
+              </button>
+              <button className="text-slate-500 hover:text-sky-400 transition-colors">
+                <Bookmark className="w-4 h-4" />
+              </button>
             </div>
-          )}
-          
-          {/* Twitter Embed */}
-          {thread.twitter_url && (
-            <TwitterEmbed url={thread.twitter_url} />
-          )}
-          
-          {/* Actions */}
-          <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <button className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors">
-              <MessageCircle className="w-4 h-4" />
-              <span className="text-xs">{thread.replies_count || 0}</span>
-            </button>
-            <button className="flex items-center gap-1 text-slate-500 hover:text-green-400 transition-colors">
-              <Repeat2 className="w-4 h-4" />
-              <span className="text-xs">{thread.reposts_count || 0}</span>
-            </button>
-            <button 
-              onClick={() => handleLike(thread.id)}
-              className={`flex items-center gap-1 transition-colors ${thread.liked ? 'text-red-500' : 'text-slate-500 hover:text-red-400'}`}
-            >
-              <Heart className={`w-4 h-4 ${thread.liked ? 'fill-current' : ''}`} />
-              <span className="text-xs">{thread.likes_count || 0}</span>
-            </button>
-            <button className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors">
-              <Share2 className="w-4 h-4" />
-            </button>
-            <button className="text-slate-500 hover:text-sky-400 transition-colors">
-              <Bookmark className="w-4 h-4" />
-            </button>
           </div>
         </div>
-      </div>
-    </motion.div>
-  );
+        
+        {/* Click outside to close menu */}
+        {showDeleteMenu === thread.id && (
+          <div 
+            className="fixed inset-0 z-10" 
+            onClick={() => setShowDeleteMenu(null)}
+          />
+        )}
+      </motion.div>
+    );
+  };
+
+  // Character count and progress
+  const maxChars = 280;
+  const charCount = newThread.length;
+  const charProgress = (charCount / maxChars) * 100;
+  const isOverLimit = charCount > maxChars;
+  const remainingChars = maxChars - charCount;
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-black">
       <div className="max-w-[600px] mx-auto min-h-screen pb-24">
         {/* Header */}
-        <div className="sticky top-0 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800 z-10">
+        <div className="sticky top-0 bg-black/95 backdrop-blur-xl border-b border-slate-800 z-10">
           <div className="p-4">
             <h1 className={`text-xl font-cairo font-bold text-white ${isRTL ? 'text-right' : 'text-left'}`}>
               {txt.threads}
@@ -376,7 +437,7 @@ const ThreadsPage = ({ user }) => {
             >
               {txt.forYou}
               {activeTab === 'forYou' && (
-                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-1 bg-lime-400 rounded-full" />
+                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-sky-500 rounded-full" />
               )}
             </button>
             <button
@@ -387,7 +448,7 @@ const ThreadsPage = ({ user }) => {
             >
               {txt.following}
               {activeTab === 'following' && (
-                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-1 bg-lime-400 rounded-full" />
+                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-sky-500 rounded-full" />
               )}
             </button>
           </div>
@@ -405,7 +466,7 @@ const ThreadsPage = ({ user }) => {
         {/* Threads List */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : threads.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4">
@@ -440,163 +501,230 @@ const ThreadsPage = ({ user }) => {
         className="hidden"
       />
 
-      {/* Composer Modal */}
+      {/* Twitter-Style Composer Modal */}
       <AnimatePresence>
         {showComposer && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-start justify-center pt-12"
+            onClick={(e) => e.target === e.currentTarget && setShowComposer(false)}
           >
-            <div className="max-w-[600px] mx-auto h-full flex flex-col">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-black w-full max-w-[600px] rounded-2xl border border-slate-800 overflow-hidden mx-4"
+            >
               {/* Modal Header */}
-              <div className={`flex items-center justify-between p-4 border-b border-slate-800 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <button onClick={() => { setShowComposer(false); clearMedia(); }} className="text-white">
-                  <X className="w-6 h-6" />
-                </button>
-                <button
-                  onClick={handlePostThread}
-                  disabled={(!newThread.trim() && !selectedMedia && !twitterUrl) || posting}
-                  className="px-5 py-2 bg-lime-400 text-black font-cairo font-bold rounded-full disabled:opacity-50"
+              <div className={`flex items-center justify-between p-3 border-b border-slate-800`}>
+                <button 
+                  onClick={() => { setShowComposer(false); clearMedia(); }} 
+                  className="text-white hover:bg-slate-800 rounded-full p-2"
                 >
-                  {posting ? (uploadingMedia ? txt.uploading : '...') : txt.post}
+                  <X className="w-5 h-5" />
+                </button>
+                <button className="text-sky-500 font-medium text-sm">
+                  {txt.drafts}
                 </button>
               </div>
               
               {/* Modal Content */}
-              <div className={`flex-1 p-4 flex gap-3 overflow-y-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
-                <div className="flex-1">
-                  <textarea
-                    value={newThread}
-                    onChange={(e) => setNewThread(e.target.value)}
-                    placeholder={txt.whatsNew}
-                    className={`w-full bg-transparent text-white text-lg font-almarai outline-none resize-none min-h-[100px] ${isRTL ? 'text-right' : 'text-left'}`}
-                    autoFocus
-                    maxLength={500}
-                  />
-                  
-                  {/* Media Preview */}
-                  {mediaPreview && (
-                    <div className="relative mt-3 rounded-xl overflow-hidden border border-slate-700">
-                      {mediaType === 'image' ? (
-                        <img src={mediaPreview} alt="" className="w-full max-h-[300px] object-cover" />
-                      ) : (
-                        <video src={mediaPreview} className="w-full max-h-[300px]" controls />
-                      )}
-                      <button
-                        onClick={clearMedia}
-                        className="absolute top-2 right-2 bg-black/70 rounded-full p-1.5 hover:bg-black"
-                      >
-                        <X className="w-4 h-4 text-white" />
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Twitter URL Preview */}
-                  {twitterUrl && !showTwitterInput && (
-                    <div className="mt-3 rounded-xl border border-slate-700 p-3 bg-slate-900/50">
-                      <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <Twitter className="w-4 h-4 text-sky-400" />
-                          <span className="text-sky-400 text-sm">{txt.fromTwitter}</span>
+              <div className="p-4">
+                <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
+                  <div className="flex-1">
+                    {/* Textarea */}
+                    <textarea
+                      ref={textareaRef}
+                      value={newThread}
+                      onChange={(e) => setNewThread(e.target.value)}
+                      placeholder={txt.whatsNew}
+                      className={`w-full bg-transparent text-white text-xl font-almarai outline-none resize-none min-h-[120px] placeholder-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}
+                      autoFocus
+                    />
+                    
+                    {/* Media Preview */}
+                    {mediaPreview && (
+                      <div className="relative mt-3 rounded-2xl overflow-hidden border border-slate-700">
+                        {mediaType === 'image' ? (
+                          <img src={mediaPreview} alt="" className="w-full max-h-[300px] object-cover" />
+                        ) : (
+                          <video src={mediaPreview} className="w-full max-h-[300px]" controls />
+                        )}
+                        <button
+                          onClick={clearMedia}
+                          className="absolute top-2 right-2 bg-black/70 rounded-full p-1.5 hover:bg-black"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Twitter URL Preview */}
+                    {twitterUrl && !showTwitterInput && (
+                      <div className="mt-3 rounded-2xl border border-slate-700 p-3 bg-slate-900/50">
+                        <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            <Twitter className="w-4 h-4 text-sky-400" />
+                            <span className="text-sky-400 text-sm">{txt.fromTwitter}</span>
+                          </div>
+                          <button onClick={() => setTwitterUrl('')} className="text-slate-500 hover:text-white">
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
-                        <button onClick={() => setTwitterUrl('')} className="text-slate-500 hover:text-white">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <p className="text-slate-400 text-sm mt-2 truncate" dir="ltr">{twitterUrl}</p>
                       </div>
-                      <p className="text-slate-400 text-sm mt-2 truncate" dir="ltr">{twitterUrl}</p>
-                    </div>
-                  )}
-                  
-                  {/* Twitter URL Input */}
-                  {showTwitterInput && (
-                    <div className="mt-3 rounded-xl border border-slate-700 p-3 bg-slate-900/50">
-                      <input
-                        type="text"
-                        value={twitterUrl}
-                        onChange={(e) => setTwitterUrl(e.target.value)}
-                        placeholder={txt.twitterPlaceholder}
-                        className="w-full bg-transparent text-white text-sm outline-none mb-3"
-                        dir="ltr"
-                      />
-                      <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <button
-                          onClick={handleAddTwitterUrl}
-                          className="px-3 py-1.5 bg-sky-500 text-white text-sm rounded-full font-medium"
-                        >
-                          {txt.add}
-                        </button>
-                        <button
-                          onClick={() => { setShowTwitterInput(false); setTwitterUrl(''); }}
-                          className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-full font-medium"
-                        >
-                          {txt.cancel}
-                        </button>
+                    )}
+                    
+                    {/* Twitter URL Input */}
+                    {showTwitterInput && (
+                      <div className="mt-3 rounded-2xl border border-slate-700 p-3 bg-slate-900/50">
+                        <input
+                          type="text"
+                          value={twitterUrl}
+                          onChange={(e) => setTwitterUrl(e.target.value)}
+                          placeholder={txt.twitterPlaceholder}
+                          className="w-full bg-transparent text-white text-sm outline-none mb-3"
+                          dir="ltr"
+                        />
+                        <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                          <button
+                            onClick={handleAddTwitterUrl}
+                            className="px-3 py-1.5 bg-sky-500 text-white text-sm rounded-full font-medium"
+                          >
+                            {txt.add}
+                          </button>
+                          <button
+                            onClick={() => { setShowTwitterInput(false); setTwitterUrl(''); }}
+                            className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-full font-medium"
+                          >
+                            {txt.cancel}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  
-                  <p className={`text-slate-600 text-sm mt-2 ${isRTL ? 'text-left' : 'text-right'}`}>{newThread.length}/500</p>
+                    )}
+                    
+                    {/* Reply Settings */}
+                    <button className={`flex items-center gap-2 mt-4 text-sky-500 text-sm font-medium ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <Globe className="w-4 h-4" />
+                      <span>{txt.everyone}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
               
-              {/* Modal Footer - Media Buttons */}
-              <div className={`p-4 border-t border-slate-800 flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 text-lime-400 hover:text-lime-300 transition-colors"
-                  title={txt.addImage}
-                >
-                  <Image className="w-6 h-6" />
-                </button>
-                <button 
-                  onClick={() => videoInputRef.current?.click()}
-                  className="flex items-center gap-2 text-lime-400 hover:text-lime-300 transition-colors"
-                  title={txt.addVideo}
-                >
-                  <Video className="w-6 h-6" />
-                </button>
-                <button 
-                  onClick={() => { setShowTwitterInput(true); clearMedia(); }}
-                  className="flex items-center gap-2 text-sky-400 hover:text-sky-300 transition-colors"
-                  title={txt.addTwitter}
-                >
-                  <Twitter className="w-6 h-6" />
-                </button>
+              {/* Modal Footer */}
+              <div className="border-t border-slate-800 p-3">
+                <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  {/* Media Buttons */}
+                  <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors"
+                      title={txt.addImage}
+                    >
+                      <Image className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => videoInputRef.current?.click()}
+                      className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors"
+                      title={txt.addVideo}
+                    >
+                      <Video className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => { setShowTwitterInput(true); clearMedia(); }}
+                      className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors"
+                      title={txt.addTwitter}
+                    >
+                      <Twitter className="w-5 h-5" />
+                    </button>
+                    <button className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors">
+                      <Smile className="w-5 h-5" />
+                    </button>
+                    <button className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors">
+                      <MapPin className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  {/* Character Count & Post Button */}
+                  <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    {charCount > 0 && (
+                      <div className="flex items-center gap-2">
+                        {/* Circular Progress */}
+                        <div className="relative w-6 h-6">
+                          <svg className="w-6 h-6 transform -rotate-90">
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              fill="none"
+                              stroke="#2d3748"
+                              strokeWidth="2"
+                            />
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              fill="none"
+                              stroke={isOverLimit ? '#ef4444' : charProgress > 80 ? '#f59e0b' : '#0ea5e9'}
+                              strokeWidth="2"
+                              strokeDasharray={`${Math.min(charProgress, 100) * 0.628} 62.8`}
+                            />
+                          </svg>
+                          {remainingChars <= 20 && (
+                            <span className={`absolute inset-0 flex items-center justify-center text-[10px] font-medium ${isOverLimit ? 'text-red-500' : 'text-slate-400'}`}>
+                              {remainingChars}
+                            </span>
+                          )}
+                        </div>
+                        <div className="w-px h-6 bg-slate-700" />
+                      </div>
+                    )}
+                    
+                    <button
+                      onClick={handlePostThread}
+                      disabled={(!newThread.trim() && !selectedMedia && !twitterUrl) || posting || isOverLimit}
+                      className="px-4 py-1.5 bg-sky-500 text-white font-cairo font-bold rounded-full disabled:opacity-50 hover:bg-sky-600 transition-colors"
+                    >
+                      {posting ? (uploadingMedia ? '...' : '...') : txt.post}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl border-t border-slate-800 z-40">
         <div className={`max-w-[600px] mx-auto flex justify-around p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
           >
             <Home className="w-6 h-6" strokeWidth={1.5} />
             <span className="text-xs font-almarai">{t('home')}</span>
           </button>
           <button
-            className="flex flex-col items-center gap-1 text-lime-400"
+            className="flex flex-col items-center gap-1 text-white"
           >
-            <MessageSquare className="w-6 h-6" strokeWidth={1.5} />
+            <MessageSquare className="w-6 h-6" strokeWidth={2} />
             <span className="text-xs font-almarai">{txt.threads}</span>
           </button>
           <button
             onClick={() => navigate('/matches')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
           >
             <Trophy className="w-6 h-6" strokeWidth={1.5} />
             <span className="text-xs font-almarai">{t('matches')}</span>
           </button>
           <button
             onClick={() => navigate('/settings')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
           >
             <Settings className="w-6 h-6" strokeWidth={1.5} />
             <span className="text-xs font-almarai">{t('settings')}</span>
