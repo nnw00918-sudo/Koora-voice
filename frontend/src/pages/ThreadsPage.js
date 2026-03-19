@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
   Share2, MoreHorizontal, Image, X, Video, MapPin, Smile, CalendarDays,
-  Repeat2, Bookmark, Twitter, ExternalLink, Trash2, Globe, User
+  Repeat2, Bookmark, Twitter, ExternalLink, Trash2, Globe, User, Bell
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -876,11 +876,11 @@ const ThreadsPage = ({ user }) => {
             <span className="text-xs font-almarai">{txt.threads}</span>
           </button>
           <button
-            onClick={() => navigate('/matches')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
+            onClick={() => navigate('/notifications')}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors relative"
           >
-            <Trophy className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('matches')}</span>
+            <Bell className="w-6 h-6" strokeWidth={1.5} />
+            <span className="text-xs font-almarai">{isRTL ? 'الإشعارات' : 'Notifications'}</span>
           </button>
           <button
             onClick={() => navigate('/profile')}

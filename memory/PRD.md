@@ -59,6 +59,17 @@ Building a football-themed social media application with voice chat, threads, us
 - Messages sync instantly between users
 - Auto-reconnect on connection loss
 
+### Phase 6: Notifications System ✅ (March 19, 2026)
+- Full notifications page (`/notifications`)
+- Real-time notifications via WebSocket
+- Notification types: like, reply, follow, message
+- Mark as read (single or all)
+- Bell icon added to navigation bar
+- Notifications created automatically when:
+  - Someone likes your post
+  - Someone replies to your post
+  - Someone follows you
+
 ---
 
 ## Technical Architecture
@@ -136,8 +147,8 @@ None - All priority tasks completed!
 
 ## P1 - Priority Backlog
 1. Continue splitting server.py into route modules
-2. Add notifications system
-3. Add read receipts for messages
+2. Add read receipts for messages
+3. Add notification sound/vibration
 
 ## P2 - Future Features
 1. User leveling/ranking system with badges

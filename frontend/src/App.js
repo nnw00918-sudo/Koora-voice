@@ -14,6 +14,7 @@ import ThreadsPage from './pages/ThreadsPage';
 import SettingsPage from './pages/SettingsPage';
 import MessagesPage from './pages/MessagesPage';
 import UserProfilePage from './pages/UserProfilePage';
+import NotificationsPage from './pages/NotificationsPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { SettingsProvider } from './contexts/SettingsContext';
@@ -84,6 +85,7 @@ function App() {
             <Route path="/messages" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
             <Route path="/messages/:conversationId" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
             <Route path="/user/:userId" element={user ? <UserProfilePage currentUser={user} /> : <Navigate to="/" />} />
+            <Route path="/notifications" element={user ? <NotificationsPage user={user} /> : <Navigate to="/" />} />
           </Routes>
           <PWAInstallPrompt />
         </BrowserRouter>

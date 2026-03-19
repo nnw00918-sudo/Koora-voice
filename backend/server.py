@@ -431,6 +431,13 @@ async def follow_user(user_id: str, current_user: User = Depends(get_current_use
     }
     await db.follows.insert_one(follow_doc)
     
+    # Create notification for the followed user
+    await create_notification(
+        user_id=user_id,
+        notif_type="follow",
+        from_user_id=current_user.id
+    )
+    
     return {"message": f"تمت متابعة {target_user['username']}"}
 
 @api_router.delete("/users/{user_id}/follow")
@@ -1655,6 +1662,16 @@ async def like_thread(
             {"id": thread_id},
             {"$inc": {"likes_count": 1}}
         )
+        
+        # Create notification for thread author (if not self-like)
+        if thread["author_id"] != user_id:
+            await create_notification(
+                user_id=thread["author_id"],
+                notif_type="like",
+                from_user_id=user_id,
+                thread_id=thread_id
+            )
+        
         return {"liked": True}
 
 class ReplyCreate(BaseModel):
@@ -1703,6 +1720,16 @@ async def reply_to_thread(
         {"id": user_id},
         {"$inc": {"xp": 2}}
     )
+    
+    # Create notification for thread author (if not self-reply)
+    if thread["author_id"] != user_id:
+        await create_notification(
+            user_id=thread["author_id"],
+            notif_type="reply",
+            from_user_id=user_id,
+            thread_id=thread_id,
+            message=reply_data.content.strip()[:50]
+        )
     
     return {"message": "Reply added", "reply_id": reply_id}
 
@@ -2270,6 +2297,115 @@ async def send_message(
     )
     
     return {"message_id": msg_id, "created_at": new_message["created_at"]}
+
+# ==================== NOTIFICATIONS ====================
+
+@api_router.get("/notifications")
+async def get_notifications(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get user notifications"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    notifications_cursor = db.notifications.find({"user_id": user_id}).sort("created_at", -1).limit(50)
+    notifications = await notifications_cursor.to_list(length=50)
+    
+    result = []
+    for notif in notifications:
+        result.append({
+            "id": notif["id"],
+            "type": notif["type"],
+            "message": notif.get("message", ""),
+            "from_user": notif.get("from_user"),
+            "thread_id": notif.get("thread_id"),
+            "read": notif.get("read", False),
+            "created_at": notif["created_at"]
+        })
+    
+    # Get unread count
+    unread_count = await db.notifications.count_documents({"user_id": user_id, "read": False})
+    
+    return {"notifications": result, "unread_count": unread_count}
+
+@api_router.post("/notifications/read")
+async def mark_notifications_read(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Mark all notifications as read"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    await db.notifications.update_many(
+        {"user_id": user_id, "read": False},
+        {"$set": {"read": True}}
+    )
+    
+    return {"message": "Notifications marked as read"}
+
+@api_router.post("/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Mark single notification as read"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    await db.notifications.update_one(
+        {"id": notification_id, "user_id": user_id},
+        {"$set": {"read": True}}
+    )
+    
+    return {"message": "Notification marked as read"}
+
+# Helper function to create notification
+async def create_notification(user_id: str, notif_type: str, from_user_id: str, thread_id: str = None, message: str = None):
+    """Create a notification and send via WebSocket if user is online"""
+    from_user = await db.users.find_one({"id": from_user_id})
+    if not from_user:
+        return
+    
+    notif_id = str(int(time.time() * 1000))
+    notification = {
+        "id": notif_id,
+        "user_id": user_id,
+        "type": notif_type,
+        "from_user": {
+            "id": from_user["id"],
+            "username": from_user["username"],
+            "name": from_user.get("name", from_user["username"]),
+            "avatar": from_user.get("avatar")
+        },
+        "thread_id": thread_id,
+        "message": message,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.notifications.insert_one(notification)
+    
+    # Send via WebSocket if user is online
+    await ws_manager.send_personal_message({
+        "type": "notification",
+        "notification": {
+            "id": notif_id,
+            "type": notif_type,
+            "from_user": notification["from_user"],
+            "thread_id": thread_id,
+            "message": message,
+            "created_at": notification["created_at"]
+        }
+    }, user_id)
 
 app.include_router(api_router)
 
