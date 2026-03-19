@@ -795,47 +795,42 @@ const YallaLiveRoom = ({ user }) => {
         </div>
 
         {/* Control Header Bar - Compact for Mobile */}
-        <div className="bg-[#1a1a1a] px-2 py-2 flex items-center justify-between border-b border-slate-800 gap-1">
-          {/* Left Side */}
-          <div className="flex items-center gap-1">
-            <button
-              data-testid="close-btn"
-              onClick={() => navigate('/dashboard')}
-              className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-slate-700 transition-colors flex-shrink-0"
-            >
-              <X className="w-4 h-4" strokeWidth={2} />
-            </button>
-            {/* Owner: Room Settings Button */}
-            {isOwner && (
+        <div className="bg-[#1a1a1a] px-3 py-2 border-b border-slate-800 safe-area-top">
+          {/* Single Row - All items */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Left: Close + Room Settings */}
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowRoomSettings(true)}
-                className="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 hover:bg-purple-500/30 transition-colors flex-shrink-0"
+                data-testid="close-btn"
+                onClick={() => navigate('/dashboard')}
+                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white"
               >
-                <Power className="w-4 h-4" strokeWidth={2} />
+                <X className="w-5 h-5" strokeWidth={2} />
               </button>
-            )}
-          </div>
+              {isOwner && (
+                <button
+                  onClick={() => setShowRoomSettings(true)}
+                  className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white"
+                >
+                  <Power className="w-5 h-5" strokeWidth={2} />
+                </button>
+              )}
+            </div>
 
-          {/* Center - XP */}
-          <div className="flex items-center gap-1 bg-slate-800 rounded-full px-2 py-1">
-            <Star className="w-3 h-3 text-purple-400" strokeWidth={2} fill="currentColor" />
-            <span className="text-xs text-white font-chivo">{userCoins}</span>
+            {/* Center: Room Name */}
+            <h2 className="text-white font-cairo font-bold text-sm flex-1 text-center truncate px-2">
+              {room?.name || 'الغرفة'}
+            </h2>
+            
+            {/* Right: Participants */}
+            <button
+              onClick={() => isOwner && setShowParticipants(true)}
+              className={`flex items-center gap-1 bg-slate-800 rounded-full px-3 py-1.5 ${isOwner ? 'ring-2 ring-purple-500' : ''}`}
+            >
+              <span className="text-sm text-white font-bold">{participants.length}</span>
+              <Users className="w-4 h-4 text-white" strokeWidth={2} />
+            </button>
           </div>
-          
-          {/* Room Name */}
-          <h2 className="text-white font-cairo font-bold text-xs truncate max-w-[100px]">
-            {room?.name || 'المحادثة'}
-          </h2>
-          
-          {/* Right Side - Participants */}
-          <button
-            onClick={() => isOwner && setShowParticipants(true)}
-            className={`flex items-center gap-1 bg-slate-800 rounded-full px-2 py-1 flex-shrink-0 ${isOwner ? 'hover:bg-slate-700 cursor-pointer' : ''}`}
-          >
-            <Users className="w-3 h-3 text-slate-400" strokeWidth={2} />
-            <span className="text-xs text-white font-chivo">{participants.length}</span>
-            {isOwner && <Settings className="w-3 h-3 text-purple-400" strokeWidth={2} />}
-          </button>
         </div>
 
         {/* Main Content Area - Chat + Reactions */}
