@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Home, Trophy, Settings, Calendar, Clock, MessageSquare } from 'lucide-react';
+import { Home, Trophy, Settings, Calendar, Clock, MessageSquare, User } from 'lucide-react';
 
 const MatchesPage = ({ user }) => {
   const navigate = useNavigate();
@@ -208,6 +208,13 @@ const MatchesPage = ({ user }) => {
           >
             <Trophy className="w-6 h-6" strokeWidth={1.5} />
             <span className="text-xs font-almarai">{t('matches')}</span>
+          </button>
+          <button
+            onClick={() => navigate('/profile')}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+          >
+            <User className="w-6 h-6" strokeWidth={1.5} />
+            <span className="text-xs font-almarai">{t('profile')}</span>
           </button>
           <button
             onClick={() => navigate('/settings')}
