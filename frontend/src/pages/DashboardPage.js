@@ -14,9 +14,11 @@ const DashboardPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
   const [rooms, setRooms] = useState([]);
+  const [filteredRooms, setFilteredRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'live', 'closed'
 
   const isRTL = language === 'ar';
 
@@ -24,6 +26,17 @@ const DashboardPage = ({ user, onLogout }) => {
     fetchRooms();
     fetchCategories();
   }, [selectedCategory]);
+
+  // Filter rooms when statusFilter or rooms change
+  useEffect(() => {
+    if (statusFilter === 'all') {
+      setFilteredRooms(rooms);
+    } else if (statusFilter === 'live') {
+      setFilteredRooms(rooms.filter(room => room.is_live && !room.is_closed));
+    } else if (statusFilter === 'closed') {
+      setFilteredRooms(rooms.filter(room => room.is_closed));
+    }
+  }, [statusFilter, rooms]);
 
   const fetchCategories = async () => {
     try {
@@ -107,7 +120,7 @@ const DashboardPage = ({ user, onLogout }) => {
         </div>
 
         {/* Categories */}
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-2">
           <div className={`flex gap-2 overflow-x-auto hide-scrollbar pb-2 ${isRTL ? '' : 'flex-row-reverse'}`}>
             <button
               onClick={() => setSelectedCategory(null)}
@@ -135,6 +148,51 @@ const DashboardPage = ({ user, onLogout }) => {
           </div>
         </div>
 
+        {/* Status Filter */}
+        <div className="px-4 pb-4">
+          <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-cairo font-bold text-sm transition-all ${
+                statusFilter === 'all'
+                  ? 'bg-sky-500 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              }`}
+            >
+              {isRTL ? 'الكل' : 'All'}
+              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{rooms.length}</span>
+            </button>
+            <button
+              onClick={() => setStatusFilter('live')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-cairo font-bold text-sm transition-all ${
+                statusFilter === 'live'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              }`}
+            >
+              <div className={`w-2 h-2 rounded-full ${statusFilter === 'live' ? 'bg-white' : 'bg-red-500'} animate-pulse`}></div>
+              {isRTL ? 'مباشر' : 'Live'}
+              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                {rooms.filter(r => r.is_live && !r.is_closed).length}
+              </span>
+            </button>
+            <button
+              onClick={() => setStatusFilter('closed')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-cairo font-bold text-sm transition-all ${
+                statusFilter === 'closed'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5" />
+              {isRTL ? 'مغلقة' : 'Closed'}
+              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                {rooms.filter(r => r.is_closed).length}
+              </span>
+            </button>
+          </div>
+        </div>
+
         {/* Rooms Feed */}
         <div className="px-4 pb-24">
           {loading ? (
@@ -143,9 +201,19 @@ const DashboardPage = ({ user, onLogout }) => {
                 <div key={i} className="h-64 bg-slate-900/50 rounded-2xl animate-pulse"></div>
               ))}
             </div>
-          ) : rooms.length === 0 ? (
+          ) : filteredRooms.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-slate-400 font-almarai mb-4">{t('noRooms')}</p>
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-slate-900 flex items-center justify-center">
+                <Users className="w-10 h-10 text-slate-700" />
+              </div>
+              <p className="text-slate-500 font-almarai mb-4">
+                {statusFilter === 'live' 
+                  ? (isRTL ? 'لا توجد غرف مباشرة الآن' : 'No live rooms right now')
+                  : statusFilter === 'closed'
+                  ? (isRTL ? 'لا توجد غرف مغلقة' : 'No closed rooms')
+                  : (isRTL ? 'لا توجد غرف متاحة' : 'No rooms available')
+                }
+              </p>
               <Button
                 onClick={() => navigate('/create-room')}
                 className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold"
@@ -155,7 +223,7 @@ const DashboardPage = ({ user, onLogout }) => {
             </div>
           ) : (
             <div className="space-y-4">
-              {rooms.map((room, index) => (
+              {filteredRooms.map((room, index) => (
                 <motion.div
                   key={room.id}
                   initial={{ opacity: 0, y: 30 }}
