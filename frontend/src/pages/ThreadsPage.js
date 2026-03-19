@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -6,8 +6,8 @@ import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
-  Share2, MoreHorizontal, Image, Send, X, ArrowRight, ArrowLeft,
-  Repeat2, Bookmark, ChevronDown
+  Share2, MoreHorizontal, Image, X, Video, Link2, Play,
+  Repeat2, Bookmark, Twitter, ExternalLink, Trash2
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,6 +22,17 @@ const ThreadsPage = ({ user }) => {
   const [newThread, setNewThread] = useState('');
   const [posting, setPosting] = useState(false);
   const [activeTab, setActiveTab] = useState('forYou');
+  
+  // Media states
+  const [selectedMedia, setSelectedMedia] = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [mediaType, setMediaType] = useState(null); // 'image' or 'video'
+  const [twitterUrl, setTwitterUrl] = useState('');
+  const [showTwitterInput, setShowTwitterInput] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  
+  const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
@@ -46,6 +57,14 @@ const ThreadsPage = ({ user }) => {
       minutesAgo: 'د',
       hoursAgo: 'س',
       daysAgo: 'ي',
+      addImage: 'إضافة صورة',
+      addVideo: 'إضافة فيديو',
+      addTwitter: 'إضافة تغريدة',
+      twitterPlaceholder: 'الصق رابط التغريدة هنا...',
+      add: 'إضافة',
+      cancel: 'إلغاء',
+      uploading: 'جاري الرفع...',
+      fromTwitter: 'من تويتر',
     },
     en: {
       threads: 'Threads',
@@ -66,6 +85,14 @@ const ThreadsPage = ({ user }) => {
       minutesAgo: 'm',
       hoursAgo: 'h',
       daysAgo: 'd',
+      addImage: 'Add Image',
+      addVideo: 'Add Video',
+      addTwitter: 'Add Tweet',
+      twitterPlaceholder: 'Paste tweet URL here...',
+      add: 'Add',
+      cancel: 'Cancel',
+      uploading: 'Uploading...',
+      fromTwitter: 'From Twitter',
     }
   }[language];
 
@@ -82,22 +109,101 @@ const ThreadsPage = ({ user }) => {
       });
       setThreads(response.data.threads || []);
     } catch (error) {
-      // If API doesn't exist yet, show empty state
       setThreads([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleFileSelect = (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file size (10MB for images, 50MB for videos)
+    const maxSize = type === 'video' ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(isRTL ? 'الملف كبير جداً' : 'File is too large');
+      return;
+    }
+
+    setSelectedMedia(file);
+    setMediaType(type);
+    setMediaPreview(URL.createObjectURL(file));
+    setTwitterUrl('');
+    setShowTwitterInput(false);
+  };
+
+  const clearMedia = () => {
+    setSelectedMedia(null);
+    setMediaPreview(null);
+    setMediaType(null);
+    setTwitterUrl('');
+    setShowTwitterInput(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (videoInputRef.current) videoInputRef.current.value = '';
+  };
+
+  const extractTwitterId = (url) => {
+    // Extract tweet ID from various Twitter/X URL formats
+    const patterns = [
+      /twitter\.com\/\w+\/status\/(\d+)/,
+      /x\.com\/\w+\/status\/(\d+)/,
+      /mobile\.twitter\.com\/\w+\/status\/(\d+)/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    return null;
+  };
+
+  const handleAddTwitterUrl = () => {
+    const tweetId = extractTwitterId(twitterUrl);
+    if (!tweetId) {
+      toast.error(isRTL ? 'رابط تغريدة غير صالح' : 'Invalid tweet URL');
+      return;
+    }
+    setShowTwitterInput(false);
+    clearMedia();
+    setTwitterUrl(twitterUrl);
+  };
+
   const handlePostThread = async () => {
-    if (!newThread.trim()) return;
+    if (!newThread.trim() && !selectedMedia && !twitterUrl) return;
     setPosting(true);
+    
     try {
-      await axios.post(`${API}/threads`, 
-        { content: newThread },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      let mediaUrl = null;
+      
+      // Upload media if selected
+      if (selectedMedia) {
+        setUploadingMedia(true);
+        const formData = new FormData();
+        formData.append('file', selectedMedia);
+        formData.append('type', mediaType);
+        
+        const uploadRes = await axios.post(`${API}/upload/thread-media`, formData, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        mediaUrl = uploadRes.data.url;
+        setUploadingMedia(false);
+      }
+      
+      await axios.post(`${API}/threads`, {
+        content: newThread,
+        media_url: mediaUrl,
+        media_type: mediaType,
+        twitter_url: twitterUrl || null
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
       setNewThread('');
+      clearMedia();
       setShowComposer(false);
       fetchThreads();
       toast.success(isRTL ? 'تم النشر' : 'Posted');
@@ -105,6 +211,7 @@ const ThreadsPage = ({ user }) => {
       toast.error(isRTL ? 'فشل النشر' : 'Failed to post');
     } finally {
       setPosting(false);
+      setUploadingMedia(false);
     }
   };
 
@@ -134,6 +241,30 @@ const ThreadsPage = ({ user }) => {
     if (minutes < 60) return `${minutes}${txt.minutesAgo}`;
     if (hours < 24) return `${hours}${txt.hoursAgo}`;
     return `${days}${txt.daysAgo}`;
+  };
+
+  // Twitter Embed Component
+  const TwitterEmbed = ({ url }) => {
+    const tweetId = extractTwitterId(url);
+    if (!tweetId) return null;
+    
+    return (
+      <div className="rounded-xl border border-slate-700 overflow-hidden mb-3 bg-slate-900/50">
+        <a 
+          href={url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="block p-3 hover:bg-slate-800/50 transition-colors"
+        >
+          <div className={`flex items-center gap-2 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <Twitter className="w-4 h-4 text-sky-400" />
+            <span className="text-sky-400 text-sm font-medium">{txt.fromTwitter}</span>
+            <ExternalLink className="w-3 h-3 text-slate-500" />
+          </div>
+          <p className="text-slate-400 text-sm truncate" dir="ltr">{url}</p>
+        </a>
+      </div>
+    );
   };
 
   const ThreadCard = ({ thread }) => (
@@ -166,15 +297,33 @@ const ThreadsPage = ({ user }) => {
           </div>
           
           {/* Thread Content */}
-          <p className={`text-white font-almarai leading-relaxed mb-3 whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`}>
-            {thread.content}
-          </p>
+          {thread.content && (
+            <p className={`text-white font-almarai leading-relaxed mb-3 whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`}>
+              {thread.content}
+            </p>
+          )}
           
-          {/* Thread Image (if any) */}
-          {thread.image && (
+          {/* Thread Media */}
+          {thread.media_url && thread.media_type === 'image' && (
             <div className="rounded-xl overflow-hidden mb-3">
-              <img src={thread.image} alt="" className="w-full" />
+              <img src={thread.media_url} alt="" className="w-full max-h-[400px] object-cover" />
             </div>
+          )}
+          
+          {thread.media_url && thread.media_type === 'video' && (
+            <div className="rounded-xl overflow-hidden mb-3 relative bg-black">
+              <video 
+                src={thread.media_url} 
+                controls 
+                className="w-full max-h-[400px]"
+                preload="metadata"
+              />
+            </div>
+          )}
+          
+          {/* Twitter Embed */}
+          {thread.twitter_url && (
+            <TwitterEmbed url={thread.twitter_url} />
           )}
           
           {/* Actions */}
@@ -275,6 +424,22 @@ const ThreadsPage = ({ user }) => {
         )}
       </div>
 
+      {/* Hidden File Inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={(e) => handleFileSelect(e, 'image')}
+        className="hidden"
+      />
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/*"
+        onChange={(e) => handleFileSelect(e, 'video')}
+        className="hidden"
+      />
+
       {/* Composer Modal */}
       <AnimatePresence>
         {showComposer && (
@@ -287,38 +452,118 @@ const ThreadsPage = ({ user }) => {
             <div className="max-w-[600px] mx-auto h-full flex flex-col">
               {/* Modal Header */}
               <div className={`flex items-center justify-between p-4 border-b border-slate-800 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <button onClick={() => setShowComposer(false)} className="text-white">
+                <button onClick={() => { setShowComposer(false); clearMedia(); }} className="text-white">
                   <X className="w-6 h-6" />
                 </button>
                 <button
                   onClick={handlePostThread}
-                  disabled={!newThread.trim() || posting}
+                  disabled={(!newThread.trim() && !selectedMedia && !twitterUrl) || posting}
                   className="px-5 py-2 bg-lime-400 text-black font-cairo font-bold rounded-full disabled:opacity-50"
                 >
-                  {posting ? '...' : txt.post}
+                  {posting ? (uploadingMedia ? txt.uploading : '...') : txt.post}
                 </button>
               </div>
               
               {/* Modal Content */}
-              <div className={`flex-1 p-4 flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex-1 p-4 flex gap-3 overflow-y-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
                 <div className="flex-1">
                   <textarea
                     value={newThread}
                     onChange={(e) => setNewThread(e.target.value)}
                     placeholder={txt.whatsNew}
-                    className={`w-full bg-transparent text-white text-lg font-almarai outline-none resize-none min-h-[150px] ${isRTL ? 'text-right' : 'text-left'}`}
+                    className={`w-full bg-transparent text-white text-lg font-almarai outline-none resize-none min-h-[100px] ${isRTL ? 'text-right' : 'text-left'}`}
                     autoFocus
                     maxLength={500}
                   />
-                  <p className={`text-slate-600 text-sm ${isRTL ? 'text-left' : 'text-right'}`}>{newThread.length}/500</p>
+                  
+                  {/* Media Preview */}
+                  {mediaPreview && (
+                    <div className="relative mt-3 rounded-xl overflow-hidden border border-slate-700">
+                      {mediaType === 'image' ? (
+                        <img src={mediaPreview} alt="" className="w-full max-h-[300px] object-cover" />
+                      ) : (
+                        <video src={mediaPreview} className="w-full max-h-[300px]" controls />
+                      )}
+                      <button
+                        onClick={clearMedia}
+                        className="absolute top-2 right-2 bg-black/70 rounded-full p-1.5 hover:bg-black"
+                      >
+                        <X className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Twitter URL Preview */}
+                  {twitterUrl && !showTwitterInput && (
+                    <div className="mt-3 rounded-xl border border-slate-700 p-3 bg-slate-900/50">
+                      <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                          <Twitter className="w-4 h-4 text-sky-400" />
+                          <span className="text-sky-400 text-sm">{txt.fromTwitter}</span>
+                        </div>
+                        <button onClick={() => setTwitterUrl('')} className="text-slate-500 hover:text-white">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="text-slate-400 text-sm mt-2 truncate" dir="ltr">{twitterUrl}</p>
+                    </div>
+                  )}
+                  
+                  {/* Twitter URL Input */}
+                  {showTwitterInput && (
+                    <div className="mt-3 rounded-xl border border-slate-700 p-3 bg-slate-900/50">
+                      <input
+                        type="text"
+                        value={twitterUrl}
+                        onChange={(e) => setTwitterUrl(e.target.value)}
+                        placeholder={txt.twitterPlaceholder}
+                        className="w-full bg-transparent text-white text-sm outline-none mb-3"
+                        dir="ltr"
+                      />
+                      <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <button
+                          onClick={handleAddTwitterUrl}
+                          className="px-3 py-1.5 bg-sky-500 text-white text-sm rounded-full font-medium"
+                        >
+                          {txt.add}
+                        </button>
+                        <button
+                          onClick={() => { setShowTwitterInput(false); setTwitterUrl(''); }}
+                          className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-full font-medium"
+                        >
+                          {txt.cancel}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <p className={`text-slate-600 text-sm mt-2 ${isRTL ? 'text-left' : 'text-right'}`}>{newThread.length}/500</p>
                 </div>
               </div>
               
-              {/* Modal Footer */}
-              <div className="p-4 border-t border-slate-800">
-                <button className="text-lime-400">
+              {/* Modal Footer - Media Buttons */}
+              <div className={`p-4 border-t border-slate-800 flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 text-lime-400 hover:text-lime-300 transition-colors"
+                  title={txt.addImage}
+                >
                   <Image className="w-6 h-6" />
+                </button>
+                <button 
+                  onClick={() => videoInputRef.current?.click()}
+                  className="flex items-center gap-2 text-lime-400 hover:text-lime-300 transition-colors"
+                  title={txt.addVideo}
+                >
+                  <Video className="w-6 h-6" />
+                </button>
+                <button 
+                  onClick={() => { setShowTwitterInput(true); clearMedia(); }}
+                  className="flex items-center gap-2 text-sky-400 hover:text-sky-300 transition-colors"
+                  title={txt.addTwitter}
+                >
+                  <Twitter className="w-6 h-6" />
                 </button>
               </div>
             </div>

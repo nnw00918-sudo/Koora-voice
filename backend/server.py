@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, File, Form, UploadFile
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -108,14 +108,18 @@ class MessageCreate(BaseModel):
 
 # Thread Models
 class ThreadCreate(BaseModel):
-    content: str
-    image: Optional[str] = None
+    content: str = ""
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None  # 'image' or 'video'
+    twitter_url: Optional[str] = None
 
 class ThreadResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     content: str
-    image: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+    twitter_url: Optional[str] = None
     author: dict
     likes_count: int = 0
     replies_count: int = 0
@@ -527,6 +531,60 @@ async def upload_avatar(data: ImageUpload, current_user: User = Depends(get_curr
     
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"فشل رفع الصورة: {str(e)}")
+
+@api_router.post("/upload/thread-media")
+async def upload_thread_media(
+    file: UploadFile = File(...),
+    type: str = Form(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Upload media for threads (images/videos)"""
+    import os
+    from uuid import uuid4
+    
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Validate file type
+    allowed_image_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    allowed_video_types = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo']
+    
+    content_type = file.content_type
+    
+    if type == 'image' and content_type not in allowed_image_types:
+        raise HTTPException(status_code=400, detail="نوع الصورة غير مدعوم")
+    
+    if type == 'video' and content_type not in allowed_video_types:
+        raise HTTPException(status_code=400, detail="نوع الفيديو غير مدعوم")
+    
+    # Read file content
+    file_content = await file.read()
+    
+    # Check file size
+    max_size = 50 * 1024 * 1024 if type == 'video' else 10 * 1024 * 1024
+    if len(file_content) > max_size:
+        raise HTTPException(status_code=400, detail="حجم الملف كبير جداً")
+    
+    # Create directory
+    media_dir = Path(__file__).parent / "static" / "thread_media"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate filename
+    ext = file.filename.split('.')[-1] if '.' in file.filename else ('jpg' if type == 'image' else 'mp4')
+    filename = f"{user_id}_{uuid4().hex[:12]}.{ext}"
+    filepath = media_dir / filename
+    
+    # Save file
+    with open(filepath, 'wb') as f:
+        f.write(file_content)
+    
+    # Generate URL
+    media_url = f"{os.environ.get('BACKEND_URL', '')}/api/static/thread_media/{filename}"
+    
+    return {"url": media_url, "type": type}
 
 @api_router.get("/rooms", response_model=List[RoomFull])
 async def get_rooms(category: Optional[str] = None):
@@ -1464,8 +1522,10 @@ async def get_threads(
         if author:
             result.append({
                 "id": thread["id"],
-                "content": thread["content"],
-                "image": thread.get("image"),
+                "content": thread.get("content", ""),
+                "media_url": thread.get("media_url"),
+                "media_type": thread.get("media_type"),
+                "twitter_url": thread.get("twitter_url"),
                 "author": {
                     "id": author["id"],
                     "username": author["username"],
@@ -1493,18 +1553,21 @@ async def create_thread(
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     
-    if not thread_data.content.strip():
-        raise HTTPException(status_code=400, detail="Content cannot be empty")
+    # At least content, media, or twitter_url is required
+    if not thread_data.content.strip() and not thread_data.media_url and not thread_data.twitter_url:
+        raise HTTPException(status_code=400, detail="Content, media, or twitter link required")
     
-    if len(thread_data.content) > 500:
+    if thread_data.content and len(thread_data.content) > 500:
         raise HTTPException(status_code=400, detail="Content too long")
     
     thread_id = str(int(time.time() * 1000))
     new_thread = {
         "id": thread_id,
         "author_id": user_id,
-        "content": thread_data.content.strip(),
-        "image": thread_data.image,
+        "content": thread_data.content.strip() if thread_data.content else "",
+        "media_url": thread_data.media_url,
+        "media_type": thread_data.media_type,
+        "twitter_url": thread_data.twitter_url,
         "likes_count": 0,
         "replies_count": 0,
         "reposts_count": 0,
