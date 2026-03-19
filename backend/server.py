@@ -1,5 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -16,6 +18,12 @@ import time
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Create static directories
+STATIC_DIR = ROOT_DIR / "static"
+AVATARS_DIR = STATIC_DIR / "avatars"
+STATIC_DIR.mkdir(exist_ok=True)
+AVATARS_DIR.mkdir(exist_ok=True)
 
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -276,15 +284,25 @@ async def login(user_data: UserLogin):
 @api_router.get("/auth/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user info including updated role"""
+    # Get follower/following counts
+    followers_count = await db.follows.count_documents({"following_id": current_user.id})
+    following_count = await db.follows.count_documents({"follower_id": current_user.id})
+    
+    # Get user with bio
+    user_doc = await db.users.find_one({"id": current_user.id}, {"_id": 0, "password": 0})
+    
     return {
         "id": current_user.id,
         "email": current_user.email,
         "username": current_user.username,
         "avatar": current_user.avatar,
+        "bio": user_doc.get("bio", ""),
         "role": current_user.role,
         "coins": current_user.coins,
         "level": current_user.level,
-        "xp": current_user.xp
+        "xp": current_user.xp,
+        "followers_count": followers_count,
+        "following_count": following_count
     }
 
 class ProfileUpdate(BaseModel):
@@ -323,6 +341,163 @@ async def update_profile(profile_data: ProfileUpdate, current_user: User = Depen
     updated_user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "password": 0})
     
     return {"message": "تم تحديث الملف الشخصي", "user": updated_user}
+
+# ==================== FOLLOW SYSTEM ====================
+
+@api_router.post("/users/{user_id}/follow")
+async def follow_user(user_id: str, current_user: User = Depends(get_current_user)):
+    """Follow a user"""
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="لا يمكنك متابعة نفسك")
+    
+    # Check if user exists
+    target_user = await db.users.find_one({"id": user_id})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    # Check if already following
+    existing = await db.follows.find_one({
+        "follower_id": current_user.id,
+        "following_id": user_id
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="أنت تتابع هذا المستخدم بالفعل")
+    
+    # Create follow relationship
+    from uuid import uuid4
+    follow_doc = {
+        "id": str(uuid4())[:8],
+        "follower_id": current_user.id,
+        "following_id": user_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.follows.insert_one(follow_doc)
+    
+    return {"message": f"تمت متابعة {target_user['username']}"}
+
+@api_router.delete("/users/{user_id}/follow")
+async def unfollow_user(user_id: str, current_user: User = Depends(get_current_user)):
+    """Unfollow a user"""
+    result = await db.follows.delete_one({
+        "follower_id": current_user.id,
+        "following_id": user_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=400, detail="أنت لا تتابع هذا المستخدم")
+    
+    return {"message": "تم إلغاء المتابعة"}
+
+@api_router.get("/users/{user_id}/followers")
+async def get_followers(user_id: str, current_user: User = Depends(get_current_user)):
+    """Get list of followers for a user"""
+    follows = await db.follows.find({"following_id": user_id}, {"_id": 0}).to_list(1000)
+    
+    followers = []
+    for follow in follows:
+        user = await db.users.find_one({"id": follow["follower_id"]}, {"_id": 0, "password": 0})
+        if user:
+            # Check if current user follows this follower
+            is_following = await db.follows.find_one({
+                "follower_id": current_user.id,
+                "following_id": user["id"]
+            })
+            user["is_following"] = is_following is not None
+            followers.append(user)
+    
+    return {"followers": followers, "count": len(followers)}
+
+@api_router.get("/users/{user_id}/following")
+async def get_following(user_id: str, current_user: User = Depends(get_current_user)):
+    """Get list of users that a user follows"""
+    follows = await db.follows.find({"follower_id": user_id}, {"_id": 0}).to_list(1000)
+    
+    following = []
+    for follow in follows:
+        user = await db.users.find_one({"id": follow["following_id"]}, {"_id": 0, "password": 0})
+        if user:
+            # Check if current user follows this user
+            is_following = await db.follows.find_one({
+                "follower_id": current_user.id,
+                "following_id": user["id"]
+            })
+            user["is_following"] = is_following is not None
+            following.append(user)
+    
+    return {"following": following, "count": len(following)}
+
+@api_router.get("/users/{user_id}/profile")
+async def get_user_profile(user_id: str, current_user: User = Depends(get_current_user)):
+    """Get another user's profile"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    # Get follower/following counts
+    followers_count = await db.follows.count_documents({"following_id": user_id})
+    following_count = await db.follows.count_documents({"follower_id": user_id})
+    
+    # Check if current user follows this user
+    is_following = await db.follows.find_one({
+        "follower_id": current_user.id,
+        "following_id": user_id
+    })
+    
+    return {
+        **user,
+        "followers_count": followers_count,
+        "following_count": following_count,
+        "is_following": is_following is not None,
+        "is_self": user_id == current_user.id
+    }
+
+class ImageUpload(BaseModel):
+    image_data: str  # Base64 encoded image
+
+@api_router.post("/upload/avatar")
+async def upload_avatar(data: ImageUpload, current_user: User = Depends(get_current_user)):
+    """Upload avatar image (base64)"""
+    import base64
+    import os
+    from uuid import uuid4
+    
+    try:
+        # Parse base64 data
+        if ',' in data.image_data:
+            header, image_data = data.image_data.split(',', 1)
+        else:
+            image_data = data.image_data
+        
+        # Decode base64
+        image_bytes = base64.b64decode(image_data)
+        
+        # Check file size (max 2MB)
+        if len(image_bytes) > 2 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="حجم الصورة كبير جداً (الحد الأقصى 2MB)")
+        
+        # Save to static folder
+        static_dir = Path(__file__).parent / "static" / "avatars"
+        static_dir.mkdir(parents=True, exist_ok=True)
+        
+        filename = f"{current_user.id}_{uuid4().hex[:8]}.jpg"
+        filepath = static_dir / filename
+        
+        with open(filepath, 'wb') as f:
+            f.write(image_bytes)
+        
+        # Generate URL
+        avatar_url = f"{os.environ.get('BACKEND_URL', '')}/api/static/avatars/{filename}"
+        
+        # Update user avatar
+        await db.users.update_one(
+            {"id": current_user.id},
+            {"$set": {"avatar": avatar_url}}
+        )
+        
+        return {"avatar_url": avatar_url, "message": "تم رفع الصورة بنجاح"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"فشل رفع الصورة: {str(e)}")
 
 @api_router.get("/rooms", response_model=List[RoomFull])
 async def get_rooms(category: Optional[str] = None):
@@ -1220,6 +1395,9 @@ async def generate_agora_token(request: AgoraTokenRequest, current_user: User = 
         raise HTTPException(status_code=500, detail=f"فشل توليد Token: {str(e)}")
 
 app.include_router(api_router)
+
+# Mount static files for avatars
+app.mount("/api/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 app.add_middleware(
     CORSMiddleware,
