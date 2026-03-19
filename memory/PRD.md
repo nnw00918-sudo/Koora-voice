@@ -26,7 +26,7 @@ Building a football-themed social media application with voice chat, threads, us
 - Twitter/X link embedding
 - Thread deletion by owner
 - Reply system with nested replies
-- Like and repost functionality (backend complete)
+- Like and repost functionality ✅ (Backend + Frontend wired)
 
 ### Phase 2: Profile System ✅
 - User profile page with stats (followers, following, likes)
@@ -44,6 +44,13 @@ Building a football-themed social media application with voice chat, threads, us
   - Chat view
   - Search modal for starting new chats
 - **Follow/Unfollow** users from profiles
+- **Like/Repost buttons** fully functional in UI
+
+### Phase 4: Code Organization ✅ (March 19, 2026)
+- Created `/backend/models/` for Pydantic models
+- Created `/backend/services/` for auth helpers
+- Created `/frontend/src/components/ThreadCard.jsx`
+- Created `/frontend/src/components/ReplyInput.jsx`
 
 ---
 
@@ -118,11 +125,11 @@ Building a football-themed social media application with voice chat, threads, us
 ---
 
 ## P0 - Upcoming Tasks
-1. Wire up Like and Repost buttons in UI (backend exists)
+None - All priority tasks completed!
 
 ## P1 - Priority Backlog
-1. Refactor server.py into modules (routes, models, services)
-2. Extract shared components (ThreadCard, ReplyCard)
+1. Continue refactoring server.py into separate route files
+2. Extract more shared components from ProfilePage.js
 3. Real-time messaging with WebSockets
 
 ## P2 - Future Features

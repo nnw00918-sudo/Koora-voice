@@ -1515,6 +1515,10 @@ async def get_threads(
     user_likes = await db.thread_likes.find({"user_id": user_id}).to_list(length=1000)
     liked_thread_ids = {like["thread_id"] for like in user_likes}
     
+    # Get user reposts to mark reposted threads
+    user_reposts = await db.thread_reposts.find({"user_id": user_id}).to_list(length=1000)
+    reposted_thread_ids = {repost["thread_id"] for repost in user_reposts}
+    
     result = []
     for thread in threads:
         # Get author info
@@ -1536,6 +1540,7 @@ async def get_threads(
                 "replies_count": thread.get("replies_count", 0),
                 "reposts_count": thread.get("reposts_count", 0),
                 "liked": thread["id"] in liked_thread_ids,
+                "reposted": thread["id"] in reposted_thread_ids,
                 "created_at": thread["created_at"]
             })
     
