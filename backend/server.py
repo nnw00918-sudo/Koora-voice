@@ -273,6 +273,19 @@ async def login(user_data: UserLogin):
     
     return Token(access_token=access_token, token_type="bearer", user=user_obj)
 
+@api_router.get("/auth/me")
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current user info including updated role"""
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username,
+        "role": current_user.role,
+        "coins": current_user.coins,
+        "level": current_user.level,
+        "xp": current_user.xp
+    }
+
 @api_router.get("/rooms", response_model=List[RoomFull])
 async def get_rooms(category: Optional[str] = None):
     query = {}

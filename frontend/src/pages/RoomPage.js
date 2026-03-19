@@ -55,13 +55,15 @@ const YallaLiveRoom = ({ user }) => {
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [seatRequests, setSeatRequests] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(false);
-  // Role permissions
-  const isOwner = user.role === 'owner';
-  const isAdmin = user.role === 'admin';
-  const isMod = user.role === 'mod';
-  const canManageStage = ['owner', 'admin', 'mod'].includes(user.role); // approve/reject mic requests
-  const canKickMute = ['owner', 'admin'].includes(user.role); // kick, mute, invite
-  const canJoinStageDirect = ['owner', 'admin', 'mod'].includes(user.role); // join stage without request
+  const [currentUserRole, setCurrentUserRole] = useState(null); // Start as null, fetch from API
+  const [roleLoading, setRoleLoading] = useState(true);
+  // Role permissions - use currentUserRole which gets updated from API
+  const isOwner = currentUserRole === 'owner';
+  const isAdmin = currentUserRole === 'admin';
+  const isMod = currentUserRole === 'mod';
+  const canManageStage = ['owner', 'admin', 'mod'].includes(currentUserRole); // approve/reject mic requests
+  const canKickMute = ['owner', 'admin'].includes(currentUserRole); // kick, mute, invite
+  const canJoinStageDirect = ['owner', 'admin', 'mod'].includes(currentUserRole); // join stage without request
   const [myInvites, setMyInvites] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -79,6 +81,7 @@ const YallaLiveRoom = ({ user }) => {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
+    fetchCurrentUserRole(); // Get updated role first
     initializeAgora();
     joinRoom();
     fetchRoomData();
@@ -182,6 +185,29 @@ const YallaLiveRoom = ({ user }) => {
   const stopPolling = () => {
     if (pollInterval.current) {
       clearInterval(pollInterval.current);
+    }
+  };
+
+  // Fetch current user role from API to ensure it's up to date
+  const fetchCurrentUserRole = async () => {
+    try {
+      const response = await axios.get(`${API}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('Fetched user role:', response.data.role);
+      if (response.data && response.data.role) {
+        setCurrentUserRole(response.data.role);
+        // Update localStorage too
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        storedUser.role = response.data.role;
+        localStorage.setItem('user', JSON.stringify(storedUser));
+      }
+    } catch (error) {
+      console.error('Failed to fetch user role:', error);
+      // Fallback to localStorage
+      setCurrentUserRole(user.role || 'user');
+    } finally {
+      setRoleLoading(false);
     }
   };
 
