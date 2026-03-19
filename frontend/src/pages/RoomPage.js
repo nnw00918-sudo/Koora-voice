@@ -33,7 +33,8 @@ import {
   Lock,
   Unlock,
   Trash2,
-  Power
+  Power,
+  Headphones
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -582,21 +583,15 @@ const YallaLiveRoom = ({ user }) => {
         <div className="bg-[#0a0a0a] px-4 py-3 flex items-center justify-between border-b border-gray-800/50 safe-area-top">
           {/* Left: Participant Count */}
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">{participants.length}</span>
-              </div>
-              {/* Small avatars on top */}
-              <div className="absolute -top-2 -right-1 flex -space-x-1">
-                {speakers.slice(0, 3).map((seat, i) => (
-                  <img key={i} src={seat.user.avatar} alt="" className="w-4 h-4 rounded-full border border-[#0a0a0a]" />
-                ))}
-              </div>
+            <div className="flex items-center gap-2 bg-purple-600/20 border border-purple-500/40 rounded-full px-3 py-1.5">
+              <Users className="w-4 h-4 text-purple-400" />
+              <span className="text-purple-300 font-bold text-sm font-chivo">{participants.length}</span>
+              <span className="text-purple-400/70 text-xs font-almarai">متصل</span>
             </div>
           </div>
 
           {/* Center: Room Name */}
-          <h1 className="text-white font-cairo font-bold text-lg">{room?.name || 'الغرفة'}</h1>
+          <h1 className="text-white font-cairo font-bold text-lg truncate max-w-[150px]">{room?.title || room?.name || 'الغرفة'}</h1>
 
           {/* Right: Power & Close Buttons */}
           <div className="flex items-center gap-2">
@@ -713,6 +708,20 @@ const YallaLiveRoom = ({ user }) => {
                 <Users className="w-6 h-6 text-gray-600" strokeWidth={1.5} />
               </div>
             ))}
+          </div>
+          
+          {/* Live Stats Bar */}
+          <div className="flex items-center justify-center gap-4 mt-3 pb-2">
+            <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 rounded-full px-3 py-1">
+              <Mic className="w-3.5 h-3.5 text-green-400" />
+              <span className="text-green-400 text-xs font-bold">{speakers.length}</span>
+              <span className="text-green-400/70 text-xs">متحدث</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/30 rounded-full px-3 py-1">
+              <Headphones className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-blue-400 text-xs font-bold">{listeners.length}</span>
+              <span className="text-blue-400/70 text-xs">مستمع</span>
+            </div>
           </div>
         </div>
 
