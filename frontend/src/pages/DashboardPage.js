@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Users, LogOut, Shield, Home, Trophy, Settings, MessageSquare, User, Lock, Unlock } from 'lucide-react';
+import { Users, LogOut, Shield, Home, Trophy, Settings, MessageSquare, User, Lock, Unlock, Search, X } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -19,6 +19,8 @@ const DashboardPage = ({ user, onLogout }) => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'live', 'closed'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   const isRTL = language === 'ar';
 
@@ -27,16 +29,29 @@ const DashboardPage = ({ user, onLogout }) => {
     fetchCategories();
   }, [selectedCategory]);
 
-  // Filter rooms when statusFilter or rooms change
+  // Filter rooms when statusFilter, searchQuery or rooms change
   useEffect(() => {
-    if (statusFilter === 'all') {
-      setFilteredRooms(rooms);
-    } else if (statusFilter === 'live') {
-      setFilteredRooms(rooms.filter(room => room.is_live && !room.is_closed));
+    let result = rooms;
+    
+    // Apply status filter
+    if (statusFilter === 'live') {
+      result = result.filter(room => room.is_live && !room.is_closed);
     } else if (statusFilter === 'closed') {
-      setFilteredRooms(rooms.filter(room => room.is_closed));
+      result = result.filter(room => room.is_closed);
     }
-  }, [statusFilter, rooms]);
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(room => 
+        room.title?.toLowerCase().includes(query) ||
+        room.description?.toLowerCase().includes(query) ||
+        room.owner?.username?.toLowerCase().includes(query)
+      );
+    }
+    
+    setFilteredRooms(result);
+  }, [statusFilter, searchQuery, rooms]);
 
   const fetchCategories = async () => {
     try {
@@ -114,10 +129,54 @@ const DashboardPage = ({ user, onLogout }) => {
           >
             {t('createRoom')}
           </Button>
-          <h2 className="text-2xl font-cairo font-black text-white">
-            {t('liveRooms')}
-          </h2>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setShowSearch(!showSearch)}
+              variant="ghost"
+              size="icon"
+              className={`hover:bg-slate-800 ${showSearch ? 'text-lime-400' : 'text-slate-400'}`}
+            >
+              <Search className="w-5 h-5" />
+            </Button>
+            <h2 className="text-2xl font-cairo font-black text-white">
+              {t('liveRooms')}
+            </h2>
+          </div>
         </div>
+
+        {/* Search Bar */}
+        {showSearch && (
+          <div className="px-4 pb-4">
+            <div className={`relative flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <Search className={`absolute ${isRTL ? 'right-4' : 'left-4'} w-5 h-5 text-slate-500`} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={isRTL ? 'ابحث عن غرفة...' : 'Search rooms...'}
+                className={`w-full bg-slate-800/80 border border-slate-700 rounded-xl py-3 ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} text-white font-almarai placeholder-slate-500 focus:outline-none focus:border-lime-400/50 focus:ring-1 focus:ring-lime-400/50`}
+                autoFocus
+                data-testid="search-rooms-input"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className={`absolute ${isRTL ? 'left-4' : 'right-4'} text-slate-500 hover:text-white`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className={`mt-2 text-sm text-slate-500 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>
+                {isRTL 
+                  ? `تم العثور على ${filteredRooms.length} غرفة`
+                  : `Found ${filteredRooms.length} rooms`
+                }
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Categories */}
         <div className="px-4 pb-2">
