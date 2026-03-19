@@ -25,7 +25,10 @@ import {
   MoreHorizontal,
   Star,
   Check,
-  X
+  X,
+  Shield,
+  UserPlus,
+  Settings
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -64,6 +67,9 @@ const YallaLiveRoom = ({ user }) => {
   const [showChat, setShowChat] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(null);
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [selectedPromoteUser, setSelectedPromoteUser] = useState(null);
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const agoraClient = useRef(null);
@@ -452,6 +458,23 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Owner: Promote user
+  const handlePromoteUser = async (userId, newRole) => {
+    try {
+      const response = await axios.post(
+        `${API}/rooms/${roomId}/promote/${userId}`,
+        { role: newRole },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      setShowPromoteModal(false);
+      setSelectedPromoteUser(null);
+      fetchParticipants();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشلت الترقية');
+    }
+  };
+
   const handleLeaveSeat = async () => {
     try {
       if (isMicOn) {
@@ -585,17 +608,24 @@ const YallaLiveRoom = ({ user }) => {
                 animate={{ scale: 1 }}
                 className="relative"
               >
-                <div className={`w-16 h-16 rounded-full overflow-hidden ${
-                  seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
-                    ? 'ring-4 ring-lime-400 animate-pulse'
-                    : 'ring-2 ring-slate-600'
-                }`}>
+                <button
+                  onClick={() => {
+                    if (isOwner && seat.user.user_id !== user.id) {
+                      setShowUserMenu(showUserMenu === seat.user.user_id ? null : seat.user.user_id);
+                    }
+                  }}
+                  className={`w-16 h-16 rounded-full overflow-hidden ${
+                    seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
+                      ? 'ring-4 ring-lime-400 animate-pulse'
+                      : 'ring-2 ring-slate-600'
+                  } ${isOwner && seat.user.user_id !== user.id ? 'cursor-pointer' : ''}`}
+                >
                   <img
                     src={seat.user.avatar}
                     alt={seat.user.username}
                     className="w-full h-full object-cover"
                   />
-                </div>
+                </button>
                 {/* Mic indicator */}
                 {seat.user.is_muted && (
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
@@ -611,6 +641,59 @@ const YallaLiveRoom = ({ user }) => {
                 <p className="text-[10px] text-slate-400 text-center mt-1 truncate max-w-[60px] font-almarai">
                   {seat.user.username}
                 </p>
+                
+                {/* Owner Control Menu */}
+                <AnimatePresence>
+                  {isOwner && showUserMenu === seat.user.user_id && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                      className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-slate-900 rounded-xl p-2 shadow-xl border border-slate-700 z-50 min-w-[140px]"
+                    >
+                      <p className="text-xs text-slate-400 font-almarai text-center mb-2 pb-2 border-b border-slate-700">
+                        {seat.user.username}
+                      </p>
+                      <div className="space-y-1">
+                        {seat.user.is_muted ? (
+                          <button
+                            onClick={() => { handleUnmuteUser(seat.user.user_id); setShowUserMenu(null); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-green-400 text-sm font-almarai"
+                          >
+                            <Mic className="w-4 h-4" strokeWidth={2} />
+                            إلغاء الكتم
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => { handleMuteUser(seat.user.user_id); setShowUserMenu(null); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-yellow-400 text-sm font-almarai"
+                          >
+                            <MicOff className="w-4 h-4" strokeWidth={2} />
+                            كتم
+                          </button>
+                        )}
+                        <button
+                          onClick={() => { handleKickUser(seat.user.user_id); setShowUserMenu(null); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-red-400 text-sm font-almarai"
+                        >
+                          <UserX className="w-4 h-4" strokeWidth={2} />
+                          طرد
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedPromoteUser(seat.user);
+                            setShowPromoteModal(true);
+                            setShowUserMenu(null);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-purple-400 text-sm font-almarai"
+                        >
+                          <Shield className="w-4 h-4" strokeWidth={2} />
+                          ترقية
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             ))}
             {/* Empty slots */}
@@ -1016,6 +1099,83 @@ const YallaLiveRoom = ({ user }) => {
                     قبول والصعود
                   </Button>
                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Promote Modal (Owner Only) */}
+        <AnimatePresence>
+          {showPromoteModal && selectedPromoteUser && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
+              onClick={() => setShowPromoteModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="bg-slate-900 w-full max-w-[350px] mx-4 rounded-2xl p-6 border-2 border-purple-500"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center mb-4">
+                  <img
+                    src={selectedPromoteUser.avatar}
+                    alt={selectedPromoteUser.username}
+                    className="w-20 h-20 rounded-full mx-auto mb-3 ring-4 ring-purple-500"
+                  />
+                  <h3 className="text-xl font-cairo font-bold text-white mb-1">
+                    ترقية {selectedPromoteUser.username}
+                  </h3>
+                  <p className="text-slate-400 font-almarai text-sm">
+                    اختر الصلاحية الجديدة
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handlePromoteUser(selectedPromoteUser.user_id, 'admin')}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-5 h-5 text-red-400" strokeWidth={2} />
+                      <span className="text-white font-cairo font-bold">أدمن</span>
+                    </div>
+                    <span className="text-xs text-red-300 font-almarai">طرد + كتم + دعوة</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => handlePromoteUser(selectedPromoteUser.user_id, 'mod')}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Star className="w-5 h-5 text-yellow-400" strokeWidth={2} />
+                      <span className="text-white font-cairo font-bold">مود</span>
+                    </div>
+                    <span className="text-xs text-yellow-300 font-almarai">قبول طلبات + صعود</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => handlePromoteUser(selectedPromoteUser.user_id, 'user')}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-700/50 hover:bg-slate-700 border border-slate-600 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Users className="w-5 h-5 text-slate-400" strokeWidth={2} />
+                      <span className="text-white font-cairo font-bold">مستخدم عادي</span>
+                    </div>
+                    <span className="text-xs text-slate-400 font-almarai">إزالة الصلاحيات</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setShowPromoteModal(false)}
+                  className="w-full mt-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 font-cairo font-bold transition-colors"
+                >
+                  إلغاء
+                </button>
               </motion.div>
             </motion.div>
           )}

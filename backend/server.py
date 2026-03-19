@@ -543,6 +543,39 @@ async def unmute_user(room_id: str, user_id: str, current_user: User = Depends(g
         return {"message": "تم إلغاء كتم العضو"}
     raise HTTPException(status_code=404, detail="العضو غير موجود")
 
+# Quick promote from room (Owner only)
+class QuickPromote(BaseModel):
+    role: str
+
+@api_router.post("/rooms/{room_id}/promote/{user_id}")
+async def quick_promote_user(room_id: str, user_id: str, promote_data: QuickPromote, current_user: User = Depends(get_current_user)):
+    """Owner can promote users directly from room"""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="صلاحيات Owner مطلوبة للترقية")
+    
+    if promote_data.role not in ["user", "mod", "admin"]:
+        raise HTTPException(status_code=400, detail="صلاحية غير صحيحة. الخيارات: user, mod, admin")
+    
+    # Check if user exists
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    # Cannot change owner role
+    if target_user.get("email") in OWNER_EMAILS:
+        raise HTTPException(status_code=403, detail="لا يمكن تغيير صلاحية الأونر")
+    
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"role": promote_data.role}}
+    )
+    
+    if result.modified_count > 0:
+        role_names = {"user": "مستخدم", "mod": "مود", "admin": "أدمن"}
+        return {"message": f"تمت ترقية {target_user['username']} إلى {role_names.get(promote_data.role, promote_data.role)}"}
+    
+    return {"message": "لم يتم التغيير - الصلاحية نفسها"}
+
 @api_router.post("/rooms/{room_id}/seat/invite/{user_id}")
 async def invite_to_seat(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
     if not can_kick_mute(current_user.role):
