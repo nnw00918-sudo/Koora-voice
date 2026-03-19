@@ -635,7 +635,14 @@ const YallaLiveRoom = ({ user }) => {
                       </div>
                     ) : (
                       participants.map((p) => (
-                        <div key={p.user_id || p.id} className="flex items-center gap-3 p-3 hover:bg-gray-800/50 transition-colors">
+                        <div 
+                          key={p.user_id || p.id} 
+                          onClick={() => {
+                            setShowConnectedList(false);
+                            navigate(`/user/${p.user_id || p.id}`);
+                          }}
+                          className="flex items-center gap-3 p-3 hover:bg-gray-800/50 transition-colors cursor-pointer"
+                        >
                           <img 
                             src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user?.username || p.username}`}
                             alt=""
