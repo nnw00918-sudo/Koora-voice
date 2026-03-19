@@ -29,7 +29,11 @@ import {
   Shield,
   UserPlus,
   Settings,
-  ArrowDownCircle
+  ArrowDownCircle,
+  Lock,
+  Unlock,
+  Trash2,
+  Power
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -74,6 +78,7 @@ const YallaLiveRoom = ({ user }) => {
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [selectedPromoteUser, setSelectedPromoteUser] = useState(null);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [showRoomSettings, setShowRoomSettings] = useState(false);
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const agoraClient = useRef(null);
@@ -470,6 +475,39 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Toggle room open/closed
+  const handleToggleRoom = async () => {
+    try {
+      const response = await axios.post(
+        `${API}/admin/rooms/${roomId}/toggle`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      fetchRoomData();
+      setShowRoomSettings(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل تغيير حالة الغرفة');
+    }
+  };
+
+  // Delete room
+  const handleDeleteRoom = async () => {
+    if (!window.confirm('هل أنت متأكد من حذف الغرفة؟ لا يمكن التراجع عن هذا الإجراء.')) {
+      return;
+    }
+    try {
+      await axios.delete(
+        `${API}/admin/rooms/${roomId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم حذف الغرفة');
+      navigate('/dashboard');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل حذف الغرفة');
+    }
+  };
+
   const handleAcceptInvite = async (inviteId) => {
     try {
       const response = await axios.post(
@@ -758,7 +796,7 @@ const YallaLiveRoom = ({ user }) => {
 
         {/* Control Header Bar */}
         <div className="bg-[#1a1a1a] px-4 py-3 flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               data-testid="close-btn"
               onClick={() => navigate('/dashboard')}
@@ -766,15 +804,31 @@ const YallaLiveRoom = ({ user }) => {
             >
               <X className="w-5 h-5" strokeWidth={2} />
             </button>
+            {/* Owner: Room Settings Button */}
+            {isOwner && (
+              <button
+                onClick={() => setShowRoomSettings(true)}
+                className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 hover:bg-purple-500/30 transition-colors"
+              >
+                <Power className="w-5 h-5" strokeWidth={2} />
+              </button>
+            )}
             <div className="flex items-center gap-2 bg-slate-800 rounded-full px-3 py-1.5">
               <div className="w-4 h-4 bg-purple-500 rounded flex items-center justify-center">
                 <Star className="w-2.5 h-2.5 text-white" strokeWidth={2} fill="white" />
               </div>
               <span className="text-sm text-white font-chivo">{userCoins} XP</span>
             </div>
+            {/* Room Status Badge */}
+            {room?.is_closed && (
+              <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full font-almarai flex items-center gap-1">
+                <Lock className="w-3 h-3" strokeWidth={2} />
+                مغلقة
+              </span>
+            )}
           </div>
           
-          <h2 className="text-white font-cairo font-bold text-sm">المحادثة المباشرة</h2>
+          <h2 className="text-white font-cairo font-bold text-sm">{room?.name || 'المحادثة المباشرة'}</h2>
           
           {/* Participants Button - Clickable for Owner */}
           <button
@@ -1381,6 +1435,93 @@ const YallaLiveRoom = ({ user }) => {
                     );
                   })}
                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Room Settings Modal (Owner Only) */}
+        <AnimatePresence>
+          {showRoomSettings && isOwner && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
+              onClick={() => setShowRoomSettings(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="bg-slate-900 w-full max-w-[350px] mx-4 rounded-2xl p-6 border-2 border-purple-500"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Power className="w-8 h-8 text-purple-400" strokeWidth={2} />
+                  </div>
+                  <h3 className="text-xl font-cairo font-bold text-white mb-1">
+                    إعدادات الغرفة
+                  </h3>
+                  <p className="text-slate-400 font-almarai text-sm">
+                    {room?.name}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Toggle Room Open/Closed */}
+                  <button
+                    onClick={handleToggleRoom}
+                    className={`w-full flex items-center justify-between px-4 py-4 rounded-xl transition-colors ${
+                      room?.is_closed 
+                        ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/50'
+                        : 'bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {room?.is_closed ? (
+                        <Unlock className="w-6 h-6 text-green-400" strokeWidth={2} />
+                      ) : (
+                        <Lock className="w-6 h-6 text-orange-400" strokeWidth={2} />
+                      )}
+                      <div className="text-right">
+                        <span className={`font-cairo font-bold ${room?.is_closed ? 'text-green-400' : 'text-orange-400'}`}>
+                          {room?.is_closed ? 'فتح الغرفة' : 'إغلاق الغرفة'}
+                        </span>
+                        <p className="text-xs text-slate-400 font-almarai">
+                          {room?.is_closed ? 'السماح للأعضاء بالانضمام' : 'منع الأعضاء من الانضمام'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors ${
+                      room?.is_closed ? 'bg-slate-700' : 'bg-green-500'
+                    }`}>
+                      <div className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                        room?.is_closed ? '' : 'translate-x-5'
+                      }`} />
+                    </div>
+                  </button>
+
+                  {/* Delete Room */}
+                  <button
+                    onClick={handleDeleteRoom}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 transition-colors"
+                  >
+                    <Trash2 className="w-6 h-6 text-red-400" strokeWidth={2} />
+                    <div className="text-right flex-1">
+                      <span className="text-red-400 font-cairo font-bold">حذف الغرفة</span>
+                      <p className="text-xs text-slate-400 font-almarai">حذف الغرفة نهائياً</p>
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setShowRoomSettings(false)}
+                  className="w-full mt-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 font-cairo font-bold transition-colors"
+                >
+                  إلغاء
+                </button>
               </motion.div>
             </motion.div>
           )}

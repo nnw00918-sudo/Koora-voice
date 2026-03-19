@@ -1011,14 +1011,43 @@ async def delete_room(room_id: str):
             return {"message": "تم حذف الغرفة بنجاح"}
     raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
 
-@api_router.post("/admin/rooms/{room_id}/toggle", dependencies=[Depends(get_admin_user)])
-async def toggle_room(room_id: str):
-    for room in ROOMS:
-        if room["id"] == room_id:
-            room["is_closed"] = not room.get("is_closed", False)
-            status = "مغلقة" if room["is_closed"] else "مفتوحة"
-            return {"message": f"الغرفة الآن {status}", "room": room}
-    raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+@api_router.post("/admin/rooms/{room_id}/toggle")
+async def toggle_room(room_id: str, current_user: User = Depends(get_current_user)):
+    """Toggle room open/closed status - Owner only"""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="صلاحيات Owner مطلوبة لإغلاق/فتح الغرف")
+    
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    new_status = not room.get("is_closed", False)
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"is_closed": new_status}}
+    )
+    
+    status = "مغلقة" if new_status else "مفتوحة"
+    return {"message": f"الغرفة الآن {status}", "is_closed": new_status}
+
+@api_router.delete("/admin/rooms/{room_id}")
+async def delete_room(room_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a room completely - Owner only"""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="صلاحيات Owner مطلوبة لحذف الغرف")
+    
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Delete room and all related data
+    await db.rooms.delete_one({"id": room_id})
+    await db.room_participants.delete_many({"room_id": room_id})
+    await db.messages.delete_many({"room_id": room_id})
+    await db.seat_requests.delete_many({"room_id": room_id})
+    await db.seat_invites.delete_many({"room_id": room_id})
+    
+    return {"message": "تم حذف الغرفة بنجاح"}
 
 @api_router.post("/admin/users/{user_id}/kick/{room_id}", dependencies=[Depends(get_admin_user)])
 async def kick_user_from_room(user_id: str, room_id: str):
