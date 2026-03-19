@@ -1,155 +1,143 @@
-# كورة فيرس - تطبيق غرف صوتية لكرة القدم
+# كورة فيرس - Social Media Application PRD
 
-## المتطلبات الأصلية
-تطبيق غرف صوتية لعشاق كرة القدم يتضمن:
-- غرف دردشة صوتية مباشرة
-- نظام إدارة متعدد المستويات
-- تكامل Agora للصوت
+## Original Problem Statement
+Building a football-themed social media application with voice chat, threads, user profiles, messaging, and social features.
 
-## نظام الأدوار والصلاحيات (مُحدّث)
+## User Personas
+- **Football fans** who want to discuss matches and share content
+- **Arabic-speaking users** (primary language support)
+- **Mobile-first users** (responsive design)
 
-### 1. الأونر (Owner) 👑
-- **الحسابات:** naifliver@gmail.com, naifliver97@gmail.com فقط
-- **الصلاحيات:**
-  - جميع صلاحيات الأدمن والمود
-  - إنشاء وإغلاق الغرف
-  - ترقية المستخدمين (إلى admin/mod/user)
-  - الوصول الكامل للوحة التحكم
+## Core Requirements
+1. Voice chat rooms (Agora integration)
+2. Threads/posts with media support (images, videos, Twitter embeds)
+3. User profiles with activity tabs
+4. User search and discovery
+5. Private messaging
+6. Follow/unfollow system
+7. Internationalization (Arabic/English)
 
-### 2. الأدمن (Admin) 🛡️
-- **الصلاحيات:**
-  - طرد المستخدمين من الغرف
-  - إسكات المستخدمين (Mute)
-  - دعوة المستخدمين للمنصة
-  - الموافقة/رفض طلبات المايك
-  - الوصول للوحة التحكم (بدون تغيير الأدوار)
-  - الصعود للمنصة مباشرة
+---
 
-### 3. المود (Mod) 🎯
-- **الصلاحيات:**
-  - الموافقة/رفض طلبات المايك
-  - الصعود للمنصة مباشرة بدون طلب
+## Completed Features (March 2026)
 
-### 4. المستخدم العادي (User) 👤
-- **الصلاحيات:**
-  - الانضمام للغرف
-  - إرسال رسائل في الدردشة
-  - طلب الصعود للمنصة (يحتاج موافقة)
-  - إرسال الهدايا
+### Phase 1: Core Threading System ✅
+- Thread creation with text, images, videos
+- Twitter/X link embedding
+- Thread deletion by owner
+- Reply system with nested replies
+- Like and repost functionality (backend complete)
 
-## الميزات المُنجزة
+### Phase 2: Profile System ✅
+- User profile page with stats (followers, following, likes)
+- Profile tabs: Posts, Likes, Replies, Reposts
+- Edit profile (name, username, bio, avatar)
+- Avatar upload or random generation
+- Level and XP display
 
-### المصادقة
-- [x] تسجيل حساب جديد
-- [x] تسجيل الدخول (JWT)
-- [x] تحديد الأونر تلقائياً بناءً على الإيميل
+### Phase 3: Social Features ✅ (March 19, 2026)
+- **"Replying to @username"** indicator in replies
+- **User search** functionality
+- **View other users' profiles**
+- **Private messaging system**:
+  - Conversations list
+  - Chat view
+  - Search modal for starting new chats
+- **Follow/Unfollow** users from profiles
 
-### نظام الغرف
-- [x] عرض الغرف المتاحة
-- [x] إنشاء غرفة جديدة
-- [x] الانضمام/مغادرة الغرفة
-- [x] إغلاق الغرفة
-- [x] فلترة حسب الفئة
+---
 
-### نظام الصوت (Agora)
-- [x] توليد Token آمن
-- [x] الانضمام للقناة الصوتية
-- [x] تشغيل/إيقاف المايك
-- [x] الاستماع للمتحدثين
-
-### نظام المنصة (Stage)
-- [x] 12 مقعد للمتحدثين
-- [x] طلب الصعود للمنصة (للمستخدم العادي)
-- [x] الصعود المباشر (للمود/الأدمن/الأونر)
-- [x] قبول/رفض الطلبات
-- [x] دعوة للصعود
-- [x] النزول من المنصة
-
-### الإدارة
-- [x] لوحة تحكم الأدمن
-- [x] إحصائيات (مستخدمين، رسائل، غرف)
-- [x] طرد المستخدمين
-- [x] حظر/إلغاء حظر
-- [x] إسكات المستخدمين
-- [x] تغيير الأدوار (للأونر فقط)
-
-### الدردشة والهدايا
-- [x] دردشة نصية في الغرفة
-- [x] نظام الهدايا والعملات
-- [x] رسائل النظام
-
-### الملف الشخصي (جديد - Dec 2025)
-- [x] تصميم TikTok-style للبروفايل
-- [x] تعديل الاسم واسم المستخدم
-- [x] رفع صورة البروفايل
-- [x] نظام المتابعين/المتابَعين
-- [x] النبذة التعريفية
-- [x] badges المستوى و XP
-
-### الإعدادات (جديد - Dec 2025)
-- [x] تصميم Twitter-style للإعدادات
-- [x] تغيير اللغة (عربي/إنجليزي)
-- [x] الوضع الداكن
-- [x] إعدادات الإشعارات
-- [x] إعدادات الخصوصية
-
-### صفحة ثريد (جديد - Dec 2025)
-- [x] صفحة ثريد جديدة
-- [x] تابات "لك" و "المتابَعون"
-- [x] كتابة ثريد جديد
-- [x] واجهة مستخدم تشبه Twitter/Threads
-- [x] شريط تنقل سفلي محدث (الرئيسية، ثريد، المباريات، الإعدادات)
-
-## البنية التقنية
-
-### Backend
-- FastAPI
-- MongoDB (Motor async driver)
-- JWT للمصادقة
-- Agora Token Builder
+## Technical Architecture
 
 ### Frontend
-- React
+- React 18
 - TailwindCSS
-- Agora RTC SDK
-- Framer Motion
+- Framer Motion (animations)
+- Lucide React (icons)
+- React Router DOM
+- Axios for API calls
+- Sonner for toasts
 
-### قاعدة البيانات
-- **users:** id, email, username, name, bio, avatar, role, coins, level, xp, followers, following
-- **rooms:** id, title, category, owner_id, is_live, is_closed
-- **room_participants:** room_id, user_id, seat_number, room_role
-- **seat_requests:** request_id, room_id, user_id, status
-- **seat_invites:** invite_id, room_id, user_id, status
-- **messages:** id, room_id, user_id, content
-- **threads:** id, author_id, content, likes_count, replies_count (جديد)
+### Backend
+- FastAPI (Python)
+- Motor (async MongoDB driver)
+- JWT authentication
+- Pydantic models
 
-## ملاحظات تقنية
+### Database
+- MongoDB
 
-### مسارات API الرئيسية
-- `/api/auth/register`, `/api/auth/login`, `/api/auth/profile`
-- `/api/rooms`, `/api/rooms/create`, `/api/rooms/{id}`
-- `/api/rooms/{id}/seat/request`, `/api/rooms/{id}/seat/join-direct`
-- `/api/rooms/{id}/seat/approve/{user_id}`
-- `/api/admin/stats`, `/api/admin/users/{id}/role`
-- `/api/agora/token`
-- `/api/users/{id}/follow`, `/api/users/{id}/followers`, `/api/users/{id}/following`
-- `/api/upload/avatar`
-- `/api/threads` (جديد - يحتاج تنفيذ في الـ backend)
+### File Structure
+```
+/app/
+├── backend/
+│   ├── server.py (2266+ lines - needs refactoring)
+│   ├── requirements.txt
+│   └── uploads/
+├── frontend/
+│   └── src/
+│       ├── pages/
+│       │   ├── ThreadsPage.js
+│       │   ├── ProfilePage.js
+│       │   ├── UserProfilePage.js
+│       │   ├── MessagesPage.js
+│       │   └── ...
+│       └── contexts/
+│           ├── LanguageContext.js
+│           └── SettingsContext.js
+└── test_reports/
+```
 
-### تكاملات خارجية
-- **Agora:** App ID و App Certificate محفوظة في .env
+---
 
-## المهام المستقبلية (Backlog)
+## API Endpoints
 
-### P0 - أولوية عالية
-- [ ] إنشاء API endpoints للثريد في الـ backend
-- [ ] إشعارات فورية لطلبات المايك
+### Threads
+- `POST /api/threads` - Create thread
+- `GET /api/threads` - Get feed
+- `DELETE /api/threads/{id}` - Delete thread
+- `POST /api/threads/{id}/reply` - Reply to thread
+- `GET /api/threads/{id}/replies` - Get replies
+- `POST /api/threads/{id}/like` - Like/unlike
+- `POST /api/threads/{id}/repost` - Repost
 
-### P1 - أولوية متوسطة
-- [ ] إعادة هيكلة server.py لملفات منفصلة
-- [ ] تقسيم SettingsPage.js لمكونات أصغر
+### Users
+- `GET /api/users/search?q=` - Search users
+- `GET /api/users/{id}/profile` - Get user profile
+- `POST /api/users/{id}/follow` - Follow user
+- `GET /api/users/{id}/followers` - Get followers
+- `GET /api/users/{id}/following` - Get following
+- `GET /api/users/{id}/threads` - Get user threads
 
-### P2 - تحسينات
-- [ ] إصلاح React key warnings في الدردشة
-- [ ] إضافة مستويات للمستخدمين
-- [ ] نظام badges
+### Messages
+- `GET /api/conversations` - Get conversations
+- `POST /api/conversations/{userId}` - Create/get conversation
+- `GET /api/conversations/{id}/messages` - Get messages
+- `POST /api/conversations/{id}/messages` - Send message
+
+---
+
+## P0 - Upcoming Tasks
+1. Wire up Like and Repost buttons in UI (backend exists)
+
+## P1 - Priority Backlog
+1. Refactor server.py into modules (routes, models, services)
+2. Extract shared components (ThreadCard, ReplyCard)
+3. Real-time messaging with WebSockets
+
+## P2 - Future Features
+1. User leveling/ranking system with badges
+2. Push notifications
+3. Media optimization
+4. Stories feature
+
+---
+
+## Test Credentials
+- Email: naifliver@gmail.com
+- Password: As11223344
+- User: _97
+
+## Test User for Search
+- Username: Liver97
+- ID: b292fecb-9bde-4ea7-9cd7-9f4d62131a0f
