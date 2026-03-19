@@ -44,6 +44,15 @@ GIFTS = [
 
 CATEGORIES = ["رياضة", "ترفيه", "تكنولوجيا", "ثقافة", "أخبار", "ألعاب"]
 
+# Owner emails - only these accounts have full control
+OWNER_EMAILS = ["naifliver@gmail.com", "naifliver97@gmail.com"]
+
+# Role hierarchy: owner > admin > mod > user
+# owner: all permissions (create/close rooms, promote users)
+# admin: kick, mute, invite to stage, approve mic requests
+# mod: approve mic requests, can go on stage without request
+ROLE_HIERARCHY = ["user", "mod", "admin", "owner"]
+
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
@@ -179,9 +188,34 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Invalid token")
 
 async def get_admin_user(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ["admin", "owner"]:
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
+
+async def get_owner_user(current_user: User = Depends(get_current_user)):
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Owner access required")
+    return current_user
+
+def has_permission(user_role: str, required_roles: list) -> bool:
+    """Check if user has required permission based on role hierarchy"""
+    return user_role in required_roles
+
+def can_manage_stage(user_role: str) -> bool:
+    """Check if user can approve mic requests and manage stage"""
+    return user_role in ["owner", "admin", "mod"]
+
+def can_kick_mute(user_role: str) -> bool:
+    """Check if user can kick and mute users"""
+    return user_role in ["owner", "admin"]
+
+def can_manage_rooms(user_role: str) -> bool:
+    """Check if user can create/close rooms"""
+    return user_role in ["owner"]
+
+def can_promote_users(user_role: str) -> bool:
+    """Check if user can promote other users"""
+    return user_role in ["owner"]
 
 @api_router.post("/auth/register", response_model=Token)
 async def register(user_data: UserRegister):
@@ -197,8 +231,11 @@ async def register(user_data: UserRegister):
     user_id = str(uuid4())
     hashed_password = get_password_hash(user_data.password)
     
-    total_users = await db.users.count_documents({})
-    user_role = "admin" if total_users == 0 else "user"
+    # Determine role based on email
+    if user_data.email in OWNER_EMAILS:
+        user_role = "owner"
+    else:
+        user_role = "user"
     
     user_doc = {
         "id": user_id,
@@ -380,8 +417,8 @@ async def request_seat(room_id: str, current_user: User = Depends(get_current_us
 
 @api_router.get("/rooms/{room_id}/seat/requests")
 async def get_seat_requests(room_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "moderator"]:
-        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    if not can_manage_stage(current_user.role):
+        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin/Mod مطلوبة")
     
     requests = await db.seat_requests.find({
         "room_id": room_id,
@@ -392,8 +429,8 @@ async def get_seat_requests(room_id: str, current_user: User = Depends(get_curre
 
 @api_router.post("/rooms/{room_id}/seat/approve/{user_id}")
 async def approve_seat_request(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "moderator"]:
-        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    if not can_manage_stage(current_user.role):
+        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin/Mod مطلوبة")
     
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
@@ -442,8 +479,8 @@ async def approve_seat_request(room_id: str, user_id: str, current_user: User = 
 
 @api_router.post("/rooms/{room_id}/seat/reject/{user_id}")
 async def reject_seat_request(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "moderator"]:
-        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    if not can_manage_stage(current_user.role):
+        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin/Mod مطلوبة")
     
     result = await db.seat_requests.update_one(
         {"room_id": room_id, "user_id": user_id, "status": "pending"},
@@ -456,8 +493,8 @@ async def reject_seat_request(room_id: str, user_id: str, current_user: User = D
 
 @api_router.post("/rooms/{room_id}/kick/{user_id}")
 async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "moderator"]:
-        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    if not can_kick_mute(current_user.role):
+        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
     
     result = await db.room_participants.delete_one({
         "room_id": room_id,
@@ -470,8 +507,8 @@ async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user:
 
 @api_router.post("/rooms/{room_id}/mute/{user_id}")
 async def mute_user(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "moderator"]:
-        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    if not can_kick_mute(current_user.role):
+        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
     
     result = await db.room_participants.update_one(
         {"room_id": room_id, "user_id": user_id},
@@ -484,8 +521,8 @@ async def mute_user(room_id: str, user_id: str, current_user: User = Depends(get
 
 @api_router.post("/rooms/{room_id}/unmute/{user_id}")
 async def unmute_user(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "moderator"]:
-        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    if not can_kick_mute(current_user.role):
+        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
     
     participant = await db.room_participants.find_one({
         "room_id": room_id,
@@ -508,8 +545,8 @@ async def unmute_user(room_id: str, user_id: str, current_user: User = Depends(g
 
 @api_router.post("/rooms/{room_id}/seat/invite/{user_id}")
 async def invite_to_seat(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "moderator"]:
-        raise HTTPException(status_code=403, detail="صلاحيات Admin/Moderator مطلوبة")
+    if not can_kick_mute(current_user.role):
+        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
     
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
@@ -643,6 +680,54 @@ async def leave_seat(room_id: str, current_user: User = Depends(get_current_user
     if result.modified_count > 0:
         return {"message": "نزلت من المنصة"}
     raise HTTPException(status_code=404, detail="لست على المنصة")
+
+@api_router.post("/rooms/{room_id}/seat/join-direct")
+async def join_seat_direct(room_id: str, current_user: User = Depends(get_current_user)):
+    """Allow mod/admin/owner to join stage directly without request"""
+    if current_user.role not in ["mod", "admin", "owner"]:
+        raise HTTPException(status_code=403, detail="صلاحيات Mod/Admin/Owner مطلوبة للصعود المباشر")
+    
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    participant = await db.room_participants.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    
+    if not participant:
+        raise HTTPException(status_code=404, detail="يجب الانضمام للغرفة أولاً")
+    
+    if participant.get("seat_number") is not None:
+        raise HTTPException(status_code=400, detail="أنت بالفعل على المنصة")
+    
+    occupied_seats = await db.room_participants.find({
+        "room_id": room_id,
+        "seat_number": {"$ne": None}
+    }, {"_id": 0, "seat_number": 1}).to_list(room["total_seats"])
+    
+    occupied_numbers = [p["seat_number"] for p in occupied_seats]
+    available_seat = None
+    
+    for i in range(1, room["total_seats"] + 1):
+        if i not in occupied_numbers:
+            available_seat = i
+            break
+    
+    if available_seat is None:
+        raise HTTPException(status_code=400, detail="المنصة ممتلئة")
+    
+    await db.room_participants.update_one(
+        {"room_id": room_id, "user_id": current_user.id},
+        {"$set": {
+            "seat_number": available_seat,
+            "room_role": "speaker",
+            "can_speak": True
+        }}
+    )
+    
+    return {"message": "صعدت للمنصة مباشرة", "seat_number": available_seat}
 
 @api_router.get("/rooms/{room_id}/seats")
 async def get_room_seats(room_id: str):
@@ -885,17 +970,26 @@ async def unban_user(user_id: str):
         return {"message": "تم إلغاء حظر المستخدم"}
     raise HTTPException(status_code=404, detail="المستخدم غير موجود")
 
-@api_router.post("/admin/users/{user_id}/role", dependencies=[Depends(get_admin_user)])
+@api_router.post("/admin/users/{user_id}/role", dependencies=[Depends(get_owner_user)])
 async def update_user_role(user_id: str, role_data: UserRoleUpdate):
-    if role_data.role not in ["user", "moderator", "admin"]:
-        raise HTTPException(status_code=400, detail="صلاحية غير صحيحة")
+    if role_data.role not in ["user", "mod", "admin"]:
+        raise HTTPException(status_code=400, detail="صلاحية غير صحيحة. الخيارات: user, mod, admin")
+    
+    # Cannot change owner role
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    if target_user.get("email") in OWNER_EMAILS:
+        raise HTTPException(status_code=403, detail="لا يمكن تغيير صلاحية الأونر")
     
     result = await db.users.update_one(
         {"id": user_id},
         {"$set": {"role": role_data.role}}
     )
     if result.modified_count > 0:
-        return {"message": f"تم تحديث الصلاحية إلى {role_data.role}"}
+        role_names = {"user": "مستخدم", "mod": "مود", "admin": "أدمن"}
+        return {"message": f"تم تحديث الصلاحية إلى {role_names.get(role_data.role, role_data.role)}"}
     raise HTTPException(status_code=404, detail="المستخدم غير موجود")
 
 @api_router.get("/admin/stats", dependencies=[Depends(get_admin_user)])

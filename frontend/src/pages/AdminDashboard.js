@@ -41,10 +41,14 @@ const AdminDashboard = ({ user }) => {
   });
 
   const token = localStorage.getItem('token');
+  
+  // Check access - owner and admin can access
+  const isOwner = user.role === 'owner';
+  const canPromoteUsers = user.role === 'owner'; // Only owner can change roles
 
   useEffect(() => {
-    if (user.role !== 'admin') {
-      toast.error('لا تملك صلاحيات Admin');
+    if (!['admin', 'owner'].includes(user.role)) {
+      toast.error('لا تملك صلاحيات للوصول');
       navigate('/dashboard');
       return;
     }
@@ -427,11 +431,14 @@ const AdminDashboard = ({ user }) => {
                     <p className="text-xs text-slate-400 font-almarai">{u.email}</p>
                     <div className="flex gap-2 mt-1 justify-end">
                       <span className={`text-xs px-2 py-1 rounded ${
+                        u.role === 'owner' ? 'bg-purple-500' :
                         u.role === 'admin' ? 'bg-red-500' :
-                        u.role === 'moderator' ? 'bg-yellow-500' :
+                        u.role === 'mod' ? 'bg-yellow-500' :
                         'bg-slate-700'
                       } text-white`}>
-                        {u.role}
+                        {u.role === 'owner' ? 'أونر' : 
+                         u.role === 'admin' ? 'أدمن' : 
+                         u.role === 'mod' ? 'مود' : 'مستخدم'}
                       </span>
                       {u.is_banned && (
                         <span className="text-xs px-2 py-1 rounded bg-red-500 text-white">محظور</span>
@@ -439,7 +446,7 @@ const AdminDashboard = ({ user }) => {
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    {u.id !== user.id && (
+                    {u.id !== user.id && u.role !== 'owner' && (
                       <>
                         {u.is_banned ? (
                           <Button
@@ -458,15 +465,17 @@ const AdminDashboard = ({ user }) => {
                             <UserX className="w-4 h-4" />
                           </Button>
                         )}
-                        <select
-                          value={u.role}
-                          onChange={(e) => handleChangeRole(u.id, e.target.value)}
-                          className="bg-slate-800 text-white text-sm rounded px-2 py-1 border border-slate-700"
-                        >
-                          <option value="user">User</option>
-                          <option value="moderator">Moderator</option>
-                          <option value="admin">Admin</option>
-                        </select>
+                        {canPromoteUsers && (
+                          <select
+                            value={u.role}
+                            onChange={(e) => handleChangeRole(u.id, e.target.value)}
+                            className="bg-slate-800 text-white text-sm rounded px-2 py-1 border border-slate-700"
+                          >
+                            <option value="user">مستخدم</option>
+                            <option value="mod">مود</option>
+                            <option value="admin">أدمن</option>
+                          </select>
+                        )}
                       </>
                     )}
                   </div>

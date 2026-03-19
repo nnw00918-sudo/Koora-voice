@@ -42,7 +42,13 @@ const YallaLiveRoom = ({ user }) => {
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [seatRequests, setSeatRequests] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(user.role === 'admin' || user.role === 'moderator');
+  // Role permissions
+  const isOwner = user.role === 'owner';
+  const isAdmin = user.role === 'admin';
+  const isMod = user.role === 'mod';
+  const canManageStage = ['owner', 'admin', 'mod'].includes(user.role); // approve/reject mic requests
+  const canKickMute = ['owner', 'admin'].includes(user.role); // kick, mute, invite
+  const canJoinStageDirect = ['owner', 'admin', 'mod'].includes(user.role); // join stage without request
   const [myInvites, setMyInvites] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const messagesEndRef = useRef(null);
@@ -146,7 +152,7 @@ const YallaLiveRoom = ({ user }) => {
       fetchSeats();
       fetchMessages();
       fetchParticipants();
-      if (isAdmin) {
+      if (canManageStage) {
         fetchSeatRequests();
       }
       fetchMyInvites();
@@ -294,6 +300,21 @@ const YallaLiveRoom = ({ user }) => {
       setPendingRequest(true);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل إرسال الطلب');
+    }
+  };
+
+  const handleJoinStageDirect = async () => {
+    try {
+      const response = await axios.post(
+        `${API}/rooms/${roomId}/seat/join-direct`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      setOnStage(true);
+      fetchSeats();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل الصعود للمنصة');
     }
   };
 
@@ -601,8 +622,8 @@ const YallaLiveRoom = ({ user }) => {
                       {seat.user.username}
                     </p>
                     
-                    {/* Admin Controls */}
-                    {isAdmin && seat.user.user_id !== user.id && (
+                    {/* Admin/Owner Controls - Kick and Mute */}
+                    {canKickMute && seat.user.user_id !== user.id && (
                       <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-1 bg-slate-900 rounded-lg p-1 shadow-lg">
                         {seat.user.is_muted ? (
                           <button
@@ -671,7 +692,18 @@ const YallaLiveRoom = ({ user }) => {
                   انزل
                 </Button>
               </>
+            ) : canJoinStageDirect ? (
+              // Owner, Admin, Mod can join directly
+              <Button
+                data-testid="join-stage-direct-btn"
+                onClick={handleJoinStageDirect}
+                className="bg-lime-400 hover:bg-lime-300 text-slate-950 rounded-full px-8 py-2 font-cairo font-bold"
+              >
+                <LogIn className="w-4 h-4 ml-2" strokeWidth={2} />
+                اصعد للمنصة
+              </Button>
             ) : (
+              // Regular users need to request
               <Button
                 data-testid="request-seat-btn"
                 onClick={handleTakeSeat}
@@ -695,8 +727,8 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         </div>
 
-        {/* Admin: Seat Requests */}
-        {isAdmin && seatRequests.length > 0 && (
+        {/* Admin/Mod: Seat Requests */}
+        {canManageStage && seatRequests.length > 0 && (
           <div className="bg-yellow-500/10 border-y border-yellow-500/30 p-4 flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm text-yellow-400 font-almarai">
@@ -754,8 +786,8 @@ const YallaLiveRoom = ({ user }) => {
                   />
                   <p className="text-xs text-slate-300 font-almarai max-w-[60px] truncate">{listener.username}</p>
                   
-                  {/* Admin: Invite Button */}
-                  {isAdmin && (
+                  {/* Admin/Owner: Invite Button */}
+                  {canKickMute && (
                     <button
                       onClick={() => handleInviteUser(listener.user_id, listener.username)}
                       className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-lime-500 hover:bg-lime-600 text-white rounded-full px-2 py-1 text-xs font-cairo whitespace-nowrap"
