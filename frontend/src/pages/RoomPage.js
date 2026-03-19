@@ -28,7 +28,8 @@ import {
   X,
   Shield,
   UserPlus,
-  Settings
+  Settings,
+  ArrowDownCircle
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -453,6 +454,22 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Remove user from stage
+  const handleRemoveFromStage = async (userId) => {
+    try {
+      const response = await axios.post(
+        `${API}/rooms/${roomId}/remove-from-stage/${userId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      fetchSeats();
+      fetchParticipants();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل إنزال العضو');
+    }
+  };
+
   const handleAcceptInvite = async (inviteId) => {
     try {
       const response = await axios.post(
@@ -699,6 +716,13 @@ const YallaLiveRoom = ({ user }) => {
                             كتم
                           </button>
                         )}
+                        <button
+                          onClick={() => { handleRemoveFromStage(seat.user.user_id); setShowUserMenu(null); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-orange-400 text-sm font-almarai"
+                        >
+                          <ArrowDownCircle className="w-4 h-4" strokeWidth={2} />
+                          إنزال من المنصة
+                        </button>
                         <button
                           onClick={() => { handleKickUser(seat.user.user_id); setShowUserMenu(null); }}
                           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-red-400 text-sm font-almarai"
@@ -1293,6 +1317,7 @@ const YallaLiveRoom = ({ user }) => {
                                 <button
                                   onClick={() => handleUnmuteUser(participant.user_id)}
                                   className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 hover:bg-green-500/30 transition-colors"
+                                  title="إلغاء الكتم"
                                 >
                                   <Mic className="w-5 h-5" strokeWidth={2} />
                                 </button>
@@ -1300,16 +1325,29 @@ const YallaLiveRoom = ({ user }) => {
                                 <button
                                   onClick={() => handleMuteUser(participant.user_id)}
                                   className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 hover:bg-yellow-500/30 transition-colors"
+                                  title="كتم"
                                 >
                                   <MicOff className="w-5 h-5" strokeWidth={2} />
                                 </button>
                               )
                             )}
                             
+                            {/* Remove from Stage (only if on stage) */}
+                            {isOnStage && (
+                              <button
+                                onClick={() => handleRemoveFromStage(participant.user_id)}
+                                className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 hover:bg-orange-500/30 transition-colors"
+                                title="إنزال من المنصة"
+                              >
+                                <ArrowDownCircle className="w-5 h-5" strokeWidth={2} />
+                              </button>
+                            )}
+                            
                             {/* Kick */}
                             <button
                               onClick={() => handleKickUser(participant.user_id)}
                               className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/30 transition-colors"
+                              title="طرد"
                             >
                               <UserX className="w-5 h-5" strokeWidth={2} />
                             </button>
@@ -1322,6 +1360,7 @@ const YallaLiveRoom = ({ user }) => {
                                 setShowParticipants(false);
                               }}
                               className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 hover:bg-purple-500/30 transition-colors"
+                              title="ترقية"
                             >
                               <Shield className="w-5 h-5" strokeWidth={2} />
                             </button>
@@ -1331,6 +1370,7 @@ const YallaLiveRoom = ({ user }) => {
                               <button
                                 onClick={() => handleInviteUser(participant.user_id, participant.username)}
                                 className="w-10 h-10 rounded-full bg-lime-500/20 flex items-center justify-center text-lime-400 hover:bg-lime-500/30 transition-colors"
+                                title="دعوة للمنصة"
                               >
                                 <Hand className="w-5 h-5" strokeWidth={2} />
                               </button>

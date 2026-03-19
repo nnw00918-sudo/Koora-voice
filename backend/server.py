@@ -556,6 +556,38 @@ async def unmute_user(room_id: str, user_id: str, current_user: User = Depends(g
         return {"message": "تم إلغاء كتم العضو"}
     raise HTTPException(status_code=404, detail="العضو غير موجود")
 
+@api_router.post("/rooms/{room_id}/remove-from-stage/{user_id}")
+async def remove_from_stage(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Remove a user from stage (Owner/Admin only)"""
+    if not can_kick_mute(current_user.role):
+        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
+    
+    participant = await db.room_participants.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    
+    if not participant:
+        raise HTTPException(status_code=404, detail="العضو غير موجود")
+    
+    if participant.get("seat_number") is None:
+        raise HTTPException(status_code=400, detail="العضو ليس على المنصة")
+    
+    result = await db.room_participants.update_one(
+        {"room_id": room_id, "user_id": user_id},
+        {"$set": {
+            "seat_number": None,
+            "room_role": "listener",
+            "can_speak": False,
+            "is_speaking": False,
+            "is_muted": False
+        }}
+    )
+    
+    if result.modified_count > 0:
+        return {"message": "تم إنزال العضو من المنصة"}
+    raise HTTPException(status_code=404, detail="العضو غير موجود")
+
 # Quick promote from room (Owner only)
 class QuickPromote(BaseModel):
     role: str
