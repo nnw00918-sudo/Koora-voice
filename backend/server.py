@@ -280,11 +280,49 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         "id": current_user.id,
         "email": current_user.email,
         "username": current_user.username,
+        "avatar": current_user.avatar,
         "role": current_user.role,
         "coins": current_user.coins,
         "level": current_user.level,
         "xp": current_user.xp
     }
+
+class ProfileUpdate(BaseModel):
+    username: Optional[str] = None
+    bio: Optional[str] = None
+    avatar: Optional[str] = None
+
+@api_router.put("/auth/profile")
+async def update_profile(profile_data: ProfileUpdate, current_user: User = Depends(get_current_user)):
+    """Update user profile"""
+    update_doc = {}
+    
+    if profile_data.username and profile_data.username.strip():
+        # Check if username is already taken
+        existing = await db.users.find_one({
+            "username": profile_data.username,
+            "id": {"$ne": current_user.id}
+        })
+        if existing:
+            raise HTTPException(status_code=400, detail="اسم المستخدم مستخدم بالفعل")
+        update_doc["username"] = profile_data.username.strip()
+    
+    if profile_data.bio is not None:
+        update_doc["bio"] = profile_data.bio[:160]  # Limit bio to 160 chars
+    
+    if profile_data.avatar and profile_data.avatar.strip():
+        update_doc["avatar"] = profile_data.avatar.strip()
+    
+    if update_doc:
+        await db.users.update_one(
+            {"id": current_user.id},
+            {"$set": update_doc}
+        )
+    
+    # Get updated user
+    updated_user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "password": 0})
+    
+    return {"message": "تم تحديث الملف الشخصي", "user": updated_user}
 
 @api_router.get("/rooms", response_model=List[RoomFull])
 async def get_rooms(category: Optional[str] = None):
