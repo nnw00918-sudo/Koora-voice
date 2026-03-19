@@ -888,6 +888,8 @@ async def leave_room(room_id: str, current_user: User = Depends(get_current_user
         "room_id": room_id,
         "user_id": current_user.id
     })
+    # حذف جميع رسائل الغرفة عند المغادرة
+    await db.messages.delete_many({"room_id": room_id})
     return {"message": "غادرت الغرفة"}
 
 @api_router.get("/rooms/{room_id}/participants", response_model=List[RoomParticipant])
