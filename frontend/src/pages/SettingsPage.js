@@ -681,6 +681,7 @@ const SettingsPage = ({ user, onLogout }) => {
         <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 z-40">
           <div className={`max-w-[600px] mx-auto flex justify-around p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <button onClick={() => navigate('/dashboard')} className="flex flex-col items-center gap-1 text-slate-400"><Home className="w-6 h-6" /><span className="text-xs">{t('home')}</span></button>
+            <button onClick={() => navigate('/threads')} className="flex flex-col items-center gap-1 text-slate-400"><MessageSquare className="w-6 h-6" /><span className="text-xs">{t('threads')}</span></button>
             <button onClick={() => navigate('/matches')} className="flex flex-col items-center gap-1 text-slate-400"><Trophy className="w-6 h-6" /><span className="text-xs">{t('matches')}</span></button>
             <button className="flex flex-col items-center gap-1 text-white"><Settings className="w-6 h-6" /><span className="text-xs">{t('settings')}</span></button>
           </div>

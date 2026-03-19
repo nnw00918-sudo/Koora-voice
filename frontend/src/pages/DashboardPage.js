@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Users, LogOut, Shield, Home, Trophy, Settings } from 'lucide-react';
+import { Users, LogOut, Shield, Home, Trophy, Settings, MessageSquare } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -244,6 +244,14 @@ const DashboardPage = ({ user, onLogout }) => {
           >
             <Home className="w-6 h-6" strokeWidth={1.5} />
             <span className="text-xs font-almarai">{t('home')}</span>
+          </button>
+          <button
+            data-testid="nav-threads-btn"
+            onClick={() => navigate('/threads')}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+          >
+            <MessageSquare className="w-6 h-6" strokeWidth={1.5} />
+            <span className="text-xs font-almarai">{t('threads')}</span>
           </button>
           <button
             data-testid="nav-matches-btn"

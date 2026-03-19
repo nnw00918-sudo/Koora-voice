@@ -78,6 +78,28 @@
 - [x] نظام الهدايا والعملات
 - [x] رسائل النظام
 
+### الملف الشخصي (جديد - Dec 2025)
+- [x] تصميم TikTok-style للبروفايل
+- [x] تعديل الاسم واسم المستخدم
+- [x] رفع صورة البروفايل
+- [x] نظام المتابعين/المتابَعين
+- [x] النبذة التعريفية
+- [x] badges المستوى و XP
+
+### الإعدادات (جديد - Dec 2025)
+- [x] تصميم Twitter-style للإعدادات
+- [x] تغيير اللغة (عربي/إنجليزي)
+- [x] الوضع الداكن
+- [x] إعدادات الإشعارات
+- [x] إعدادات الخصوصية
+
+### صفحة ثريد (جديد - Dec 2025)
+- [x] صفحة ثريد جديدة
+- [x] تابات "لك" و "المتابَعون"
+- [x] كتابة ثريد جديد
+- [x] واجهة مستخدم تشبه Twitter/Threads
+- [x] شريط تنقل سفلي محدث (الرئيسية، ثريد، المباريات، الإعدادات)
+
 ## البنية التقنية
 
 ### Backend
@@ -93,22 +115,26 @@
 - Framer Motion
 
 ### قاعدة البيانات
-- **users:** id, email, username, role, coins, level, xp
+- **users:** id, email, username, name, bio, avatar, role, coins, level, xp, followers, following
 - **rooms:** id, title, category, owner_id, is_live, is_closed
 - **room_participants:** room_id, user_id, seat_number, room_role
 - **seat_requests:** request_id, room_id, user_id, status
 - **seat_invites:** invite_id, room_id, user_id, status
 - **messages:** id, room_id, user_id, content
+- **threads:** id, author_id, content, likes_count, replies_count (جديد)
 
 ## ملاحظات تقنية
 
 ### مسارات API الرئيسية
-- `/api/auth/register`, `/api/auth/login`
+- `/api/auth/register`, `/api/auth/login`, `/api/auth/profile`
 - `/api/rooms`, `/api/rooms/create`, `/api/rooms/{id}`
 - `/api/rooms/{id}/seat/request`, `/api/rooms/{id}/seat/join-direct`
 - `/api/rooms/{id}/seat/approve/{user_id}`
 - `/api/admin/stats`, `/api/admin/users/{id}/role`
 - `/api/agora/token`
+- `/api/users/{id}/follow`, `/api/users/{id}/followers`, `/api/users/{id}/following`
+- `/api/upload/avatar`
+- `/api/threads` (جديد - يحتاج تنفيذ في الـ backend)
 
 ### تكاملات خارجية
 - **Agora:** App ID و App Certificate محفوظة في .env
@@ -116,11 +142,12 @@
 ## المهام المستقبلية (Backlog)
 
 ### P0 - أولوية عالية
+- [ ] إنشاء API endpoints للثريد في الـ backend
 - [ ] إشعارات فورية لطلبات المايك
 
 ### P1 - أولوية متوسطة
 - [ ] إعادة هيكلة server.py لملفات منفصلة
-- [ ] تقسيم RoomPage.js لمكونات أصغر
+- [ ] تقسيم SettingsPage.js لمكونات أصغر
 
 ### P2 - تحسينات
 - [ ] إصلاح React key warnings في الدردشة

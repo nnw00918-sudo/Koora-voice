@@ -6,6 +6,7 @@ export const translations = {
   ar: {
     // Navigation
     home: 'الرئيسية',
+    threads: 'ثريد',
     matches: 'المباريات',
     settings: 'الإعدادات',
     
@@ -89,6 +90,7 @@ export const translations = {
   en: {
     // Navigation
     home: 'Home',
+    threads: 'Threads',
     matches: 'Matches',
     settings: 'Settings',
     
