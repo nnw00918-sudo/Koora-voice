@@ -63,6 +63,7 @@ const YallaLiveRoom = ({ user }) => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [showReactions, setShowReactions] = useState(false);
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const agoraClient = useRef(null);
@@ -552,163 +553,240 @@ const YallaLiveRoom = ({ user }) => {
   const speakers = seats.filter(s => s.occupied);
   const listeners = participants.filter(p => p.seat_number === null);
 
-  // Get role badge
-  const getRoleBadge = (userRole) => {
-    if (userRole === 'owner') return { text: 'Owner', color: 'bg-purple-500' };
-    if (userRole === 'admin') return { text: 'Admin', color: 'bg-red-500' };
-    if (userRole === 'mod') return { text: 'Mod', color: 'bg-yellow-500' };
-    return { text: 'Creator', color: 'bg-emerald-500' };
+  // Reactions list
+  const reactions = ['❤️', '😂', '🎉', '😮', '💯', '👏', '🔥'];
+
+  // Send reaction
+  const sendReaction = async (emoji) => {
+    try {
+      await axios.post(
+        `${API}/rooms/${roomId}/messages`,
+        { content: emoji },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchMessages();
+    } catch (error) {
+      console.error('Failed to send reaction');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] fixed inset-0 overflow-hidden room-container">
-      <div className="max-w-[600px] mx-auto h-screen flex flex-col">
+    <div className="min-h-screen bg-[#0f0f0f] fixed inset-0 overflow-hidden room-container">
+      <div className="max-w-[600px] mx-auto h-screen flex flex-col relative">
         
-        {/* Header - Top Bar */}
-        <div className="bg-[#16213e]/95 backdrop-blur-xl p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              data-testid="minimize-btn"
-              onClick={() => navigate('/dashboard')}
-              className="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-300 hover:bg-slate-600/50 transition-colors"
-            >
-              <ChevronDown className="w-5 h-5" strokeWidth={2} />
-            </button>
-            <div className="flex items-center gap-2 bg-slate-700/50 rounded-full px-3 py-2">
-              <Eye className="w-4 h-4 text-slate-300" strokeWidth={2} />
-              <span className="text-sm text-white font-chivo">{participants.length}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsAudioMuted(!isAudioMuted)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                isAudioMuted ? 'bg-red-500' : 'bg-slate-700/50'
-              }`}
-            >
-              {isAudioMuted ? (
-                <VolumeX className="w-5 h-5 text-white" strokeWidth={2} />
-              ) : (
-                <Volume2 className="w-5 h-5 text-slate-300" strokeWidth={2} />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Room Title */}
-        <div className="bg-[#16213e]/80 px-4 py-2 border-b border-slate-700/50">
-          <h1 className="text-lg font-cairo font-bold text-white text-right">{room?.title || room?.name} Live</h1>
-          <p className="text-xs text-slate-400 font-almarai text-right">{room?.category || 'Just chatting'}</p>
-        </div>
-
-        {/* Room Info Bar */}
-        <div className="bg-[#2d2d44] p-3 flex items-center gap-3">
-          <button className="w-10 h-10 rounded-lg bg-slate-700/50 flex items-center justify-center text-slate-400">
-            <MoreHorizontal className="w-5 h-5" strokeWidth={2} />
-          </button>
-          <button className="bg-red-600 hover:bg-red-700 text-white rounded-full px-4 py-2 flex items-center gap-2 font-cairo font-bold text-sm transition-colors">
-            <Star className="w-4 h-4" strokeWidth={2} fill="white" />
-            Sub
-          </button>
-          <div className="flex-1 text-right">
-            <div className="flex items-center gap-2 justify-end">
-              <div>
-                <p className="text-white font-cairo font-bold text-sm">{room?.owner_name || 'المضيف'}</p>
-                <p className="text-xs text-slate-400 font-almarai flex items-center gap-1 justify-end">
-                  <Users className="w-3 h-3" strokeWidth={2} />
-                  {participants.length} members
+        {/* Speakers Row - Top */}
+        <div className="bg-gradient-to-b from-[#1a1a1a] to-[#0f0f0f] p-4">
+          {/* Speaker Avatars */}
+          <div className="flex justify-center gap-3 mb-3">
+            {speakers.slice(0, 6).map((seat, index) => (
+              <motion.div
+                key={seat.seat_number}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="relative"
+              >
+                <div className={`w-16 h-16 rounded-full overflow-hidden ${
+                  seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
+                    ? 'ring-4 ring-lime-400 animate-pulse'
+                    : 'ring-2 ring-slate-600'
+                }`}>
+                  <img
+                    src={seat.user.avatar}
+                    alt={seat.user.username}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {/* Mic indicator */}
+                {seat.user.is_muted && (
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <MicOff className="w-3 h-3 text-white" strokeWidth={2} />
+                  </div>
+                )}
+                {seat.user.can_speak && !seat.user.is_muted && (seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)) && (
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-lime-400 rounded-full flex items-center justify-center">
+                    <Mic className="w-3 h-3 text-black" strokeWidth={2} />
+                  </div>
+                )}
+                {/* Username */}
+                <p className="text-[10px] text-slate-400 text-center mt-1 truncate max-w-[60px] font-almarai">
+                  {seat.user.username}
                 </p>
+              </motion.div>
+            ))}
+            {/* Empty slots */}
+            {speakers.length < 4 && Array.from({ length: Math.min(4 - speakers.length, 4) }).map((_, i) => (
+              <div key={`empty-${i}`} className="w-16 h-16 rounded-full bg-slate-800/50 border-2 border-dashed border-slate-700 flex items-center justify-center">
+                <Users className="w-6 h-6 text-slate-600" strokeWidth={1.5} />
               </div>
-              <img
-                src={room?.owner_avatar || room?.image}
-                alt="Room"
-                className="w-12 h-12 rounded-full ring-2 ring-slate-600"
-              />
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Control Bar - Request to Speak */}
-        <div className="bg-[#1a1a2e] p-3 flex items-center gap-3">
-          <button
-            onClick={() => setShowChat(!showChat)}
-            className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center relative"
-          >
-            <MessageCircle className="w-6 h-6 text-white" strokeWidth={2} />
-            {messages.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 rounded-full text-xs text-white flex items-center justify-center font-chivo">
-                {messages.length > 99 ? '99+' : messages.length}
-              </span>
-            )}
-          </button>
+        {/* Control Header Bar */}
+        <div className="bg-[#1a1a1a] px-4 py-3 flex items-center justify-between border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <button
+              data-testid="close-btn"
+              onClick={() => navigate('/dashboard')}
+              className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-slate-700 transition-colors"
+            >
+              <X className="w-5 h-5" strokeWidth={2} />
+            </button>
+            <div className="flex items-center gap-2 bg-slate-800 rounded-full px-3 py-1.5">
+              <div className="w-4 h-4 bg-purple-500 rounded flex items-center justify-center">
+                <Star className="w-2.5 h-2.5 text-white" strokeWidth={2} fill="white" />
+              </div>
+              <span className="text-sm text-white font-chivo">{userCoins} XP</span>
+            </div>
+          </div>
           
-          {onStage ? (
-            <div className="flex-1 flex gap-2">
-              <button
-                data-testid="toggle-mic-btn"
-                onClick={toggleMic}
-                className={`flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold transition-colors ${
-                  isMicOn
-                    ? 'bg-lime-500 text-slate-950'
-                    : 'bg-slate-700 text-white'
-                }`}
-              >
-                {isMicOn ? <Mic className="w-5 h-5" strokeWidth={2} /> : <MicOff className="w-5 h-5" strokeWidth={2} />}
-                {isMicOn ? 'تحدث' : 'كتم'}
-              </button>
-              <button
-                data-testid="leave-stage-btn"
-                onClick={handleLeaveSeat}
-                className="px-4 py-3 rounded-full bg-red-500 hover:bg-red-600 text-white font-cairo font-bold transition-colors"
-              >
-                انزل
+          <h2 className="text-white font-cairo font-bold text-sm">المحادثة المباشرة</h2>
+          
+          <div className="flex items-center gap-2 bg-slate-800 rounded-full px-3 py-1.5">
+            <Users className="w-4 h-4 text-slate-400" strokeWidth={2} />
+            <span className="text-sm text-white font-chivo">{participants.length}</span>
+          </div>
+        </div>
+
+        {/* Main Content Area - Chat + Reactions */}
+        <div className="flex-1 flex relative overflow-hidden">
+          
+          {/* Reactions Panel - Left Side */}
+          <div className="absolute left-2 top-4 z-20 flex flex-col gap-2">
+            <button
+              onClick={() => sendReaction('❤️')}
+              className="w-12 h-12 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center hover:bg-red-500/40 transition-colors"
+            >
+              <span className="text-xl">❤️</span>
+            </button>
+            <button
+              onClick={() => setShowReactions(!showReactions)}
+              className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center hover:bg-slate-700 transition-colors"
+            >
+              <span className="text-xl">😊</span>
+            </button>
+            
+            {/* Expanded Reactions */}
+            <AnimatePresence>
+              {showReactions && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex flex-col gap-2"
+                >
+                  {['🎉', '😮', '💯', '👏', '🔥', '😂'].map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => {
+                        sendReaction(emoji);
+                        setShowReactions(false);
+                      }}
+                      className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center hover:bg-slate-700 transition-colors"
+                    >
+                      <span className="text-xl">{emoji}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 pl-16 space-y-3" style={{WebkitOverflowScrolling: 'touch'}}>
+            {/* Welcome Message */}
+            <div className="bg-slate-800/50 rounded-xl p-3 mb-4">
+              <p className="text-slate-300 text-sm font-almarai text-right">
+                أهلاً بك في الدردشة المباشرة. لا تنس حماية خصوصيتك والالتزام بإرشادات المنتدى.
+              </p>
+              <button className="text-blue-400 text-xs font-almarai mt-2 hover:underline">
+                مزيد من المعلومات ↓
               </button>
             </div>
-          ) : canJoinStageDirect ? (
-            <button
-              data-testid="join-stage-direct-btn"
-              onClick={handleJoinStageDirect}
-              className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold transition-colors"
-            >
-              <Hand className="w-5 h-5" strokeWidth={2} />
-              اصعد للمنصة
-            </button>
-          ) : (
-            <button
-              data-testid="request-seat-btn"
-              onClick={handleTakeSeat}
-              disabled={pendingRequest}
-              className={`flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold transition-colors ${
-                pendingRequest
-                  ? 'bg-slate-800 text-slate-400 cursor-not-allowed'
-                  : 'bg-slate-700 hover:bg-slate-600 text-white'
-              }`}
-            >
-              <Hand className="w-5 h-5" strokeWidth={2} />
-              {pendingRequest ? 'طلبك قيد المراجعة...' : 'Request to speak'}
-            </button>
-          )}
-          
-          <button
-            onClick={() => setIsAudioMuted(!isAudioMuted)}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-              isAudioMuted ? 'bg-red-500' : 'bg-amber-500'
-            }`}
-          >
-            {isAudioMuted ? (
-              <VolumeX className="w-6 h-6 text-white" strokeWidth={2} />
-            ) : (
-              <Volume2 className="w-6 h-6 text-white" strokeWidth={2} />
-            )}
-          </button>
+
+            {messages.map((message) => {
+              const isOwnMessage = message.user_id === user.id;
+              const isSystem = message.user_id === 'system';
+              const isEmoji = /^[\u{1F300}-\u{1F9FF}]$/u.test(message.content);
+              
+              if (isSystem) {
+                return (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex justify-center"
+                  >
+                    <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-full px-4 py-2 text-xs text-yellow-200 font-almarai">
+                      {message.content}
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              // Emoji only message - show big
+              if (isEmoji) {
+                return (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex justify-center"
+                  >
+                    <span className="text-5xl">{message.content}</span>
+                  </motion.div>
+                );
+              }
+
+              return (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, x: isOwnMessage ? 20 : -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className={`flex gap-2 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
+                >
+                  <img
+                    src={message.avatar}
+                    alt={message.username}
+                    className="w-8 h-8 rounded-full flex-shrink-0"
+                  />
+                  <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      {isOwnMessage ? (
+                        <>
+                          <span className="text-xs text-slate-500 font-almarai">{message.username}</span>
+                          <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-chivo">#1</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-chivo">#2</span>
+                          <span className="text-xs text-slate-500 font-almarai">{message.username}</span>
+                        </>
+                      )}
+                    </div>
+                    <div
+                      className={`px-4 py-2 rounded-2xl max-w-[250px] ${
+                        isOwnMessage
+                          ? 'bg-amber-500 text-black'
+                          : 'bg-slate-800 text-white'
+                      } font-almarai text-sm`}
+                    >
+                      {message.content}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         {/* Admin/Mod: Seat Requests */}
         {canManageStage && seatRequests.length > 0 && (
-          <div className="bg-yellow-500/10 border-y border-yellow-500/30 p-3">
+          <div className="bg-amber-500/10 border-t border-amber-500/30 p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-yellow-400 font-almarai">{seatRequests.length} طلب</span>
-              <p className="text-sm text-yellow-200 font-cairo font-bold">طلبات الصعود</p>
+              <span className="text-sm text-amber-400 font-almarai">{seatRequests.length} طلب</span>
+              <p className="text-sm text-amber-200 font-cairo font-bold">طلبات الصعود</p>
             </div>
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               {seatRequests.map((request) => (
@@ -740,182 +818,114 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         )}
 
-        {/* Speakers Grid - Large Cards */}
-        <div className="flex-1 overflow-y-auto p-4 overscroll-none" style={{WebkitOverflowScrolling: 'touch'}}>
-          {!showChat ? (
-            <div className="grid grid-cols-2 gap-4">
-              {speakers.map((seat) => (
-                <motion.div
-                  key={seat.seat_number}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="relative group"
+        {/* Bottom Control Bar */}
+        <div className="bg-[#1a1a1a] border-t border-slate-800 p-3">
+          <div className="flex items-center gap-3">
+            {/* Mic/Stage Controls */}
+            {onStage ? (
+              <>
+                <button
+                  data-testid="toggle-mic-btn"
+                  onClick={toggleMic}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                    isMicOn ? 'bg-lime-500' : 'bg-slate-700'
+                  }`}
                 >
-                  <div className={`aspect-[3/4] rounded-2xl overflow-hidden bg-slate-800 ${
-                    seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
-                      ? 'ring-4 ring-lime-400'
-                      : ''
-                  }`}>
-                    <img
-                      src={seat.user.avatar}
-                      alt={seat.user.username}
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Mic indicator */}
-                    {seat.user.is_muted && (
-                      <div className="absolute bottom-3 right-3 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                        <MicOff className="w-4 h-4 text-white" strokeWidth={2} />
-                      </div>
-                    )}
-                    {seat.user.can_speak && seat.user.user_id === user.id && isMicOn && !seat.user.is_muted && (
-                      <div className="absolute bottom-3 right-3 w-8 h-8 bg-lime-400 rounded-full flex items-center justify-center animate-pulse">
-                        <Mic className="w-4 h-4 text-slate-950" strokeWidth={2} />
-                      </div>
-                    )}
-                    
-                    {/* Admin Controls on Hover */}
-                    {canKickMute && seat.user.user_id !== user.id && (
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        {seat.user.is_muted ? (
-                          <button
-                            onClick={() => handleUnmuteUser(seat.user.user_id)}
-                            className="w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center"
-                          >
-                            <Mic className="w-5 h-5 text-white" strokeWidth={2} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleMuteUser(seat.user.user_id)}
-                            className="w-10 h-10 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center"
-                          >
-                            <MicOff className="w-5 h-5 text-white" strokeWidth={2} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleKickUser(seat.user.user_id)}
-                          className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center"
-                        >
-                          <UserX className="w-5 h-5 text-white" strokeWidth={2} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  {/* Name and Role */}
-                  <div className="mt-2">
-                    <p className="text-white font-cairo font-bold text-sm">{seat.user.username}</p>
-                    <div className="flex items-center gap-1">
-                      <span className="text-emerald-400 text-xs">✦</span>
-                      <span className="text-slate-400 text-xs font-almarai">
-                        {seat.seat_number === 1 ? 'Creator' : getRoleBadge(seat.user.room_role).text}
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-              
-              {/* Empty seats for joining */}
-              {seats.filter(s => !s.occupied).slice(0, 4).map((seat) => (
-                <motion.div
-                  key={seat.seat_number}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="aspect-[3/4] rounded-2xl bg-slate-800/30 border-2 border-dashed border-slate-700 flex flex-col items-center justify-center gap-2"
+                  {isMicOn ? (
+                    <Mic className="w-6 h-6 text-black" strokeWidth={2} />
+                  ) : (
+                    <MicOff className="w-6 h-6 text-white" strokeWidth={2} />
+                  )}
+                </button>
+                <button
+                  data-testid="leave-stage-btn"
+                  onClick={handleLeaveSeat}
+                  className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors"
                 >
-                  <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center">
-                    <Users className="w-8 h-8 text-slate-600" strokeWidth={1.5} />
-                  </div>
-                  <p className="text-slate-600 text-sm font-almarai">مقعد {seat.seat_number}</p>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            /* Chat Messages */
-            <div className="space-y-3">
-              {messages.map((message) => {
-                const isOwnMessage = message.user_id === user.id;
-                const isSystem = message.user_id === 'system';
-                
-                if (isSystem) {
-                  return (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="flex justify-center"
-                    >
-                      <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-full px-4 py-2 text-xs text-yellow-200 font-almarai">
-                        {message.content}
-                      </div>
-                    </motion.div>
-                  );
-                }
-
-                return (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex gap-2 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
-                  >
-                    <img
-                      src={message.avatar}
-                      alt={message.username}
-                      className="w-8 h-8 rounded-full ring-1 ring-slate-700 flex-shrink-0"
-                    />
-                    <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
-                      <p className="text-xs text-slate-500 font-almarai mb-1">
-                        {message.username}
-                      </p>
-                      <div
-                        className={`inline-block px-4 py-2 rounded-2xl ${
-                          isOwnMessage
-                            ? 'bg-lime-400 text-slate-950'
-                            : 'bg-slate-800 text-white'
-                        } font-almarai text-sm`}
-                      >
-                        {message.content}
-                      </div>
-                    </div>
-                    {!isOwnMessage && (
-                      <button
-                        onClick={() => {
-                          setSelectedUser(participants.find(p => p.user_id === message.user_id));
-                          setShowGiftModal(true);
-                        }}
-                        className="text-slate-500 hover:text-yellow-400 transition-colors flex-shrink-0"
-                      >
-                        <Gift className="w-4 h-4" strokeWidth={1.5} />
-                      </button>
-                    )}
-                  </motion.div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
-
-        {/* Message Input - Only show when chat is open */}
-        {showChat && (
-          <div className="bg-[#16213e]/90 backdrop-blur-xl border-t border-slate-700/50 p-4 flex-shrink-0">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Button
-                type="submit"
-                disabled={!newMessage.trim()}
-                className="bg-lime-400 hover:bg-lime-300 text-slate-950 rounded-full w-12 h-12 p-0 flex-shrink-0"
+                  <SignOut className="w-6 h-6 text-white" strokeWidth={2} />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsAudioMuted(!isAudioMuted)}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                  isAudioMuted ? 'bg-red-500' : 'bg-amber-500'
+                }`}
               >
-                <Send className="w-5 h-5" strokeWidth={2} />
-              </Button>
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="اكتب رسالتك..."
-                className="flex-1 bg-slate-800 border-slate-700 focus:border-lime-400 rounded-full text-white text-right font-almarai"
-                dir="rtl"
-              />
-            </form>
+                {isAudioMuted ? (
+                  <VolumeX className="w-6 h-6 text-white" strokeWidth={2} />
+                ) : (
+                  <Volume2 className="w-6 h-6 text-white" strokeWidth={2} />
+                )}
+              </button>
+            )}
+            
+            {/* Request to Speak / Stage Button */}
+            {!onStage && (
+              canJoinStageDirect ? (
+                <button
+                  data-testid="join-stage-direct-btn"
+                  onClick={handleJoinStageDirect}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold transition-colors"
+                >
+                  <Hand className="w-5 h-5" strokeWidth={2} />
+                  Request to speak
+                </button>
+              ) : (
+                <button
+                  data-testid="request-seat-btn"
+                  onClick={handleTakeSeat}
+                  disabled={pendingRequest}
+                  className={`flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold transition-colors ${
+                    pendingRequest
+                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                      : 'bg-slate-700 hover:bg-slate-600 text-white'
+                  }`}
+                >
+                  <Hand className="w-5 h-5" strokeWidth={2} />
+                  {pendingRequest ? 'طلبك قيد المراجعة...' : 'Request to speak'}
+                </button>
+              )
+            )}
+            
+            {onStage && (
+              <div className="flex-1 text-center">
+                <span className="text-lime-400 font-cairo font-bold text-sm">أنت على المنصة</span>
+              </div>
+            )}
+            
+            {/* Gift Button */}
+            <button
+              onClick={() => {
+                if (speakers.length > 0) {
+                  setSelectedUser(speakers[0].user);
+                  setShowGiftModal(true);
+                }
+              }}
+              className="w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center transition-colors"
+            >
+              <Gift className="w-6 h-6 text-white" strokeWidth={2} />
+            </button>
           </div>
-        )}
+          
+          {/* Message Input */}
+          <form onSubmit={handleSendMessage} className="flex gap-2 mt-3">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="إرسال رسالة..."
+              className="flex-1 bg-slate-800 border-slate-700 focus:border-lime-400 rounded-full text-white text-right font-almarai h-11"
+              dir="rtl"
+            />
+            <Button
+              type="submit"
+              disabled={!newMessage.trim()}
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-11 h-11 p-0 flex-shrink-0"
+            >
+              <Send className="w-5 h-5" strokeWidth={2} />
+            </Button>
+          </form>
+        </div>
 
         {/* Gift Modal */}
         <AnimatePresence>
