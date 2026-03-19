@@ -772,40 +772,6 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         )}
 
-        {/* Listeners List */}
-        {listeners.length > 0 && (
-          <div className="bg-slate-900/30 border-b border-slate-800 p-3 flex-shrink-0">
-            <p className="text-xs text-slate-400 font-almarai mb-2">المستمعين ({listeners.length})</p>
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-              {listeners.slice(0, 10).map((listener) => (
-                <div key={listener.user_id} className="flex flex-col items-center gap-1 relative group">
-                  <img
-                    src={listener.avatar}
-                    alt={listener.username}
-                    className="w-10 h-10 rounded-full ring-1 ring-slate-700"
-                  />
-                  <p className="text-xs text-slate-300 font-almarai max-w-[60px] truncate">{listener.username}</p>
-                  
-                  {/* Admin/Owner: Invite Button */}
-                  {canKickMute && (
-                    <button
-                      onClick={() => handleInviteUser(listener.user_id, listener.username)}
-                      className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-lime-500 hover:bg-lime-600 text-white rounded-full px-2 py-1 text-xs font-cairo whitespace-nowrap"
-                    >
-                      دعوة للمنصة
-                    </button>
-                  )}
-                </div>
-              ))}
-              {listeners.length > 10 && (
-                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
-                  <span className="text-xs text-slate-400 font-chivo">+{listeners.length - 10}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Chat */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 overscroll-none" style={{WebkitOverflowScrolling: 'touch'}}>
           {messages.map((message) => {
