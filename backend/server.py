@@ -106,6 +106,23 @@ class Message(BaseModel):
 class MessageCreate(BaseModel):
     content: str
 
+# Thread Models
+class ThreadCreate(BaseModel):
+    content: str
+    image: Optional[str] = None
+
+class ThreadResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    content: str
+    image: Optional[str] = None
+    author: dict
+    likes_count: int = 0
+    replies_count: int = 0
+    reposts_count: int = 0
+    liked: bool = False
+    created_at: str
+
 class RoomParticipant(BaseModel):
     model_config = ConfigDict(extra="ignore")
     user_id: str
@@ -1405,6 +1422,173 @@ async def generate_agora_token(request: AgoraTokenRequest, current_user: User = 
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"فشل توليد Token: {str(e)}")
+
+# ==================== THREADS ENDPOINTS ====================
+
+@api_router.get("/threads")
+async def get_threads(
+    tab: str = "forYou",
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get threads feed"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    current_user = await db.users.find_one({"id": user_id})
+    if not current_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get threads based on tab
+    if tab == "following":
+        # Get threads from users the current user follows
+        following_ids = current_user.get("following", [])
+        query = {"author_id": {"$in": following_ids}}
+    else:
+        # For "forYou" tab, get all threads
+        query = {}
+    
+    threads_cursor = db.threads.find(query).sort("created_at", -1).limit(50)
+    threads = await threads_cursor.to_list(length=50)
+    
+    # Get user likes to mark liked threads
+    user_likes = await db.thread_likes.find({"user_id": user_id}).to_list(length=1000)
+    liked_thread_ids = {like["thread_id"] for like in user_likes}
+    
+    result = []
+    for thread in threads:
+        # Get author info
+        author = await db.users.find_one({"id": thread["author_id"]})
+        if author:
+            result.append({
+                "id": thread["id"],
+                "content": thread["content"],
+                "image": thread.get("image"),
+                "author": {
+                    "id": author["id"],
+                    "username": author["username"],
+                    "name": author.get("name", author["username"]),
+                    "avatar": author.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={author['username']}")
+                },
+                "likes_count": thread.get("likes_count", 0),
+                "replies_count": thread.get("replies_count", 0),
+                "reposts_count": thread.get("reposts_count", 0),
+                "liked": thread["id"] in liked_thread_ids,
+                "created_at": thread["created_at"]
+            })
+    
+    return {"threads": result}
+
+@api_router.post("/threads")
+async def create_thread(
+    thread_data: ThreadCreate,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Create a new thread"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    if not thread_data.content.strip():
+        raise HTTPException(status_code=400, detail="Content cannot be empty")
+    
+    if len(thread_data.content) > 500:
+        raise HTTPException(status_code=400, detail="Content too long")
+    
+    thread_id = str(int(time.time() * 1000))
+    new_thread = {
+        "id": thread_id,
+        "author_id": user_id,
+        "content": thread_data.content.strip(),
+        "image": thread_data.image,
+        "likes_count": 0,
+        "replies_count": 0,
+        "reposts_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.threads.insert_one(new_thread)
+    
+    # Add XP for posting
+    await db.users.update_one(
+        {"id": user_id},
+        {"$inc": {"xp": 5}}
+    )
+    
+    return {"message": "Thread created", "thread_id": thread_id}
+
+@api_router.post("/threads/{thread_id}/like")
+async def like_thread(
+    thread_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Like or unlike a thread"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    thread = await db.threads.find_one({"id": thread_id})
+    if not thread:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    
+    # Check if already liked
+    existing_like = await db.thread_likes.find_one({
+        "thread_id": thread_id,
+        "user_id": user_id
+    })
+    
+    if existing_like:
+        # Unlike
+        await db.thread_likes.delete_one({"_id": existing_like["_id"]})
+        await db.threads.update_one(
+            {"id": thread_id},
+            {"$inc": {"likes_count": -1}}
+        )
+        return {"liked": False}
+    else:
+        # Like
+        await db.thread_likes.insert_one({
+            "thread_id": thread_id,
+            "user_id": user_id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        await db.threads.update_one(
+            {"id": thread_id},
+            {"$inc": {"likes_count": 1}}
+        )
+        return {"liked": True}
+
+@api_router.delete("/threads/{thread_id}")
+async def delete_thread(
+    thread_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Delete a thread"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    thread = await db.threads.find_one({"id": thread_id})
+    if not thread:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    
+    # Check if user owns the thread or is admin/owner
+    user = await db.users.find_one({"id": user_id})
+    if thread["author_id"] != user_id and user.get("role") not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.threads.delete_one({"id": thread_id})
+    await db.thread_likes.delete_many({"thread_id": thread_id})
+    
+    return {"message": "Thread deleted"}
 
 app.include_router(api_router)
 
