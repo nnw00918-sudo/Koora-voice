@@ -4,17 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
-import { Radio, Users, LogOut, User, Shield, Home, Trophy, Settings } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { Users, LogOut, Shield, Home, Trophy, Settings } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const DashboardPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
+  const { language, t } = useLanguage();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState(['الكل']);
-  const [selectedCategory, setSelectedCategory] = useState('الكل');
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
+  const isRTL = language === 'ar';
 
   useEffect(() => {
     fetchRooms();
@@ -24,7 +28,7 @@ const DashboardPage = ({ user, onLogout }) => {
   const fetchCategories = async () => {
     try {
       const response = await axios.get(`${API}/categories`);
-      setCategories(['الكل', ...response.data.categories]);
+      setCategories(response.data.categories);
     } catch (error) {
       console.error('Failed to fetch categories');
     }
@@ -32,11 +36,11 @@ const DashboardPage = ({ user, onLogout }) => {
 
   const fetchRooms = async () => {
     try {
-      const params = selectedCategory !== 'الكل' ? { category: selectedCategory } : {};
+      const params = selectedCategory ? { category: selectedCategory } : {};
       const response = await axios.get(`${API}/rooms`, { params });
       setRooms(response.data);
     } catch (error) {
-      toast.error('فشل تحميل الغرف');
+      toast.error(isRTL ? 'فشل تحميل الغرف' : 'Failed to load rooms');
     } finally {
       setLoading(false);
     }
@@ -51,27 +55,27 @@ const DashboardPage = ({ user, onLogout }) => {
       <div className="max-w-[600px] mx-auto min-h-screen pb-24">
         {/* Header */}
         <div className="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 p-4 sticky top-0 z-40">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className={`flex items-center justify-between ${isRTL ? '' : 'flex-row-reverse'}`}>
+            <div className={`flex items-center gap-3 ${isRTL ? '' : 'flex-row-reverse'}`}>
               <img
                 src={user.avatar}
                 alt={user.username}
                 className="w-10 h-10 rounded-full ring-2 ring-lime-400"
               />
-              <div className="text-right">
+              <div className={isRTL ? 'text-right' : 'text-left'}>
                 <p className="text-white font-cairo font-bold">{user.username}</p>
-                <p className="text-xs text-slate-400 font-almarai">متصل</p>
+                <p className="text-xs text-slate-400 font-almarai">{t('online')}</p>
               </div>
             </div>
             <div className="flex gap-2">
-              {user.role === 'admin' && (
+              {(user.role === 'admin' || user.role === 'owner') && (
                 <Button
                   data-testid="admin-dashboard-btn"
                   onClick={() => navigate('/admin')}
                   variant="ghost"
                   size="icon"
                   className="hover:bg-slate-800 text-lime-400"
-                  title="لوحة تحكم Admin"
+                  title={t('controlPanel')}
                 >
                   <Shield className="w-5 h-5" strokeWidth={1.5} />
                 </Button>
@@ -90,21 +94,31 @@ const DashboardPage = ({ user, onLogout }) => {
         </div>
 
         {/* Header Actions */}
-        <div className="p-4 flex items-center justify-between">
+        <div className={`p-4 flex items-center justify-between ${isRTL ? '' : 'flex-row-reverse'}`}>
           <Button
             onClick={() => navigate('/create-room')}
             className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-6 py-2 rounded-full"
           >
-            + إنشاء غرفة
+            {t('createRoom')}
           </Button>
           <h2 className="text-2xl font-cairo font-black text-white">
-            الغرف المباشرة
+            {t('liveRooms')}
           </h2>
         </div>
 
         {/* Categories */}
         <div className="px-4 pb-4">
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
+          <div className={`flex gap-2 overflow-x-auto hide-scrollbar pb-2 ${isRTL ? '' : 'flex-row-reverse'}`}>
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-4 py-2 rounded-full font-cairo font-bold whitespace-nowrap transition-all ${
+                selectedCategory === null
+                  ? 'bg-lime-400 text-slate-950'
+                  : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
+              }`}
+            >
+              {t('all')}
+            </button>
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -131,12 +145,12 @@ const DashboardPage = ({ user, onLogout }) => {
             </div>
           ) : rooms.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-slate-400 font-almarai mb-4">لا توجد غرف في هذه الفئة</p>
+              <p className="text-slate-400 font-almarai mb-4">{t('noRooms')}</p>
               <Button
                 onClick={() => navigate('/create-room')}
                 className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold"
               >
-                كن أول من ينشئ غرفة
+                {t('beFirst')}
               </Button>
             </div>
           ) : (
@@ -160,14 +174,14 @@ const DashboardPage = ({ user, onLogout }) => {
                     
                     {/* Live Badge */}
                     {room.is_live && (
-                      <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-500 px-3 py-1.5 rounded-full">
+                      <div className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} flex items-center gap-2 bg-red-500 px-3 py-1.5 rounded-full`}>
                         <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-                        <span className="text-white font-cairo font-bold text-sm">مباشر</span>
+                        <span className="text-white font-cairo font-bold text-sm">{t('live')}</span>
                       </div>
                     )}
                     
                     {/* Participants Count */}
-                    <div className="absolute top-4 right-4 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <div className={`absolute top-4 ${isRTL ? 'right-4' : 'left-4'} flex items-center gap-1 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full`}>
                       <span className="text-white font-chivo font-bold">{room.participant_count}</span>
                       <Users className="w-4 h-4 text-white" strokeWidth={2} />
                     </div>
@@ -181,26 +195,26 @@ const DashboardPage = ({ user, onLogout }) => {
                     </span>
 
                     {/* Title */}
-                    <h3 className="text-xl font-cairo font-black text-white mb-2 text-right line-clamp-2">
+                    <h3 className={`text-xl font-cairo font-black text-white mb-2 ${isRTL ? 'text-right' : 'text-left'} line-clamp-2`}>
                       {room.title}
                     </h3>
 
                     {/* Description */}
-                    <p className="text-sm text-slate-400 font-almarai mb-4 text-right line-clamp-2">
+                    <p className={`text-sm text-slate-400 font-almarai mb-4 ${isRTL ? 'text-right' : 'text-left'} line-clamp-2`}>
                       {room.description}
                     </p>
 
                     {/* Host & Join Button */}
-                    <div className="flex items-center justify-between">
+                    <div className={`flex items-center justify-between ${isRTL ? '' : 'flex-row-reverse'}`}>
                       {/* Host */}
-                      <div className="flex items-center gap-2">
+                      <div className={`flex items-center gap-2 ${isRTL ? '' : 'flex-row-reverse'}`}>
                         <img
                           src={room.owner_avatar}
                           alt={room.owner_name}
                           className="w-8 h-8 rounded-full ring-2 ring-lime-400"
                         />
-                        <div className="text-left">
-                          <p className="text-xs text-slate-500 font-almarai">المضيف</p>
+                        <div className={isRTL ? 'text-left' : 'text-right'}>
+                          <p className="text-xs text-slate-500 font-almarai">{t('host')}</p>
                           <p className="text-sm text-white font-cairo font-bold">{room.owner_name}</p>
                         </div>
                       </div>
@@ -210,7 +224,7 @@ const DashboardPage = ({ user, onLogout }) => {
                         onClick={() => handleRoomClick(room.id)}
                         className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-6 py-2 rounded-full"
                       >
-                        انضم الآن
+                        {t('joinNow')}
                       </Button>
                     </div>
                   </div>
@@ -223,14 +237,13 @@ const DashboardPage = ({ user, onLogout }) => {
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 z-50">
-        <div className="max-w-[600px] mx-auto flex justify-around p-4">
+        <div className={`max-w-[600px] mx-auto flex justify-around p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button
-            data-testid="nav-settings-btn"
-            onClick={() => navigate('/settings')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
+            onClick={() => navigate('/dashboard')}
+            className="flex flex-col items-center gap-1 text-lime-400"
           >
-            <Settings className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">الإعدادات</span>
+            <Home className="w-6 h-6" strokeWidth={1.5} />
+            <span className="text-xs font-almarai">{t('home')}</span>
           </button>
           <button
             data-testid="nav-matches-btn"
@@ -238,14 +251,15 @@ const DashboardPage = ({ user, onLogout }) => {
             className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
           >
             <Trophy className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">المباريات</span>
+            <span className="text-xs font-almarai">{t('matches')}</span>
           </button>
           <button
-            data-testid="nav-home-btn"
-            className="flex flex-col items-center gap-1 text-lime-400"
+            data-testid="nav-settings-btn"
+            onClick={() => navigate('/settings')}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors"
           >
-            <Home className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">الرئيسية</span>
+            <Settings className="w-6 h-6" strokeWidth={1.5} />
+            <span className="text-xs font-almarai">{t('settings')}</span>
           </button>
         </div>
       </div>

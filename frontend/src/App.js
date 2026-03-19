@@ -12,6 +12,8 @@ import CreateRoomPage from './pages/CreateRoomPage';
 import MatchesPage from './pages/MatchesPage';
 import SettingsPage from './pages/SettingsPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import { Toaster } from 'sonner';
 
 // Register Service Worker
@@ -61,24 +63,26 @@ function App() {
   }
 
   return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
-          <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
-          <Route path="/dashboard" element={user ? <DashboardPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
-          <Route path="/create-room" element={user ? <CreateRoomPage user={user} /> : <Navigate to="/" />} />
-          <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
-          <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
-          <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
-          <Route path="/admin" element={user ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
-          <Route path="/matches" element={user ? <MatchesPage user={user} /> : <Navigate to="/" />} />
-          <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
-        </Routes>
-        <PWAInstallPrompt />
-      </BrowserRouter>
-      <Toaster position="top-center" theme="dark" richColors />
-    </>
+    <LanguageProvider>
+      <SettingsProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
+            <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
+            <Route path="/dashboard" element={user ? <DashboardPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+            <Route path="/create-room" element={user ? <CreateRoomPage user={user} /> : <Navigate to="/" />} />
+            <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
+            <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+            <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
+            <Route path="/admin" element={user ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
+            <Route path="/matches" element={user ? <MatchesPage user={user} /> : <Navigate to="/" />} />
+            <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+          </Routes>
+          <PWAInstallPrompt />
+        </BrowserRouter>
+        <Toaster position="top-center" theme="dark" richColors />
+      </SettingsProvider>
+    </LanguageProvider>
   );
 }
 
