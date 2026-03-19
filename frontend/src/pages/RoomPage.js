@@ -752,13 +752,6 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Chat Messages */}
           <div className="h-full overflow-y-auto px-4 pl-20 py-4 space-y-3 hide-scrollbar" style={{WebkitOverflowScrolling: 'touch'}}>
-            
-            {/* Welcome Message */}
-            <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 mb-4 border border-gray-700/30">
-              <p className="text-gray-300 text-sm font-almarai text-right">
-                أهلاً بك في الدردشة المباشرة. التزم بإرشادات المنتدى.
-              </p>
-            </div>
 
             {messages.map((message) => {
               const isOwnMessage = message.user_id === user.id;
