@@ -2298,6 +2298,40 @@ async def send_message(
     
     return {"message_id": msg_id, "created_at": new_message["created_at"]}
 
+@api_router.post("/conversations/{conversation_id}/read")
+async def mark_messages_read(
+    conversation_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Mark all messages in conversation as read"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Verify user is participant
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user_id not in convo.get("participants", []):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Mark messages as read
+    result = await db.direct_messages.update_many(
+        {"conversation_id": conversation_id, "sender_id": {"$ne": user_id}, "read": False},
+        {"$set": {"read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Notify the other participant via WebSocket
+    for p_id in convo.get("participants", []):
+        if p_id != user_id:
+            await ws_manager.send_personal_message({
+                "type": "messages_read",
+                "conversation_id": conversation_id,
+                "read_by": user_id
+            }, p_id)
+    
+    return {"marked_read": result.modified_count}
+
 # ==================== NOTIFICATIONS ====================
 
 @api_router.get("/notifications")

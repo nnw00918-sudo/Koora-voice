@@ -86,10 +86,47 @@ const NotificationsPage = ({ user }) => {
       if (data.type === 'notification') {
         setNotifications(prev => [data.notification, ...prev]);
         setUnreadCount(prev => prev + 1);
+        
+        // Play notification sound
+        playNotificationSound();
+        
+        // Vibrate if supported
+        if ('vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100]);
+        }
       }
     };
     
     wsRef.current = ws;
+  };
+
+  const playNotificationSound = () => {
+    try {
+      // Create a simple notification sound using Web Audio API
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.1;
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+      
+      // Second beep
+      const oscillator2 = audioContext.createOscillator();
+      oscillator2.connect(gainNode);
+      oscillator2.frequency.value = 1000;
+      oscillator2.type = 'sine';
+      oscillator2.start(audioContext.currentTime + 0.15);
+      oscillator2.stop(audioContext.currentTime + 0.25);
+    } catch (error) {
+      console.log('Audio not available');
+    }
   };
 
   const fetchNotifications = async () => {

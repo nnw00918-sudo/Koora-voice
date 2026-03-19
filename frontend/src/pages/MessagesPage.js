@@ -112,11 +112,24 @@ const MessagesPage = ({ user }) => {
               ? { ...c, last_message: msg.content, last_message_at: msg.created_at }
               : c
           ));
+          
+          // Play sound for incoming messages (not from self)
+          if (msg.sender_id !== user.id) {
+            playMessageSound();
+          }
         }
         
         if (data.type === 'typing' && currentConversation?.id === data.conversation_id) {
           setIsTyping(true);
           setTimeout(() => setIsTyping(false), 3000);
+        }
+        
+        // Handle messages read notification
+        if (data.type === 'messages_read' && currentConversation?.id === data.conversation_id) {
+          // Mark all our messages as read
+          setMessages(prev => prev.map(m => 
+            m.is_mine ? { ...m, read: true } : m
+          ));
         }
       };
       
@@ -192,8 +205,21 @@ const MessagesPage = ({ user }) => {
         setCurrentConversation(convo);
       }
       setCurrentView('chat');
+      
+      // Mark messages as read
+      markMessagesAsRead(convoId);
     } catch (error) {
       console.error('Error loading conversation');
+    }
+  };
+
+  const markMessagesAsRead = async (convoId) => {
+    try {
+      await axios.post(`${API}/conversations/${convoId}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error marking messages as read');
     }
   };
 
@@ -271,6 +297,31 @@ const MessagesPage = ({ user }) => {
       
       // Throttle typing indicator
       typingTimeoutRef.current = setTimeout(() => {}, 2000);
+    }
+  };
+
+  const playMessageSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 600;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.08;
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.08);
+      
+      // Vibrate on mobile
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+    } catch (error) {
+      console.log('Audio not available');
     }
   };
 
@@ -431,13 +482,18 @@ const MessagesPage = ({ user }) => {
                 <div className={`rounded-2xl px-4 py-2 ${msg.is_mine ? 'bg-sky-500 text-white' : 'bg-slate-800 text-white'}`}>
                   <p className="font-almarai text-sm">{msg.content}</p>
                 </div>
-                <p className={`text-slate-600 text-xs mt-1 ${msg.is_mine ? (isRTL ? 'text-left' : 'text-right') : (isRTL ? 'text-right' : 'text-left')}`}>
-                  {formatTime(msg.created_at)}
-                </p>
+                <div className={`flex items-center gap-1 mt-1 ${msg.is_mine ? (isRTL ? 'justify-start flex-row-reverse' : 'justify-end') : (isRTL ? 'justify-end flex-row-reverse' : 'justify-start')}`}>
+                  <span className="text-slate-600 text-xs">{formatTime(msg.created_at)}</span>
+                  {msg.is_mine && (
+                    <span className={`text-xs ${msg.read ? 'text-sky-400' : 'text-slate-500'}`}>
+                      {msg.read ? <CheckCheck className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))
-        )}
+        )}}
         {isTyping && (
           <div className={`flex ${isRTL ? 'justify-end' : 'justify-start'}`}>
             <div className="bg-slate-800 rounded-2xl px-4 py-2">

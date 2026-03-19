@@ -70,6 +70,14 @@ Building a football-themed social media application with voice chat, threads, us
   - Someone replies to your post
   - Someone follows you
 
+### Phase 7: Polish & Read Receipts ✅ (March 19, 2026)
+- **Read receipts** for messages (✓ sent, ✓✓ read)
+- **Notification sounds** using Web Audio API
+- **Vibration** for mobile devices
+- **Auto mark as read** when opening conversation
+- **WebSocket sync** for read status
+- Created route templates in `/backend/routes/`
+
 ---
 
 ## Technical Architecture
@@ -146,9 +154,9 @@ Building a football-themed social media application with voice chat, threads, us
 None - All priority tasks completed!
 
 ## P1 - Priority Backlog
-1. Continue splitting server.py into route modules
-2. Add read receipts for messages
-3. Add notification sound/vibration
+1. Complete server.py refactoring into route modules
+2. Add push notifications (PWA)
+3. Add message search functionality
 
 ## P2 - Future Features
 1. User leveling/ranking system with badges
