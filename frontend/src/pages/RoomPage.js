@@ -183,7 +183,7 @@ const YallaLiveRoom = ({ user }) => {
       fetchParticipants();
       if (canManageStage) fetchSeatRequests();
       fetchMyInvites();
-    }, 3000);
+    }, 5000); // Changed from 3000 to 5000 for better performance
   };
 
   const stopPolling = () => {
@@ -242,7 +242,11 @@ const YallaLiveRoom = ({ user }) => {
   const fetchSeats = async () => {
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/seats`);
-      setSeats(response.data.seats);
+      const newSeats = response.data.seats;
+      // Only update if data changed
+      if (JSON.stringify(newSeats) !== JSON.stringify(seats)) {
+        setSeats(newSeats);
+      }
     } catch (error) {
       console.error('Failed to fetch seats');
     }
@@ -256,7 +260,10 @@ const YallaLiveRoom = ({ user }) => {
         !msg.content?.toLowerCase().includes('voice test') &&
         !msg.username?.toLowerCase().includes('test_user')
       );
-      setMessages(filteredMessages);
+      // Only update if messages count changed
+      if (filteredMessages.length !== messages.length) {
+        setMessages(filteredMessages);
+      }
     } catch (error) {
       console.error('Failed to fetch messages');
     }
@@ -265,7 +272,10 @@ const YallaLiveRoom = ({ user }) => {
   const fetchParticipants = async () => {
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/participants`);
-      setParticipants(response.data);
+      // Only update if count changed
+      if (response.data.length !== participants.length) {
+        setParticipants(response.data);
+      }
     } catch (error) {
       console.error('Failed to fetch participants');
     }
