@@ -71,7 +71,7 @@ const ThreadsPage = ({ user }) => {
       deleteConfirm: 'هل تريد حذف هذا الثريد؟',
       deleted: 'تم الحذف',
       everyone: 'الجميع يمكنهم الرد',
-      drafts: 'المسودات',
+      drafts: 'مقالي',
     },
     en: {
       threads: 'Threads',
@@ -633,19 +633,6 @@ const ThreadsPage = ({ user }) => {
                       title={txt.addVideo}
                     >
                       <Video className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => { setShowTwitterInput(true); clearMedia(); }}
-                      className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors"
-                      title={txt.addTwitter}
-                    >
-                      <Twitter className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors">
-                      <Smile className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors">
-                      <MapPin className="w-5 h-5" />
                     </button>
                   </div>
                   
