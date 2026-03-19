@@ -65,6 +65,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     username: str
+    name: Optional[str] = None  # Display name
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -75,7 +76,9 @@ class User(BaseModel):
     id: str
     email: str
     username: str
+    name: Optional[str] = None  # Display name
     avatar: Optional[str] = None
+    bio: Optional[str] = None
     created_at: str
     role: str = "user"
     is_banned: bool = False
@@ -288,13 +291,14 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     followers_count = await db.follows.count_documents({"following_id": current_user.id})
     following_count = await db.follows.count_documents({"follower_id": current_user.id})
     
-    # Get user with bio
+    # Get user with bio and name
     user_doc = await db.users.find_one({"id": current_user.id}, {"_id": 0, "password": 0})
     
     return {
         "id": current_user.id,
         "email": current_user.email,
         "username": current_user.username,
+        "name": user_doc.get("name", ""),
         "avatar": current_user.avatar,
         "bio": user_doc.get("bio", ""),
         "role": current_user.role,
@@ -306,7 +310,8 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     }
 
 class ProfileUpdate(BaseModel):
-    username: Optional[str] = None
+    name: Optional[str] = None  # Display name
+    username: Optional[str] = None  # Handle/account
     bio: Optional[str] = None
     avatar: Optional[str] = None
 
@@ -315,15 +320,22 @@ async def update_profile(profile_data: ProfileUpdate, current_user: User = Depen
     """Update user profile"""
     update_doc = {}
     
+    if profile_data.name is not None:
+        update_doc["name"] = profile_data.name.strip()[:50]  # Limit name to 50 chars
+    
     if profile_data.username and profile_data.username.strip():
+        # Remove spaces and special characters from username
+        clean_username = ''.join(c for c in profile_data.username if c.isalnum() or c == '_').lower()
+        if len(clean_username) < 3:
+            raise HTTPException(status_code=400, detail="اسم المستخدم يجب أن يكون 3 أحرف على الأقل")
         # Check if username is already taken
         existing = await db.users.find_one({
-            "username": profile_data.username,
+            "username": clean_username,
             "id": {"$ne": current_user.id}
         })
         if existing:
             raise HTTPException(status_code=400, detail="اسم المستخدم مستخدم بالفعل")
-        update_doc["username"] = profile_data.username.strip()
+        update_doc["username"] = clean_username
     
     if profile_data.bio is not None:
         update_doc["bio"] = profile_data.bio[:160]  # Limit bio to 160 chars
