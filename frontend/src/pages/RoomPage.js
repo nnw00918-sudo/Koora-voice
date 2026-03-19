@@ -582,8 +582,29 @@ const YallaLiveRoom = ({ user }) => {
         
         {/* Header - Fixed Top Bar */}
         <div className="bg-[#0a0a0a] px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between border-b border-gray-800/50 room-header-safe">
-          {/* Left: Participant Count */}
-          <div className="flex items-center gap-1 sm:gap-2 relative">
+          
+          {/* Left: Close & Settings */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center"
+              data-testid="close-room-btn"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
+            </button>
+            {isOwner && (
+              <button
+                onClick={() => setShowRoomSettings(true)}
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-600 flex items-center justify-center"
+                data-testid="room-settings-btn"
+              >
+                <Power className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
+              </button>
+            )}
+          </div>
+
+          {/* Center: Participant Count */}
+          <div className="relative">
             <button 
               onClick={() => setShowConnectedList(!showConnectedList)}
               className="flex items-center gap-2 bg-purple-600/30 border-2 border-purple-500/60 rounded-full px-4 py-2 hover:bg-purple-600/40 transition-colors"
@@ -602,10 +623,10 @@ const YallaLiveRoom = ({ user }) => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full left-0 mt-2 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden"
+                  className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden"
                 >
                   <div className="p-3 border-b border-gray-800">
-                    <h3 className="text-white font-cairo font-bold text-sm">المتصلون ({participants.length})</h3>
+                    <h3 className="text-white font-cairo font-bold text-sm text-center">المتصلون ({participants.length})</h3>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
                     {participants.length === 0 ? (
@@ -618,10 +639,10 @@ const YallaLiveRoom = ({ user }) => {
                           <img 
                             src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user?.username || p.username}`}
                             alt=""
-                            className="w-8 h-8 rounded-full"
+                            className="w-10 h-10 rounded-full"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-white font-cairo text-sm truncate">
+                            <p className="text-white font-cairo text-sm font-bold truncate">
                               {p.user?.name || p.user?.username || p.username || 'مستخدم'}
                             </p>
                             <p className="text-gray-500 text-xs" dir="ltr">
@@ -629,14 +650,13 @@ const YallaLiveRoom = ({ user }) => {
                             </p>
                           </div>
                           {p.role === 'speaker' || speakers.some(s => s.user_id === (p.user_id || p.id)) ? (
-                            <div className="flex items-center gap-1 bg-green-500/20 px-2 py-0.5 rounded-full">
+                            <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1 rounded-full">
                               <Mic className="w-3 h-3 text-green-400" />
-                              <span className="text-green-400 text-xs">متحدث</span>
+                              <span className="text-green-400 text-xs font-bold">متحدث</span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1 bg-blue-500/20 px-2 py-0.5 rounded-full">
-                              <Headphones className="w-3 h-3 text-blue-400" />
-                              <span className="text-blue-400 text-xs">مستمع</span>
+                            <div className="flex items-center gap-1 bg-gray-700/50 px-2 py-1 rounded-full">
+                              <span className="text-gray-400 text-xs">مستمع</span>
                             </div>
                           )}
                         </div>
@@ -648,28 +668,8 @@ const YallaLiveRoom = ({ user }) => {
             </AnimatePresence>
           </div>
 
-          {/* Center: Room Name */}
-          <h1 className="text-white font-cairo font-bold text-sm sm:text-lg truncate max-w-[100px] sm:max-w-[150px] text-center">{room?.title || room?.name || 'الغرفة'}</h1>
-
-          {/* Right: Power & Close Buttons */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {isOwner && (
-              <button
-                onClick={() => setShowRoomSettings(true)}
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-600 flex items-center justify-center control-btn"
-                data-testid="room-settings-btn"
-              >
-                <Power className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
-              </button>
-            )}
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center control-btn"
-              data-testid="close-room-btn"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
-            </button>
-          </div>
+          {/* Right: Room Name */}
+          <h1 className="text-white font-cairo font-bold text-sm sm:text-lg truncate max-w-[80px] sm:max-w-[120px]">{room?.title || room?.name || 'الغرفة'}</h1>
         </div>
 
         {/* Speakers Section */}
