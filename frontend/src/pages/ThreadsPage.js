@@ -86,6 +86,7 @@ const ThreadsPage = ({ user }) => {
       hideReplies: 'إخفاء الردود',
       reposted: 'تمت إعادة النشر',
       unreposted: 'تم إلغاء إعادة النشر',
+      replyingTo: 'رداً على',
     },
     en: {
       threads: 'Threads',
@@ -126,6 +127,7 @@ const ThreadsPage = ({ user }) => {
       hideReplies: 'Hide replies',
       reposted: 'Reposted',
       unreposted: 'Unreposted',
+      replyingTo: 'Replying to',
     }
   }[language];
 
@@ -489,6 +491,11 @@ const ThreadsPage = ({ user }) => {
             {/* Reply Input */}
             {replyingTo === thread.id && (
               <div className={`mt-4 pt-4 border-t border-slate-800 ${isRTL ? 'text-right' : 'text-left'}`}>
+                {/* Replying to indicator */}
+                <div className={`flex items-center gap-1 mb-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <span className="text-slate-500 text-sm">{txt.replyingTo}</span>
+                  <span className="text-sky-400 text-sm" dir="ltr">@{thread.author?.username}</span>
+                </div>
                 <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
                   <div className="flex-1">
@@ -541,12 +548,19 @@ const ThreadsPage = ({ user }) => {
                         className="w-8 h-8 rounded-full flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className={`flex items-center gap-2 mb-1 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
                           <span className="font-cairo font-bold text-white text-sm">{reply.author?.name || reply.author?.username}</span>
                           <span className="text-slate-500 text-xs" dir="ltr">@{reply.author?.username}</span>
                           <span className="text-slate-600 text-xs">·</span>
                           <span className="text-slate-500 text-xs">{formatTime(reply.created_at)}</span>
                         </div>
+                        {/* Replying to indicator */}
+                        {reply.replying_to && reply.replying_to.username && (
+                          <div className={`flex items-center gap-1 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            <span className="text-slate-500 text-xs">{txt.replyingTo}</span>
+                            <span className="text-sky-400 text-xs" dir="ltr">@{reply.replying_to.username}</span>
+                          </div>
+                        )}
                         <p className={`text-white font-almarai text-sm ${isRTL ? 'text-right' : 'text-left'}`}>{reply.content}</p>
                       </div>
                     </div>
