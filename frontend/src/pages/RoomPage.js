@@ -80,6 +80,7 @@ const YallaLiveRoom = ({ user }) => {
   const [selectedPromoteUser, setSelectedPromoteUser] = useState(null);
   const [showParticipants, setShowParticipants] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
+  const [showConnectedList, setShowConnectedList] = useState(false);
   
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
@@ -582,12 +583,69 @@ const YallaLiveRoom = ({ user }) => {
         {/* Header - Fixed Top Bar */}
         <div className="bg-[#0a0a0a] px-4 py-3 flex items-center justify-between border-b border-gray-800/50 safe-area-top">
           {/* Left: Participant Count */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-purple-600/20 border border-purple-500/40 rounded-full px-3 py-1.5">
+          <div className="flex items-center gap-2 relative">
+            <button 
+              onClick={() => setShowConnectedList(!showConnectedList)}
+              className="flex items-center gap-2 bg-purple-600/20 border border-purple-500/40 rounded-full px-3 py-1.5 hover:bg-purple-600/30 transition-colors"
+              data-testid="connected-count-btn"
+            >
               <Users className="w-4 h-4 text-purple-400" />
               <span className="text-purple-300 font-bold text-sm font-chivo">{participants.length}</span>
               <span className="text-purple-400/70 text-xs font-almarai">متصل</span>
-            </div>
+              <ChevronDown className={`w-3 h-3 text-purple-400 transition-transform ${showConnectedList ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {/* Connected Users Dropdown */}
+            <AnimatePresence>
+              {showConnectedList && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute top-full left-0 mt-2 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden"
+                >
+                  <div className="p-3 border-b border-gray-800">
+                    <h3 className="text-white font-cairo font-bold text-sm">المتصلون ({participants.length})</h3>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {participants.length === 0 ? (
+                      <div className="p-4 text-center">
+                        <p className="text-gray-500 text-sm font-almarai">لا يوجد متصلون</p>
+                      </div>
+                    ) : (
+                      participants.map((p) => (
+                        <div key={p.user_id || p.id} className="flex items-center gap-3 p-3 hover:bg-gray-800/50 transition-colors">
+                          <img 
+                            src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user?.username || p.username}`}
+                            alt=""
+                            className="w-8 h-8 rounded-full"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-cairo text-sm truncate">
+                              {p.user?.name || p.user?.username || p.username || 'مستخدم'}
+                            </p>
+                            <p className="text-gray-500 text-xs" dir="ltr">
+                              @{p.user?.username || p.username || 'user'}
+                            </p>
+                          </div>
+                          {p.role === 'speaker' || speakers.some(s => s.user_id === (p.user_id || p.id)) ? (
+                            <div className="flex items-center gap-1 bg-green-500/20 px-2 py-0.5 rounded-full">
+                              <Mic className="w-3 h-3 text-green-400" />
+                              <span className="text-green-400 text-xs">متحدث</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 bg-blue-500/20 px-2 py-0.5 rounded-full">
+                              <Headphones className="w-3 h-3 text-blue-400" />
+                              <span className="text-blue-400 text-xs">مستمع</span>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Center: Room Name */}
