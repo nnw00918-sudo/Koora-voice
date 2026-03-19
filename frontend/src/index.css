@@ -29,21 +29,60 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    /* Safe area insets for notched devices */
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
   }
+  
+  html {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+  
   body {
     @apply bg-slate-950 text-foreground font-almarai;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    /* Prevent overscroll bounce */
+    overscroll-behavior-y: contain;
+    /* Safe area padding for notched devices */
+    padding-top: var(--safe-area-inset-top);
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
   }
+  
   h1, h2, h3, h4, h5, h6 {
     @apply font-cairo;
+  }
+  
+  /* Prevent text selection on mobile for better UX */
+  button, a {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Better touch targets */
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
+  
+  /* Fix iOS input zoom */
+  input, select, textarea {
+    font-size: 16px !important;
   }
 }
 
@@ -73,4 +112,80 @@
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Mobile-specific styles */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+  .safe-area-bottom {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Room container specific - prevent pull to refresh */
+.room-container {
+  overscroll-behavior: none;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth scrolling for chat */
+.chat-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Speaking animation */
+@keyframes speaking-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(163, 230, 53, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(163, 230, 53, 0);
+  }
+}
+
+.speaking-pulse {
+  animation: speaking-pulse 1.5s infinite;
+}
+
+/* Mobile touch feedback */
+.touch-feedback {
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+}
+
+.touch-feedback:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+/* iOS rubber band effect prevention */
+@supports (-webkit-touch-callout: none) {
+  .no-bounce {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  .no-bounce > * {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    height: 100%;
+  }
+}
+
+/* PWA install banner styles */
+.pwa-install-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 9999;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }

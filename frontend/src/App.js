@@ -9,7 +9,21 @@ import ProfilePage from './pages/ProfilePage';
 import UsersPage from './pages/UsersPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CreateRoomPage from './pages/CreateRoomPage';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { Toaster } from 'sonner';
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW registered:', registration.scope);
+      })
+      .catch((error) => {
+        console.log('SW registration failed:', error);
+      });
+  });
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -57,6 +71,7 @@ function App() {
           <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
           <Route path="/admin" element={user ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
         </Routes>
+        <PWAInstallPrompt />
       </BrowserRouter>
       <Toaster position="top-center" theme="dark" richColors />
     </>
