@@ -586,13 +586,13 @@ const YallaLiveRoom = ({ user }) => {
           <div className="flex items-center gap-1 sm:gap-2 relative">
             <button 
               onClick={() => setShowConnectedList(!showConnectedList)}
-              className="flex items-center gap-1 sm:gap-2 bg-purple-600/20 border border-purple-500/40 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 hover:bg-purple-600/30 transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 bg-purple-600/20 border border-purple-500/40 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-purple-600/30 transition-colors"
               data-testid="connected-count-btn"
             >
-              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
-              <span className="text-purple-300 font-bold text-xs sm:text-sm font-chivo">{participants.length}</span>
-              <span className="text-purple-400/70 text-[10px] sm:text-xs font-almarai">متصل</span>
-              <ChevronDown className={`w-3 h-3 text-purple-400 transition-transform ${showConnectedList ? 'rotate-180' : ''}`} />
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+              <span className="text-purple-300 font-bold text-sm sm:text-base font-chivo">{participants.length}</span>
+              <span className="text-purple-400 text-xs sm:text-sm font-almarai font-bold">متصل</span>
+              <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 transition-transform ${showConnectedList ? 'rotate-180' : ''}`} />
             </button>
             
             {/* Connected Users Dropdown */}
