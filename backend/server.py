@@ -1653,6 +1653,186 @@ async def delete_thread(
     
     return {"message": "Thread deleted"}
 
+# ==================== USER PROFILE THREADS ====================
+
+@api_router.get("/users/{user_id}/threads")
+async def get_user_threads(
+    user_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get threads posted by a user"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        current_user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Get threads by this user
+    threads_cursor = db.threads.find({"author_id": user_id}).sort("created_at", -1).limit(50)
+    threads = await threads_cursor.to_list(length=50)
+    
+    # Get user likes
+    user_likes = await db.thread_likes.find({"user_id": current_user_id}).to_list(length=1000)
+    liked_thread_ids = {like["thread_id"] for like in user_likes}
+    
+    result = []
+    for thread in threads:
+        author = await db.users.find_one({"id": thread["author_id"]})
+        if author:
+            result.append({
+                "id": thread["id"],
+                "content": thread.get("content", ""),
+                "media_url": thread.get("media_url"),
+                "media_type": thread.get("media_type"),
+                "twitter_url": thread.get("twitter_url"),
+                "author": {
+                    "id": author["id"],
+                    "username": author["username"],
+                    "name": author.get("name", author["username"]),
+                    "avatar": author.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={author['username']}")
+                },
+                "likes_count": thread.get("likes_count", 0),
+                "replies_count": thread.get("replies_count", 0),
+                "reposts_count": thread.get("reposts_count", 0),
+                "liked": thread["id"] in liked_thread_ids,
+                "created_at": thread["created_at"]
+            })
+    
+    return {"threads": result}
+
+@api_router.get("/users/{user_id}/liked-threads")
+async def get_user_liked_threads(
+    user_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get threads liked by a user"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        current_user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Get likes by this user
+    likes_cursor = db.thread_likes.find({"user_id": user_id}).sort("created_at", -1).limit(50)
+    likes = await likes_cursor.to_list(length=50)
+    liked_thread_ids = [like["thread_id"] for like in likes]
+    
+    # Get current user likes for marking
+    current_user_likes = await db.thread_likes.find({"user_id": current_user_id}).to_list(length=1000)
+    current_liked_ids = {like["thread_id"] for like in current_user_likes}
+    
+    result = []
+    for thread_id in liked_thread_ids:
+        thread = await db.threads.find_one({"id": thread_id})
+        if thread:
+            author = await db.users.find_one({"id": thread["author_id"]})
+            if author:
+                result.append({
+                    "id": thread["id"],
+                    "content": thread.get("content", ""),
+                    "media_url": thread.get("media_url"),
+                    "media_type": thread.get("media_type"),
+                    "twitter_url": thread.get("twitter_url"),
+                    "author": {
+                        "id": author["id"],
+                        "username": author["username"],
+                        "name": author.get("name", author["username"]),
+                        "avatar": author.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={author['username']}")
+                    },
+                    "likes_count": thread.get("likes_count", 0),
+                    "replies_count": thread.get("replies_count", 0),
+                    "reposts_count": thread.get("reposts_count", 0),
+                    "liked": thread["id"] in current_liked_ids,
+                    "created_at": thread["created_at"]
+                })
+    
+    return {"threads": result}
+
+@api_router.get("/users/{user_id}/replies")
+async def get_user_replies(
+    user_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get replies by a user"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        current_user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Get replies by this user (threads that are replies to other threads)
+    replies_cursor = db.thread_replies.find({"author_id": user_id}).sort("created_at", -1).limit(50)
+    replies = await replies_cursor.to_list(length=50)
+    
+    result = []
+    for reply in replies:
+        author = await db.users.find_one({"id": reply["author_id"]})
+        if author:
+            result.append({
+                "id": reply.get("id", str(reply.get("_id", ""))),
+                "content": reply.get("content", ""),
+                "parent_thread_id": reply.get("parent_thread_id"),
+                "author": {
+                    "id": author["id"],
+                    "username": author["username"],
+                    "name": author.get("name", author["username"]),
+                    "avatar": author.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={author['username']}")
+                },
+                "likes_count": reply.get("likes_count", 0),
+                "created_at": reply.get("created_at", "")
+            })
+    
+    return {"replies": result}
+
+@api_router.get("/users/{user_id}/reposts")
+async def get_user_reposts(
+    user_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get reposts by a user"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        current_user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Get reposts by this user
+    reposts_cursor = db.thread_reposts.find({"user_id": user_id}).sort("created_at", -1).limit(50)
+    reposts = await reposts_cursor.to_list(length=50)
+    reposted_thread_ids = [repost["thread_id"] for repost in reposts]
+    
+    # Get current user likes
+    current_user_likes = await db.thread_likes.find({"user_id": current_user_id}).to_list(length=1000)
+    current_liked_ids = {like["thread_id"] for like in current_user_likes}
+    
+    result = []
+    for thread_id in reposted_thread_ids:
+        thread = await db.threads.find_one({"id": thread_id})
+        if thread:
+            author = await db.users.find_one({"id": thread["author_id"]})
+            if author:
+                result.append({
+                    "id": thread["id"],
+                    "content": thread.get("content", ""),
+                    "media_url": thread.get("media_url"),
+                    "media_type": thread.get("media_type"),
+                    "twitter_url": thread.get("twitter_url"),
+                    "author": {
+                        "id": author["id"],
+                        "username": author["username"],
+                        "name": author.get("name", author["username"]),
+                        "avatar": author.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={author['username']}")
+                    },
+                    "likes_count": thread.get("likes_count", 0),
+                    "replies_count": thread.get("replies_count", 0),
+                    "reposts_count": thread.get("reposts_count", 0),
+                    "liked": thread["id"] in current_liked_ids,
+                    "created_at": thread["created_at"],
+                    "is_repost": True
+                })
+    
+    return {"threads": result}
+
 app.include_router(api_router)
 
 # Mount static files for avatars

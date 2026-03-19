@@ -25,6 +25,13 @@ const ProfilePage = ({ user: initialUser }) => {
   const [following, setFollowing] = useState([]);
   const [userStats, setUserStats] = useState({ followers_count: 0, following_count: 0 });
   
+  // Tab data states
+  const [myPosts, setMyPosts] = useState([]);
+  const [myLikes, setMyLikes] = useState([]);
+  const [myReplies, setMyReplies] = useState([]);
+  const [myReposts, setMyReposts] = useState([]);
+  const [loadingTab, setLoadingTab] = useState(false);
+  
   // Edit form states
   const [editName, setEditName] = useState(user?.name || '');
   const [editUsername, setEditUsername] = useState(user?.username || '');
@@ -99,7 +106,35 @@ const ProfilePage = ({ user: initialUser }) => {
 
   useEffect(() => {
     fetchUserStats();
+    fetchTabData('posts');
   }, []);
+
+  useEffect(() => {
+    fetchTabData(activeTab);
+  }, [activeTab]);
+
+  const fetchTabData = async (tab) => {
+    setLoadingTab(true);
+    try {
+      if (tab === 'posts') {
+        const res = await axios.get(`${API}/users/${user.id}/threads`, { headers: { Authorization: `Bearer ${token}` } });
+        setMyPosts(res.data.threads || []);
+      } else if (tab === 'likes') {
+        const res = await axios.get(`${API}/users/${user.id}/liked-threads`, { headers: { Authorization: `Bearer ${token}` } });
+        setMyLikes(res.data.threads || []);
+      } else if (tab === 'replies') {
+        const res = await axios.get(`${API}/users/${user.id}/replies`, { headers: { Authorization: `Bearer ${token}` } });
+        setMyReplies(res.data.replies || []);
+      } else if (tab === 'reposts') {
+        const res = await axios.get(`${API}/users/${user.id}/reposts`, { headers: { Authorization: `Bearer ${token}` } });
+        setMyReposts(res.data.threads || []);
+      }
+    } catch (error) {
+      console.error(`Error fetching ${tab}`);
+    } finally {
+      setLoadingTab(false);
+    }
+  };
 
   const fetchUserStats = async () => {
     try {
@@ -181,6 +216,136 @@ const ProfilePage = ({ user: initialUser }) => {
     const newAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
     setEditAvatar(newAvatar);
   };
+
+  const formatTime = (timestamp) => {
+    if (!timestamp) return isRTL ? 'الآن' : 'now';
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return isRTL ? 'الآن' : 'now';
+    if (minutes < 60) return `${minutes}${isRTL ? 'د' : 'm'}`;
+    if (hours < 24) return `${hours}${isRTL ? 'س' : 'h'}`;
+    return `${days}${isRTL ? 'ي' : 'd'}`;
+  };
+
+  const handleLike = async (threadId) => {
+    try {
+      await axios.post(`${API}/threads/${threadId}/like`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Refresh current tab data
+      fetchTabData(activeTab);
+    } catch (error) {
+      console.error('Like failed');
+    }
+  };
+
+  // Empty State Component
+  const EmptyState = ({ icon, message }) => (
+    <div className="py-16 text-center">
+      <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center mx-auto mb-4">
+        {icon}
+      </div>
+      <p className="text-slate-500 font-almarai">{message}</p>
+    </div>
+  );
+
+  // Thread Card Component
+  const ThreadCard = ({ thread, isRepost }) => (
+    <div className="p-4">
+      {isRepost && (
+        <div className={`flex items-center gap-2 text-slate-500 text-xs mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <Repeat2 className="w-3 h-3" />
+          <span>{isRTL ? 'أعدت النشر' : 'You reposted'}</span>
+        </div>
+      )}
+      <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <img 
+          src={thread.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${thread.author?.username}`} 
+          alt="" 
+          className="w-10 h-10 rounded-full flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <span className="font-cairo font-bold text-white truncate">
+              {thread.author?.name || thread.author?.username}
+            </span>
+            <span className="text-slate-500 text-sm" dir="ltr">@{thread.author?.username}</span>
+            <span className="text-slate-600">·</span>
+            <span className="text-slate-500 text-sm">{formatTime(thread.created_at)}</span>
+          </div>
+          
+          {thread.content && (
+            <p className={`text-white font-almarai leading-relaxed mb-3 whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`}>
+              {thread.content}
+            </p>
+          )}
+          
+          {thread.media_url && thread.media_type === 'image' && (
+            <div className="rounded-xl overflow-hidden mb-3">
+              <img src={thread.media_url} alt="" className="w-full max-h-[300px] object-cover" />
+            </div>
+          )}
+          
+          {thread.media_url && thread.media_type === 'video' && (
+            <div className="rounded-xl overflow-hidden mb-3">
+              <video src={thread.media_url} controls className="w-full max-h-[300px]" />
+            </div>
+          )}
+          
+          <div className={`flex items-center gap-6 text-slate-500 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <button className="flex items-center gap-1 hover:text-sky-400">
+              <MessageSquare className="w-4 h-4" />
+              <span className="text-xs">{thread.replies_count || 0}</span>
+            </button>
+            <button className="flex items-center gap-1 hover:text-green-400">
+              <Repeat2 className="w-4 h-4" />
+              <span className="text-xs">{thread.reposts_count || 0}</span>
+            </button>
+            <button 
+              onClick={() => handleLike(thread.id)}
+              className={`flex items-center gap-1 ${thread.liked ? 'text-red-500' : 'hover:text-red-400'}`}
+            >
+              <Heart className={`w-4 h-4 ${thread.liked ? 'fill-current' : ''}`} />
+              <span className="text-xs">{thread.likes_count || 0}</span>
+            </button>
+            <button className="hover:text-sky-400">
+              <Share2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Reply Card Component
+  const ReplyCard = ({ reply }) => (
+    <div className="p-4">
+      <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <img 
+          src={reply.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.author?.username}`} 
+          alt="" 
+          className="w-10 h-10 rounded-full flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <span className="font-cairo font-bold text-white truncate">
+              {reply.author?.name || reply.author?.username}
+            </span>
+            <span className="text-slate-500 text-sm" dir="ltr">@{reply.author?.username}</span>
+            <span className="text-slate-600">·</span>
+            <span className="text-slate-500 text-sm">{formatTime(reply.created_at)}</span>
+          </div>
+          
+          <p className={`text-white font-almarai leading-relaxed whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`}>
+            {reply.content}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 
   // Followers/Following List View
   const UserListView = ({ title, users }) => (
@@ -376,20 +541,57 @@ const ProfilePage = ({ user: initialUser }) => {
 
       {/* Content */}
       <div className="min-h-[200px]">
-        <div className="py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center mx-auto mb-4">
-            {activeTab === 'posts' && <Grid3X3 className="w-8 h-8 text-slate-600" />}
-            {activeTab === 'likes' && <Heart className="w-8 h-8 text-slate-600" />}
-            {activeTab === 'replies' && <MessageSquare className="w-8 h-8 text-slate-600" />}
-            {activeTab === 'reposts' && <Repeat2 className="w-8 h-8 text-slate-600" />}
+        {loadingTab ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
           </div>
-          <p className="text-slate-500 font-almarai">
-            {activeTab === 'posts' && txt.noPosts}
-            {activeTab === 'likes' && txt.noLikes}
-            {activeTab === 'replies' && txt.noReplies}
-            {activeTab === 'reposts' && txt.noReposts}
-          </p>
-        </div>
+        ) : (
+          <>
+            {/* Posts Tab */}
+            {activeTab === 'posts' && (
+              myPosts.length === 0 ? (
+                <EmptyState icon={<Grid3X3 className="w-8 h-8 text-slate-600" />} message={txt.noPosts} />
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {myPosts.map(thread => <ThreadCard key={thread.id} thread={thread} />)}
+                </div>
+              )
+            )}
+            
+            {/* Likes Tab */}
+            {activeTab === 'likes' && (
+              myLikes.length === 0 ? (
+                <EmptyState icon={<Heart className="w-8 h-8 text-slate-600" />} message={txt.noLikes} />
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {myLikes.map(thread => <ThreadCard key={thread.id} thread={thread} />)}
+                </div>
+              )
+            )}
+            
+            {/* Replies Tab */}
+            {activeTab === 'replies' && (
+              myReplies.length === 0 ? (
+                <EmptyState icon={<MessageSquare className="w-8 h-8 text-slate-600" />} message={txt.noReplies} />
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {myReplies.map(reply => <ReplyCard key={reply.id} reply={reply} />)}
+                </div>
+              )
+            )}
+            
+            {/* Reposts Tab */}
+            {activeTab === 'reposts' && (
+              myReposts.length === 0 ? (
+                <EmptyState icon={<Repeat2 className="w-8 h-8 text-slate-600" />} message={txt.noReposts} />
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {myReposts.map(thread => <ThreadCard key={thread.id} thread={thread} isRepost />)}
+                </div>
+              )
+            )}
+          </>
+        )}
       </div>
 
       {/* Bottom Navigation */}
