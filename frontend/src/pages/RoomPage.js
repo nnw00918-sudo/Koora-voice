@@ -436,6 +436,17 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  const handleCloseAndKickAll = async () => {
+    if (!window.confirm('هل أنت متأكد من إغلاق الغرفة وطرد جميع المشاركين؟')) return;
+    try {
+      const response = await axios.post(`${API}/rooms/${roomId}/close-and-kick`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(response.data.message);
+      navigate('/dashboard');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل إغلاق الغرفة');
+    }
+  };
+
   const handleAcceptInvite = async (inviteId) => {
     try {
       const response = await axios.post(`${API}/rooms/${roomId}/seat/invites/${inviteId}/accept`, {}, { headers: { Authorization: `Bearer ${token}` } });
@@ -1159,6 +1170,15 @@ const YallaLiveRoom = ({ user }) => {
                     </div>
                     <div className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors ${room?.is_closed ? 'bg-gray-700' : 'bg-green-500'}`}>
                       <div className={`w-5 h-5 rounded-full bg-white transition-transform ${room?.is_closed ? '' : 'translate-x-5'}`} />
+                    </div>
+                  </button>
+                  {/* Close Room and Kick All */}
+                  <button onClick={handleCloseAndKickAll}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50">
+                    <Power className="w-6 h-6 text-orange-400" />
+                    <div className="text-right flex-1">
+                      <span className="text-orange-400 font-cairo font-bold">إغلاق وطرد الجميع</span>
+                      <p className="text-xs text-gray-400 font-almarai">إغلاق الغرفة وطرد كل المشاركين</p>
                     </div>
                   </button>
                   {/* Delete Room */}

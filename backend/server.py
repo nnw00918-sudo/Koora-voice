@@ -679,6 +679,34 @@ async def end_room(room_id: str, current_user: User = Depends(get_current_user))
     
     return {"message": "تم إنهاء الغرفة"}
 
+@api_router.post("/rooms/{room_id}/close-and-kick")
+async def close_room_and_kick_all(room_id: str, current_user: User = Depends(get_current_user)):
+    """Close room and kick all users - Owner only"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if room["owner_id"] != current_user.id and current_user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="صلاحيات المالك مطلوبة")
+    
+    # Close the room
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"is_live": False, "is_closed": True}}
+    )
+    
+    # Get participant count before kicking
+    participant_count = await db.room_participants.count_documents({"room_id": room_id})
+    
+    # Kick all participants
+    await db.room_participants.delete_many({"room_id": room_id})
+    
+    # Clear seat requests and invites
+    await db.seat_requests.delete_many({"room_id": room_id})
+    await db.seat_invites.delete_many({"room_id": room_id})
+    
+    return {"message": f"تم إغلاق الغرفة وطرد {participant_count} مشارك"}
+
 @api_router.get("/rooms/{room_id}", response_model=RoomFull)
 async def get_room(room_id: str):
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
