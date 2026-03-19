@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { 
   Home, Trophy, Settings, MessageSquare, User, ArrowRight, ArrowLeft,
   Shield, Share2, Grid3X3, Bookmark, Heart, Camera, MoreHorizontal,
-  Image, Shuffle, X
+  Image, Shuffle, X, Repeat2
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -43,10 +43,14 @@ const ProfilePage = ({ user: initialUser }) => {
       followers: 'متابِعون',
       following: 'متابَعون',
       likes: 'إعجاب',
-      posts: 'المنشورات',
-      saved: 'المحفوظات',
-      liked: 'الإعجابات',
+      myPosts: 'منشوراتي',
+      myLikes: 'إعجاباتي',
+      myReplies: 'ردودي',
+      myReposts: 'إعادة نشر',
       noPosts: 'لا توجد منشورات',
+      noLikes: 'لا توجد إعجابات',
+      noReplies: 'لا توجد ردود',
+      noReposts: 'لا توجد إعادة نشر',
       addBio: 'أضف نبذة تعريفية',
       save: 'حفظ',
       cancel: 'إلغاء',
@@ -68,10 +72,14 @@ const ProfilePage = ({ user: initialUser }) => {
       followers: 'Followers',
       following: 'Following',
       likes: 'Likes',
-      posts: 'Posts',
-      saved: 'Saved',
-      liked: 'Liked',
+      myPosts: 'Posts',
+      myLikes: 'Likes',
+      myReplies: 'Replies',
+      myReposts: 'Reposts',
       noPosts: 'No posts yet',
+      noLikes: 'No likes yet',
+      noReplies: 'No replies yet',
+      noReposts: 'No reposts yet',
       addBio: 'Add bio',
       save: 'Save',
       cancel: 'Cancel',
@@ -344,32 +352,43 @@ const ProfilePage = ({ user: initialUser }) => {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Twitter Style */}
       <div className="border-b border-slate-800">
-        <div className="flex justify-center">
-          <button onClick={() => setActiveTab('posts')} className={`flex-1 max-w-[120px] py-3 flex justify-center ${activeTab === 'posts' ? 'border-b-2 border-white' : ''}`}>
-            <Grid3X3 className={`w-5 h-5 ${activeTab === 'posts' ? 'text-white' : 'text-slate-500'}`} />
+        <div className="flex">
+          <button onClick={() => setActiveTab('posts')} className={`flex-1 py-3 text-center font-almarai text-sm transition-colors relative ${activeTab === 'posts' ? 'text-white font-bold' : 'text-slate-500'}`}>
+            {txt.myPosts}
+            {activeTab === 'posts' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-sky-500 rounded-full" />}
           </button>
-          <button onClick={() => setActiveTab('saved')} className={`flex-1 max-w-[120px] py-3 flex justify-center ${activeTab === 'saved' ? 'border-b-2 border-white' : ''}`}>
-            <Bookmark className={`w-5 h-5 ${activeTab === 'saved' ? 'text-white' : 'text-slate-500'}`} />
+          <button onClick={() => setActiveTab('likes')} className={`flex-1 py-3 text-center font-almarai text-sm transition-colors relative ${activeTab === 'likes' ? 'text-white font-bold' : 'text-slate-500'}`}>
+            {txt.myLikes}
+            {activeTab === 'likes' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-sky-500 rounded-full" />}
           </button>
-          <button onClick={() => setActiveTab('liked')} className={`flex-1 max-w-[120px] py-3 flex justify-center ${activeTab === 'liked' ? 'border-b-2 border-white' : ''}`}>
-            <Heart className={`w-5 h-5 ${activeTab === 'liked' ? 'text-white' : 'text-slate-500'}`} />
+          <button onClick={() => setActiveTab('replies')} className={`flex-1 py-3 text-center font-almarai text-sm transition-colors relative ${activeTab === 'replies' ? 'text-white font-bold' : 'text-slate-500'}`}>
+            {txt.myReplies}
+            {activeTab === 'replies' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-sky-500 rounded-full" />}
+          </button>
+          <button onClick={() => setActiveTab('reposts')} className={`flex-1 py-3 text-center font-almarai text-sm transition-colors relative ${activeTab === 'reposts' ? 'text-white font-bold' : 'text-slate-500'}`}>
+            {txt.myReposts}
+            {activeTab === 'reposts' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-sky-500 rounded-full" />}
           </button>
         </div>
       </div>
 
-      {/* Content Grid */}
-      <div className="p-1">
-        <div className="grid grid-cols-3 gap-1">
-          <div className="col-span-3 py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center mx-auto mb-4">
-              {activeTab === 'posts' && <Grid3X3 className="w-8 h-8 text-slate-600" />}
-              {activeTab === 'saved' && <Bookmark className="w-8 h-8 text-slate-600" />}
-              {activeTab === 'liked' && <Heart className="w-8 h-8 text-slate-600" />}
-            </div>
-            <p className="text-slate-500 font-almarai">{txt.noPosts}</p>
+      {/* Content */}
+      <div className="min-h-[200px]">
+        <div className="py-16 text-center">
+          <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center mx-auto mb-4">
+            {activeTab === 'posts' && <Grid3X3 className="w-8 h-8 text-slate-600" />}
+            {activeTab === 'likes' && <Heart className="w-8 h-8 text-slate-600" />}
+            {activeTab === 'replies' && <MessageSquare className="w-8 h-8 text-slate-600" />}
+            {activeTab === 'reposts' && <Repeat2 className="w-8 h-8 text-slate-600" />}
           </div>
+          <p className="text-slate-500 font-almarai">
+            {activeTab === 'posts' && txt.noPosts}
+            {activeTab === 'likes' && txt.noLikes}
+            {activeTab === 'replies' && txt.noReplies}
+            {activeTab === 'reposts' && txt.noReposts}
+          </p>
         </div>
       </div>
 
