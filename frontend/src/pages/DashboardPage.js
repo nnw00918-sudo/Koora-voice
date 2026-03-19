@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Users, LogOut, Shield, Home, Trophy, Settings, MessageSquare, User } from 'lucide-react';
+import { Users, LogOut, Shield, Home, Trophy, Settings, MessageSquare, User, Lock, Unlock } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -173,17 +173,25 @@ const DashboardPage = ({ user, onLogout }) => {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                     
                     {/* Live Badge */}
-                    {room.is_live && (
+                    {room.is_live && !room.is_closed && (
                       <div className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} flex items-center gap-2 bg-red-500 px-3 py-1.5 rounded-full`}>
                         <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
                         <span className="text-white font-cairo font-bold text-sm">{t('live')}</span>
                       </div>
                     )}
                     
+                    {/* Closed Badge */}
+                    {room.is_closed && (
+                      <div className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} flex items-center gap-2 bg-orange-500 px-3 py-1.5 rounded-full`}>
+                        <Lock className="w-4 h-4 text-white" />
+                        <span className="text-white font-cairo font-bold text-sm">{isRTL ? 'مغلقة' : 'Closed'}</span>
+                      </div>
+                    )}
+                    
                     {/* Participants Count */}
-                    <div className={`absolute top-4 ${isRTL ? 'right-4' : 'left-4'} flex items-center gap-1 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full`}>
-                      <span className="text-white font-chivo font-bold">{room.participant_count}</span>
-                      <Users className="w-4 h-4 text-white" strokeWidth={2} />
+                    <div className={`absolute top-4 ${isRTL ? 'right-4' : 'left-4'} flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full`}>
+                      <Users className="w-4 h-4 text-lime-400" strokeWidth={2} />
+                      <span className="text-white font-chivo font-bold">{room.participant_count || 0}</span>
                     </div>
                   </div>
 
