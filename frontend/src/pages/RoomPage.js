@@ -113,8 +113,10 @@ const YallaLiveRoom = ({ user }) => {
   const [streamInputUrl, setStreamInputUrl] = useState('');
   const [viewMode, setViewMode] = useState('mics'); // 'mics' or 'stream'
   const [streamSlots, setStreamSlots] = useState({});
-  const [activeSlot, setActiveSlot] = useState(null);
+  const [activeSlot, setActiveSlot] = useState(null); // Global active slot (set by owner)
   const [editingSlot, setEditingSlot] = useState(null);
+  const [mySelectedSlot, setMySelectedSlot] = useState(null); // Local user's selected slot
+  const [myStreamUrl, setMyStreamUrl] = useState(''); // Local user's stream URL
   
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
