@@ -45,7 +45,9 @@ import {
   VideoOff,
   Play,
   Square,
-  Tv
+  Tv,
+  Monitor,
+  Cast
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -1197,13 +1199,6 @@ const YallaLiveRoom = ({ user }) => {
         >
           {/* Main Stage Card - Stadium Style */}
           <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-800 p-4 shadow-xl">
-            {/* Live indicator */}
-            <div className="absolute top-3 right-3">
-              <div className="flex items-center gap-1.5 bg-red-500/20 px-2 py-1 rounded-full border border-red-500/30">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-red-400 text-xs font-bold">LIVE</span>
-              </div>
-            </div>
             
             {/* Toggle View Buttons when stream is active */}
             {streamActive && streamUrl && (
@@ -1231,6 +1226,18 @@ const YallaLiveRoom = ({ user }) => {
                 >
                   <Tv className="w-4 h-4" />
                   البث المباشر
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setViewMode('mirror')}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
+                    viewMode === 'mirror' 
+                      ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' 
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  <Monitor className="w-4 h-4" />
+                  انعكاس الشاشة
                 </motion.button>
               </div>
             )}
@@ -1289,6 +1296,31 @@ const YallaLiveRoom = ({ user }) => {
                       allowFullScreen
                       loading="eager"
                     />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Screen Mirror View */}
+            {viewMode === 'mirror' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mb-4"
+              >
+                <div className="bg-slate-950 rounded-xl overflow-hidden border border-purple-500/30">
+                  <div className="bg-slate-800 px-3 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Cast className="w-4 h-4 text-purple-400" />
+                      <span className="text-white font-cairo font-bold text-sm">انعكاس الشاشة</span>
+                    </div>
+                  </div>
+                  <div className="aspect-video bg-slate-900 flex items-center justify-center">
+                    <div className="text-center p-6">
+                      <Monitor className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                      <p className="text-slate-400 font-cairo text-sm mb-4">قريباً - ميزة انعكاس الشاشة</p>
+                      <p className="text-slate-500 font-cairo text-xs">شارك شاشتك مع المشاركين في الغرفة</p>
+                    </div>
                   </div>
                 </div>
               </motion.div>
