@@ -111,6 +111,7 @@ const YallaLiveRoom = ({ user }) => {
   const [streamUrl, setStreamUrl] = useState('');
   const [showStreamModal, setShowStreamModal] = useState(false);
   const [streamInputUrl, setStreamInputUrl] = useState('');
+  const [viewMode, setViewMode] = useState('mics'); // 'mics' or 'stream'
   
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
@@ -1096,8 +1097,73 @@ const YallaLiveRoom = ({ user }) => {
               <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
             </div>
             
-            {/* Speakers Grid */}
-            <div className="flex justify-center gap-4 flex-wrap">
+            {/* Toggle View Buttons when stream is active */}
+            {streamActive && streamUrl && (
+              <div className="flex justify-center gap-2 mb-4">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setViewMode('mics')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-cairo font-bold text-sm transition-all ${
+                    viewMode === 'mics' 
+                      ? 'bg-lime-500 text-black' 
+                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  }`}
+                >
+                  <Mic className="w-4 h-4" />
+                  المايكات
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setViewMode('stream')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-cairo font-bold text-sm transition-all ${
+                    viewMode === 'stream' 
+                      ? 'bg-violet-500 text-white' 
+                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  }`}
+                >
+                  <Tv className="w-4 h-4" />
+                  البث المباشر
+                </motion.button>
+              </div>
+            )}
+
+            {/* Stream View - Shows when user selects stream */}
+            {streamActive && streamUrl && viewMode === 'stream' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mb-4"
+              >
+                <div className="bg-black rounded-2xl overflow-hidden border border-violet-500/50 shadow-2xl shadow-violet-500/20">
+                  {/* Stream Header */}
+                  <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                      <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
+                    </div>
+                    {user.role === 'owner' && (
+                      <button onClick={handleStopStream} className="text-white/80 hover:text-white">
+                        <X className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Video Player */}
+                  <div className="relative aspect-video">
+                    <iframe
+                      src={streamUrl}
+                      className="w-full h-full"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Speakers Grid - Shows when no stream or user selects mics */}
+            {(!streamActive || viewMode === 'mics') && (
+              <div className="flex justify-center gap-4 flex-wrap">
               {speakers.length > 0 ? speakers.map((seat, index) => (
                 <motion.div
                   key={seat.seat_number}
@@ -1198,6 +1264,7 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
             </div>
+            )}
 
             {/* Stats */}
             <div className="flex justify-center gap-4 mt-4">
@@ -1608,43 +1675,6 @@ const YallaLiveRoom = ({ user }) => {
                   </div>
                 </div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Live Stream Player - Shows for everyone when stream is active */}
-        <AnimatePresence>
-          {streamActive && streamUrl && (
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              className="fixed bottom-32 left-4 right-4 z-40"
-            >
-              <div className="bg-black rounded-2xl overflow-hidden border border-violet-500/50 shadow-2xl shadow-violet-500/20">
-                {/* Stream Header */}
-                <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
-                  </div>
-                  {user.role === 'owner' && (
-                    <button onClick={handleStopStream} className="text-white/80 hover:text-white">
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
-                
-                {/* Video Player */}
-                <div className="relative aspect-video">
-                  <iframe
-                    src={streamUrl}
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  />
-                </div>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
