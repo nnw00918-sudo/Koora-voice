@@ -1035,13 +1035,15 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Main Controls */}
           <div className="flex items-center gap-3">
-            {/* Gift Button */}
+            {/* Audio Mute Button - Always visible */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={() => { if (speakers.length > 0) { setSelectedUser(speakers[0].user); setShowGiftModal(true); } }}
-              className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/30"
+              onClick={() => setIsAudioMuted(!isAudioMuted)}
+              className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
+                isAudioMuted ? 'bg-red-500 shadow-red-500/30' : 'bg-slate-700'
+              }`}
             >
-              <Gift className="w-6 h-6 text-white" />
+              {isAudioMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
             </motion.button>
 
             {/* Mic/Stage Controls */}
@@ -1071,16 +1073,6 @@ const YallaLiveRoom = ({ user }) => {
               </>
             ) : (
               <>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setIsAudioMuted(!isAudioMuted)}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    isAudioMuted ? 'bg-red-500' : 'bg-slate-700'
-                  }`}
-                >
-                  {isAudioMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
-                </motion.button>
-                
                 {/* Show speak button ONLY for Owner and Admin */}
                 {(room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') ? (
                   <motion.button
