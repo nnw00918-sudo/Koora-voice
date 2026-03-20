@@ -92,6 +92,7 @@ const YallaLiveRoom = ({ user }) => {
   
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
+  const requestsPollInterval = useRef(null);
   const agoraClient = useRef(null);
   const agoraUid = useRef(null);
 
@@ -102,8 +103,6 @@ const YallaLiveRoom = ({ user }) => {
     initializeAgora();
     joinRoom();
     fetchRoomData();
-    fetchGifts();
-    fetchSeatRequests(); // Fetch seat requests immediately
     startPolling();
 
     return () => {
@@ -111,7 +110,24 @@ const YallaLiveRoom = ({ user }) => {
       stopPolling();
       cleanupAgora();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
+
+  // Separate polling for seat requests (only for owners/admins)
+  useEffect(() => {
+    if (isOwner || isAdmin || room?.owner_id === user?.id) {
+      fetchSeatRequests();
+      fetchMyInvites();
+      requestsPollInterval.current = setInterval(() => {
+        fetchSeatRequests();
+        fetchMyInvites();
+      }, 15000); // Poll every 15 seconds
+    }
+    return () => {
+      if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOwner, isAdmin, room?.owner_id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -186,17 +202,39 @@ const YallaLiveRoom = ({ user }) => {
   };
 
   const startPolling = () => {
-    pollInterval.current = setInterval(() => {
-      fetchSeats();
-      fetchMessages();
-      fetchParticipants();
-      fetchSeatRequests(); // Always fetch to show requests
-      fetchMyInvites();
-    }, 5000);
+    // Main polling for essential data only
+    pollInterval.current = setInterval(async () => {
+      // Batch fetch essential data
+      try {
+        const [seatsRes, messagesRes, participantsRes] = await Promise.all([
+          axios.get(`${API}/rooms/${roomId}/seats`),
+          axios.get(`${API}/rooms/${roomId}/messages`),
+          axios.get(`${API}/rooms/${roomId}/participants`)
+        ]);
+        
+        // Update seats only if changed
+        const newSeats = seatsRes.data.seats;
+        setSeats(prev => JSON.stringify(prev) !== JSON.stringify(newSeats) ? newSeats : prev);
+        
+        // Update messages only if changed
+        const filteredMessages = messagesRes.data.filter(msg => 
+          !msg.content?.toLowerCase().includes('test message') &&
+          !msg.content?.toLowerCase().includes('voice test') &&
+          !msg.username?.toLowerCase().includes('test_user')
+        );
+        setMessages(prev => prev.length !== filteredMessages.length ? filteredMessages : prev);
+        
+        // Update participants only if changed
+        setParticipants(prev => prev.length !== participantsRes.data.length ? participantsRes.data : prev);
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 10000); // Poll every 10 seconds instead of 5
   };
 
   const stopPolling = () => {
     if (pollInterval.current) clearInterval(pollInterval.current);
+    if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
   };
 
   const fetchCurrentUserRole = async () => {
