@@ -712,7 +712,7 @@ const YallaLiveRoom = ({ user }) => {
   const convertToEmbedUrl = (url) => {
     if (!url) return '';
     
-    // YouTube - mute=1 for autoplay to work, user can unmute
+    // YouTube - with sound enabled
     if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
       let videoId = '';
       if (url.includes('youtube.com/watch')) {
@@ -723,8 +723,7 @@ const YallaLiveRoom = ({ user }) => {
         videoId = url.split('/').pop()?.split('?')[0] || '';
       }
       if (videoId) {
-        // mute=1 required for autoplay, user can unmute from player
-        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1&enablejsapi=1`;
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1&enablejsapi=1`;
       }
     }
     
@@ -745,7 +744,7 @@ const YallaLiveRoom = ({ user }) => {
         videoId = url.split('/live/')[1]?.split('?')[0] || '';
       }
       if (videoId) {
-        return `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1&mute=1&quality=1080&ui-logo=0`;
+        return `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1&mute=0&quality=1080&ui-logo=0`;
       }
     }
     
@@ -757,9 +756,10 @@ const YallaLiveRoom = ({ user }) => {
     // Already embed URL - add autoplay params if missing
     if (url.includes('/embed/') || url.includes('player.')) {
       if (!url.includes('autoplay')) {
-        return url + (url.includes('?') ? '&' : '?') + 'autoplay=1&mute=1';
+        return url + (url.includes('?') ? '&' : '?') + 'autoplay=1&mute=0';
       }
-      return url;
+      // Replace mute=1 with mute=0 if exists
+      return url.replace('mute=1', 'mute=0');
     }
     
     return url;
