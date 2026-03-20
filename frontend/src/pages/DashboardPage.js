@@ -118,9 +118,20 @@ const DashboardPage = ({ user, onLogout }) => {
     }
   };
 
-  const handleRoomClick = (roomId) => {
+  const handleRoomClick = async (roomId) => {
     const membership = membershipStatus[roomId];
-    if (!membership?.is_member) {
+    const room = rooms.find(r => r.id === roomId);
+    
+    // Check if room is closed
+    if (room?.is_closed) {
+      // Only system owner or room owner can enter closed rooms
+      if (user.role !== 'owner' && room.owner_id !== user.id) {
+        toast.error(isRTL ? 'الغرفة مغلقة حالياً' : 'Room is currently closed');
+        return;
+      }
+    }
+    
+    if (!membership?.is_member && user.role !== 'owner' && room?.owner_id !== user.id) {
       toast.error(isRTL ? 'يجب أن تنضم للغرفة أولاً' : 'You must join the room first');
       return;
     }
@@ -426,7 +437,15 @@ const DashboardPage = ({ user, onLogout }) => {
                       </div>
 
                       {/* Join/Enter Button */}
-                      {membershipStatus[room.id]?.is_member ? (
+                      {room.is_closed && user.role !== 'owner' && room.owner_id !== user.id ? (
+                        <Button
+                          disabled
+                          className="bg-slate-600 text-slate-400 font-cairo font-bold px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm cursor-not-allowed flex items-center gap-1.5"
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                          {isRTL ? 'مغلقة' : 'Closed'}
+                        </Button>
+                      ) : membershipStatus[room.id]?.is_member || user.role === 'owner' || room.owner_id === user.id ? (
                         <Button
                           onClick={() => handleRoomClick(room.id)}
                           className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm"

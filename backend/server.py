@@ -926,9 +926,12 @@ async def join_room(room_id: str, current_user: User = Depends(get_current_user)
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    # Check if room is closed (only owner can enter closed rooms)
-    is_owner = room["owner_id"] == current_user.id
-    if room.get("is_closed", False) and not is_owner:
+    # Check if user is room owner or system owner
+    is_room_owner = room["owner_id"] == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Check if room is closed - only room owner or system owner can enter
+    if room.get("is_closed", False) and not is_room_owner and not is_system_owner:
         raise HTTPException(status_code=403, detail="الغرفة مغلقة حالياً")
     
     # Check if user is owner or member
@@ -937,7 +940,7 @@ async def join_room(room_id: str, current_user: User = Depends(get_current_user)
         "user_id": current_user.id
     }, {"_id": 0})
     
-    if not is_owner and not is_member:
+    if not is_room_owner and not is_system_owner and not is_member:
         raise HTTPException(status_code=403, detail="يجب أن تكون عضواً في الغرفة للدخول")
     
     existing = await db.room_participants.find_one({
