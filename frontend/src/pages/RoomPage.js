@@ -677,7 +677,8 @@ const YallaLiveRoom = ({ user }) => {
                   const speakerData = speakers.find(s => s.user_id === odId);
                   const isMuted = speakerData?.user?.is_muted || false;
                   const isCurrentUser = odId === user.id;
-                  const canControl = room?.owner_id === user.id;
+                  // Show controls only for room owner or admin
+                  const canControl = (room?.owner_id === user.id) || currentUserRole === 'admin' || currentUserRole === 'owner';
                   
                   return (
                     <motion.div 
