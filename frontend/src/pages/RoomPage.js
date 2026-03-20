@@ -100,6 +100,7 @@ const YallaLiveRoom = ({ user }) => {
     joinRoom();
     fetchRoomData();
     fetchGifts();
+    fetchSeatRequests(); // Fetch seat requests immediately
     startPolling();
 
     return () => {
@@ -186,7 +187,7 @@ const YallaLiveRoom = ({ user }) => {
       fetchSeats();
       fetchMessages();
       fetchParticipants();
-      if (canManageStage) fetchSeatRequests();
+      fetchSeatRequests(); // Always fetch to show requests
       fetchMyInvites();
     }, 5000);
   };
@@ -830,32 +831,57 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         </motion.div>
 
-        {/* Seat Requests */}
-        {canManageStage && seatRequests.length > 0 && (
+        {/* Seat Requests - Show for room owner/admin/mod */}
+        {seatRequests.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="px-4 pb-2"
           >
-            <div className="bg-amber-500/20 backdrop-blur border border-amber-500/30 rounded-2xl p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-amber-400 text-sm font-bold">{seatRequests.length} طلب صعود</span>
-                <Hand className="w-4 h-4 text-amber-400" />
-              </div>
-              <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-                {seatRequests.map((request) => (
-                  <div key={request.request_id} className="flex-shrink-0 flex items-center gap-2 bg-slate-900/50 rounded-full pl-1 pr-3 py-1">
-                    <img src={request.avatar} alt="" className="w-8 h-8 rounded-full" />
-                    <span className="text-white text-sm">{request.username}</span>
-                    <button onClick={() => handleApproveSeat(request.user_id)}
-                      className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-white" />
-                    </button>
-                    <button onClick={() => handleRejectSeat(request.user_id)}
-                      className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
-                      <X className="w-3 h-3 text-white" />
-                    </button>
+            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur border border-amber-500/40 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-amber-500/30 rounded-full flex items-center justify-center">
+                    <Hand className="w-4 h-4 text-amber-400" />
                   </div>
+                  <div>
+                    <span className="text-white font-cairo font-bold text-sm">طلبات الصعود</span>
+                    <span className="text-amber-400 text-xs mr-2">({seatRequests.length})</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {seatRequests.map((request) => (
+                  <motion.div 
+                    key={request.request_id} 
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    className="flex items-center gap-3 bg-slate-900/60 backdrop-blur rounded-xl p-3"
+                  >
+                    <img src={request.avatar} alt="" className="w-12 h-12 rounded-full ring-2 ring-amber-500/50" />
+                    <div className="flex-1">
+                      <p className="text-white font-cairo font-bold">{request.username}</p>
+                      <p className="text-amber-400/70 text-xs">يريد التحدث</p>
+                    </div>
+                    {canManageStage && (
+                      <div className="flex gap-2">
+                        <motion.button 
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleApproveSeat(request.user_id)}
+                          className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/30"
+                        >
+                          <Check className="w-5 h-5 text-white" />
+                        </motion.button>
+                        <motion.button 
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleRejectSeat(request.user_id)}
+                          className="w-10 h-10 rounded-full bg-gradient-to-r from-red-500 to-rose-500 flex items-center justify-center shadow-lg shadow-red-500/30"
+                        >
+                          <X className="w-5 h-5 text-white" />
+                        </motion.button>
+                      </div>
+                    )}
+                  </motion.div>
                 ))}
               </div>
             </div>
