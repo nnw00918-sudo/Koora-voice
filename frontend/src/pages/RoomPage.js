@@ -713,7 +713,7 @@ const YallaLiveRoom = ({ user }) => {
   const convertToEmbedUrl = (url) => {
     if (!url) return '';
     
-    // YouTube - instant auto play
+    // YouTube - mute=1 for guaranteed autoplay on mobile
     if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
       let videoId = '';
       if (url.includes('youtube.com/watch')) {
@@ -724,7 +724,8 @@ const YallaLiveRoom = ({ user }) => {
         videoId = url.split('/').pop()?.split('?')[0] || '';
       }
       if (videoId) {
-        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&modestbranding=1&rel=0&vq=hd1080&controls=1&playsinline=1`;
+        // mute=1 is REQUIRED for autoplay on iOS/mobile
+        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&modestbranding=1&rel=0&controls=0&showinfo=0&vq=hd1080&playsinline=1&enablejsapi=1`;
       }
     }
     
@@ -732,7 +733,7 @@ const YallaLiveRoom = ({ user }) => {
     if (url.includes('twitch.tv')) {
       const channel = url.split('twitch.tv/')[1]?.split('/')[0] || '';
       if (channel) {
-        return `https://player.twitch.tv/?channel=${channel}&parent=pitch-chat.preview.emergentagent.com&autoplay=true&muted=false`;
+        return `https://player.twitch.tv/?channel=${channel}&parent=pitch-chat.preview.emergentagent.com&autoplay=true&muted=true`;
       }
     }
     
@@ -745,18 +746,18 @@ const YallaLiveRoom = ({ user }) => {
         videoId = url.split('/live/')[1]?.split('?')[0] || '';
       }
       if (videoId) {
-        return `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1&mute=0&quality=1080&ui-logo=0`;
+        return `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1&mute=1&quality=1080&controls=0&ui-logo=0`;
       }
     }
     
     // Facebook
     if (url.includes('facebook.com') && url.includes('/videos/')) {
-      return `https://www.facebook.com/plugins/video.php?href=${url}&autoplay=true&mute=0`;
+      return `https://www.facebook.com/plugins/video.php?href=${url}&autoplay=true&mute=1`;
     }
     
     // Already embed URL
     if (url.includes('/embed/') || url.includes('player.')) {
-      return url.replace('mute=1', 'mute=0');
+      return url.replace('mute=0', 'mute=1');
     }
     
     return url;
@@ -781,6 +782,14 @@ const YallaLiveRoom = ({ user }) => {
     axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
       { headers: { Authorization: `Bearer ${token}` } }
     ).catch(() => {});
+  };
+  
+  // Enable sound by reloading with mute=0
+  const enableStreamSound = () => {
+    if (streamUrl) {
+      setStreamKey(Date.now());
+      setStreamUrl(streamUrl.replace('mute=1', 'mute=0').replace('controls=0', 'controls=1'));
+    }
   };
 
   const handleStartStream = async () => {
@@ -1264,26 +1273,43 @@ const YallaLiveRoom = ({ user }) => {
                     )}
                   </div>
                   
-                  {/* Video Player - TV Receiver Style */}
-                  <div className="relative aspect-video overflow-hidden bg-black">
-                    {/* Loading indicator */}
+                  {/* Video Player - TV Receiver Style - No YouTube branding */}
+                  <div className="relative aspect-video overflow-hidden bg-black rounded-xl">
+                    {/* Loading spinner */}
                     <div className="absolute inset-0 flex items-center justify-center z-0">
-                      <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-8 h-8 border-3 border-violet-500 border-t-transparent rounded-full animate-spin" />
                     </div>
-                    <iframe
-                      key={streamKey}
-                      src={streamUrl}
-                      className="absolute inset-0 w-full h-full z-10"
-                      style={{ 
-                        marginTop: '-50px', 
-                        height: 'calc(100% + 100px)',
-                        marginBottom: '-50px'
-                      }}
-                      allowFullScreen
-                      allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    />
-                    {/* Bottom overlay to hide branding */}
-                    <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-black to-transparent z-20 pointer-events-none" />
+                    
+                    {/* Video iframe - scaled to hide controls */}
+                    <div className="absolute inset-0 overflow-hidden z-10">
+                      <iframe
+                        key={streamKey}
+                        src={streamUrl}
+                        className="w-full h-full border-0"
+                        style={{ 
+                          transform: 'scale(1.2)',
+                          transformOrigin: 'center center'
+                        }}
+                        allowFullScreen
+                        allow="autoplay; encrypted-media; fullscreen"
+                      />
+                    </div>
+                    
+                    {/* Sound enable button overlay */}
+                    {streamUrl?.includes('mute=1') && (
+                      <button
+                        onClick={enableStreamSound}
+                        className="absolute bottom-3 right-3 z-30 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-full flex items-center gap-2 shadow-lg animate-pulse"
+                      >
+                        <Volume2 className="w-5 h-5" />
+                        <span className="font-cairo font-bold text-sm">تفعيل الصوت</span>
+                      </button>
+                    )}
+                    
+                    {/* Top gradient to hide branding */}
+                    <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black via-black/80 to-transparent z-20 pointer-events-none" />
+                    {/* Bottom gradient to hide branding */}
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black via-black/80 to-transparent z-20 pointer-events-none" />
                   </div>
                 </div>
               </motion.div>
