@@ -93,6 +93,7 @@ const YallaLiveRoom = ({ user }) => {
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const requestsPollInterval = useRef(null);
+  const heartbeatInterval = useRef(null);
   const agoraClient = useRef(null);
   const agoraUid = useRef(null);
 
@@ -104,16 +105,18 @@ const YallaLiveRoom = ({ user }) => {
     joinRoom();
     fetchRoomData();
     startPolling();
+    startHeartbeat();
 
     return () => {
       leaveRoom();
       stopPolling();
+      stopHeartbeat();
       cleanupAgora();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
-  // Separate polling for seat requests (only for owners/admins)
+  // Separate polling for seat requests (only for owners/admins) - FAST
   useEffect(() => {
     if (isOwner || isAdmin || room?.owner_id === user?.id) {
       fetchSeatRequests();
@@ -121,7 +124,7 @@ const YallaLiveRoom = ({ user }) => {
       requestsPollInterval.current = setInterval(() => {
         fetchSeatRequests();
         fetchMyInvites();
-      }, 15000); // Poll every 15 seconds
+      }, 3000); // Poll every 3 seconds for fast response
     }
     return () => {
       if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
@@ -202,7 +205,7 @@ const YallaLiveRoom = ({ user }) => {
   };
 
   const startPolling = () => {
-    // Main polling for essential data only
+    // Main polling for essential data - FAST polling
     pollInterval.current = setInterval(async () => {
       // Batch fetch essential data
       try {
@@ -229,12 +232,32 @@ const YallaLiveRoom = ({ user }) => {
       } catch (error) {
         console.error('Polling error:', error);
       }
-    }, 10000); // Poll every 10 seconds instead of 5
+    }, 3000); // Poll every 3 seconds for fast updates
   };
 
   const stopPolling = () => {
     if (pollInterval.current) clearInterval(pollInterval.current);
     if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
+  };
+
+  const startHeartbeat = () => {
+    // Send heartbeat every 10 seconds to keep connection alive
+    const sendHeartbeat = async () => {
+      try {
+        await axios.post(`${API}/rooms/${roomId}/heartbeat`, {}, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+      } catch (error) {
+        console.error('Heartbeat error:', error);
+      }
+    };
+    
+    sendHeartbeat(); // Send immediately
+    heartbeatInterval.current = setInterval(sendHeartbeat, 10000);
+  };
+
+  const stopHeartbeat = () => {
+    if (heartbeatInterval.current) clearInterval(heartbeatInterval.current);
   };
 
   const fetchCurrentUserRole = async () => {
@@ -399,8 +422,8 @@ const YallaLiveRoom = ({ user }) => {
     try {
       await axios.post(`${API}/rooms/${roomId}/seat/approve/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('تمت الموافقة على الطلب');
-      fetchSeats();
-      fetchSeatRequests();
+      // Immediately refresh all data
+      await Promise.all([fetchSeats(), fetchSeatRequests(), fetchParticipants()]);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشلت الموافقة');
     }

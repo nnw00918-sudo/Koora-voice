@@ -164,6 +164,7 @@ class RoomParticipant(BaseModel):
     room_role: str = "listener"
     can_speak: bool = False
     is_muted: bool = False
+    last_active: Optional[str] = None
 
 class SeatRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -912,6 +913,8 @@ async def join_room(room_id: str, current_user: User = Depends(get_current_user)
         "user_id": current_user.id
     }, {"_id": 0})
     
+    now = datetime.now(timezone.utc).isoformat()
+    
     if not existing:
         participant_doc = {
             "room_id": room_id,
@@ -919,12 +922,19 @@ async def join_room(room_id: str, current_user: User = Depends(get_current_user)
             "username": current_user.username,
             "avatar": current_user.avatar,
             "is_speaking": False,
-            "joined_at": datetime.now(timezone.utc).isoformat(),
+            "joined_at": now,
             "seat_number": None,
             "room_role": "listener",
-            "can_speak": False
+            "can_speak": False,
+            "last_active": now
         }
         await db.room_participants.insert_one(participant_doc)
+    else:
+        # Update last_active if already in room
+        await db.room_participants.update_one(
+            {"room_id": room_id, "user_id": current_user.id},
+            {"$set": {"last_active": now}}
+        )
     
     return {"message": "دخلت الغرفة بنجاح"}
 
@@ -1431,12 +1441,35 @@ async def leave_room(room_id: str, current_user: User = Depends(get_current_user
         "room_id": room_id,
         "user_id": current_user.id
     })
-    # حذف جميع رسائل الغرفة عند المغادرة
-    await db.messages.delete_many({"room_id": room_id})
     return {"message": "غادرت الغرفة"}
+
+@api_router.post("/rooms/{room_id}/heartbeat")
+async def room_heartbeat(room_id: str, current_user: User = Depends(get_current_user)):
+    """Update user's last active time - call every few seconds"""
+    now = datetime.now(timezone.utc).isoformat()
+    await db.room_participants.update_one(
+        {"room_id": room_id, "user_id": current_user.id},
+        {"$set": {"last_active": now}}
+    )
+    
+    # Clean inactive participants (no heartbeat for 30 seconds)
+    thirty_seconds_ago = (datetime.now(timezone.utc) - timedelta(seconds=30)).isoformat()
+    await db.room_participants.delete_many({
+        "room_id": room_id,
+        "last_active": {"$lt": thirty_seconds_ago}
+    })
+    
+    return {"status": "ok"}
 
 @api_router.get("/rooms/{room_id}/participants", response_model=List[RoomParticipant])
 async def get_room_participants(room_id: str):
+    # Clean inactive participants first (no heartbeat for 30 seconds)
+    thirty_seconds_ago = (datetime.now(timezone.utc) - timedelta(seconds=30)).isoformat()
+    await db.room_participants.delete_many({
+        "room_id": room_id,
+        "last_active": {"$lt": thirty_seconds_ago, "$ne": None}
+    })
+    
     participants = await db.room_participants.find({"room_id": room_id}, {"_id": 0}).to_list(100)
     return [RoomParticipant(**p) for p in participants]
 
