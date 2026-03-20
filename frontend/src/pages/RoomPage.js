@@ -1276,15 +1276,28 @@ const YallaLiveRoom = ({ user }) => {
                     )}
                   </div>
                   
-                  {/* Video Player - Clean and Simple */}
+                  {/* Video Player - Hidden YouTube branding */}
                   <div className="relative aspect-video bg-black rounded-xl overflow-hidden">
-                    <iframe
-                      key={streamKey}
-                      src={streamUrl}
-                      className="absolute inset-0 w-full h-full"
-                      allow="autoplay; encrypted-media; fullscreen"
-                      allowFullScreen
-                    />
+                    {/* Iframe container - crops YouTube branding */}
+                    <div className="absolute inset-0" style={{
+                      top: '-60px',
+                      left: '0',
+                      right: '0', 
+                      bottom: '-60px',
+                      overflow: 'hidden'
+                    }}>
+                      <iframe
+                        key={streamKey}
+                        src={streamUrl}
+                        className="w-full border-0"
+                        style={{ 
+                          height: 'calc(100% + 120px)',
+                          marginTop: '0'
+                        }}
+                        allow="autoplay; encrypted-media; fullscreen"
+                        allowFullScreen
+                      />
+                    </div>
                   </div>
                 </div>
               </motion.div>
