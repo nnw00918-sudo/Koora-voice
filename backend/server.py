@@ -16,6 +16,7 @@ from passlib.context import CryptContext
 from agora_token_builder import RtcTokenBuilder
 import time
 import json
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -3008,6 +3009,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 
 # ==================== MATCHES & FOOTBALL API ====================
 
+# API Football configuration
+API_FOOTBALL_KEY = os.environ.get('API_FOOTBALL_KEY', '')
+API_FOOTBALL_BASE_URL = "https://v3.football.api-sports.io"
+
 # Football leagues data
 FOOTBALL_LEAGUES = [
     {"id": 307, "name": "دوري روشن السعودي", "country": "Saudi Arabia", "logo": "https://media.api-sports.io/football/leagues/307.png", "flag": "🇸🇦"},
@@ -3019,7 +3024,78 @@ FOOTBALL_LEAGUES = [
     {"id": 2, "name": "دوري أبطال أوروبا", "country": "Europe", "logo": "https://media.api-sports.io/football/leagues/2.png", "flag": "🇪🇺"},
 ]
 
-# Sample realistic match data (will be replaced with API data when key is provided)
+LEAGUE_NAME_MAP = {league["id"]: league for league in FOOTBALL_LEAGUES}
+
+async def fetch_from_api_football(endpoint: str, params: dict = None):
+    """Fetch data from API-Football"""
+    if not API_FOOTBALL_KEY:
+        return None
+    
+    headers = {"x-apisports-key": API_FOOTBALL_KEY}
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                f"{API_FOOTBALL_BASE_URL}/{endpoint}",
+                params=params,
+                headers=headers,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("response", [])
+        except Exception as e:
+            logger.error(f"API Football error: {e}")
+            return None
+
+def format_match(fixture: dict) -> dict:
+    """Format API response to our match format"""
+    league_id = fixture.get("league", {}).get("id")
+    league_info = LEAGUE_NAME_MAP.get(league_id, {
+        "id": league_id,
+        "name": fixture.get("league", {}).get("name", ""),
+        "logo": fixture.get("league", {}).get("logo", ""),
+        "flag": fixture.get("league", {}).get("flag", "")
+    })
+    
+    status_map = {
+        "NS": "SCHEDULED",
+        "1H": "LIVE",
+        "HT": "LIVE",
+        "2H": "LIVE",
+        "ET": "LIVE",
+        "P": "LIVE",
+        "FT": "FINISHED",
+        "AET": "FINISHED",
+        "PEN": "FINISHED",
+        "PST": "POSTPONED",
+        "CANC": "CANCELLED",
+        "ABD": "ABANDONED",
+        "TBD": "SCHEDULED",
+    }
+    
+    raw_status = fixture.get("fixture", {}).get("status", {}).get("short", "NS")
+    
+    return {
+        "id": str(fixture.get("fixture", {}).get("id", "")),
+        "league": league_info,
+        "home_team": {
+            "name": fixture.get("teams", {}).get("home", {}).get("name", ""),
+            "logo": fixture.get("teams", {}).get("home", {}).get("logo", ""),
+            "score": fixture.get("goals", {}).get("home")
+        },
+        "away_team": {
+            "name": fixture.get("teams", {}).get("away", {}).get("name", ""),
+            "logo": fixture.get("teams", {}).get("away", {}).get("logo", ""),
+            "score": fixture.get("goals", {}).get("away")
+        },
+        "status": status_map.get(raw_status, "SCHEDULED"),
+        "minute": fixture.get("fixture", {}).get("status", {}).get("elapsed"),
+        "date": fixture.get("fixture", {}).get("date", ""),
+        "venue": fixture.get("fixture", {}).get("venue", {}).get("name", "")
+    }
+
+# Sample realistic match data (fallback when API is not available)
 def get_sample_matches():
     now = datetime.now(timezone.utc)
     return [
@@ -3159,36 +3235,137 @@ async def get_football_leagues():
 
 @api_router.get("/football/matches")
 async def get_football_matches(league_id: Optional[int] = None, status: Optional[str] = None):
-    """Get football matches with optional filtering"""
-    matches = get_sample_matches()
+    """Get football matches with optional filtering - uses real API"""
+    all_matches = []
     
-    if league_id:
-        matches = [m for m in matches if m["league"]["id"] == league_id]
+    # Get today's date for fixtures
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
+    # Fetch from API for each league
+    if API_FOOTBALL_KEY:
+        leagues_to_fetch = [league_id] if league_id else [l["id"] for l in FOOTBALL_LEAGUES]
+        
+        for lid in leagues_to_fetch:
+            # Fetch today's fixtures
+            fixtures = await fetch_from_api_football("fixtures", {
+                "league": lid,
+                "date": today,
+                "season": 2024
+            })
+            
+            if fixtures:
+                for fixture in fixtures:
+                    all_matches.append(format_match(fixture))
+        
+        # If no matches today, get upcoming matches
+        if not all_matches:
+            for lid in leagues_to_fetch:
+                fixtures = await fetch_from_api_football("fixtures", {
+                    "league": lid,
+                    "next": 10,
+                    "season": 2024
+                })
+                
+                if fixtures:
+                    for fixture in fixtures:
+                        all_matches.append(format_match(fixture))
+    
+    # Fallback to sample data if API fails or no key
+    if not all_matches:
+        all_matches = get_sample_matches()
+        if league_id:
+            all_matches = [m for m in all_matches if m["league"]["id"] == league_id]
+    
+    # Filter by status if specified
     if status:
-        matches = [m for m in matches if m["status"] == status.upper()]
+        all_matches = [m for m in all_matches if m["status"] == status.upper()]
     
-    return {"matches": matches}
+    return {"matches": all_matches}
 
 @api_router.get("/football/live")
 async def get_live_matches():
-    """Get only live matches"""
+    """Get only live matches from real API"""
+    if API_FOOTBALL_KEY:
+        fixtures = await fetch_from_api_football("fixtures", {"live": "all"})
+        
+        if fixtures:
+            # Filter only our supported leagues
+            supported_league_ids = [l["id"] for l in FOOTBALL_LEAGUES]
+            live_matches = [
+                format_match(f) for f in fixtures 
+                if f.get("league", {}).get("id") in supported_league_ids
+            ]
+            return {"matches": live_matches, "count": len(live_matches)}
+    
+    # Fallback to sample data
     matches = get_sample_matches()
     live = [m for m in matches if m["status"] == "LIVE"]
     return {"matches": live, "count": len(live)}
 
 @api_router.get("/football/standings/{league_id}")
 async def get_league_standings(league_id: int):
-    """Get league standings/table"""
-    standings = get_sample_standings(league_id)
+    """Get league standings/table from real API"""
     league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
+    
+    if API_FOOTBALL_KEY:
+        standings_data = await fetch_from_api_football("standings", {
+            "league": league_id,
+            "season": 2024
+        })
+        
+        if standings_data and len(standings_data) > 0:
+            league_standings = standings_data[0].get("league", {}).get("standings", [[]])[0]
+            
+            formatted_standings = []
+            for team in league_standings:
+                formatted_standings.append({
+                    "rank": team.get("rank"),
+                    "team": team.get("team", {}).get("name", ""),
+                    "logo": team.get("team", {}).get("logo", ""),
+                    "points": team.get("points", 0),
+                    "played": team.get("all", {}).get("played", 0),
+                    "won": team.get("all", {}).get("win", 0),
+                    "draw": team.get("all", {}).get("draw", 0),
+                    "lost": team.get("all", {}).get("lose", 0),
+                    "gf": team.get("all", {}).get("goals", {}).get("for", 0),
+                    "ga": team.get("all", {}).get("goals", {}).get("against", 0),
+                    "gd": team.get("goalsDiff", 0)
+                })
+            
+            return {"league": league, "standings": formatted_standings}
+    
+    # Fallback to sample data
+    standings = get_sample_standings(league_id)
     return {"league": league, "standings": standings}
 
 @api_router.get("/football/scorers/{league_id}")
 async def get_top_scorers(league_id: int):
-    """Get top scorers for a league"""
-    scorers = get_sample_top_scorers(league_id)
+    """Get top scorers for a league from real API"""
     league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
+    
+    if API_FOOTBALL_KEY:
+        scorers_data = await fetch_from_api_football("players/topscorers", {
+            "league": league_id,
+            "season": 2024
+        })
+        
+        if scorers_data:
+            formatted_scorers = []
+            for i, player in enumerate(scorers_data[:10], 1):
+                stats = player.get("statistics", [{}])[0]
+                formatted_scorers.append({
+                    "rank": i,
+                    "player": player.get("player", {}).get("name", ""),
+                    "team": stats.get("team", {}).get("name", ""),
+                    "logo": player.get("player", {}).get("photo", ""),
+                    "goals": stats.get("goals", {}).get("total", 0) or 0,
+                    "assists": stats.get("goals", {}).get("assists", 0) or 0
+                })
+            
+            return {"league": league, "scorers": formatted_scorers}
+    
+    # Fallback to sample data
+    scorers = get_sample_top_scorers(league_id)
     return {"league": league, "scorers": scorers}
 
 # Include the API router - must be at the end after all routes are defined
