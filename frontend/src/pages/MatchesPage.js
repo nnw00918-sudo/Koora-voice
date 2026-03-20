@@ -338,6 +338,7 @@ const MatchesPage = () => {
                   league={matches[0]?.league}
                   matches={matches}
                   onMatchClick={setSelectedMatch}
+                  onLeagueClick={(leagueId) => navigate(`/league/${leagueId}`)}
                 />
               ))
             ) : (
@@ -503,9 +504,12 @@ const MatchesPage = () => {
 };
 
 // League Card
-const LeagueCard = ({ league, matches, onMatchClick }) => (
+const LeagueCard = ({ league, matches, onMatchClick, onLeagueClick }) => (
   <div className="bg-gradient-to-br from-white/5 to-white/[0.02] rounded-3xl border border-white/10 overflow-hidden">
-    <div className="p-4 flex items-center gap-3 border-b border-white/10">
+    <div 
+      onClick={() => onLeagueClick && onLeagueClick(league?.id)}
+      className="p-4 flex items-center gap-3 border-b border-white/10 cursor-pointer hover:bg-white/5 transition-colors"
+    >
       <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-2xl">
         {league?.flag || '⚽'}
       </div>
@@ -513,7 +517,7 @@ const LeagueCard = ({ league, matches, onMatchClick }) => (
         <h3 className="text-white font-bold">{league?.name || 'الدوري'}</h3>
         <p className="text-white/40 text-xs">{matches.length} مباراة</p>
       </div>
-      <ChevronLeft className="w-5 h-5 text-white/30" />
+      <ChevronLeft className="w-5 h-5 text-amber-500" />
     </div>
     <div className="divide-y divide-white/5">
       {matches.map(match => (

@@ -3479,6 +3479,78 @@ async def get_top_scorers(league_id: int):
     scorers = get_sample_top_scorers(league_id)
     return {"league": league, "scorers": scorers}
 
+@api_router.get("/football/assists/{league_id}")
+async def get_top_assists(league_id: int):
+    """Get top assist providers for a league from real API"""
+    league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
+    
+    CURRENT_SEASON = 2025
+    
+    if API_FOOTBALL_KEY:
+        assists_data = await fetch_from_api_football("players/topassists", {
+            "league": league_id,
+            "season": CURRENT_SEASON
+        })
+        
+        if assists_data:
+            formatted_assists = []
+            for i, player in enumerate(assists_data[:10], 1):
+                stats = player.get("statistics", [{}])[0]
+                formatted_assists.append({
+                    "rank": i,
+                    "player": player.get("player", {}).get("name", ""),
+                    "team": stats.get("team", {}).get("name", ""),
+                    "logo": player.get("player", {}).get("photo", ""),
+                    "assists": stats.get("goals", {}).get("assists", 0) or 0,
+                    "goals": stats.get("goals", {}).get("total", 0) or 0
+                })
+            
+            return {"league": league, "assists": formatted_assists}
+    
+    # Fallback to sample data
+    sample_assists = [
+        {"rank": 1, "player": "كيفين دي بروين", "team": "مانشستر سيتي", "logo": "", "assists": 12, "goals": 5},
+        {"rank": 2, "player": "برونو فيرنانديز", "team": "مانشستر يونايتد", "logo": "", "assists": 10, "goals": 8},
+        {"rank": 3, "player": "محمد صلاح", "team": "ليفربول", "logo": "", "assists": 10, "goals": 18},
+    ]
+    return {"league": league, "assists": sample_assists}
+
+@api_router.get("/football/league/{league_id}/fixtures")
+async def get_league_fixtures(league_id: int):
+    """Get all fixtures for a specific league"""
+    league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
+    
+    CURRENT_SEASON = 2025
+    all_fixtures = []
+    
+    if API_FOOTBALL_KEY:
+        # Get next 20 fixtures
+        fixtures = await fetch_from_api_football("fixtures", {
+            "league": league_id,
+            "season": CURRENT_SEASON,
+            "next": 20
+        })
+        
+        if fixtures:
+            for fixture in fixtures:
+                all_fixtures.append(format_match(fixture))
+        
+        # Get last 10 fixtures
+        last_fixtures = await fetch_from_api_football("fixtures", {
+            "league": league_id,
+            "season": CURRENT_SEASON,
+            "last": 10
+        })
+        
+        if last_fixtures:
+            for fixture in last_fixtures:
+                all_fixtures.append(format_match(fixture))
+    
+    # Sort by date
+    all_fixtures.sort(key=lambda x: x.get("date", ""), reverse=True)
+    
+    return {"league": league, "fixtures": all_fixtures}
+
 # Include the API router - must be at the end after all routes are defined
 app.include_router(api_router)
 
