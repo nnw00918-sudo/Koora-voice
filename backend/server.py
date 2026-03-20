@@ -261,20 +261,28 @@ def has_permission(user_role: str, required_roles: list) -> bool:
     """Check if user has required permission based on role hierarchy"""
     return user_role in required_roles
 
-def can_manage_stage(user_role: str) -> bool:
+def can_manage_stage(user_role: str, user_id: str = None, room_owner_id: str = None) -> bool:
     """Check if user can approve mic requests and manage stage"""
+    if user_id and room_owner_id and user_id == room_owner_id:
+        return True
     return user_role in ["owner", "admin", "mod"]
 
-def can_kick_mute(user_role: str) -> bool:
+def can_kick_mute(user_role: str, user_id: str = None, room_owner_id: str = None) -> bool:
     """Check if user can kick and mute users"""
+    if user_id and room_owner_id and user_id == room_owner_id:
+        return True
     return user_role in ["owner", "admin"]
 
-def can_manage_rooms(user_role: str) -> bool:
+def can_manage_rooms(user_role: str, user_id: str = None, room_owner_id: str = None) -> bool:
     """Check if user can create/close rooms"""
+    if user_id and room_owner_id and user_id == room_owner_id:
+        return True
     return user_role in ["owner"]
 
-def can_promote_users(user_role: str) -> bool:
+def can_promote_users(user_role: str, user_id: str = None, room_owner_id: str = None) -> bool:
     """Check if user can promote other users"""
+    if user_id and room_owner_id and user_id == room_owner_id:
+        return True
     return user_role in ["owner"]
 
 @api_router.post("/auth/register", response_model=Token)
@@ -987,8 +995,12 @@ async def request_seat(room_id: str, current_user: User = Depends(get_current_us
 
 @api_router.get("/rooms/{room_id}/seat/requests")
 async def get_seat_requests(room_id: str, current_user: User = Depends(get_current_user)):
-    if not can_manage_stage(current_user.role):
-        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin/Mod مطلوبة")
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if not can_manage_stage(current_user.role, current_user.id, room.get("owner_id")):
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     requests = await db.seat_requests.find({
         "room_id": room_id,
@@ -1015,12 +1027,12 @@ async def get_my_seat_request(room_id: str, current_user: User = Depends(get_cur
 
 @api_router.post("/rooms/{room_id}/seat/approve/{user_id}")
 async def approve_seat_request(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if not can_manage_stage(current_user.role):
-        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin/Mod مطلوبة")
-    
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if not can_manage_stage(current_user.role, current_user.id, room.get("owner_id")):
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     request = await db.seat_requests.find_one({
         "room_id": room_id,
@@ -1065,8 +1077,12 @@ async def approve_seat_request(room_id: str, user_id: str, current_user: User = 
 
 @api_router.post("/rooms/{room_id}/seat/reject/{user_id}")
 async def reject_seat_request(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if not can_manage_stage(current_user.role):
-        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin/Mod مطلوبة")
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if not can_manage_stage(current_user.role, current_user.id, room.get("owner_id")):
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     result = await db.seat_requests.update_one(
         {"room_id": room_id, "user_id": user_id, "status": "pending"},
@@ -1079,8 +1095,12 @@ async def reject_seat_request(room_id: str, user_id: str, current_user: User = D
 
 @api_router.post("/rooms/{room_id}/kick/{user_id}")
 async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if not can_kick_mute(current_user.role):
-        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if not can_kick_mute(current_user.role, current_user.id, room.get("owner_id")):
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     result = await db.room_participants.delete_one({
         "room_id": room_id,
@@ -1093,8 +1113,12 @@ async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user:
 
 @api_router.post("/rooms/{room_id}/mute/{user_id}")
 async def mute_user(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if not can_kick_mute(current_user.role):
-        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if not can_kick_mute(current_user.role, current_user.id, room.get("owner_id")):
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     result = await db.room_participants.update_one(
         {"room_id": room_id, "user_id": user_id},
@@ -1107,8 +1131,12 @@ async def mute_user(room_id: str, user_id: str, current_user: User = Depends(get
 
 @api_router.post("/rooms/{room_id}/unmute/{user_id}")
 async def unmute_user(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if not can_kick_mute(current_user.role):
-        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if not can_kick_mute(current_user.role, current_user.id, room.get("owner_id")):
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     participant = await db.room_participants.find_one({
         "room_id": room_id,
@@ -1131,9 +1159,13 @@ async def unmute_user(room_id: str, user_id: str, current_user: User = Depends(g
 
 @api_router.post("/rooms/{room_id}/remove-from-stage/{user_id}")
 async def remove_from_stage(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    """Remove a user from stage (Owner/Admin only)"""
-    if not can_kick_mute(current_user.role):
-        raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
+    """Remove a user from stage (Room Owner or Admin only)"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if not can_kick_mute(current_user.role, current_user.id, room.get("owner_id")):
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     participant = await db.room_participants.find_one({
         "room_id": room_id,
