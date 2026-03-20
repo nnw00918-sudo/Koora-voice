@@ -993,6 +993,22 @@ async def get_seat_requests(room_id: str, current_user: User = Depends(get_curre
     
     return {"requests": [SeatRequest(**r) for r in requests]}
 
+@api_router.get("/rooms/{room_id}/seat/my-request")
+async def get_my_seat_request(room_id: str, current_user: User = Depends(get_current_user)):
+    """Check current user's seat request status"""
+    request = await db.seat_requests.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0}, sort=[("created_at", -1)])
+    
+    if not request:
+        return {"has_pending": False, "status": None}
+    
+    return {
+        "has_pending": request.get("status") == "pending",
+        "status": request.get("status")
+    }
+
 @api_router.post("/rooms/{room_id}/seat/approve/{user_id}")
 async def approve_seat_request(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
     if not can_manage_stage(current_user.role):

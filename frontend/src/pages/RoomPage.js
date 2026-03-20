@@ -209,10 +209,11 @@ const YallaLiveRoom = ({ user }) => {
     pollInterval.current = setInterval(async () => {
       // Batch fetch essential data
       try {
-        const [seatsRes, messagesRes, participantsRes] = await Promise.all([
+        const [seatsRes, messagesRes, participantsRes, myRequestRes] = await Promise.all([
           axios.get(`${API}/rooms/${roomId}/seats`),
           axios.get(`${API}/rooms/${roomId}/messages`),
-          axios.get(`${API}/rooms/${roomId}/participants`)
+          axios.get(`${API}/rooms/${roomId}/participants`),
+          axios.get(`${API}/rooms/${roomId}/seat/my-request`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
         // Update seats only if changed
@@ -227,8 +228,22 @@ const YallaLiveRoom = ({ user }) => {
         );
         setMessages(prev => prev.length !== filteredMessages.length ? filteredMessages : prev);
         
-        // Update participants only if changed
-        setParticipants(prev => prev.length !== participantsRes.data.length ? participantsRes.data : prev);
+        // Update participants
+        const newParticipants = participantsRes.data;
+        setParticipants(prev => prev.length !== newParticipants.length ? newParticipants : prev);
+        
+        // Check if current user got approved (is on stage now)
+        const myParticipant = newParticipants.find(p => p.user_id === user.id);
+        if (myParticipant && myParticipant.seat_number !== null) {
+          setOnStage(true);
+          setPendingRequest(false); // Clear pending when approved
+        } else {
+          // Check request status from API
+          const requestStatus = myRequestRes.data;
+          if (requestStatus.status === 'approved' || requestStatus.status === 'rejected' || !requestStatus.has_pending) {
+            setPendingRequest(false);
+          }
+        }
       } catch (error) {
         console.error('Polling error:', error);
       }
@@ -299,8 +314,14 @@ const YallaLiveRoom = ({ user }) => {
       setMessages(filteredMessages);
       setParticipants(participantsRes.data);
       
+      // Check if current user is on stage
       const myParticipant = participantsRes.data.find(p => p.user_id === user.id);
-      if (myParticipant && myParticipant.seat_number !== null) setOnStage(true);
+      if (myParticipant && myParticipant.seat_number !== null) {
+        setOnStage(true);
+        setPendingRequest(false); // Clear pending if approved
+      } else {
+        setOnStage(false);
+      }
       
       setLoading(false);
     } catch (error) {
@@ -365,6 +386,22 @@ const YallaLiveRoom = ({ user }) => {
       setSeatRequests(response.data.requests);
     } catch (error) {
       console.error('Failed to fetch seat requests');
+    }
+  };
+
+  const checkMyRequestStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/rooms/${roomId}/seat/my-request`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // If request was approved or rejected, clear pending state
+      if (response.data.status === 'approved' || response.data.status === 'rejected') {
+        setPendingRequest(false);
+      } else if (response.data.has_pending) {
+        setPendingRequest(true);
+      }
+    } catch (error) {
+      console.error('Failed to check request status');
     }
   };
 
