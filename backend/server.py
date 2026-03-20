@@ -1799,16 +1799,17 @@ async def update_stream_slots(room_id: str, slots_data: StreamSlotsUpdate, curre
 
 @api_router.post("/rooms/{room_id}/stream/play/{slot}")
 async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends(get_current_user)):
-    """Play a saved stream slot - System Owner only"""
-    if current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="فقط الأونر يمكنه تشغيل البث")
-    
+    """Play a saved stream slot - Anyone can switch channels when stream is active"""
     if slot < 1 or slot > 5:
         raise HTTPException(status_code=400, detail="رقم الرابط يجب أن يكون من 1 إلى 5")
     
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check if stream is active (only switch if already streaming, unless owner)
+    if not room.get("stream_active", False) and current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="البث غير مفعل")
     
     stream_slots = room.get("stream_slots", {})
     stream_url = stream_slots.get(str(slot), "")

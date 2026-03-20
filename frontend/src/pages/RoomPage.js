@@ -1177,17 +1177,40 @@ const YallaLiveRoom = ({ user }) => {
                 className="mb-4"
               >
                 <div className="bg-black rounded-2xl overflow-hidden border border-violet-500/50 shadow-2xl shadow-violet-500/20">
-                  {/* Stream Header */}
-                  <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                      <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
+                  {/* Stream Header with Channel Switcher */}
+                  <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
+                      </div>
+                      {user.role === 'owner' && (
+                        <button onClick={handleStopStream} className="text-white/80 hover:text-white">
+                          <X className="w-5 h-5" />
+                        </button>
+                      )}
                     </div>
-                    {user.role === 'owner' && (
-                      <button onClick={handleStopStream} className="text-white/80 hover:text-white">
-                        <X className="w-5 h-5" />
-                      </button>
-                    )}
+                    
+                    {/* Channel Buttons - For Everyone */}
+                    <div className="flex gap-1 overflow-x-auto hide-scrollbar">
+                      {[1, 2, 3, 4, 5].map((slot) => (
+                        <motion.button
+                          key={slot}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => streamSlots[slot] && handlePlaySlot(slot)}
+                          disabled={!streamSlots[slot]}
+                          className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-cairo font-bold transition-all ${
+                            activeSlot === slot
+                              ? 'bg-white text-violet-600'
+                              : streamSlots[slot]
+                              ? 'bg-white/20 text-white hover:bg-white/30'
+                              : 'bg-white/5 text-white/30 cursor-not-allowed'
+                          }`}
+                        >
+                          قناة {slot}
+                        </motion.button>
+                      ))}
+                    </div>
                   </div>
                   
                   {/* Video Player */}
