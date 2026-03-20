@@ -230,7 +230,7 @@ const YallaLiveRoom = ({ user }) => {
         
         // Check if room was closed - kick user if not system owner
         const roomData = roomRes.data;
-        if (roomData.is_closed && currentUserRole !== 'owner') {
+        if (roomData.is_closed && user.role !== 'owner') {
           toast.error('تم إغلاق الغرفة');
           stopPolling();
           stopHeartbeat();
@@ -347,7 +347,7 @@ const YallaLiveRoom = ({ user }) => {
       setRoom(roomData);
       
       // Check if room was closed and user should be kicked (only system owner stays)
-      if (roomData.is_closed && currentUserRole !== 'owner') {
+      if (roomData.is_closed && user.role !== 'owner') {
         toast.error('تم إغلاق الغرفة');
         await cleanupAgora();
         navigate('/dashboard');
