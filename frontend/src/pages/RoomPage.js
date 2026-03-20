@@ -713,7 +713,27 @@ const YallaLiveRoom = ({ user }) => {
   const convertToEmbedUrl = (url) => {
     if (!url) return '';
     
-    // YouTube - autoplay muted, with controls
+    // YouTube Channel - live stream
+    if (url.includes('youtube.com/@') || url.includes('youtube.com/channel/') || url.includes('youtube.com/c/')) {
+      let channelId = '';
+      if (url.includes('youtube.com/@')) {
+        // Handle @username format - need to use the username
+        const username = url.split('@')[1]?.split('/')[0]?.split('?')[0] || '';
+        if (username) {
+          // For @username, we use the channel's live stream URL
+          return `https://www.youtube-nocookie.com/embed/live_stream?channel=${username}&autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1`;
+        }
+      } else if (url.includes('youtube.com/channel/')) {
+        channelId = url.split('/channel/')[1]?.split('/')[0]?.split('?')[0] || '';
+      } else if (url.includes('youtube.com/c/')) {
+        channelId = url.split('/c/')[1]?.split('/')[0]?.split('?')[0] || '';
+      }
+      if (channelId) {
+        return `https://www.youtube-nocookie.com/embed/live_stream?channel=${channelId}&autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1`;
+      }
+    }
+    
+    // YouTube Video - regular video or live
     if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
       let videoId = '';
       if (url.includes('youtube.com/watch')) {
