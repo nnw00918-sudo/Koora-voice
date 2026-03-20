@@ -1276,14 +1276,15 @@ const YallaLiveRoom = ({ user }) => {
                     )}
                   </div>
                   
-                  {/* Video Player */}
+                  {/* Video Player - Auto plays like TV receiver */}
                   <div className="relative aspect-video bg-black rounded-xl overflow-hidden">
                     <iframe
-                      key={streamKey}
+                      key={`video-${streamKey}`}
                       src={streamUrl}
-                      className="absolute inset-0 w-full h-full"
-                      allow="autoplay; encrypted-media; fullscreen"
+                      className="absolute inset-0 w-full h-full border-0"
+                      allow="autoplay *; encrypted-media; fullscreen"
                       allowFullScreen
+                      loading="eager"
                     />
                   </div>
                 </div>
