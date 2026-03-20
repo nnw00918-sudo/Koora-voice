@@ -708,19 +708,78 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  const handlePlaySlot = async (slot) => {
-    try {
-      const response = await axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success(response.data.message);
-      setStreamActive(true);
-      setStreamUrl(response.data.stream_url);
-      setActiveSlot(slot);
-      setShowStreamModal(false);
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل تشغيل البث');
+  // Convert URL to embed format locally for instant switching
+  const convertToEmbedUrl = (url) => {
+    if (!url) return '';
+    
+    // YouTube - mute=1 for autoplay to work, user can unmute
+    if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
+      let videoId = '';
+      if (url.includes('youtube.com/watch')) {
+        videoId = url.split('v=')[1]?.split('&')[0] || '';
+      } else if (url.includes('youtube.com/live')) {
+        videoId = url.split('/live/')[1]?.split('?')[0] || '';
+      } else {
+        videoId = url.split('/').pop()?.split('?')[0] || '';
+      }
+      if (videoId) {
+        // mute=1 required for autoplay, user can unmute from player
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1&enablejsapi=1`;
+      }
     }
+    
+    // Twitch
+    if (url.includes('twitch.tv')) {
+      const channel = url.split('twitch.tv/')[1]?.split('/')[0] || '';
+      if (channel) {
+        return `https://player.twitch.tv/?channel=${channel}&parent=pitch-chat.preview.emergentagent.com&autoplay=true&muted=false`;
+      }
+    }
+    
+    // Dailymotion
+    if (url.includes('dailymotion.com')) {
+      let videoId = '';
+      if (url.includes('/video/')) {
+        videoId = url.split('/video/')[1]?.split('?')[0] || '';
+      } else if (url.includes('/live/')) {
+        videoId = url.split('/live/')[1]?.split('?')[0] || '';
+      }
+      if (videoId) {
+        return `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1&mute=1&quality=1080&ui-logo=0`;
+      }
+    }
+    
+    // Facebook
+    if (url.includes('facebook.com') && url.includes('/videos/')) {
+      return `https://www.facebook.com/plugins/video.php?href=${url}&autoplay=true&mute=0`;
+    }
+    
+    // Already embed URL - add autoplay params if missing
+    if (url.includes('/embed/') || url.includes('player.')) {
+      if (!url.includes('autoplay')) {
+        return url + (url.includes('?') ? '&' : '?') + 'autoplay=1&mute=1';
+      }
+      return url;
+    }
+    
+    return url;
+  };
+
+  // Instant channel switching like TV receiver
+  const handlePlaySlot = async (slot) => {
+    const rawUrl = streamSlots[slot];
+    if (!rawUrl) return;
+    
+    // Instantly switch the stream locally
+    const embedUrl = convertToEmbedUrl(rawUrl);
+    setStreamUrl(embedUrl);
+    setActiveSlot(slot);
+    setStreamActive(true);
+    
+    // Update server in background (don't wait for response)
+    axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
+      { headers: { Authorization: `Bearer ${token}` } }
+    ).catch(err => console.log('Background sync failed'));
   };
 
   const handleStartStream = async () => {
@@ -1207,6 +1266,7 @@ const YallaLiveRoom = ({ user }) => {
                   {/* Video Player - with YouTube branding hidden */}
                   <div className="relative aspect-video overflow-hidden">
                     <iframe
+                      key={`stream-${activeSlot}-${streamUrl}`}
                       src={streamUrl}
                       className="w-full h-full pointer-events-auto"
                       style={{ 
@@ -1215,7 +1275,7 @@ const YallaLiveRoom = ({ user }) => {
                         marginBottom: '-60px'
                       }}
                       allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     />
                     {/* Overlay to hide YouTube logo at bottom */}
                     <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black via-black to-transparent pointer-events-none" />
