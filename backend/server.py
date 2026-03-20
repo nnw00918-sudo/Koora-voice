@@ -1742,7 +1742,7 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
     stream_url = stream_data.url.strip()
     embed_url = stream_url
     
-    # YouTube URL conversion (including live streams)
+    # YouTube URL conversion (including live streams) - Hide branding, highest quality
     if "youtube.com/watch" in stream_url or "youtu.be" in stream_url or "youtube.com/live" in stream_url:
         video_id = ""
         if "youtube.com/watch" in stream_url:
@@ -1752,7 +1752,8 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
         else:
             video_id = stream_url.split("/")[-1].split("?")[0]
         if video_id:
-            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0"
+            # modestbranding=1: hide YouTube logo, rel=0: no related videos, vq=hd1080: highest quality
+            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1"
     
     # Twitch URL conversion
     elif "twitch.tv" in stream_url:
@@ -1764,10 +1765,10 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
     elif "dailymotion.com" in stream_url:
         if "/video/" in stream_url:
             video_id = stream_url.split("/video/")[1].split("?")[0]
-            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1"
+            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
         elif "/live/" in stream_url:
             video_id = stream_url.split("/live/")[1].split("?")[0]
-            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1"
+            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
     
     # Facebook Video support
     elif "facebook.com" in stream_url and "/videos/" in stream_url:
@@ -1817,7 +1818,7 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
     if not stream_url:
         raise HTTPException(status_code=400, detail="هذا الرابط فارغ")
     
-    # Convert to embed URL
+    # Convert to embed URL - Hide branding, highest quality
     embed_url = stream_url
     if "youtube.com/watch" in stream_url or "youtu.be" in stream_url or "youtube.com/live" in stream_url:
         video_id = ""
@@ -1828,7 +1829,8 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
         else:
             video_id = stream_url.split("/")[-1].split("?")[0]
         if video_id:
-            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0"
+            # modestbranding=1: hide YouTube logo, rel=0: no related videos, vq=hd1080: highest quality
+            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1"
     elif "twitch.tv" in stream_url:
         channel = stream_url.split("twitch.tv/")[1].split("/")[0] if "twitch.tv/" in stream_url else ""
         if channel:
@@ -1837,10 +1839,10 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
     elif "dailymotion.com" in stream_url:
         if "/video/" in stream_url:
             video_id = stream_url.split("/video/")[1].split("?")[0]
-            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1"
+            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
         elif "/live/" in stream_url:
             video_id = stream_url.split("/live/")[1].split("?")[0]
-            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1"
+            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
     # Facebook Video support
     elif "facebook.com" in stream_url and "/videos/" in stream_url:
         embed_url = f"https://www.facebook.com/plugins/video.php?href={stream_url}&autoplay=true"

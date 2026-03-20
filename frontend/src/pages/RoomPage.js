@@ -1204,14 +1204,21 @@ const YallaLiveRoom = ({ user }) => {
                     )}
                   </div>
                   
-                  {/* Video Player */}
-                  <div className="relative aspect-video">
+                  {/* Video Player - with YouTube branding hidden */}
+                  <div className="relative aspect-video overflow-hidden">
                     <iframe
                       src={streamUrl}
-                      className="w-full h-full"
+                      className="w-full h-full pointer-events-auto"
+                      style={{ 
+                        marginTop: '-60px', 
+                        height: 'calc(100% + 120px)',
+                        marginBottom: '-60px'
+                      }}
                       allowFullScreen
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     />
+                    {/* Overlay to hide YouTube logo at bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black via-black to-transparent pointer-events-none" />
                   </div>
                 </div>
               </motion.div>
