@@ -3233,6 +3233,69 @@ async def get_football_leagues():
     """Get all available football leagues"""
     return {"leagues": FOOTBALL_LEAGUES}
 
+@api_router.get("/football/fixtures/upcoming")
+async def get_upcoming_fixtures(days: int = 7):
+    """Get all upcoming fixtures for the next X days"""
+    all_fixtures = []
+    CURRENT_SEASON = 2025
+    
+    if API_FOOTBALL_KEY:
+        for league in FOOTBALL_LEAGUES:
+            fixtures = await fetch_from_api_football("fixtures", {
+                "league": league["id"],
+                "next": 15,
+                "season": CURRENT_SEASON
+            })
+            
+            if fixtures:
+                for fixture in fixtures:
+                    all_fixtures.append(format_match(fixture))
+    
+    # Sort by date
+    all_fixtures.sort(key=lambda x: x.get("date", ""))
+    
+    # Group by date
+    grouped = {}
+    for match in all_fixtures:
+        date_str = match.get("date", "")[:10]  # Get YYYY-MM-DD
+        if date_str not in grouped:
+            grouped[date_str] = []
+        grouped[date_str].append(match)
+    
+    return {"fixtures": grouped, "total": len(all_fixtures)}
+
+@api_router.get("/football/fixtures/today")
+async def get_today_fixtures():
+    """Get all fixtures for today"""
+    all_fixtures = []
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    CURRENT_SEASON = 2025
+    
+    if API_FOOTBALL_KEY:
+        for league in FOOTBALL_LEAGUES:
+            fixtures = await fetch_from_api_football("fixtures", {
+                "league": league["id"],
+                "date": today,
+                "season": CURRENT_SEASON
+            })
+            
+            if fixtures:
+                for fixture in fixtures:
+                    all_fixtures.append(format_match(fixture))
+    
+    # Sort by time
+    all_fixtures.sort(key=lambda x: x.get("date", ""))
+    
+    # Group by league
+    grouped = {}
+    for match in all_fixtures:
+        league_name = match.get("league", {}).get("name", "Other")
+        if league_name not in grouped:
+            grouped[league_name] = []
+        grouped[league_name].append(match)
+    
+    return {"fixtures": grouped, "total": len(all_fixtures), "date": today}
+
 @api_router.get("/football/matches")
 async def get_football_matches(league_id: Optional[int] = None, status: Optional[str] = None):
     """Get football matches with optional filtering - uses real API"""

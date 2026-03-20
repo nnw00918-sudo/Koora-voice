@@ -6,14 +6,12 @@ import {
   Clock, 
   Calendar,
   TrendingUp,
-  Users,
   Target,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Radio,
-  Star,
-  Filter
+  ChevronDown,
+  ChevronUp,
+  RefreshCw
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -21,24 +19,28 @@ const API = `${BACKEND_URL}/api`;
 
 const MatchesPage = () => {
   const [leagues, setLeagues] = useState([]);
-  const [matches, setMatches] = useState([]);
+  const [todayFixtures, setTodayFixtures] = useState({});
+  const [upcomingFixtures, setUpcomingFixtures] = useState({});
   const [standings, setStandings] = useState([]);
   const [scorers, setScorers] = useState([]);
   const [selectedLeague, setSelectedLeague] = useState(null);
-  const [activeTab, setActiveTab] = useState('live'); // live, upcoming, finished, standings, scorers
+  const [activeTab, setActiveTab] = useState('today');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [expandedDates, setExpandedDates] = useState({});
   const pollInterval = useRef(null);
 
   useEffect(() => {
     fetchLeagues();
-    fetchMatches();
+    fetchTodayFixtures();
+    fetchUpcomingFixtures();
     
-    // Poll for live updates every 30 seconds
+    // Auto refresh every 60 seconds for live matches
     pollInterval.current = setInterval(() => {
-      if (activeTab === 'live') {
-        fetchMatches();
+      if (activeTab === 'today') {
+        fetchTodayFixtures(true);
       }
-    }, 30000);
+    }, 60000);
 
     return () => {
       if (pollInterval.current) clearInterval(pollInterval.current);
@@ -64,13 +66,29 @@ const MatchesPage = () => {
     }
   };
 
-  const fetchMatches = async () => {
+  const fetchTodayFixtures = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const response = await axios.get(`${API}/football/matches`);
-      setMatches(response.data.matches);
+      const response = await axios.get(`${API}/football/fixtures/today`);
+      setTodayFixtures(response.data.fixtures || {});
+    } catch (error) {
+      console.error('Failed to fetch today fixtures:', error);
+    }
+    if (!silent) setLoading(false);
+  };
+
+  const fetchUpcomingFixtures = async () => {
+    try {
+      const response = await axios.get(`${API}/football/fixtures/upcoming?days=7`);
+      setUpcomingFixtures(response.data.fixtures || {});
+      // Expand first 3 dates by default
+      const dates = Object.keys(response.data.fixtures || {}).slice(0, 3);
+      const expanded = {};
+      dates.forEach(d => expanded[d] = true);
+      setExpandedDates(expanded);
       setLoading(false);
     } catch (error) {
-      console.error('Failed to fetch matches:', error);
+      console.error('Failed to fetch upcoming fixtures:', error);
       setLoading(false);
     }
   };
@@ -78,7 +96,7 @@ const MatchesPage = () => {
   const fetchStandings = async (leagueId) => {
     try {
       const response = await axios.get(`${API}/football/standings/${leagueId}`);
-      setStandings(response.data.standings);
+      setStandings(response.data.standings || []);
     } catch (error) {
       console.error('Failed to fetch standings:', error);
     }
@@ -87,24 +105,58 @@ const MatchesPage = () => {
   const fetchScorers = async (leagueId) => {
     try {
       const response = await axios.get(`${API}/football/scorers/${leagueId}`);
-      setScorers(response.data.scorers);
+      setScorers(response.data.scorers || []);
     } catch (error) {
       console.error('Failed to fetch scorers:', error);
     }
   };
 
-  const filteredMatches = matches.filter(m => {
-    if (activeTab === 'live') return m.status === 'LIVE';
-    if (activeTab === 'upcoming') return m.status === 'SCHEDULED';
-    if (activeTab === 'finished') return m.status === 'FINISHED';
-    return true;
-  }).filter(m => !selectedLeague || m.league.id === selectedLeague.id);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    if (activeTab === 'today') {
+      await fetchTodayFixtures();
+    } else if (activeTab === 'upcoming') {
+      await fetchUpcomingFixtures();
+    }
+    setRefreshing(false);
+  };
 
-  const liveCount = matches.filter(m => m.status === 'LIVE').length;
+  const toggleDateExpand = (date) => {
+    setExpandedDates(prev => ({
+      ...prev,
+      [date]: !prev[date]
+    }));
+  };
+
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'اليوم';
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return 'غداً';
+    }
+    
+    return date.toLocaleDateString('ar-SA', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long' 
+    });
+  };
+
+  const formatTime = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const liveCount = Object.values(todayFixtures).flat().filter(m => m.status === 'LIVE').length;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-emerald-950/20 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -116,110 +168,178 @@ const MatchesPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-emerald-950/20 to-slate-950 pb-24" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pb-24" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-emerald-500/20">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+      <div className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800">
+        <div className="max-w-4xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white font-cairo">المباريات</h1>
-                <p className="text-emerald-400 text-sm">نتائج مباشرة</p>
+                <h1 className="text-lg font-bold text-white font-cairo">المباريات</h1>
+                <p className="text-emerald-400 text-xs">موسم 2025-2026</p>
               </div>
             </div>
-            {liveCount > 0 && (
-              <motion.div 
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="flex items-center gap-2 bg-red-500/20 border border-red-500/50 px-3 py-1.5 rounded-full"
-              >
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-red-400 font-bold text-sm">{liveCount} مباشر</span>
-              </motion.div>
-            )}
-          </div>
-
-          {/* League Selector */}
-          <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-            <button
-              onClick={() => setSelectedLeague(null)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-cairo font-bold transition-all ${
-                !selectedLeague 
-                  ? 'bg-emerald-500 text-white' 
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              الكل
-            </button>
-            {leagues.map((league) => (
+            <div className="flex items-center gap-2">
+              {liveCount > 0 && (
+                <motion.div 
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="flex items-center gap-1.5 bg-red-500/20 border border-red-500/50 px-2.5 py-1 rounded-full"
+                >
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  <span className="text-red-400 font-bold text-xs">{liveCount} LIVE</span>
+                </motion.div>
+              )}
               <button
-                key={league.id}
-                onClick={() => setSelectedLeague(league)}
-                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-cairo font-bold transition-all ${
-                  selectedLeague?.id === league.id 
-                    ? 'bg-emerald-500 text-white' 
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center"
               >
-                <span>{league.flag}</span>
-                <span className="hidden sm:inline">{league.name}</span>
+                <RefreshCw className={`w-4 h-4 text-slate-400 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
-            ))}
+            </div>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="max-w-4xl mx-auto px-4">
-          <div className="flex border-b border-white/10">
+          <div className="flex gap-1 bg-slate-900/50 p-1 rounded-xl">
             {[
-              { id: 'live', label: 'مباشر', icon: Radio, color: 'red' },
-              { id: 'upcoming', label: 'قادمة', icon: Calendar, color: 'blue' },
-              { id: 'finished', label: 'منتهية', icon: Clock, color: 'gray' },
-              { id: 'standings', label: 'الترتيب', icon: TrendingUp, color: 'emerald' },
-              { id: 'scorers', label: 'الهدافين', icon: Target, color: 'amber' },
+              { id: 'today', label: 'اليوم', icon: Radio },
+              { id: 'upcoming', label: 'القادمة', icon: Calendar },
+              { id: 'standings', label: 'الترتيب', icon: TrendingUp },
+              { id: 'scorers', label: 'الهدافين', icon: Target },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-cairo font-bold transition-all border-b-2 ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-cairo font-bold rounded-lg transition-all ${
                   activeTab === tab.id 
-                    ? `border-${tab.color}-500 text-${tab.color}-400` 
-                    : 'border-transparent text-slate-400 hover:text-white'
+                    ? 'bg-emerald-500 text-white' 
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
-                <span className="hidden xs:inline">{tab.label}</span>
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
         </div>
+
+        {/* League Filter for standings/scorers */}
+        {(activeTab === 'standings' || activeTab === 'scorers') && (
+          <div className="max-w-4xl mx-auto px-4 py-3">
+            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+              {leagues.map((league) => (
+                <button
+                  key={league.id}
+                  onClick={() => setSelectedLeague(league)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-cairo font-bold transition-all ${
+                    selectedLeague?.id === league.id 
+                      ? 'bg-emerald-500 text-white' 
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  <span>{league.flag}</span>
+                  <span>{league.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-4">
         <AnimatePresence mode="wait">
-          {/* Matches List */}
-          {['live', 'upcoming', 'finished'].includes(activeTab) && (
+          {/* Today's Fixtures */}
+          {activeTab === 'today' && (
             <motion.div
-              key={activeTab}
+              key="today"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               className="space-y-4"
             >
-              {filteredMatches.length > 0 ? (
-                filteredMatches.map((match) => (
-                  <MatchCard key={match.id} match={match} />
+              {Object.keys(todayFixtures).length > 0 ? (
+                Object.entries(todayFixtures).map(([leagueName, matches]) => (
+                  <div key={leagueName} className="bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800">
+                    <div className="px-4 py-3 bg-slate-800/50 flex items-center gap-2">
+                      <span className="text-lg">{matches[0]?.league?.flag || '⚽'}</span>
+                      <span className="text-white font-cairo font-bold text-sm">{leagueName}</span>
+                      <span className="text-slate-500 text-xs mr-auto">{matches.length} مباراة</span>
+                    </div>
+                    <div className="divide-y divide-slate-800/50">
+                      {matches.map((match) => (
+                        <MatchRow key={match.id} match={match} />
+                      ))}
+                    </div>
+                  </div>
                 ))
               ) : (
                 <div className="text-center py-16">
-                  <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="w-10 h-10 text-slate-500" />
+                  <Calendar className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                  <p className="text-slate-400 font-cairo">لا توجد مباريات اليوم</p>
+                  <p className="text-slate-500 text-sm mt-1">تحقق من المباريات القادمة</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Upcoming Fixtures */}
+          {activeTab === 'upcoming' && (
+            <motion.div
+              key="upcoming"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-3"
+            >
+              {Object.keys(upcomingFixtures).length > 0 ? (
+                Object.entries(upcomingFixtures).map(([date, matches]) => (
+                  <div key={date} className="bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800">
+                    <button
+                      onClick={() => toggleDateExpand(date)}
+                      className="w-full px-4 py-3 bg-slate-800/50 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-emerald-400" />
+                        <span className="text-white font-cairo font-bold">{formatDate(date)}</span>
+                        <span className="text-slate-500 text-sm">{date}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 text-sm font-bold">{matches.length} مباراة</span>
+                        {expandedDates[date] ? (
+                          <ChevronUp className="w-5 h-5 text-slate-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-slate-400" />
+                        )}
+                      </div>
+                    </button>
+                    
+                    <AnimatePresence>
+                      {expandedDates[date] && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="divide-y divide-slate-800/50"
+                        >
+                          {matches.map((match) => (
+                            <MatchRow key={match.id} match={match} showLeague />
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                  <p className="text-slate-400 font-cairo">لا توجد مباريات</p>
+                ))
+              ) : (
+                <div className="text-center py-16">
+                  <Calendar className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                  <p className="text-slate-400 font-cairo">لا توجد مباريات قادمة</p>
                 </div>
               )}
             </motion.div>
@@ -233,69 +353,65 @@ const MatchesPage = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              {selectedLeague ? (
-                <div className="bg-slate-900/50 backdrop-blur rounded-2xl border border-emerald-500/20 overflow-hidden">
-                  <div className="p-4 border-b border-white/10 flex items-center gap-3">
-                    <img src={selectedLeague.logo} alt="" className="w-8 h-8" />
-                    <h3 className="text-white font-cairo font-bold">{selectedLeague.name}</h3>
-                  </div>
+              {selectedLeague && standings.length > 0 ? (
+                <div className="bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-slate-400 border-b border-white/10">
-                          <th className="py-3 px-4 text-right">#</th>
-                          <th className="py-3 px-4 text-right">الفريق</th>
+                        <tr className="text-slate-400 bg-slate-800/50 text-xs">
+                          <th className="py-3 px-3 text-right">#</th>
+                          <th className="py-3 px-3 text-right">الفريق</th>
                           <th className="py-3 px-2 text-center">لعب</th>
-                          <th className="py-3 px-2 text-center">فاز</th>
-                          <th className="py-3 px-2 text-center">تعادل</th>
-                          <th className="py-3 px-2 text-center">خسر</th>
+                          <th className="py-3 px-2 text-center">ف</th>
+                          <th className="py-3 px-2 text-center">ت</th>
+                          <th className="py-3 px-2 text-center">خ</th>
                           <th className="py-3 px-2 text-center hidden sm:table-cell">له</th>
                           <th className="py-3 px-2 text-center hidden sm:table-cell">عليه</th>
                           <th className="py-3 px-2 text-center">+/-</th>
-                          <th className="py-3 px-4 text-center font-bold">نقاط</th>
+                          <th className="py-3 px-3 text-center">نقاط</th>
                         </tr>
                       </thead>
                       <tbody>
                         {standings.map((team, index) => (
                           <motion.tr 
                             key={team.rank}
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className={`border-b border-white/5 hover:bg-white/5 ${
-                              team.rank <= 4 ? 'bg-emerald-500/5' : ''
+                            transition={{ delay: index * 0.02 }}
+                            className={`border-b border-slate-800/30 hover:bg-slate-800/30 ${
+                              team.rank <= 4 ? 'bg-emerald-500/5' : 
+                              team.rank >= standings.length - 2 ? 'bg-red-500/5' : ''
                             }`}
                           >
-                            <td className="py-3 px-4">
+                            <td className="py-2.5 px-3">
                               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                 team.rank === 1 ? 'bg-amber-500 text-black' :
-                                team.rank <= 4 ? 'bg-emerald-500/20 text-emerald-400' :
-                                'bg-slate-700 text-slate-300'
+                                team.rank <= 4 ? 'bg-emerald-500/30 text-emerald-400' :
+                                team.rank >= standings.length - 2 ? 'bg-red-500/30 text-red-400' :
+                                'text-slate-400'
                               }`}>
                                 {team.rank}
                               </span>
                             </td>
-                            <td className="py-3 px-4">
+                            <td className="py-2.5 px-3">
                               <div className="flex items-center gap-2">
-                                <img src={team.logo} alt="" className="w-6 h-6" />
-                                <span className="text-white font-cairo">{team.team}</span>
+                                <img src={team.logo} alt="" className="w-5 h-5" />
+                                <span className="text-white font-cairo text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">{team.team}</span>
                               </div>
                             </td>
-                            <td className="py-3 px-2 text-center text-slate-300">{team.played}</td>
-                            <td className="py-3 px-2 text-center text-green-400">{team.won}</td>
-                            <td className="py-3 px-2 text-center text-slate-400">{team.draw}</td>
-                            <td className="py-3 px-2 text-center text-red-400">{team.lost}</td>
-                            <td className="py-3 px-2 text-center text-slate-300 hidden sm:table-cell">{team.gf}</td>
-                            <td className="py-3 px-2 text-center text-slate-300 hidden sm:table-cell">{team.ga}</td>
-                            <td className="py-3 px-2 text-center">
+                            <td className="py-2.5 px-2 text-center text-slate-400">{team.played}</td>
+                            <td className="py-2.5 px-2 text-center text-green-400">{team.won}</td>
+                            <td className="py-2.5 px-2 text-center text-slate-400">{team.draw}</td>
+                            <td className="py-2.5 px-2 text-center text-red-400">{team.lost}</td>
+                            <td className="py-2.5 px-2 text-center text-slate-400 hidden sm:table-cell">{team.gf}</td>
+                            <td className="py-2.5 px-2 text-center text-slate-400 hidden sm:table-cell">{team.ga}</td>
+                            <td className="py-2.5 px-2 text-center">
                               <span className={team.gd > 0 ? 'text-green-400' : team.gd < 0 ? 'text-red-400' : 'text-slate-400'}>
                                 {team.gd > 0 ? '+' : ''}{team.gd}
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className="font-bold text-white bg-emerald-500/20 px-2 py-1 rounded">
-                                {team.points}
-                              </span>
+                            <td className="py-2.5 px-3 text-center">
+                              <span className="font-bold text-white text-sm">{team.points}</span>
                             </td>
                           </motion.tr>
                         ))}
@@ -305,6 +421,7 @@ const MatchesPage = () => {
                 </div>
               ) : (
                 <div className="text-center py-16">
+                  <TrendingUp className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                   <p className="text-slate-400 font-cairo">اختر دوري لعرض الترتيب</p>
                 </div>
               )}
@@ -318,47 +435,43 @@ const MatchesPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
+              className="space-y-2"
             >
-              {selectedLeague ? (
-                <>
-                  <div className="flex items-center gap-3 mb-4">
-                    <img src={selectedLeague.logo} alt="" className="w-8 h-8" />
-                    <h3 className="text-white font-cairo font-bold">{selectedLeague.name} - الهدافين</h3>
-                  </div>
-                  {scorers.map((scorer, index) => (
-                    <motion.div
-                      key={scorer.rank}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-slate-900/50 backdrop-blur rounded-xl border border-amber-500/20 p-4 flex items-center gap-4"
-                    >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                        scorer.rank === 1 ? 'bg-amber-500 text-black' :
-                        scorer.rank === 2 ? 'bg-slate-400 text-black' :
-                        scorer.rank === 3 ? 'bg-amber-700 text-white' :
-                        'bg-slate-700 text-white'
-                      }`}>
-                        {scorer.rank}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white font-cairo font-bold">{scorer.player}</p>
-                        <p className="text-slate-400 text-sm">{scorer.team}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-amber-400">{scorer.goals}</p>
-                        <p className="text-xs text-slate-500">هدف</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-emerald-400">{scorer.assists}</p>
-                        <p className="text-xs text-slate-500">تمريرة</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </>
+              {selectedLeague && scorers.length > 0 ? (
+                scorers.map((scorer, index) => (
+                  <motion.div
+                    key={scorer.rank}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-slate-900/50 rounded-xl border border-slate-800 p-3 flex items-center gap-3"
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      scorer.rank === 1 ? 'bg-amber-500 text-black' :
+                      scorer.rank === 2 ? 'bg-slate-400 text-black' :
+                      scorer.rank === 3 ? 'bg-amber-700 text-white' :
+                      'bg-slate-700 text-white'
+                    }`}>
+                      {scorer.rank}
+                    </div>
+                    <img src={scorer.logo} alt="" className="w-10 h-10 rounded-full" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-cairo font-bold text-sm truncate">{scorer.player}</p>
+                      <p className="text-slate-500 text-xs">{scorer.team}</p>
+                    </div>
+                    <div className="text-center px-2">
+                      <p className="text-xl font-bold text-amber-400">{scorer.goals}</p>
+                      <p className="text-[10px] text-slate-500">هدف</p>
+                    </div>
+                    <div className="text-center px-2 border-r border-slate-700">
+                      <p className="text-lg font-bold text-emerald-400">{scorer.assists}</p>
+                      <p className="text-[10px] text-slate-500">تمريرة</p>
+                    </div>
+                  </motion.div>
+                ))
               ) : (
                 <div className="text-center py-16">
+                  <Target className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                   <p className="text-slate-400 font-cairo">اختر دوري لعرض الهدافين</p>
                 </div>
               )}
@@ -370,98 +483,78 @@ const MatchesPage = () => {
   );
 };
 
-// Match Card Component
-const MatchCard = ({ match }) => {
+// Match Row Component
+const MatchRow = ({ match, showLeague = false }) => {
   const isLive = match.status === 'LIVE';
   const isFinished = match.status === 'FINISHED';
-  const isScheduled = match.status === 'SCHEDULED';
 
-  const formatDate = (dateStr) => {
+  const formatTime = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`bg-slate-900/50 backdrop-blur rounded-2xl border overflow-hidden ${
-        isLive ? 'border-red-500/50 shadow-lg shadow-red-500/10' : 
-        isFinished ? 'border-slate-700/50' : 
-        'border-emerald-500/20'
-      }`}
-    >
-      {/* League Header */}
-      <div className="px-4 py-2 bg-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{match.league.flag}</span>
-          <span className="text-slate-400 text-sm font-cairo">{match.league.name}</span>
-        </div>
-        {isLive && (
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+    <div className={`px-4 py-3 flex items-center gap-3 ${isLive ? 'bg-red-500/5' : ''}`}>
+      {/* Time/Status */}
+      <div className="w-14 text-center flex-shrink-0">
+        {isLive ? (
+          <div className="flex flex-col items-center">
+            <span className="text-red-500 text-xs font-bold animate-pulse">LIVE</span>
             <span className="text-red-400 text-sm font-bold">{match.minute}'</span>
           </div>
-        )}
-        {isScheduled && (
-          <span className="text-emerald-400 text-sm">{formatDate(match.date)}</span>
-        )}
-        {isFinished && (
-          <span className="text-slate-500 text-sm">انتهت</span>
+        ) : isFinished ? (
+          <span className="text-slate-500 text-xs">انتهت</span>
+        ) : (
+          <span className="text-slate-300 text-sm font-medium">{formatTime(match.date)}</span>
         )}
       </div>
 
-      {/* Match Content */}
-      <div className="p-4">
-        <div className="flex items-center justify-between">
-          {/* Home Team */}
-          <div className="flex-1 text-center">
-            <img 
-              src={match.home_team.logo} 
-              alt={match.home_team.name}
-              className="w-16 h-16 mx-auto mb-2 object-contain"
-            />
-            <p className="text-white font-cairo font-bold text-sm">{match.home_team.name}</p>
+      {/* Teams */}
+      <div className="flex-1 min-w-0">
+        {showLeague && (
+          <div className="flex items-center gap-1 mb-1">
+            <span className="text-xs">{match.league?.flag}</span>
+            <span className="text-slate-500 text-[10px]">{match.league?.name}</span>
           </div>
+        )}
+        
+        {/* Home Team */}
+        <div className="flex items-center gap-2 mb-1">
+          <img src={match.home_team.logo} alt="" className="w-5 h-5" />
+          <span className={`text-sm truncate ${
+            isFinished && match.home_team.score > match.away_team.score ? 'text-white font-bold' : 'text-slate-300'
+          }`}>
+            {match.home_team.name}
+          </span>
+        </div>
+        
+        {/* Away Team */}
+        <div className="flex items-center gap-2">
+          <img src={match.away_team.logo} alt="" className="w-5 h-5" />
+          <span className={`text-sm truncate ${
+            isFinished && match.away_team.score > match.home_team.score ? 'text-white font-bold' : 'text-slate-300'
+          }`}>
+            {match.away_team.name}
+          </span>
+        </div>
+      </div>
 
-          {/* Score */}
-          <div className="px-6">
-            {isScheduled ? (
-              <div className="text-center">
-                <p className="text-slate-500 text-sm">VS</p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <span className={`text-3xl font-bold ${
-                  match.home_team.score > match.away_team.score ? 'text-emerald-400' : 'text-white'
-                }`}>
-                  {match.home_team.score}
-                </span>
-                <span className="text-slate-500">-</span>
-                <span className={`text-3xl font-bold ${
-                  match.away_team.score > match.home_team.score ? 'text-emerald-400' : 'text-white'
-                }`}>
-                  {match.away_team.score}
-                </span>
-              </div>
-            )}
+      {/* Score */}
+      {(isLive || isFinished) && (
+        <div className="w-10 text-center flex-shrink-0">
+          <div className={`text-lg font-bold ${
+            match.home_team.score > match.away_team.score ? 'text-white' : 'text-slate-400'
+          }`}>
+            {match.home_team.score}
           </div>
-
-          {/* Away Team */}
-          <div className="flex-1 text-center">
-            <img 
-              src={match.away_team.logo} 
-              alt={match.away_team.name}
-              className="w-16 h-16 mx-auto mb-2 object-contain"
-            />
-            <p className="text-white font-cairo font-bold text-sm">{match.away_team.name}</p>
+          <div className={`text-lg font-bold ${
+            match.away_team.score > match.home_team.score ? 'text-white' : 'text-slate-400'
+          }`}>
+            {match.away_team.score}
           </div>
         </div>
-
-        {/* Venue */}
-        <p className="text-center text-slate-500 text-xs mt-3">{match.venue}</p>
-      </div>
-    </motion.div>
+      )}
+    </div>
   );
 };
 
