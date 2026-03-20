@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
-import AgoraRTC from 'agora-rtc-sdk-ng';
 
 const RoomAudioContext = createContext();
 
@@ -18,77 +17,18 @@ export const RoomAudioProvider = ({ children }) => {
   const [remoteUsers, setRemoteUsers] = useState([]);
   const [isMinimized, setIsMinimized] = useState(false);
   
-  const agoraClient = useRef(null);
-  const localAudioTrack = useRef(null);
+  const agoraClientRef = useRef(null);
 
-  const initializeAgora = useCallback(async (roomId, roomData, agoraToken, agoraUid) => {
-    try {
-      if (agoraClient.current) {
-        await disconnectFromRoom();
+  const setCurrentRoomWithConnection = useCallback((roomData) => {
+    if (roomData) {
+      setCurrentRoom(roomData);
+      setIsConnected(true);
+      if (roomData.agoraClient) {
+        agoraClientRef.current = roomData.agoraClient;
       }
-
-      agoraClient.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-      
-      agoraClient.current.on('user-published', async (user, mediaType) => {
-        await agoraClient.current.subscribe(user, mediaType);
-        if (mediaType === 'audio') {
-          user.audioTrack?.play();
-          setRemoteUsers(prev => {
-            if (!prev.find(u => u.uid === user.uid)) {
-              return [...prev, user];
-            }
-            return prev;
-          });
-        }
-      });
-
-      agoraClient.current.on('user-unpublished', (user, mediaType) => {
-        if (mediaType === 'audio') {
-          setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
-        }
-      });
-
-      agoraClient.current.on('user-left', (user) => {
-        setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
-      });
-
-      const appId = process.env.REACT_APP_AGORA_APP_ID;
-      if (appId && agoraToken) {
-        await agoraClient.current.join(appId, roomId, agoraToken, agoraUid);
-        setCurrentRoom(roomData);
-        setIsConnected(true);
-        setIsMinimized(false);
-        return true;
+      if (roomData.remoteUsers) {
+        setRemoteUsers(roomData.remoteUsers);
       }
-      return false;
-    } catch (error) {
-      console.error('Failed to initialize Agora:', error);
-      return false;
-    }
-  }, []);
-
-  const publishAudio = useCallback(async () => {
-    try {
-      if (!agoraClient.current) return false;
-      
-      localAudioTrack.current = await AgoraRTC.createMicrophoneAudioTrack();
-      await agoraClient.current.publish([localAudioTrack.current]);
-      return true;
-    } catch (error) {
-      console.error('Failed to publish audio:', error);
-      return false;
-    }
-  }, []);
-
-  const unpublishAudio = useCallback(async () => {
-    try {
-      if (localAudioTrack.current) {
-        await agoraClient.current?.unpublish([localAudioTrack.current]);
-        localAudioTrack.current.close();
-        localAudioTrack.current = null;
-      }
-    } catch (error) {
-      console.error('Failed to unpublish audio:', error);
     }
   }, []);
 
@@ -96,29 +36,26 @@ export const RoomAudioProvider = ({ children }) => {
     setIsAudioMuted(prev => {
       const newState = !prev;
       // Mute/unmute all remote audio tracks
-      remoteUsers.forEach(user => {
-        if (user.audioTrack) {
-          if (newState) {
-            user.audioTrack.stop();
-          } else {
-            user.audioTrack.play();
+      if (agoraClientRef.current) {
+        agoraClientRef.current.remoteUsers?.forEach(user => {
+          if (user.audioTrack) {
+            if (newState) {
+              user.audioTrack.setVolume(0);
+            } else {
+              user.audioTrack.setVolume(100);
+            }
           }
-        }
-      });
+        });
+      }
       return newState;
     });
-  }, [remoteUsers]);
+  }, []);
 
   const disconnectFromRoom = useCallback(async () => {
     try {
-      if (localAudioTrack.current) {
-        localAudioTrack.current.close();
-        localAudioTrack.current = null;
-      }
-      
-      if (agoraClient.current) {
-        await agoraClient.current.leave();
-        agoraClient.current = null;
+      if (agoraClientRef.current) {
+        await agoraClientRef.current.leave();
+        agoraClientRef.current = null;
       }
       
       setCurrentRoom(null);
@@ -145,16 +82,12 @@ export const RoomAudioProvider = ({ children }) => {
     isAudioMuted,
     isMinimized,
     remoteUsers,
-    agoraClient: agoraClient.current,
-    localAudioTrack: localAudioTrack.current,
-    initializeAgora,
-    publishAudio,
-    unpublishAudio,
+    agoraClient: agoraClientRef.current,
     toggleMute,
     disconnectFromRoom,
     minimizePlayer,
     maximizePlayer,
-    setCurrentRoom,
+    setCurrentRoom: setCurrentRoomWithConnection,
   };
 
   return (

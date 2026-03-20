@@ -52,11 +52,9 @@ const YallaLiveRoom = ({ user }) => {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { 
-    initializeAgora: initGlobalAgora, 
     minimizePlayer, 
     disconnectFromRoom: globalDisconnect,
-    setCurrentRoom,
-    isConnected: isGlobalConnected
+    setCurrentRoom
   } = useRoomAudio();
   
   const [room, setRoom] = useState(null);
@@ -465,15 +463,28 @@ const YallaLiveRoom = ({ user }) => {
   // Leave room completely (disconnect audio)
   const handleFullLeave = async () => {
     await leaveRoom();
+    await cleanupAgora();
     await globalDisconnect();
     navigate('/dashboard');
   };
 
   // Minimize - keep audio playing in background
-  const handleMinimize = () => {
-    if (room) {
-      setCurrentRoom({ id: roomId, title: room.title });
+  const handleMinimize = async () => {
+    if (room && agoraClient.current) {
+      // Store room info in global context
+      setCurrentRoom({ 
+        id: roomId, 
+        title: room.title,
+        agoraClient: agoraClient.current,
+        remoteUsers: remoteUsers
+      });
       minimizePlayer();
+      
+      // Don't cleanup agora - keep audio playing
+      // Just stop polling
+      stopPolling();
+      stopHeartbeat();
+      
       navigate('/dashboard');
     }
   };
