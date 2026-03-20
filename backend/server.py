@@ -455,38 +455,66 @@ async def unfollow_user(user_id: str, current_user: User = Depends(get_current_u
 
 @api_router.get("/users/{user_id}/followers")
 async def get_followers(user_id: str, current_user: User = Depends(get_current_user)):
-    """Get list of followers for a user"""
+    """Get list of followers for a user - Optimized"""
     follows = await db.follows.find({"following_id": user_id}, {"_id": 0}).to_list(1000)
     
+    if not follows:
+        return {"followers": [], "count": 0}
+    
+    # Get all follower IDs
+    follower_ids = [f["follower_id"] for f in follows]
+    
+    # Batch fetch all users in one query
+    users_cursor = db.users.find({"id": {"$in": follower_ids}}, {"_id": 0, "password": 0})
+    users_list = await users_cursor.to_list(1000)
+    users_map = {u["id"]: u for u in users_list}
+    
+    # Batch fetch current user's follows in one query
+    current_follows = await db.follows.find({
+        "follower_id": current_user.id,
+        "following_id": {"$in": follower_ids}
+    }, {"_id": 0}).to_list(1000)
+    following_set = {f["following_id"] for f in current_follows}
+    
+    # Build response
     followers = []
-    for follow in follows:
-        user = await db.users.find_one({"id": follow["follower_id"]}, {"_id": 0, "password": 0})
-        if user:
-            # Check if current user follows this follower
-            is_following = await db.follows.find_one({
-                "follower_id": current_user.id,
-                "following_id": user["id"]
-            })
-            user["is_following"] = is_following is not None
+    for follower_id in follower_ids:
+        if follower_id in users_map:
+            user = users_map[follower_id].copy()
+            user["is_following"] = follower_id in following_set
             followers.append(user)
     
     return {"followers": followers, "count": len(followers)}
 
 @api_router.get("/users/{user_id}/following")
 async def get_following(user_id: str, current_user: User = Depends(get_current_user)):
-    """Get list of users that a user follows"""
+    """Get list of users that a user follows - Optimized"""
     follows = await db.follows.find({"follower_id": user_id}, {"_id": 0}).to_list(1000)
     
+    if not follows:
+        return {"following": [], "count": 0}
+    
+    # Get all following IDs
+    following_ids = [f["following_id"] for f in follows]
+    
+    # Batch fetch all users in one query
+    users_cursor = db.users.find({"id": {"$in": following_ids}}, {"_id": 0, "password": 0})
+    users_list = await users_cursor.to_list(1000)
+    users_map = {u["id"]: u for u in users_list}
+    
+    # Batch fetch current user's follows in one query
+    current_follows = await db.follows.find({
+        "follower_id": current_user.id,
+        "following_id": {"$in": following_ids}
+    }, {"_id": 0}).to_list(1000)
+    following_set = {f["following_id"] for f in current_follows}
+    
+    # Build response
     following = []
-    for follow in follows:
-        user = await db.users.find_one({"id": follow["following_id"]}, {"_id": 0, "password": 0})
-        if user:
-            # Check if current user follows this user
-            is_following = await db.follows.find_one({
-                "follower_id": current_user.id,
-                "following_id": user["id"]
-            })
-            user["is_following"] = is_following is not None
+    for fid in following_ids:
+        if fid in users_map:
+            user = users_map[fid].copy()
+            user["is_following"] = fid in following_set
             following.append(user)
     
     return {"following": following, "count": len(following)}
@@ -626,9 +654,24 @@ async def get_rooms(category: Optional[str] = None):
     
     rooms = await db.rooms.find(query, {"_id": 0}).to_list(100)
     
+    if not rooms:
+        return []
+    
+    # Get all room IDs
+    room_ids = [r["id"] for r in rooms]
+    
+    # Batch count participants using aggregation
+    pipeline = [
+        {"$match": {"room_id": {"$in": room_ids}}},
+        {"$group": {"_id": "$room_id", "count": {"$sum": 1}}}
+    ]
+    counts_cursor = db.room_participants.aggregate(pipeline)
+    counts_list = await counts_cursor.to_list(100)
+    counts_map = {c["_id"]: c["count"] for c in counts_list}
+    
+    # Add participant count to each room
     for room in rooms:
-        count = await db.room_participants.count_documents({"room_id": room["id"]})
-        room["participant_count"] = count
+        room["participant_count"] = counts_map.get(room["id"], 0)
     
     return [RoomFull(**r) for r in rooms]
 
@@ -1571,6 +1614,9 @@ async def get_threads(
     threads_cursor = db.threads.find(query).sort("created_at", -1).limit(50)
     threads = await threads_cursor.to_list(length=50)
     
+    if not threads:
+        return {"threads": []}
+    
     # Get user likes to mark liked threads
     user_likes = await db.thread_likes.find({"user_id": user_id}).to_list(length=1000)
     liked_thread_ids = {like["thread_id"] for like in user_likes}
@@ -1579,10 +1625,16 @@ async def get_threads(
     user_reposts = await db.thread_reposts.find({"user_id": user_id}).to_list(length=1000)
     reposted_thread_ids = {repost["thread_id"] for repost in user_reposts}
     
+    # Batch fetch all authors in one query
+    author_ids = list(set(thread["author_id"] for thread in threads))
+    authors_cursor = db.users.find({"id": {"$in": author_ids}}, {"_id": 0, "password": 0})
+    authors_list = await authors_cursor.to_list(length=100)
+    authors_map = {a["id"]: a for a in authors_list}
+    
     result = []
     for thread in threads:
-        # Get author info
-        author = await db.users.find_one({"id": thread["author_id"]})
+        # Get author info from map
+        author = authors_map.get(thread["author_id"])
         if author:
             result.append({
                 "id": thread["id"],
