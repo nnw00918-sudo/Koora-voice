@@ -857,6 +857,11 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Check if screen sharing is supported (desktop browsers only)
+  const isScreenShareSupported = typeof navigator !== 'undefined' && 
+    navigator.mediaDevices && 
+    typeof navigator.mediaDevices.getDisplayMedia === 'function';
+
   // Screen Sharing Functions
   const fetchScreenShares = async () => {
     try {
@@ -1435,22 +1440,26 @@ const YallaLiveRoom = ({ user }) => {
                       )}
                     </div>
                     {/* Start/Stop Share Button */}
-                    {isScreenSharing ? (
-                      <button 
-                        onClick={stopScreenShare}
-                        className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                        إيقاف المشاركة
-                      </button>
+                    {isScreenShareSupported ? (
+                      isScreenSharing ? (
+                        <button 
+                          onClick={stopScreenShare}
+                          className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                          إيقاف المشاركة
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={startScreenShare}
+                          className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
+                        >
+                          <Monitor className="w-3 h-3" />
+                          شارك شاشتك
+                        </button>
+                      )
                     ) : (
-                      <button 
-                        onClick={startScreenShare}
-                        className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
-                      >
-                        <Monitor className="w-3 h-3" />
-                        شارك شاشتك
-                      </button>
+                      <span className="text-slate-500 text-xs font-cairo">متاح على الكمبيوتر فقط</span>
                     )}
                   </div>
                   
@@ -1510,8 +1519,17 @@ const YallaLiveRoom = ({ user }) => {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center p-6">
                           <Monitor className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                          <p className="text-slate-400 font-cairo text-sm mb-2">لا توجد شاشات مشاركة حالياً</p>
-                          <p className="text-slate-500 font-cairo text-xs">اضغط "شارك شاشتك" للبدء</p>
+                          {isScreenShareSupported ? (
+                            <>
+                              <p className="text-slate-400 font-cairo text-sm mb-2">لا توجد شاشات مشاركة حالياً</p>
+                              <p className="text-slate-500 font-cairo text-xs">اضغط "شارك شاشتك" للبدء</p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-slate-400 font-cairo text-sm mb-2">مشاركة الشاشة متاحة على الكمبيوتر فقط</p>
+                              <p className="text-slate-500 font-cairo text-xs">افتح التطبيق من متصفح الكمبيوتر لمشاركة شاشتك</p>
+                            </>
+                          )}
                         </div>
                       </div>
                     )}
