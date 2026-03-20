@@ -3233,6 +3233,45 @@ async def get_football_leagues():
     """Get all available football leagues"""
     return {"leagues": FOOTBALL_LEAGUES}
 
+@api_router.get("/football/fixtures/date/{date}")
+async def get_fixtures_by_date(date: str):
+    """Get all fixtures for a specific date (YYYY-MM-DD)"""
+    all_fixtures = []
+    CURRENT_SEASON = 2025
+    
+    if API_FOOTBALL_KEY:
+        for league in FOOTBALL_LEAGUES:
+            fixtures = await fetch_from_api_football("fixtures", {
+                "league": league["id"],
+                "date": date,
+                "season": CURRENT_SEASON
+            })
+            
+            if fixtures:
+                for fixture in fixtures:
+                    all_fixtures.append(format_match(fixture))
+    
+    # If no fixtures from API, return empty
+    if not all_fixtures:
+        # Fallback to sample data only for today
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if date == today:
+            all_fixtures = get_sample_matches()
+            all_fixtures = [m for m in all_fixtures if m["status"] in ["LIVE", "SCHEDULED"]]
+    
+    # Sort by time
+    all_fixtures.sort(key=lambda x: x.get("date", ""))
+    
+    # Group by league
+    grouped = {}
+    for match in all_fixtures:
+        league_name = match.get("league", {}).get("name", "Other")
+        if league_name not in grouped:
+            grouped[league_name] = []
+        grouped[league_name].append(match)
+    
+    return {"fixtures": grouped, "total": len(all_fixtures), "date": date}
+
 @api_router.get("/football/fixtures/upcoming")
 async def get_upcoming_fixtures(days: int = 7):
     """Get all upcoming fixtures for the next X days"""
