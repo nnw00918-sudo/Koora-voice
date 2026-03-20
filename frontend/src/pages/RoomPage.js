@@ -88,6 +88,7 @@ const YallaLiveRoom = ({ user }) => {
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showConnectedList, setShowConnectedList] = useState(false);
   const [showChat, setShowChat] = useState(true);
+  const [showSeatRequestsModal, setShowSeatRequestsModal] = useState(false);
   
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
@@ -615,18 +616,33 @@ const YallaLiveRoom = ({ user }) => {
           className="px-4 py-3 flex items-center justify-between backdrop-blur-xl bg-slate-900/60 border-b border-white/10"
           style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
         >
-          {/* Close Button */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => navigate('/dashboard')}
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center"
-          >
-            <X className="w-5 h-5 text-white" />
-          </motion.button>
+          {/* Left Side - Seat Requests (Owner/Admin only) & Close Button */}
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => navigate('/dashboard')}
+              className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center"
+            >
+              <X className="w-5 h-5 text-white" />
+            </motion.button>
+            
+            {/* Seat Requests Badge - Owner & Admin only */}
+            {(room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') && seatRequests.length > 0 && (
+              <motion.button
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                onClick={() => setShowSeatRequestsModal(true)}
+                className="flex items-center gap-1.5 bg-amber-500/30 border border-amber-500/50 px-3 py-1.5 rounded-full"
+              >
+                <Hand className="w-4 h-4 text-amber-400" />
+                <span className="text-amber-300 font-bold text-sm">{seatRequests.length}</span>
+              </motion.button>
+            )}
+          </div>
 
           {/* Room Info - Center */}
-          <div className="flex-1 mx-4 text-center">
-            <h1 className="text-white font-cairo font-bold text-lg truncate">{room?.title || 'الغرفة'}</h1>
+          <div className="flex-1 mx-2 text-center">
+            <h1 className="text-white font-cairo font-bold text-base truncate">{room?.title || 'الغرفة'}</h1>
             <motion.button
               onClick={() => setShowConnectedList(!showConnectedList)}
               className="flex items-center justify-center gap-2 mx-auto mt-1"
