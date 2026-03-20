@@ -588,7 +588,22 @@ const YallaLiveRoom = ({ user }) => {
   const handleToggleRoom = async () => {
     try {
       const response = await axios.post(`${API}/admin/rooms/${roomId}/toggle`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success(response.data.message);
+      
+      // Show PIN if room is closed
+      if (response.data.is_closed && response.data.pin) {
+        toast.success(
+          <div className="text-center">
+            <p className="font-bold mb-2">{response.data.message}</p>
+            <p className="text-lg">الرمز السري:</p>
+            <p className="text-3xl font-bold text-lime-400 my-2">{response.data.pin}</p>
+            <p className="text-xs text-slate-400">احتفظ بهذا الرمز للدخول</p>
+          </div>,
+          { duration: 10000 }
+        );
+      } else {
+        toast.success(response.data.message);
+      }
+      
       fetchRoomData();
       setShowRoomSettings(false);
     } catch (error) {

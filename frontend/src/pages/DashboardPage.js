@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Users, LogOut, Shield, Home, Trophy, Settings, MessageSquare, User, Lock, Unlock, Search, X, UserPlus, Check } from 'lucide-react';
+import { Users, LogOut, Shield, Home, Trophy, Settings, MessageSquare, User, Lock, Unlock, Search, X, UserPlus, Check, Key } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -23,6 +24,9 @@ const DashboardPage = ({ user, onLogout }) => {
   const [showSearch, setShowSearch] = useState(false);
   const [membershipStatus, setMembershipStatus] = useState({}); // {roomId: {is_member, role}}
   const [joiningRoom, setJoiningRoom] = useState(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [selectedRoomForPin, setSelectedRoomForPin] = useState(null);
 
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
@@ -118,15 +122,43 @@ const DashboardPage = ({ user, onLogout }) => {
     }
   };
 
-  const handleRoomClick = async (roomId) => {
+  const handleRoomClick = async (roomId, pin = null) => {
     const membership = membershipStatus[roomId];
     const room = rooms.find(r => r.id === roomId);
     
     // Check if room is closed
     if (room?.is_closed) {
-      // Only system owner or room owner can enter closed rooms
-      if (user.role !== 'owner' && room.owner_id !== user.id) {
-        toast.error(isRTL ? 'الغرفة مغلقة حالياً' : 'Room is currently closed');
+      // System owner can enter without PIN
+      if (user.role === 'owner') {
+        // Try to join directly
+        try {
+          await axios.post(`${API}/rooms/${roomId}/join`, { pin: null }, { headers: { Authorization: `Bearer ${token}` } });
+          navigate(`/room/${roomId}`);
+          return;
+        } catch (error) {
+          toast.error(error.response?.data?.detail || 'فشل الدخول');
+          return;
+        }
+      }
+      
+      // Others need PIN
+      if (!pin) {
+        setSelectedRoomForPin(room);
+        setShowPinModal(true);
+        setPinInput('');
+        return;
+      }
+      
+      // Try to join with PIN
+      try {
+        await axios.post(`${API}/rooms/${roomId}/join`, { pin }, { headers: { Authorization: `Bearer ${token}` } });
+        setShowPinModal(false);
+        setPinInput('');
+        setSelectedRoomForPin(null);
+        navigate(`/room/${roomId}`);
+        return;
+      } catch (error) {
+        toast.error(error.response?.data?.detail || 'الرمز السري غير صحيح');
         return;
       }
     }
@@ -136,6 +168,12 @@ const DashboardPage = ({ user, onLogout }) => {
       return;
     }
     navigate(`/room/${roomId}`);
+  };
+
+  const handlePinSubmit = () => {
+    if (selectedRoomForPin && pinInput.length === 4) {
+      handleRoomClick(selectedRoomForPin.id, pinInput);
+    }
   };
 
   return (
@@ -437,13 +475,13 @@ const DashboardPage = ({ user, onLogout }) => {
                       </div>
 
                       {/* Join/Enter Button */}
-                      {room.is_closed && user.role !== 'owner' && room.owner_id !== user.id ? (
+                      {room.is_closed && user.role !== 'owner' ? (
                         <Button
-                          disabled
-                          className="bg-slate-600 text-slate-400 font-cairo font-bold px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm cursor-not-allowed flex items-center gap-1.5"
+                          onClick={() => handleRoomClick(room.id)}
+                          className="bg-orange-500 hover:bg-orange-400 text-white font-cairo font-bold px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm flex items-center gap-1.5"
                         >
-                          <Lock className="w-3.5 h-3.5" />
-                          {isRTL ? 'مغلقة' : 'Closed'}
+                          <Key className="w-3.5 h-3.5" />
+                          {isRTL ? 'أدخل الرمز' : 'Enter PIN'}
                         </Button>
                       ) : membershipStatus[room.id]?.is_member || user.role === 'owner' || room.owner_id === user.id ? (
                         <Button
@@ -521,6 +559,78 @@ const DashboardPage = ({ user, onLogout }) => {
           </button>
         </div>
       </div>
+
+      {/* PIN Entry Modal */}
+      <AnimatePresence>
+        {showPinModal && selectedRoomForPin && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            onClick={() => setShowPinModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-700"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock className="w-8 h-8 text-orange-400" />
+                </div>
+                <h3 className="text-xl font-cairo font-bold text-white mb-2">
+                  الغرفة مغلقة
+                </h3>
+                <p className="text-slate-400 font-almarai text-sm">
+                  أدخل الرمز السري للدخول إلى "{selectedRoomForPin.title}"
+                </p>
+              </div>
+
+              {/* PIN Input */}
+              <div className="mb-6">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="• • • •"
+                  className="bg-slate-800 border-slate-600 text-white text-center text-3xl tracking-[1em] font-bold py-4 rounded-xl"
+                  autoFocus
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => {
+                    setShowPinModal(false);
+                    setPinInput('');
+                    setSelectedRoomForPin(null);
+                  }}
+                  variant="outline"
+                  className="flex-1 bg-transparent border-slate-600 text-white hover:bg-slate-800"
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  onClick={handlePinSubmit}
+                  disabled={pinInput.length !== 4}
+                  className="flex-1 bg-lime-500 hover:bg-lime-400 text-black font-bold disabled:opacity-50"
+                >
+                  <Key className="w-4 h-4 mr-2" />
+                  دخول
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

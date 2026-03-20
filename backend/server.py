@@ -919,22 +919,35 @@ async def get_room_members(room_id: str, current_user: User = Depends(get_curren
 
 # ============ End Room Membership System ============
 
+class JoinWithPinRequest(BaseModel):
+    pin: Optional[str] = None
+
 @api_router.post("/rooms/{room_id}/join")
-async def join_room(room_id: str, current_user: User = Depends(get_current_user)):
+async def join_room(room_id: str, join_data: JoinWithPinRequest = None, current_user: User = Depends(get_current_user)):
     """Join a room session (enter the room) - requires membership"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    # Check if user is room owner or system owner
-    is_room_owner = room["owner_id"] == current_user.id
+    # Check if user is system owner (has full access)
     is_system_owner = current_user.role == "owner"
     
-    # Check if room is closed - only room owner or system owner can enter
-    if room.get("is_closed", False) and not is_room_owner and not is_system_owner:
-        raise HTTPException(status_code=403, detail="الغرفة مغلقة حالياً")
+    # Check if room is closed
+    if room.get("is_closed", False):
+        # Only system owner can enter without PIN
+        if not is_system_owner:
+            # Check PIN
+            provided_pin = join_data.pin if join_data else None
+            room_pin = room.get("close_pin")
+            
+            if not provided_pin:
+                raise HTTPException(status_code=403, detail="الغرفة مغلقة - يرجى إدخال الرمز السري")
+            
+            if provided_pin != room_pin:
+                raise HTTPException(status_code=403, detail="الرمز السري غير صحيح")
     
-    # Check if user is owner or member
+    # Check if user is owner or member (for open rooms)
+    is_room_owner = room["owner_id"] == current_user.id
     is_member = await db.room_members.find_one({
         "room_id": room_id,
         "user_id": current_user.id
@@ -1667,6 +1680,8 @@ async def delete_room(room_id: str):
 @api_router.post("/admin/rooms/{room_id}/toggle")
 async def toggle_room(room_id: str, current_user: User = Depends(get_current_user)):
     """Toggle room open/closed status - Room Owner or System Owner"""
+    import random
+    
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
@@ -1676,13 +1691,29 @@ async def toggle_room(room_id: str, current_user: User = Depends(get_current_use
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     new_status = not room.get("is_closed", False)
+    
+    # Generate PIN when closing, remove when opening
+    update_data = {"is_closed": new_status}
+    if new_status:
+        # Generate 4-digit PIN
+        pin = str(random.randint(1000, 9999))
+        update_data["close_pin"] = pin
+    else:
+        update_data["close_pin"] = None
+    
     await db.rooms.update_one(
         {"id": room_id},
-        {"$set": {"is_closed": new_status}}
+        {"$set": update_data}
     )
     
     status = "مغلقة" if new_status else "مفتوحة"
-    return {"message": f"الغرفة الآن {status}", "is_closed": new_status}
+    response = {"message": f"الغرفة الآن {status}", "is_closed": new_status}
+    
+    # Return PIN only when closing
+    if new_status:
+        response["pin"] = update_data["close_pin"]
+    
+    return response
 
 @api_router.delete("/admin/rooms/{room_id}")
 async def delete_room(room_id: str, current_user: User = Depends(get_current_user)):
