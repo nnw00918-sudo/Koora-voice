@@ -1760,6 +1760,19 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
         if channel:
             embed_url = f"https://player.twitch.tv/?channel={channel}&parent={os.environ.get('FRONTEND_DOMAIN', 'pitch-chat.preview.emergentagent.com')}"
     
+    # Dailymotion support
+    elif "dailymotion.com" in stream_url:
+        if "/video/" in stream_url:
+            video_id = stream_url.split("/video/")[1].split("?")[0]
+            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1"
+        elif "/live/" in stream_url:
+            video_id = stream_url.split("/live/")[1].split("?")[0]
+            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1"
+    
+    # Facebook Video support
+    elif "facebook.com" in stream_url and "/videos/" in stream_url:
+        embed_url = f"https://www.facebook.com/plugins/video.php?href={stream_url}&autoplay=true"
+    
     await db.rooms.update_one(
         {"id": room_id},
         {"$set": {"stream_url": embed_url, "stream_active": True, "active_slot": stream_data.slot}}
@@ -1819,6 +1832,17 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
         channel = stream_url.split("twitch.tv/")[1].split("/")[0] if "twitch.tv/" in stream_url else ""
         if channel:
             embed_url = f"https://player.twitch.tv/?channel={channel}&parent=pitch-chat.preview.emergentagent.com"
+    # Dailymotion support
+    elif "dailymotion.com" in stream_url:
+        if "/video/" in stream_url:
+            video_id = stream_url.split("/video/")[1].split("?")[0]
+            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1"
+        elif "/live/" in stream_url:
+            video_id = stream_url.split("/live/")[1].split("?")[0]
+            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1"
+    # Facebook Video support
+    elif "facebook.com" in stream_url and "/videos/" in stream_url:
+        embed_url = f"https://www.facebook.com/plugins/video.php?href={stream_url}&autoplay=true"
     
     await db.rooms.update_one(
         {"id": room_id},
