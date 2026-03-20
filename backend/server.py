@@ -1912,6 +1912,60 @@ async def get_stream(room_id: str):
     }
 
 
+# ============== Screen Sharing / Mirror ==============
+
+class ScreenShareData(BaseModel):
+    peer_id: str  # WebRTC peer ID for the screen share
+
+@api_router.post("/rooms/{room_id}/screen-share/start")
+async def start_screen_share(room_id: str, data: ScreenShareData, current_user: User = Depends(get_current_user)):
+    """Start sharing screen in a room"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check if user is participant
+    participant = await db.room_participants.find_one({"room_id": room_id, "user_id": current_user.id})
+    if not participant:
+        raise HTTPException(status_code=403, detail="يجب أن تكون في الغرفة")
+    
+    # Add screen share to room's active shares
+    share_data = {
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "peer_id": data.peer_id,
+        "started_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$push": {"screen_shares": share_data}}
+    )
+    
+    return {"message": "تم بدء مشاركة الشاشة", "share": share_data}
+
+@api_router.post("/rooms/{room_id}/screen-share/stop")
+async def stop_screen_share(room_id: str, current_user: User = Depends(get_current_user)):
+    """Stop sharing screen"""
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$pull": {"screen_shares": {"user_id": current_user.id}}}
+    )
+    return {"message": "تم إيقاف مشاركة الشاشة"}
+
+@api_router.get("/rooms/{room_id}/screen-shares")
+async def get_screen_shares(room_id: str):
+    """Get all active screen shares in room"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    return {"screen_shares": room.get("screen_shares", [])}
+
+
+
+
 @api_router.delete("/admin/rooms/{room_id}")
 async def delete_room(room_id: str, current_user: User = Depends(get_current_user)):
     """Delete a room completely - Room Owner or System Owner"""

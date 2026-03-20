@@ -111,11 +111,18 @@ const YallaLiveRoom = ({ user }) => {
   const [streamUrl, setStreamUrl] = useState('');
   const [showStreamModal, setShowStreamModal] = useState(false);
   const [streamInputUrl, setStreamInputUrl] = useState('');
-  const [viewMode, setViewMode] = useState('mics'); // 'mics' or 'stream'
+  const [viewMode, setViewMode] = useState('mics'); // 'mics', 'stream', or 'mirror'
   const [streamSlots, setStreamSlots] = useState({});
   const [activeSlot, setActiveSlot] = useState(null); // Global active slot (set by owner)
   const [editingSlot, setEditingSlot] = useState(null);
   const [streamKey, setStreamKey] = useState(0); // Force iframe reload
+  
+  // Screen sharing states
+  const [screenShares, setScreenShares] = useState([]);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [watchingScreenShare, setWatchingScreenShare] = useState(null);
+  const screenShareStream = useRef(null);
+  const screenShareVideoRef = useRef(null);
   
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
@@ -307,6 +314,24 @@ const YallaLiveRoom = ({ user }) => {
         }
       } catch (error) {
         console.error('Polling error:', error);
+      }
+      
+      // Fetch screen shares if in mirror mode
+      if (viewMode === 'mirror') {
+        try {
+          const sharesRes = await axios.get(`${API}/rooms/${roomId}/screen-shares`);
+          setScreenShares(prev => {
+            const serverShares = sharesRes.data.screen_shares || [];
+            // Keep local streams, merge with server data
+            const merged = serverShares.map(s => {
+              const local = prev.find(p => p.user_id === s.user_id);
+              return local?.stream ? { ...s, stream: local.stream } : s;
+            });
+            return merged;
+          });
+        } catch (e) {
+          console.error('Screen shares fetch error:', e);
+        }
       }
     }, 5000); // Poll every 5 seconds
   };
@@ -832,6 +857,95 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Screen Sharing Functions
+  const fetchScreenShares = async () => {
+    try {
+      const response = await axios.get(`${API}/rooms/${roomId}/screen-shares`);
+      setScreenShares(response.data.screen_shares || []);
+    } catch (error) {
+      console.error('Failed to fetch screen shares');
+    }
+  };
+
+  const startScreenShare = async () => {
+    try {
+      // Request screen sharing permission
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { 
+          cursor: 'always',
+          displaySurface: 'monitor'
+        },
+        audio: true
+      });
+      
+      screenShareStream.current = stream;
+      setIsScreenSharing(true);
+      
+      // Generate a simple peer ID
+      const peerId = `${user.id}-${Date.now()}`;
+      
+      // Register with server
+      await axios.post(`${API}/rooms/${roomId}/screen-share/start`, 
+        { peer_id: peerId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Store stream locally for others to view
+      const newShare = {
+        user_id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        peer_id: peerId,
+        stream: stream
+      };
+      
+      setScreenShares(prev => [...prev, newShare]);
+      setWatchingScreenShare(newShare);
+      
+      // Handle when user stops sharing via browser UI
+      stream.getVideoTracks()[0].onended = () => {
+        stopScreenShare();
+      };
+      
+      toast.success('تم بدء مشاركة الشاشة');
+    } catch (error) {
+      console.error('Screen share error:', error);
+      if (error.name === 'NotAllowedError') {
+        toast.error('تم رفض إذن مشاركة الشاشة');
+      } else {
+        toast.error('فشل بدء مشاركة الشاشة');
+      }
+    }
+  };
+
+  const stopScreenShare = async () => {
+    try {
+      if (screenShareStream.current) {
+        screenShareStream.current.getTracks().forEach(track => track.stop());
+        screenShareStream.current = null;
+      }
+      
+      setIsScreenSharing(false);
+      setScreenShares(prev => prev.filter(s => s.user_id !== user.id));
+      
+      if (watchingScreenShare?.user_id === user.id) {
+        setWatchingScreenShare(null);
+      }
+      
+      await axios.post(`${API}/rooms/${roomId}/screen-share/stop`, {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('تم إيقاف مشاركة الشاشة');
+    } catch (error) {
+      console.error('Stop screen share error:', error);
+    }
+  };
+
+  const watchScreenShare = (share) => {
+    setWatchingScreenShare(share);
+  };
+
 
   const handleAcceptInvite = async (inviteId) => {
     try {
@@ -1301,7 +1415,7 @@ const YallaLiveRoom = ({ user }) => {
               </motion.div>
             )}
 
-            {/* Screen Mirror View */}
+            {/* Screen Mirror View - Discord Style */}
             {viewMode === 'mirror' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -1309,18 +1423,98 @@ const YallaLiveRoom = ({ user }) => {
                 className="mb-4"
               >
                 <div className="bg-slate-950 rounded-xl overflow-hidden border border-purple-500/30">
+                  {/* Header with share button */}
                   <div className="bg-slate-800 px-3 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Cast className="w-4 h-4 text-purple-400" />
                       <span className="text-white font-cairo font-bold text-sm">انعكاس الشاشة</span>
+                      {screenShares.length > 0 && (
+                        <span className="bg-purple-500/30 text-purple-300 text-xs px-2 py-0.5 rounded-full">
+                          {screenShares.length} نشط
+                        </span>
+                      )}
                     </div>
+                    {/* Start/Stop Share Button */}
+                    {isScreenSharing ? (
+                      <button 
+                        onClick={stopScreenShare}
+                        className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                        إيقاف المشاركة
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={startScreenShare}
+                        className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
+                      >
+                        <Monitor className="w-3 h-3" />
+                        شارك شاشتك
+                      </button>
+                    )}
                   </div>
-                  <div className="aspect-video bg-slate-900 flex items-center justify-center">
-                    <div className="text-center p-6">
-                      <Monitor className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                      <p className="text-slate-400 font-cairo text-sm mb-4">قريباً - ميزة انعكاس الشاشة</p>
-                      <p className="text-slate-500 font-cairo text-xs">شارك شاشتك مع المشاركين في الغرفة</p>
+                  
+                  {/* Active Screen Shares List */}
+                  {screenShares.length > 0 && (
+                    <div className="flex gap-2 p-2 bg-slate-900 overflow-x-auto hide-scrollbar">
+                      {screenShares.map((share) => (
+                        <motion.button
+                          key={share.user_id}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => watchScreenShare(share)}
+                          className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+                            watchingScreenShare?.user_id === share.user_id
+                              ? 'bg-purple-500 text-white'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          <img src={share.avatar || '/default-avatar.png'} alt="" className="w-6 h-6 rounded-full" />
+                          <span className="text-sm font-cairo">{share.username}</span>
+                          {share.user_id === user.id && (
+                            <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded">أنت</span>
+                          )}
+                        </motion.button>
+                      ))}
                     </div>
+                  )}
+                  
+                  {/* Video Display Area */}
+                  <div className="aspect-video bg-black relative">
+                    {watchingScreenShare?.stream ? (
+                      <video
+                        ref={(el) => {
+                          if (el && watchingScreenShare.stream) {
+                            el.srcObject = watchingScreenShare.stream;
+                            el.play().catch(console.error);
+                          }
+                        }}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-contain"
+                      />
+                    ) : watchingScreenShare ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                          <p className="text-slate-400 font-cairo text-sm">جاري الاتصال بشاشة {watchingScreenShare.username}...</p>
+                        </div>
+                      </div>
+                    ) : screenShares.length > 0 ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center p-6">
+                          <Monitor className="w-12 h-12 text-purple-400 mx-auto mb-3" />
+                          <p className="text-slate-400 font-cairo text-sm">اختر شاشة للمشاهدة من القائمة أعلاه</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center p-6">
+                          <Monitor className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                          <p className="text-slate-400 font-cairo text-sm mb-2">لا توجد شاشات مشاركة حالياً</p>
+                          <p className="text-slate-500 font-cairo text-xs">اضغط "شارك شاشتك" للبدء</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
