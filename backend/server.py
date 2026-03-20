@@ -1752,8 +1752,8 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
         else:
             video_id = stream_url.split("/")[-1].split("?")[0]
         if video_id:
-            # Clean look - no YouTube UI, highest quality 1080p
-            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&vq=hd1080&playsinline=1&disablekb=1&fs=0"
+            # Autoplay muted, with controls, highest quality
+            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}?autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1"
     
     # Twitch URL conversion
     elif "twitch.tv" in stream_url:
@@ -1829,8 +1829,8 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
         else:
             video_id = stream_url.split("/")[-1].split("?")[0]
         if video_id:
-            # Clean look - no YouTube UI, highest quality 1080p
-            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&vq=hd1080&playsinline=1&disablekb=1&fs=0"
+            # Autoplay muted, with controls, highest quality
+            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}?autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1"
     elif "twitch.tv" in stream_url:
         channel = stream_url.split("twitch.tv/")[1].split("/")[0] if "twitch.tv/" in stream_url else ""
         if channel:
