@@ -220,12 +220,26 @@ const YallaLiveRoom = ({ user }) => {
     pollInterval.current = setInterval(async () => {
       // Batch fetch essential data
       try {
-        const [seatsRes, messagesRes, participantsRes, myRequestRes] = await Promise.all([
+        const [roomRes, seatsRes, messagesRes, participantsRes, myRequestRes] = await Promise.all([
+          axios.get(`${API}/rooms/${roomId}`),
           axios.get(`${API}/rooms/${roomId}/seats`),
           axios.get(`${API}/rooms/${roomId}/messages`),
           axios.get(`${API}/rooms/${roomId}/participants`),
           axios.get(`${API}/rooms/${roomId}/seat/my-request`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
+        
+        // Check if room was closed - kick user if not system owner
+        const roomData = roomRes.data;
+        if (roomData.is_closed && currentUserRole !== 'owner') {
+          toast.error('تم إغلاق الغرفة');
+          stopPolling();
+          stopHeartbeat();
+          await cleanupAgora();
+          navigate('/dashboard');
+          return;
+        }
+        
+        setRoom(roomData);
         
         // Update seats - only if changed
         const newSeats = seatsRes.data.seats;
@@ -329,7 +343,17 @@ const YallaLiveRoom = ({ user }) => {
         axios.get(`${API}/rooms/${roomId}/participants`)
       ]);
 
-      setRoom(roomRes.data);
+      const roomData = roomRes.data;
+      setRoom(roomData);
+      
+      // Check if room was closed and user should be kicked (only system owner stays)
+      if (roomData.is_closed && currentUserRole !== 'owner') {
+        toast.error('تم إغلاق الغرفة');
+        await cleanupAgora();
+        navigate('/dashboard');
+        return;
+      }
+      
       setSeats(seatsRes.data.seats);
       
       const filteredMessages = messagesRes.data.filter(msg => 

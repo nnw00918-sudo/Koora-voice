@@ -1698,6 +1698,9 @@ async def toggle_room(room_id: str, current_user: User = Depends(get_current_use
         # Generate 4-digit PIN
         pin = str(random.randint(1000, 9999))
         update_data["close_pin"] = pin
+        
+        # Kick all participants when closing (except system owner)
+        await db.room_participants.delete_many({"room_id": room_id})
     else:
         update_data["close_pin"] = None
     
