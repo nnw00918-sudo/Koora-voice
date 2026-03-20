@@ -2883,8 +2883,6 @@ async def create_notification(user_id: str, notif_type: str, from_user_id: str, 
         }
     }, user_id)
 
-app.include_router(api_router)
-
 # Mount static files for avatars
 app.mount("/api/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
@@ -3006,4 +3004,193 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
         ws_manager.disconnect(user_id)
+
+
+# ==================== MATCHES & FOOTBALL API ====================
+
+# Football leagues data
+FOOTBALL_LEAGUES = [
+    {"id": 307, "name": "دوري روشن السعودي", "country": "Saudi Arabia", "logo": "https://media.api-sports.io/football/leagues/307.png", "flag": "🇸🇦"},
+    {"id": 39, "name": "الدوري الإنجليزي", "country": "England", "logo": "https://media.api-sports.io/football/leagues/39.png", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
+    {"id": 140, "name": "الدوري الإسباني", "country": "Spain", "logo": "https://media.api-sports.io/football/leagues/140.png", "flag": "🇪🇸"},
+    {"id": 135, "name": "الدوري الإيطالي", "country": "Italy", "logo": "https://media.api-sports.io/football/leagues/135.png", "flag": "🇮🇹"},
+    {"id": 78, "name": "الدوري الألماني", "country": "Germany", "logo": "https://media.api-sports.io/football/leagues/78.png", "flag": "🇩🇪"},
+    {"id": 61, "name": "الدوري الفرنسي", "country": "France", "logo": "https://media.api-sports.io/football/leagues/61.png", "flag": "🇫🇷"},
+    {"id": 2, "name": "دوري أبطال أوروبا", "country": "Europe", "logo": "https://media.api-sports.io/football/leagues/2.png", "flag": "🇪🇺"},
+]
+
+# Sample realistic match data (will be replaced with API data when key is provided)
+def get_sample_matches():
+    now = datetime.now(timezone.utc)
+    return [
+        # Live matches
+        {
+            "id": "match_1",
+            "league": FOOTBALL_LEAGUES[0],
+            "home_team": {"name": "الهلال", "logo": "https://media.api-sports.io/football/teams/2932.png", "score": 2},
+            "away_team": {"name": "النصر", "logo": "https://media.api-sports.io/football/teams/2939.png", "score": 1},
+            "status": "LIVE",
+            "minute": 67,
+            "date": now.isoformat(),
+            "venue": "استاد الملك فهد الدولي"
+        },
+        {
+            "id": "match_2",
+            "league": FOOTBALL_LEAGUES[1],
+            "home_team": {"name": "مانشستر سيتي", "logo": "https://media.api-sports.io/football/teams/50.png", "score": 3},
+            "away_team": {"name": "ليفربول", "logo": "https://media.api-sports.io/football/teams/40.png", "score": 2},
+            "status": "LIVE",
+            "minute": 82,
+            "date": now.isoformat(),
+            "venue": "الاتحاد"
+        },
+        {
+            "id": "match_3",
+            "league": FOOTBALL_LEAGUES[2],
+            "home_team": {"name": "ريال مدريد", "logo": "https://media.api-sports.io/football/teams/541.png", "score": 1},
+            "away_team": {"name": "برشلونة", "logo": "https://media.api-sports.io/football/teams/529.png", "score": 1},
+            "status": "LIVE",
+            "minute": 45,
+            "date": now.isoformat(),
+            "venue": "سانتياغو برنابيو"
+        },
+        # Upcoming matches
+        {
+            "id": "match_4",
+            "league": FOOTBALL_LEAGUES[0],
+            "home_team": {"name": "الاتحاد", "logo": "https://media.api-sports.io/football/teams/2944.png", "score": None},
+            "away_team": {"name": "الأهلي", "logo": "https://media.api-sports.io/football/teams/2934.png", "score": None},
+            "status": "SCHEDULED",
+            "minute": None,
+            "date": (now + timedelta(hours=3)).isoformat(),
+            "venue": "استاد الجوهرة"
+        },
+        {
+            "id": "match_5",
+            "league": FOOTBALL_LEAGUES[1],
+            "home_team": {"name": "أرسنال", "logo": "https://media.api-sports.io/football/teams/42.png", "score": None},
+            "away_team": {"name": "تشيلسي", "logo": "https://media.api-sports.io/football/teams/49.png", "score": None},
+            "status": "SCHEDULED",
+            "minute": None,
+            "date": (now + timedelta(hours=5)).isoformat(),
+            "venue": "الإمارات"
+        },
+        {
+            "id": "match_6",
+            "league": FOOTBALL_LEAGUES[3],
+            "home_team": {"name": "يوفنتوس", "logo": "https://media.api-sports.io/football/teams/496.png", "score": None},
+            "away_team": {"name": "ميلان", "logo": "https://media.api-sports.io/football/teams/489.png", "score": None},
+            "status": "SCHEDULED",
+            "minute": None,
+            "date": (now + timedelta(days=1)).isoformat(),
+            "venue": "أليانز ستاديوم"
+        },
+        # Finished matches
+        {
+            "id": "match_7",
+            "league": FOOTBALL_LEAGUES[0],
+            "home_team": {"name": "الشباب", "logo": "https://media.api-sports.io/football/teams/2936.png", "score": 2},
+            "away_team": {"name": "الفتح", "logo": "https://media.api-sports.io/football/teams/2946.png", "score": 0},
+            "status": "FINISHED",
+            "minute": 90,
+            "date": (now - timedelta(hours=3)).isoformat(),
+            "venue": "استاد الأمير فيصل"
+        },
+        {
+            "id": "match_8",
+            "league": FOOTBALL_LEAGUES[4],
+            "home_team": {"name": "بايرن ميونخ", "logo": "https://media.api-sports.io/football/teams/157.png", "score": 4},
+            "away_team": {"name": "دورتموند", "logo": "https://media.api-sports.io/football/teams/165.png", "score": 1},
+            "status": "FINISHED",
+            "minute": 90,
+            "date": (now - timedelta(hours=5)).isoformat(),
+            "venue": "أليانز أرينا"
+        },
+    ]
+
+def get_sample_standings(league_id: int):
+    standings = {
+        307: [  # Saudi Pro League
+            {"rank": 1, "team": "الهلال", "logo": "https://media.api-sports.io/football/teams/2932.png", "points": 45, "played": 18, "won": 14, "draw": 3, "lost": 1, "gf": 42, "ga": 12, "gd": 30},
+            {"rank": 2, "team": "النصر", "logo": "https://media.api-sports.io/football/teams/2939.png", "points": 42, "played": 18, "won": 13, "draw": 3, "lost": 2, "gf": 48, "ga": 18, "gd": 30},
+            {"rank": 3, "team": "الاتحاد", "logo": "https://media.api-sports.io/football/teams/2944.png", "points": 38, "played": 18, "won": 11, "draw": 5, "lost": 2, "gf": 35, "ga": 15, "gd": 20},
+            {"rank": 4, "team": "الأهلي", "logo": "https://media.api-sports.io/football/teams/2934.png", "points": 35, "played": 18, "won": 10, "draw": 5, "lost": 3, "gf": 32, "ga": 18, "gd": 14},
+            {"rank": 5, "team": "الشباب", "logo": "https://media.api-sports.io/football/teams/2936.png", "points": 30, "played": 18, "won": 9, "draw": 3, "lost": 6, "gf": 28, "ga": 22, "gd": 6},
+        ],
+        39: [  # Premier League
+            {"rank": 1, "team": "ليفربول", "logo": "https://media.api-sports.io/football/teams/40.png", "points": 47, "played": 18, "won": 15, "draw": 2, "lost": 1, "gf": 45, "ga": 15, "gd": 30},
+            {"rank": 2, "team": "أرسنال", "logo": "https://media.api-sports.io/football/teams/42.png", "points": 40, "played": 18, "won": 12, "draw": 4, "lost": 2, "gf": 38, "ga": 16, "gd": 22},
+            {"rank": 3, "team": "مانشستر سيتي", "logo": "https://media.api-sports.io/football/teams/50.png", "points": 38, "played": 18, "won": 11, "draw": 5, "lost": 2, "gf": 42, "ga": 22, "gd": 20},
+            {"rank": 4, "team": "تشيلسي", "logo": "https://media.api-sports.io/football/teams/49.png", "points": 35, "played": 18, "won": 10, "draw": 5, "lost": 3, "gf": 35, "ga": 20, "gd": 15},
+            {"rank": 5, "team": "مانشستر يونايتد", "logo": "https://media.api-sports.io/football/teams/33.png", "points": 28, "played": 18, "won": 8, "draw": 4, "lost": 6, "gf": 28, "ga": 25, "gd": 3},
+        ],
+        140: [  # La Liga
+            {"rank": 1, "team": "ريال مدريد", "logo": "https://media.api-sports.io/football/teams/541.png", "points": 43, "played": 18, "won": 13, "draw": 4, "lost": 1, "gf": 40, "ga": 14, "gd": 26},
+            {"rank": 2, "team": "برشلونة", "logo": "https://media.api-sports.io/football/teams/529.png", "points": 41, "played": 18, "won": 13, "draw": 2, "lost": 3, "gf": 48, "ga": 20, "gd": 28},
+            {"rank": 3, "team": "أتلتيكو مدريد", "logo": "https://media.api-sports.io/football/teams/530.png", "points": 38, "played": 18, "won": 11, "draw": 5, "lost": 2, "gf": 32, "ga": 12, "gd": 20},
+        ],
+    }
+    return standings.get(league_id, [])
+
+def get_sample_top_scorers(league_id: int):
+    scorers = {
+        307: [
+            {"rank": 1, "player": "كريستيانو رونالدو", "team": "النصر", "logo": "https://media.api-sports.io/football/players/874.png", "goals": 18, "assists": 5},
+            {"rank": 2, "player": "ألكسندر ميتروفيتش", "team": "الهلال", "logo": "https://media.api-sports.io/football/players/1100.png", "goals": 15, "assists": 3},
+            {"rank": 3, "player": "مالكوم", "team": "الهلال", "logo": "https://media.api-sports.io/football/players/2295.png", "goals": 12, "assists": 8},
+        ],
+        39: [
+            {"rank": 1, "player": "محمد صلاح", "team": "ليفربول", "logo": "https://media.api-sports.io/football/players/306.png", "goals": 17, "assists": 10},
+            {"rank": 2, "player": "إيرلينج هالاند", "team": "مانشستر سيتي", "logo": "https://media.api-sports.io/football/players/1100.png", "goals": 16, "assists": 4},
+            {"rank": 3, "player": "كول بالمر", "team": "تشيلسي", "logo": "https://media.api-sports.io/football/players/2295.png", "goals": 14, "assists": 6},
+        ],
+        140: [
+            {"rank": 1, "player": "روبرت ليفاندوفسكي", "team": "برشلونة", "logo": "https://media.api-sports.io/football/players/521.png", "goals": 15, "assists": 4},
+            {"rank": 2, "player": "كيليان مبابي", "team": "ريال مدريد", "logo": "https://media.api-sports.io/football/players/278.png", "goals": 13, "assists": 5},
+            {"rank": 3, "player": "فينيسيوس جونيور", "team": "ريال مدريد", "logo": "https://media.api-sports.io/football/players/2295.png", "goals": 11, "assists": 8},
+        ],
+    }
+    return scorers.get(league_id, [])
+
+@api_router.get("/football/leagues")
+async def get_football_leagues():
+    """Get all available football leagues"""
+    return {"leagues": FOOTBALL_LEAGUES}
+
+@api_router.get("/football/matches")
+async def get_football_matches(league_id: Optional[int] = None, status: Optional[str] = None):
+    """Get football matches with optional filtering"""
+    matches = get_sample_matches()
+    
+    if league_id:
+        matches = [m for m in matches if m["league"]["id"] == league_id]
+    
+    if status:
+        matches = [m for m in matches if m["status"] == status.upper()]
+    
+    return {"matches": matches}
+
+@api_router.get("/football/live")
+async def get_live_matches():
+    """Get only live matches"""
+    matches = get_sample_matches()
+    live = [m for m in matches if m["status"] == "LIVE"]
+    return {"matches": live, "count": len(live)}
+
+@api_router.get("/football/standings/{league_id}")
+async def get_league_standings(league_id: int):
+    """Get league standings/table"""
+    standings = get_sample_standings(league_id)
+    league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
+    return {"league": league, "standings": standings}
+
+@api_router.get("/football/scorers/{league_id}")
+async def get_top_scorers(league_id: int):
+    """Get top scorers for a league"""
+    scorers = get_sample_top_scorers(league_id)
+    league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
+    return {"league": league, "scorers": scorers}
+
+# Include the API router - must be at the end after all routes are defined
+app.include_router(api_router)
 
