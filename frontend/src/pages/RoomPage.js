@@ -124,7 +124,7 @@ const YallaLiveRoom = ({ user }) => {
       requestsPollInterval.current = setInterval(() => {
         fetchSeatRequests();
         fetchMyInvites();
-      }, 2000); // Poll every 2 seconds for fast response
+      }, 5000); // Poll every 5 seconds
     }
     return () => {
       if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
@@ -216,21 +216,36 @@ const YallaLiveRoom = ({ user }) => {
           axios.get(`${API}/rooms/${roomId}/seat/my-request`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
-        // Update seats - always update
+        // Update seats - only if changed
         const newSeats = seatsRes.data.seats;
-        setSeats(newSeats);
+        setSeats(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(newSeats)) {
+            return newSeats;
+          }
+          return prev;
+        });
         
-        // Update messages
+        // Update messages - only if changed
         const filteredMessages = messagesRes.data.filter(msg => 
           !msg.content?.toLowerCase().includes('test message') &&
           !msg.content?.toLowerCase().includes('voice test') &&
           !msg.username?.toLowerCase().includes('test_user')
         );
-        setMessages(filteredMessages);
+        setMessages(prev => {
+          if (prev.length !== filteredMessages.length) {
+            return filteredMessages;
+          }
+          return prev;
+        });
         
-        // Update participants - always update to ensure fresh data
+        // Update participants - only if changed
         const newParticipants = participantsRes.data;
-        setParticipants(newParticipants);
+        setParticipants(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(newParticipants)) {
+            return newParticipants;
+          }
+          return prev;
+        });
         
         // Check if current user got approved (is on stage now)
         const myParticipant = newParticipants.find(p => p.user_id === user.id);
@@ -247,7 +262,7 @@ const YallaLiveRoom = ({ user }) => {
       } catch (error) {
         console.error('Polling error:', error);
       }
-    }, 1000); // Poll every 1 second for instant updates
+    }, 5000); // Poll every 5 seconds
   };
 
   const stopPolling = () => {
