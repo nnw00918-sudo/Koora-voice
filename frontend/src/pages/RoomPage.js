@@ -47,7 +47,9 @@ import {
   Square,
   Tv,
   Monitor,
-  Cast
+  Cast,
+  SwitchCamera,
+  Camera
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -121,6 +123,7 @@ const YallaLiveRoom = ({ user }) => {
   const [screenShares, setScreenShares] = useState([]);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [watchingScreenShare, setWatchingScreenShare] = useState(null);
+  const [cameraFacing, setCameraFacing] = useState('user'); // 'user' = front, 'environment' = back
   const screenShareStream = useRef(null);
   const screenShareVideoRef = useRef(null);
   
@@ -872,12 +875,12 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  const startScreenShare = async () => {
+  const startScreenShare = async (facing = cameraFacing) => {
     try {
       // Request camera permission
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          facingMode: 'user',
+          facingMode: facing,
           width: { ideal: 1280 },
           height: { ideal: 720 }
         },
@@ -886,6 +889,7 @@ const YallaLiveRoom = ({ user }) => {
       
       screenShareStream.current = stream;
       setIsScreenSharing(true);
+      setCameraFacing(facing);
       
       // Generate a simple peer ID
       const peerId = `${user.id}-${Date.now()}`;
@@ -905,7 +909,10 @@ const YallaLiveRoom = ({ user }) => {
         stream: stream
       };
       
-      setScreenShares(prev => [...prev, newShare]);
+      setScreenShares(prev => {
+        const filtered = prev.filter(s => s.user_id !== user.id);
+        return [...filtered, newShare];
+      });
       setWatchingScreenShare(newShare);
       
       // Handle when user stops sharing
@@ -922,6 +929,18 @@ const YallaLiveRoom = ({ user }) => {
         toast.error('فشل تشغيل الكاميرا');
       }
     }
+  };
+
+  const switchCamera = async () => {
+    const newFacing = cameraFacing === 'user' ? 'environment' : 'user';
+    
+    // Stop current stream
+    if (screenShareStream.current) {
+      screenShareStream.current.getTracks().forEach(track => track.stop());
+    }
+    
+    // Start with new camera
+    await startScreenShare(newFacing);
   };
 
   const stopScreenShare = async () => {
@@ -1440,28 +1459,41 @@ const YallaLiveRoom = ({ user }) => {
                         </span>
                       )}
                     </div>
-                    {/* Start/Stop Share Button */}
-                    {isCameraSupported ? (
-                      isScreenSharing ? (
+                    {/* Camera Controls */}
+                    <div className="flex items-center gap-2">
+                      {/* Switch Camera Button - only show when sharing */}
+                      {isScreenSharing && (
                         <button 
-                          onClick={stopScreenShare}
-                          className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
+                          onClick={switchCamera}
+                          className="flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-white text-xs px-2 py-1.5 rounded-lg font-cairo transition-colors"
+                          title={cameraFacing === 'user' ? 'تبديل للكاميرا الخلفية' : 'تبديل للكاميرا الأمامية'}
                         >
-                          <VideoOff className="w-3 h-3" />
-                          إيقاف
+                          <SwitchCamera className="w-4 h-4" />
                         </button>
+                      )}
+                      {/* Start/Stop Share Button */}
+                      {isCameraSupported ? (
+                        isScreenSharing ? (
+                          <button 
+                            onClick={stopScreenShare}
+                            className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
+                          >
+                            <VideoOff className="w-3 h-3" />
+                            إيقاف
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => startScreenShare()}
+                            className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
+                          >
+                            <Video className="w-3 h-3" />
+                            شغّل الكاميرا
+                          </button>
+                        )
                       ) : (
-                        <button 
-                          onClick={startScreenShare}
-                          className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
-                        >
-                          <Video className="w-3 h-3" />
-                          شغّل الكاميرا
-                        </button>
-                      )
-                    ) : (
-                      <span className="text-slate-500 text-xs font-cairo">غير مدعوم</span>
-                    )}
+                        <span className="text-slate-500 text-xs font-cairo">غير مدعوم</span>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Active Camera Shares List */}
