@@ -3241,6 +3241,9 @@ async def get_football_matches(league_id: Optional[int] = None, status: Optional
     # Get today's date for fixtures
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
+    # Current season available for free plan is 2024
+    CURRENT_SEASON = 2024
+    
     # Fetch from API for each league
     if API_FOOTBALL_KEY:
         leagues_to_fetch = [league_id] if league_id else [l["id"] for l in FOOTBALL_LEAGUES]
@@ -3250,7 +3253,7 @@ async def get_football_matches(league_id: Optional[int] = None, status: Optional
             fixtures = await fetch_from_api_football("fixtures", {
                 "league": lid,
                 "date": today,
-                "season": 2024
+                "season": CURRENT_SEASON
             })
             
             if fixtures:
@@ -3263,7 +3266,7 @@ async def get_football_matches(league_id: Optional[int] = None, status: Optional
                 fixtures = await fetch_from_api_football("fixtures", {
                     "league": lid,
                     "next": 10,
-                    "season": 2024
+                    "season": CURRENT_SEASON
                 })
                 
                 if fixtures:
@@ -3307,10 +3310,13 @@ async def get_league_standings(league_id: int):
     """Get league standings/table from real API"""
     league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
     
+    # Current season available for free plan is 2024
+    CURRENT_SEASON = 2024
+    
     if API_FOOTBALL_KEY:
         standings_data = await fetch_from_api_football("standings", {
             "league": league_id,
-            "season": 2024
+            "season": CURRENT_SEASON
         })
         
         if standings_data and len(standings_data) > 0:
@@ -3343,10 +3349,13 @@ async def get_top_scorers(league_id: int):
     """Get top scorers for a league from real API"""
     league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
     
+    # Current season available for free plan is 2024
+    CURRENT_SEASON = 2024
+    
     if API_FOOTBALL_KEY:
         scorers_data = await fetch_from_api_football("players/topscorers", {
             "league": league_id,
-            "season": 2024
+            "season": CURRENT_SEASON
         })
         
         if scorers_data:
