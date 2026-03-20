@@ -5,6 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { useRoomAudio } from '../contexts/RoomAudioContext';
 import {
   ArrowLeft,
   Mic,
@@ -38,7 +39,8 @@ import {
   Sparkles,
   Flame,
   Heart,
-  Zap
+  Zap,
+  Minimize2
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -49,6 +51,14 @@ const AGORA_APP_ID = process.env.REACT_APP_AGORA_APP_ID;
 const YallaLiveRoom = ({ user }) => {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const { 
+    initializeAgora: initGlobalAgora, 
+    minimizePlayer, 
+    disconnectFromRoom: globalDisconnect,
+    setCurrentRoom,
+    isConnected: isGlobalConnected
+  } = useRoomAudio();
+  
   const [room, setRoom] = useState(null);
   const [seats, setSeats] = useState([]);
   const [participants, setParticipants] = useState([]);
@@ -452,6 +462,22 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Leave room completely (disconnect audio)
+  const handleFullLeave = async () => {
+    await leaveRoom();
+    await globalDisconnect();
+    navigate('/dashboard');
+  };
+
+  // Minimize - keep audio playing in background
+  const handleMinimize = () => {
+    if (room) {
+      setCurrentRoom({ id: roomId, title: room.title });
+      minimizePlayer();
+      navigate('/dashboard');
+    }
+  };
+
   const handleTakeSeat = async () => {
     try {
       const response = await axios.post(`${API}/rooms/${roomId}/seat/request`, {}, { headers: { Authorization: `Bearer ${token}` } });
@@ -734,12 +760,24 @@ const YallaLiveRoom = ({ user }) => {
         >
           {/* Left Side - Seat Requests (Owner/Admin only) & Close Button */}
           <div className="flex items-center gap-2">
+            {/* Minimize - Keep audio playing */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={() => navigate('/dashboard')}
-              className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center"
+              onClick={handleMinimize}
+              className="w-10 h-10 rounded-full bg-lime-500/20 backdrop-blur flex items-center justify-center border border-lime-500/30"
+              title="تصغير مع استمرار الصوت"
             >
-              <X className="w-5 h-5 text-white" />
+              <Minimize2 className="w-5 h-5 text-lime-400" />
+            </motion.button>
+            
+            {/* Full Leave */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleFullLeave}
+              className="w-10 h-10 rounded-full bg-red-500/20 backdrop-blur flex items-center justify-center border border-red-500/30"
+              title="مغادرة الغرفة"
+            >
+              <X className="w-5 h-5 text-red-400" />
             </motion.button>
             
             {/* Seat Requests Badge - Owner & Admin only */}

@@ -17,8 +17,10 @@ import MessagesPage from './pages/MessagesPage';
 import UserProfilePage from './pages/UserProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import MiniAudioPlayer from './components/MiniAudioPlayer';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { RoomAudioProvider } from './contexts/RoomAudioContext';
 import { Toaster } from 'sonner';
 
 // Register Service Worker
@@ -70,28 +72,31 @@ function App() {
   return (
     <LanguageProvider>
       <SettingsProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
-            <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
-            <Route path="/dashboard" element={user ? <DashboardPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
-            <Route path="/create-room" element={user?.role === 'owner' ? <CreateRoomPage user={user} /> : <Navigate to="/dashboard" />} />
-            <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
-            <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
-            <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
-            <Route path="/admin" element={user ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
-            <Route path="/matches" element={user ? <MatchesPage user={user} /> : <Navigate to="/" />} />
-            <Route path="/league/:leagueId" element={user ? <LeagueDetailPage user={user} /> : <Navigate to="/" />} />
-            <Route path="/threads" element={user ? <ThreadsPage user={user} /> : <Navigate to="/" />} />
-            <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
-            <Route path="/messages" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
-            <Route path="/messages/:conversationId" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
-            <Route path="/user/:userId" element={user ? <UserProfilePage currentUser={user} /> : <Navigate to="/" />} />
-            <Route path="/notifications" element={user ? <NotificationsPage user={user} /> : <Navigate to="/" />} />
-          </Routes>
-          <PWAInstallPrompt />
-        </BrowserRouter>
-        <Toaster position="top-center" theme="dark" richColors />
+        <RoomAudioProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
+              <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
+              <Route path="/dashboard" element={user ? <DashboardPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+              <Route path="/create-room" element={user?.role === 'owner' ? <CreateRoomPage user={user} /> : <Navigate to="/dashboard" />} />
+              <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+              <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/admin" element={user ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
+              <Route path="/matches" element={user ? <MatchesPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/league/:leagueId" element={user ? <LeagueDetailPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/threads" element={user ? <ThreadsPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+              <Route path="/messages" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/messages/:conversationId" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/user/:userId" element={user ? <UserProfilePage currentUser={user} /> : <Navigate to="/" />} />
+              <Route path="/notifications" element={user ? <NotificationsPage user={user} /> : <Navigate to="/" />} />
+            </Routes>
+            <MiniAudioPlayer />
+            <PWAInstallPrompt />
+          </BrowserRouter>
+          <Toaster position="top-center" theme="dark" richColors />
+        </RoomAudioProvider>
       </SettingsProvider>
     </LanguageProvider>
   );
