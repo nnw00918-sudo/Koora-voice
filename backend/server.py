@@ -212,6 +212,8 @@ class RoomFull(BaseModel):
     participant_count: int = 0
     member_count: int = 0
     created_at: str
+    stream_url: Optional[str] = None
+    stream_active: bool = False
 
 class RoomCreate(BaseModel):
     title: str
@@ -1717,6 +1719,76 @@ async def toggle_room(room_id: str, current_user: User = Depends(get_current_use
         response["pin"] = update_data["close_pin"]
     
     return response
+
+
+class StreamRequest(BaseModel):
+    url: str
+
+@api_router.post("/rooms/{room_id}/stream/start")
+async def start_stream(room_id: str, stream_data: StreamRequest, current_user: User = Depends(get_current_user)):
+    """Start a live stream in the room - System Owner only"""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="فقط الأونر يمكنه تشغيل البث")
+    
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Convert YouTube/Twitch URLs to embed format
+    stream_url = stream_data.url.strip()
+    embed_url = stream_url
+    
+    # YouTube URL conversion
+    if "youtube.com/watch" in stream_url or "youtu.be" in stream_url:
+        if "youtube.com/watch" in stream_url:
+            video_id = stream_url.split("v=")[1].split("&")[0] if "v=" in stream_url else ""
+        else:
+            video_id = stream_url.split("/")[-1].split("?")[0]
+        if video_id:
+            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1"
+    
+    # Twitch URL conversion
+    elif "twitch.tv" in stream_url:
+        channel = stream_url.split("twitch.tv/")[1].split("/")[0] if "twitch.tv/" in stream_url else ""
+        if channel:
+            embed_url = f"https://player.twitch.tv/?channel={channel}&parent={os.environ.get('FRONTEND_DOMAIN', 'pitch-chat.preview.emergentagent.com')}"
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"stream_url": embed_url, "stream_active": True}}
+    )
+    
+    return {"message": "تم بدء البث", "stream_url": embed_url}
+
+@api_router.post("/rooms/{room_id}/stream/stop")
+async def stop_stream(room_id: str, current_user: User = Depends(get_current_user)):
+    """Stop the live stream - System Owner only"""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="فقط الأونر يمكنه إيقاف البث")
+    
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"stream_url": None, "stream_active": False}}
+    )
+    
+    return {"message": "تم إيقاف البث"}
+
+@api_router.get("/rooms/{room_id}/stream")
+async def get_stream(room_id: str):
+    """Get current stream status"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    return {
+        "stream_active": room.get("stream_active", False),
+        "stream_url": room.get("stream_url")
+    }
+
 
 @api_router.delete("/admin/rooms/{room_id}")
 async def delete_room(room_id: str, current_user: User = Depends(get_current_user)):

@@ -40,7 +40,12 @@ import {
   Flame,
   Heart,
   Zap,
-  Minimize2
+  Minimize2,
+  Video,
+  VideoOff,
+  Play,
+  Square,
+  Tv
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -101,6 +106,12 @@ const YallaLiveRoom = ({ user }) => {
   const [showChat, setShowChat] = useState(true);
   const [showSeatRequestsModal, setShowSeatRequestsModal] = useState(false);
   
+  // Stream states
+  const [streamActive, setStreamActive] = useState(false);
+  const [streamUrl, setStreamUrl] = useState('');
+  const [showStreamModal, setShowStreamModal] = useState(false);
+  const [streamInputUrl, setStreamInputUrl] = useState('');
+  
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const requestsPollInterval = useRef(null);
@@ -117,12 +128,17 @@ const YallaLiveRoom = ({ user }) => {
     fetchRoomData();
     startPolling();
     startHeartbeat();
+    fetchStreamStatus();
+
+    // Poll stream status every 10 seconds
+    const streamPoll = setInterval(fetchStreamStatus, 10000);
 
     return () => {
       leaveRoom();
       stopPolling();
       stopHeartbeat();
       cleanupAgora();
+      clearInterval(streamPoll);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
@@ -656,6 +672,51 @@ const YallaLiveRoom = ({ user }) => {
       toast.error(error.response?.data?.detail || 'فشل إغلاق الغرفة');
     }
   };
+
+  // Stream functions
+  const fetchStreamStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/rooms/${roomId}/stream`);
+      setStreamActive(response.data.stream_active);
+      setStreamUrl(response.data.stream_url || '');
+    } catch (error) {
+      console.error('Failed to fetch stream status');
+    }
+  };
+
+  const handleStartStream = async () => {
+    if (!streamInputUrl.trim()) {
+      toast.error('أدخل رابط البث');
+      return;
+    }
+    try {
+      const response = await axios.post(`${API}/rooms/${roomId}/stream/start`, 
+        { url: streamInputUrl }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      setStreamActive(true);
+      setStreamUrl(response.data.stream_url);
+      setShowStreamModal(false);
+      setStreamInputUrl('');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل بدء البث');
+    }
+  };
+
+  const handleStopStream = async () => {
+    try {
+      const response = await axios.post(`${API}/rooms/${roomId}/stream/stop`, {}, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      setStreamActive(false);
+      setStreamUrl('');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل إيقاف البث');
+    }
+  };
+
 
   const handleAcceptInvite = async (inviteId) => {
     try {
@@ -1400,6 +1461,27 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
                 
                 <div className="space-y-3">
+                  {/* Stream Controls - Only for System Owner */}
+                  {user.role === 'owner' && (
+                    <>
+                      {streamActive ? (
+                        <button onClick={handleStopStream}
+                          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50"
+                        >
+                          <VideoOff className="w-6 h-6 text-red-400" />
+                          <span className="text-red-400 font-cairo font-bold">إيقاف البث</span>
+                        </button>
+                      ) : (
+                        <button onClick={() => { setShowRoomSettings(false); setShowStreamModal(true); }}
+                          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/50"
+                        >
+                          <Video className="w-6 h-6 text-violet-400" />
+                          <span className="text-violet-400 font-cairo font-bold">تشغيل بث مباشر</span>
+                        </button>
+                      )}
+                    </>
+                  )}
+                  
                   <button onClick={handleToggleRoom}
                     className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-colors ${
                       room?.is_closed 
@@ -1476,6 +1558,97 @@ const YallaLiveRoom = ({ user }) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Stream Modal - Enter URL */}
+        <AnimatePresence>
+          {showStreamModal && user.role === 'owner' && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setShowStreamModal(false)}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-md rounded-3xl p-6 border border-violet-500/30"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Tv className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-cairo font-bold text-white mb-2">تشغيل بث مباشر</h3>
+                  <p className="text-slate-400 font-almarai text-sm">أدخل رابط البث من YouTube أو Twitch</p>
+                </div>
+                
+                <div className="space-y-4">
+                  <Input
+                    value={streamInputUrl}
+                    onChange={(e) => setStreamInputUrl(e.target.value)}
+                    placeholder="https://youtube.com/watch?v=... أو https://twitch.tv/..."
+                    className="bg-slate-800 border-slate-600 text-white text-right font-almarai rounded-xl"
+                    dir="ltr"
+                  />
+                  
+                  <div className="flex gap-3">
+                    <Button onClick={() => setShowStreamModal(false)}
+                      className="flex-1 bg-white/10 hover:bg-white/20 text-white font-cairo font-bold py-3 rounded-xl"
+                    >
+                      إلغاء
+                    </Button>
+                    <Button onClick={handleStartStream}
+                      className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-cairo font-bold py-3 rounded-xl flex items-center justify-center gap-2"
+                    >
+                      <Play className="w-5 h-5" />
+                      تشغيل
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Live Stream Player - Shows for everyone when stream is active */}
+        <AnimatePresence>
+          {streamActive && streamUrl && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              className="fixed bottom-32 left-4 right-4 z-40"
+            >
+              <div className="bg-black rounded-2xl overflow-hidden border border-violet-500/50 shadow-2xl shadow-violet-500/20">
+                {/* Stream Header */}
+                <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
+                  </div>
+                  {user.role === 'owner' && (
+                    <button onClick={handleStopStream} className="text-white/80 hover:text-white">
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Video Player */}
+                <div className="relative aspect-video">
+                  <iframe
+                    src={streamUrl}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
 
         {/* Promote/Demote Modal - ONLY for Room Owner */}
         <AnimatePresence>
