@@ -263,27 +263,43 @@ def has_permission(user_role: str, required_roles: list) -> bool:
 
 def can_manage_stage(user_role: str, user_id: str = None, room_owner_id: str = None) -> bool:
     """Check if user can approve mic requests and manage stage"""
+    # System owner can manage ALL rooms
+    if user_role == "owner":
+        return True
+    # Room owner can manage their room
     if user_id and room_owner_id and user_id == room_owner_id:
         return True
-    return user_role in ["owner", "admin", "mod"]
+    return user_role in ["admin", "mod"]
 
 def can_kick_mute(user_role: str, user_id: str = None, room_owner_id: str = None) -> bool:
     """Check if user can kick and mute users"""
+    # System owner can control ALL rooms
+    if user_role == "owner":
+        return True
+    # Room owner can control their room
     if user_id and room_owner_id and user_id == room_owner_id:
         return True
-    return user_role in ["owner", "admin"]
+    return user_role in ["admin"]
 
 def can_manage_rooms(user_role: str, user_id: str = None, room_owner_id: str = None) -> bool:
     """Check if user can create/close rooms"""
+    # System owner can manage ALL rooms
+    if user_role == "owner":
+        return True
+    # Room owner can manage their room
     if user_id and room_owner_id and user_id == room_owner_id:
         return True
-    return user_role in ["owner"]
+    return False
 
 def can_promote_users(user_role: str, user_id: str = None, room_owner_id: str = None) -> bool:
     """Check if user can promote other users"""
+    # System owner can promote in ALL rooms
+    if user_role == "owner":
+        return True
+    # Room owner can promote in their room
     if user_id and room_owner_id and user_id == room_owner_id:
         return True
-    return user_role in ["owner"]
+    return False
 
 @api_router.post("/auth/register", response_model=Token)
 async def register(user_data: UserRegister):
@@ -1643,14 +1659,14 @@ async def delete_room(room_id: str):
 
 @api_router.post("/admin/rooms/{room_id}/toggle")
 async def toggle_room(room_id: str, current_user: User = Depends(get_current_user)):
-    """Toggle room open/closed status - Room Owner only"""
+    """Toggle room open/closed status - Room Owner or System Owner"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    # Only room owner can toggle
-    if room["owner_id"] != current_user.id:
-        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه إغلاق/فتح الغرفة")
+    # System owner can toggle any room, room owner can toggle their room
+    if current_user.role != "owner" and room["owner_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     new_status = not room.get("is_closed", False)
     await db.rooms.update_one(
@@ -1663,14 +1679,14 @@ async def toggle_room(room_id: str, current_user: User = Depends(get_current_use
 
 @api_router.delete("/admin/rooms/{room_id}")
 async def delete_room(room_id: str, current_user: User = Depends(get_current_user)):
-    """Delete a room completely - Room Owner only"""
+    """Delete a room completely - Room Owner or System Owner"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    # Only room owner can delete
-    if room["owner_id"] != current_user.id:
-        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه حذف الغرفة")
+    # System owner can delete any room, room owner can delete their room
+    if current_user.role != "owner" and room["owner_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     # Delete room and all related data
     await db.rooms.delete_one({"id": room_id})

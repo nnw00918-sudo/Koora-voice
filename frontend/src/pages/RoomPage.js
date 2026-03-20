@@ -70,13 +70,15 @@ const YallaLiveRoom = ({ user }) => {
   
   // Check if current user is room owner based on room data
   const isRoomOwner = room?.owner_id === user.id;
-  // Room owner has ALL permissions in their room
-  const isOwner = isRoomOwner;
-  const isAdmin = currentUserRole === 'admin' || isRoomOwner;
-  const isMod = currentUserRole === 'mod' || isRoomOwner;
-  const canManageStage = isRoomOwner || ['owner', 'admin', 'mod'].includes(currentUserRole);
-  const canKickMute = isRoomOwner || ['owner', 'admin'].includes(currentUserRole);
-  const canJoinStageDirect = isRoomOwner || ['owner', 'admin', 'mod'].includes(currentUserRole);
+  // System owner (role=owner) has ALL permissions in ALL rooms
+  const isSystemOwner = currentUserRole === 'owner';
+  // Room owner or system owner has full control
+  const isOwner = isRoomOwner || isSystemOwner;
+  const isAdmin = currentUserRole === 'admin' || isOwner;
+  const isMod = currentUserRole === 'mod' || isOwner;
+  const canManageStage = isOwner || ['admin', 'mod'].includes(currentUserRole);
+  const canKickMute = isOwner || currentUserRole === 'admin';
+  const canJoinStageDirect = isOwner || ['admin', 'mod'].includes(currentUserRole);
   
   const [myInvites, setMyInvites] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
