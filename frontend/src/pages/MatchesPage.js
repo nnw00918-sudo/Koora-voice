@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Trophy, 
@@ -8,22 +9,25 @@ import {
   Target,
   Loader2,
   ChevronLeft,
-  ChevronRight,
   Star,
   RefreshCw,
-  Clock,
   MapPin,
   Users,
   BarChart3,
   X,
-  Flame,
-  Zap
+  Zap,
+  Home,
+  MessageCircle,
+  User,
+  Mic
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const MatchesPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [leagues, setLeagues] = useState([]);
   const [todayFixtures, setTodayFixtures] = useState({});
   const [upcomingFixtures, setUpcomingFixtures] = useState({});
@@ -34,8 +38,22 @@ const MatchesPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDateIndex, setSelectedDateIndex] = useState(2); // Today is at index 2
   const pollInterval = useRef(null);
+
+  // Generate correct calendar dates
+  const getCalendarDates = () => {
+    const dates = [];
+    const today = new Date();
+    for (let i = -2; i <= 5; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
+  const calendarDates = getCalendarDates();
 
   useEffect(() => {
     fetchLeagues();
@@ -120,26 +138,28 @@ const MatchesPage = () => {
   const allMatches = Object.values(todayFixtures).flat();
   const liveCount = allMatches.filter(m => m.status === 'LIVE').length;
 
-  // Generate calendar dates
-  const getCalendarDates = () => {
-    const dates = [];
-    for (let i = -2; i <= 5; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
-      dates.push(date);
-    }
-    return dates;
-  };
-
-  const formatDateShort = (date) => {
+  const formatDayName = (date) => {
     const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return 'اليوم';
+    if (date.toDateString() === tomorrow.toDateString()) return 'غداً';
+    if (date.toDateString() === yesterday.toDateString()) return 'أمس';
     return days[date.getDay()];
   };
 
-  const isToday = (date) => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-  };
+  // Bottom Navigation
+  const navItems = [
+    { id: 'dashboard', icon: Home, label: 'الرئيسية', path: '/dashboard' },
+    { id: 'matches', icon: Trophy, label: 'المباريات', path: '/matches' },
+    { id: 'rooms', icon: Mic, label: 'الغرف', path: '/dashboard' },
+    { id: 'threads', icon: MessageCircle, label: 'المنشورات', path: '/threads' },
+    { id: 'profile', icon: User, label: 'حسابي', path: '/profile' },
+  ];
 
   if (loading) {
     return (
@@ -164,7 +184,6 @@ const MatchesPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#0d1025] to-[#0a0a1a] pb-24" dir="rtl">
       {/* Premium Header */}
       <div className="relative overflow-hidden">
-        {/* Background Glow */}
         <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
         
@@ -196,26 +215,26 @@ const MatchesPage = () => {
             </div>
           </div>
 
-          {/* Date Selector */}
+          {/* Date Selector - Fixed */}
           <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-            {getCalendarDates().map((date, i) => (
+            {calendarDates.map((date, i) => (
               <motion.button
                 key={i}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedDate(date)}
+                onClick={() => setSelectedDateIndex(i)}
                 className={`flex-shrink-0 w-16 py-3 rounded-2xl text-center transition-all ${
-                  date.toDateString() === selectedDate.toDateString()
+                  i === selectedDateIndex
                     ? 'bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/30'
                     : 'bg-white/5 border border-white/10'
                 }`}
               >
                 <p className={`text-xs mb-1 ${
-                  date.toDateString() === selectedDate.toDateString() ? 'text-black/70' : 'text-white/50'
+                  i === selectedDateIndex ? 'text-black/70' : 'text-white/50'
                 }`}>
-                  {isToday(date) ? 'اليوم' : formatDateShort(date)}
+                  {formatDayName(date)}
                 </p>
                 <p className={`text-lg font-bold ${
-                  date.toDateString() === selectedDate.toDateString() ? 'text-black' : 'text-white'
+                  i === selectedDateIndex ? 'text-black' : 'text-white'
                 }`}>
                   {date.getDate()}
                 </p>
@@ -224,7 +243,7 @@ const MatchesPage = () => {
           </div>
         </div>
 
-        {/* Premium Tabs */}
+        {/* Tabs */}
         <div className="px-4 pb-4">
           <div className="flex gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/10">
             {[
@@ -295,7 +314,7 @@ const MatchesPage = () => {
                   />
                 ))
               ) : (
-                <EmptyState message="لا توجد مباريات اليوم" />
+                <EmptyState message="لا توجد مباريات في هذا اليوم" />
               )}
             </motion.div>
           )}
@@ -318,14 +337,14 @@ const MatchesPage = () => {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-white/40 text-xs border-b border-white/10">
-                          <th className="py-4 px-4 text-right">#</th>
-                          <th className="py-4 px-4 text-right">الفريق</th>
+                          <th className="py-4 px-3 text-right">#</th>
+                          <th className="py-4 px-3 text-right">الفريق</th>
                           <th className="py-4 px-2 text-center">لعب</th>
                           <th className="py-4 px-2 text-center">ف</th>
                           <th className="py-4 px-2 text-center">ت</th>
                           <th className="py-4 px-2 text-center">خ</th>
                           <th className="py-4 px-2 text-center">+/-</th>
-                          <th className="py-4 px-4 text-center">نقاط</th>
+                          <th className="py-4 px-3 text-center">نقاط</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -340,7 +359,7 @@ const MatchesPage = () => {
                               team.rank >= standings.length - 2 ? 'bg-red-500/5' : ''
                             }`}
                           >
-                            <td className="py-3 px-4">
+                            <td className="py-3 px-3">
                               <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
                                 team.rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-black' :
                                 team.rank <= 4 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
@@ -350,10 +369,10 @@ const MatchesPage = () => {
                                 {team.rank}
                               </div>
                             </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-3">
-                                <img src={team.logo} alt="" className="w-7 h-7" />
-                                <span className="text-white font-medium">{team.team}</span>
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-2">
+                                <img src={team.logo} alt="" className="w-6 h-6" />
+                                <span className="text-white font-medium text-xs">{team.team}</span>
                               </div>
                             </td>
                             <td className="py-3 px-2 text-center text-white/60">{team.played}</td>
@@ -365,8 +384,8 @@ const MatchesPage = () => {
                                 {team.gd > 0 ? '+' : ''}{team.gd}
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className="text-white font-bold text-lg">{team.points}</span>
+                            <td className="py-3 px-3 text-center">
+                              <span className="text-white font-bold">{team.points}</span>
                             </td>
                           </motion.tr>
                         ))}
@@ -431,6 +450,28 @@ const MatchesPage = () => {
         </AnimatePresence>
       </div>
 
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a1a]/95 backdrop-blur-xl border-t border-white/10 px-2 py-2 z-50">
+        <div className="flex justify-around items-center max-w-lg mx-auto">
+          {navItems.map(item => {
+            const isActive = location.pathname === item.path || (item.id === 'matches' && location.pathname === '/matches');
+            return (
+              <motion.button
+                key={item.id}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => navigate(item.path)}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${
+                  isActive ? 'text-amber-500' : 'text-white/40'
+                }`}
+              >
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-amber-500' : ''}`} />
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Match Detail Modal */}
       <AnimatePresence>
         {selectedMatch && (
@@ -441,7 +482,7 @@ const MatchesPage = () => {
   );
 };
 
-// Premium League Card
+// League Card Component
 const LeagueCard = ({ league, matches, onMatchClick }) => {
   return (
     <motion.div
@@ -449,7 +490,6 @@ const LeagueCard = ({ league, matches, onMatchClick }) => {
       animate={{ opacity: 1, y: 0 }}
       className="bg-gradient-to-br from-white/5 to-white/[0.02] rounded-3xl border border-white/10 overflow-hidden"
     >
-      {/* League Header */}
       <div className="p-4 flex items-center gap-3 border-b border-white/10">
         <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-2xl">
           {league?.flag || '⚽'}
@@ -460,19 +500,17 @@ const LeagueCard = ({ league, matches, onMatchClick }) => {
         </div>
         <ChevronLeft className="w-5 h-5 text-white/30" />
       </div>
-
-      {/* Matches */}
       <div className="divide-y divide-white/5">
         {matches.map(match => (
-          <PremiumMatchRow key={match.id} match={match} onClick={() => onMatchClick(match)} />
+          <MatchRow key={match.id} match={match} onClick={() => onMatchClick(match)} />
         ))}
       </div>
     </motion.div>
   );
 };
 
-// Premium Match Row
-const PremiumMatchRow = ({ match, onClick }) => {
+// Match Row Component
+const MatchRow = ({ match, onClick }) => {
   const isLive = match.status === 'LIVE';
   const isFinished = match.status === 'FINISHED';
   const isScheduled = match.status === 'SCHEDULED';
@@ -490,7 +528,6 @@ const PremiumMatchRow = ({ match, onClick }) => {
       className={`p-4 cursor-pointer transition-all ${isLive ? 'bg-gradient-to-r from-red-500/5 to-transparent' : ''}`}
     >
       <div className="flex items-center gap-4">
-        {/* Time/Status */}
         <div className="w-16 text-center flex-shrink-0">
           {isLive ? (
             <div className="inline-flex flex-col items-center">
@@ -511,9 +548,7 @@ const PremiumMatchRow = ({ match, onClick }) => {
           )}
         </div>
 
-        {/* Teams & Score */}
         <div className="flex-1 min-w-0">
-          {/* Home */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <img src={match.home_team.logo} alt="" className="w-7 h-7" />
@@ -531,7 +566,6 @@ const PremiumMatchRow = ({ match, onClick }) => {
               </span>
             )}
           </div>
-          {/* Away */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src={match.away_team.logo} alt="" className="w-7 h-7" />
@@ -555,7 +589,7 @@ const PremiumMatchRow = ({ match, onClick }) => {
   );
 };
 
-// Premium Match Detail Modal
+// Match Detail Modal
 const MatchDetailModal = ({ match, onClose }) => {
   const isLive = match.status === 'LIVE';
   const isFinished = match.status === 'FINISHED';
@@ -579,7 +613,6 @@ const MatchDetailModal = ({ match, onClose }) => {
         onClick={e => e.stopPropagation()}
         className="relative w-full max-w-lg bg-gradient-to-br from-[#0d1025] to-[#0a0a1a] rounded-t-3xl sm:rounded-3xl border border-white/10 max-h-[90vh] overflow-hidden"
       >
-        {/* Header */}
         <div className="relative p-6 text-center border-b border-white/10">
           <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent" />
           <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
@@ -589,13 +622,11 @@ const MatchDetailModal = ({ match, onClose }) => {
           <p className="text-amber-500 text-sm mb-6">{match.league?.name}</p>
           
           <div className="flex items-center justify-center gap-6">
-            {/* Home */}
             <div className="text-center">
               <img src={match.home_team.logo} alt="" className="w-20 h-20 mx-auto mb-2" />
               <p className="text-white font-bold text-sm">{match.home_team.name}</p>
             </div>
 
-            {/* Score */}
             <div className="px-4">
               {isLive || isFinished ? (
                 <div className="flex items-center gap-3">
@@ -623,7 +654,6 @@ const MatchDetailModal = ({ match, onClose }) => {
               {isFinished && <p className="text-white/40 text-sm mt-2">انتهت المباراة</p>}
             </div>
 
-            {/* Away */}
             <div className="text-center">
               <img src={match.away_team.logo} alt="" className="w-20 h-20 mx-auto mb-2" />
               <p className="text-white font-bold text-sm">{match.away_team.name}</p>
@@ -631,7 +661,6 @@ const MatchDetailModal = ({ match, onClose }) => {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex border-b border-white/10">
           {[
             { id: 'info', label: 'المباراة' },
@@ -652,7 +681,6 @@ const MatchDetailModal = ({ match, onClose }) => {
           ))}
         </div>
 
-        {/* Content */}
         <div className="p-6 max-h-60 overflow-y-auto">
           {activeTab === 'info' && (
             <div className="space-y-4">
