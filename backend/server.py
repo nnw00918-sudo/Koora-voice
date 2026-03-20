@@ -799,6 +799,60 @@ async def update_room_image(room_id: str, data: RoomImageUpdate, current_user: U
     return {"message": "تم تحديث صورة الغرفة", "image": data.image}
 
 
+import os
+import base64
+import uuid
+from pathlib import Path
+
+# Create uploads directory
+UPLOAD_DIR = Path("/app/backend/uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+@api_router.post("/upload/image")
+async def upload_image(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """Upload an image file and return URL"""
+    
+    # Validate file type
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="نوع الملف غير مدعوم. استخدم JPG, PNG, GIF أو WebP")
+    
+    # Generate unique filename
+    file_extension = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+    file_path = UPLOAD_DIR / unique_filename
+    
+    # Save file
+    try:
+        contents = await file.read()
+        
+        # Check file size (max 5MB)
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="حجم الملف كبير جداً. الحد الأقصى 5MB")
+        
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        
+        # Return the URL to access the image
+        image_url = f"/api/uploads/{unique_filename}"
+        return {"message": "تم رفع الصورة بنجاح", "url": image_url, "filename": unique_filename}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"فشل رفع الصورة: {str(e)}")
+
+@api_router.get("/uploads/{filename}")
+async def get_uploaded_file(filename: str):
+    """Serve uploaded files"""
+    from fastapi.responses import FileResponse
+    
+    file_path = UPLOAD_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="الملف غير موجود")
+    
+    return FileResponse(file_path)
+
+
+
 
 @api_router.post("/rooms/{room_id}/close-and-kick")
 async def close_room_and_kick_all(room_id: str, current_user: User = Depends(get_current_user)):

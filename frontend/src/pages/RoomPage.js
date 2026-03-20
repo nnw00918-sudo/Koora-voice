@@ -110,6 +110,8 @@ const YallaLiveRoom = ({ user }) => {
   const [showSeatRequestsModal, setShowSeatRequestsModal] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [roomImageUrl, setRoomImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
   
   // Stream states
   const [streamActive, setStreamActive] = useState(false);
@@ -725,6 +727,58 @@ const YallaLiveRoom = ({ user }) => {
       setRoomImageUrl('');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل تحديث الصورة');
+    }
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('نوع الملف غير مدعوم. استخدم JPG, PNG, GIF أو WebP');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الملف كبير جداً. الحد الأقصى 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadResponse = await axios.post(`${API}/upload/image`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const imageUrl = uploadResponse.data.url;
+      
+      // Update room image
+      await axios.put(`${API}/rooms/${roomId}/image`, 
+        { image: imageUrl }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('تم تحديث صورة الغرفة');
+      setRoom(prev => ({ ...prev, image: imageUrl }));
+      setShowImagePicker(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل رفع الصورة');
+    } finally {
+      setUploadingImage(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -1990,28 +2044,67 @@ const YallaLiveRoom = ({ user }) => {
                   </button>
                   
                   {showImagePicker && (
-                    <div className="p-3 bg-slate-800 rounded-xl space-y-3">
+                    <div className="p-4 bg-slate-800 rounded-xl space-y-4">
+                      {/* Hidden file input */}
                       <input
-                        type="text"
-                        value={roomImageUrl}
-                        onChange={(e) => setRoomImageUrl(e.target.value)}
-                        placeholder="أدخل رابط الصورة..."
-                        className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white text-sm placeholder:text-slate-400"
-                        dir="ltr"
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        className="hidden"
                       />
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={handleUpdateRoomImage}
-                          className="flex-1 py-2 bg-sky-500 text-white rounded-lg font-cairo font-bold text-sm"
-                        >
-                          حفظ
-                        </button>
-                        <button 
-                          onClick={() => { setShowImagePicker(false); setRoomImageUrl(''); }}
-                          className="px-4 py-2 bg-slate-600 text-white rounded-lg font-cairo text-sm"
-                        >
-                          إلغاء
-                        </button>
+                      
+                      {/* Upload from album button */}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                        className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-slate-900 rounded-xl font-cairo font-bold transition-all disabled:opacity-50"
+                      >
+                        {uploadingImage ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                            <span>جاري الرفع...</span>
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon className="w-5 h-5" />
+                            <span>اختر من الألبوم</span>
+                          </>
+                        )}
+                      </button>
+                      
+                      {/* Divider */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-px bg-slate-700" />
+                        <span className="text-slate-500 text-sm">أو</span>
+                        <div className="flex-1 h-px bg-slate-700" />
+                      </div>
+                      
+                      {/* URL input */}
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={roomImageUrl}
+                          onChange={(e) => setRoomImageUrl(e.target.value)}
+                          placeholder="أدخل رابط الصورة..."
+                          className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white text-sm placeholder:text-slate-400"
+                          dir="ltr"
+                        />
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={handleUpdateRoomImage}
+                            disabled={!roomImageUrl.trim()}
+                            className="flex-1 py-2.5 bg-sky-500 hover:bg-sky-400 disabled:bg-slate-600 text-white rounded-lg font-cairo font-bold text-sm transition-colors"
+                          >
+                            حفظ الرابط
+                          </button>
+                          <button 
+                            onClick={() => { setShowImagePicker(false); setRoomImageUrl(''); }}
+                            className="px-4 py-2.5 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-cairo text-sm transition-colors"
+                          >
+                            إلغاء
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
