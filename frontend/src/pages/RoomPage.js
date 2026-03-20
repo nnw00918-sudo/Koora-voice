@@ -709,11 +709,11 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  // Convert URL to embed format locally for instant switching - Like TV Receiver
+  // Convert URL to embed format - TV Receiver Style (instant play)
   const convertToEmbedUrl = (url) => {
     if (!url) return '';
     
-    // YouTube - instant play with sound like TV receiver
+    // YouTube - instant auto play
     if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
       let videoId = '';
       if (url.includes('youtube.com/watch')) {
@@ -724,13 +724,11 @@ const YallaLiveRoom = ({ user }) => {
         videoId = url.split('/').pop()?.split('?')[0] || '';
       }
       if (videoId) {
-        // Use youtube-nocookie for better autoplay, add timestamp to force reload
-        const timestamp = Date.now();
-        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1&enablejsapi=1&t=${timestamp}`;
+        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&modestbranding=1&rel=0&vq=hd1080&controls=1&playsinline=1`;
       }
     }
     
-    // Twitch - instant play
+    // Twitch
     if (url.includes('twitch.tv')) {
       const channel = url.split('twitch.tv/')[1]?.split('/')[0] || '';
       if (channel) {
@@ -738,7 +736,7 @@ const YallaLiveRoom = ({ user }) => {
       }
     }
     
-    // Dailymotion - instant play
+    // Dailymotion
     if (url.includes('dailymotion.com')) {
       let videoId = '';
       if (url.includes('/video/')) {
@@ -758,35 +756,31 @@ const YallaLiveRoom = ({ user }) => {
     
     // Already embed URL
     if (url.includes('/embed/') || url.includes('player.')) {
-      let newUrl = url.replace('mute=1', 'mute=0');
-      if (!newUrl.includes('autoplay')) {
-        newUrl += (newUrl.includes('?') ? '&' : '?') + 'autoplay=1';
-      }
-      return newUrl;
+      return url.replace('mute=1', 'mute=0');
     }
     
     return url;
   };
 
-  // Instant channel switching like TV receiver
-  const handlePlaySlot = async (slot) => {
+  // TV Receiver Style - Instant channel switch
+  const handlePlaySlot = (slot) => {
     const rawUrl = streamSlots[slot];
     if (!rawUrl) return;
     
-    // Force iframe to completely reload by incrementing key
-    setStreamKey(prev => prev + 1);
+    // Increment key to force iframe reload
+    setStreamKey(Date.now());
     
-    // Instantly switch the stream locally
+    // Convert and set URL
     const embedUrl = convertToEmbedUrl(rawUrl);
-    setStreamUrl(embedUrl);
     setActiveSlot(slot);
+    setStreamUrl(embedUrl);
     setStreamActive(true);
-    setViewMode('stream'); // Auto switch to stream view
+    setViewMode('stream');
     
-    // Update server in background (don't wait for response)
+    // Sync to server in background
     axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
       { headers: { Authorization: `Bearer ${token}` } }
-    ).catch(err => console.log('Background sync failed'));
+    ).catch(() => {});
   };
 
   const handleStartStream = async () => {
@@ -1270,23 +1264,26 @@ const YallaLiveRoom = ({ user }) => {
                     )}
                   </div>
                   
-                  {/* Video Player - Auto play like TV Receiver */}
+                  {/* Video Player - TV Receiver Style */}
                   <div className="relative aspect-video overflow-hidden bg-black">
+                    {/* Loading indicator */}
+                    <div className="absolute inset-0 flex items-center justify-center z-0">
+                      <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
                     <iframe
-                      key={`stream-${streamKey}-${activeSlot}`}
+                      key={streamKey}
                       src={streamUrl}
-                      className="w-full h-full pointer-events-auto"
+                      className="absolute inset-0 w-full h-full z-10"
                       style={{ 
-                        marginTop: '-60px', 
-                        height: 'calc(100% + 120px)',
-                        marginBottom: '-60px'
+                        marginTop: '-50px', 
+                        height: 'calc(100% + 100px)',
+                        marginBottom: '-50px'
                       }}
                       allowFullScreen
-                      allow="accelerometer; autoplay *; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                      referrerPolicy="no-referrer-when-downgrade"
+                      allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                     />
-                    {/* Overlay to hide YouTube logo at bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black via-black to-transparent pointer-events-none" />
+                    {/* Bottom overlay to hide branding */}
+                    <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-black to-transparent z-20 pointer-events-none" />
                   </div>
                 </div>
               </motion.div>
