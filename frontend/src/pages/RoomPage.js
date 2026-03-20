@@ -124,7 +124,7 @@ const YallaLiveRoom = ({ user }) => {
       requestsPollInterval.current = setInterval(() => {
         fetchSeatRequests();
         fetchMyInvites();
-      }, 3000); // Poll every 3 seconds for fast response
+      }, 2000); // Poll every 2 seconds for fast response
     }
     return () => {
       if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
@@ -247,7 +247,7 @@ const YallaLiveRoom = ({ user }) => {
       } catch (error) {
         console.error('Polling error:', error);
       }
-    }, 3000); // Poll every 3 seconds for fast updates
+    }, 1000); // Poll every 1 second for instant updates
   };
 
   const stopPolling = () => {
@@ -268,7 +268,7 @@ const YallaLiveRoom = ({ user }) => {
     };
     
     sendHeartbeat(); // Send immediately
-    heartbeatInterval.current = setInterval(sendHeartbeat, 10000);
+    heartbeatInterval.current = setInterval(sendHeartbeat, 5000);
   };
 
   const stopHeartbeat = () => {
