@@ -857,12 +857,12 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  // Check if screen sharing is supported (desktop browsers only)
-  const isScreenShareSupported = typeof navigator !== 'undefined' && 
+  // Camera sharing is supported on all devices
+  const isCameraSupported = typeof navigator !== 'undefined' && 
     navigator.mediaDevices && 
-    typeof navigator.mediaDevices.getDisplayMedia === 'function';
+    typeof navigator.mediaDevices.getUserMedia === 'function';
 
-  // Screen Sharing Functions
+  // Camera Sharing Functions
   const fetchScreenShares = async () => {
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/screen-shares`);
@@ -874,11 +874,12 @@ const YallaLiveRoom = ({ user }) => {
 
   const startScreenShare = async () => {
     try {
-      // Request screen sharing permission
-      const stream = await navigator.mediaDevices.getDisplayMedia({
+      // Request camera permission
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          cursor: 'always',
-          displaySurface: 'monitor'
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         },
         audio: true
       });
@@ -907,18 +908,18 @@ const YallaLiveRoom = ({ user }) => {
       setScreenShares(prev => [...prev, newShare]);
       setWatchingScreenShare(newShare);
       
-      // Handle when user stops sharing via browser UI
+      // Handle when user stops sharing
       stream.getVideoTracks()[0].onended = () => {
         stopScreenShare();
       };
       
-      toast.success('تم بدء مشاركة الشاشة');
+      toast.success('تم تشغيل الكاميرا');
     } catch (error) {
-      console.error('Screen share error:', error);
+      console.error('Camera error:', error);
       if (error.name === 'NotAllowedError') {
-        toast.error('تم رفض إذن مشاركة الشاشة');
+        toast.error('تم رفض إذن الكاميرا');
       } else {
-        toast.error('فشل بدء مشاركة الشاشة');
+        toast.error('فشل تشغيل الكاميرا');
       }
     }
   };
@@ -941,7 +942,7 @@ const YallaLiveRoom = ({ user }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      toast.success('تم إيقاف مشاركة الشاشة');
+      toast.success('تم إيقاف الكاميرا');
     } catch (error) {
       console.error('Stop screen share error:', error);
     }
@@ -1355,8 +1356,8 @@ const YallaLiveRoom = ({ user }) => {
                       : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
-                  <Monitor className="w-4 h-4" />
-                  انعكاس الشاشة
+                  <Video className="w-4 h-4" />
+                  الكاميرا
                 </motion.button>
               </div>
             )}
@@ -1420,7 +1421,7 @@ const YallaLiveRoom = ({ user }) => {
               </motion.div>
             )}
 
-            {/* Screen Mirror View - Discord Style */}
+            {/* Camera Share View - Discord Style */}
             {viewMode === 'mirror' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -1431,8 +1432,8 @@ const YallaLiveRoom = ({ user }) => {
                   {/* Header with share button */}
                   <div className="bg-slate-800 px-3 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Cast className="w-4 h-4 text-purple-400" />
-                      <span className="text-white font-cairo font-bold text-sm">انعكاس الشاشة</span>
+                      <Video className="w-4 h-4 text-purple-400" />
+                      <span className="text-white font-cairo font-bold text-sm">مشاركة الكاميرا</span>
                       {screenShares.length > 0 && (
                         <span className="bg-purple-500/30 text-purple-300 text-xs px-2 py-0.5 rounded-full">
                           {screenShares.length} نشط
@@ -1440,30 +1441,30 @@ const YallaLiveRoom = ({ user }) => {
                       )}
                     </div>
                     {/* Start/Stop Share Button */}
-                    {isScreenShareSupported ? (
+                    {isCameraSupported ? (
                       isScreenSharing ? (
                         <button 
                           onClick={stopScreenShare}
                           className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
                         >
-                          <X className="w-3 h-3" />
-                          إيقاف المشاركة
+                          <VideoOff className="w-3 h-3" />
+                          إيقاف
                         </button>
                       ) : (
                         <button 
                           onClick={startScreenShare}
                           className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
                         >
-                          <Monitor className="w-3 h-3" />
-                          شارك شاشتك
+                          <Video className="w-3 h-3" />
+                          شغّل الكاميرا
                         </button>
                       )
                     ) : (
-                      <span className="text-slate-500 text-xs font-cairo">متاح على الكمبيوتر فقط</span>
+                      <span className="text-slate-500 text-xs font-cairo">غير مدعوم</span>
                     )}
                   </div>
                   
-                  {/* Active Screen Shares List */}
+                  {/* Active Camera Shares List */}
                   {screenShares.length > 0 && (
                     <div className="flex gap-2 p-2 bg-slate-900 overflow-x-auto hide-scrollbar">
                       {screenShares.map((share) => (
@@ -1499,37 +1500,29 @@ const YallaLiveRoom = ({ user }) => {
                         }}
                         autoPlay
                         playsInline
-                        className="w-full h-full object-contain"
+                        muted={watchingScreenShare.user_id === user.id}
+                        className="w-full h-full object-cover"
                       />
                     ) : watchingScreenShare ? (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center">
                           <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                          <p className="text-slate-400 font-cairo text-sm">جاري الاتصال بشاشة {watchingScreenShare.username}...</p>
+                          <p className="text-slate-400 font-cairo text-sm">جاري الاتصال بكاميرا {watchingScreenShare.username}...</p>
                         </div>
                       </div>
                     ) : screenShares.length > 0 ? (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center p-6">
-                          <Monitor className="w-12 h-12 text-purple-400 mx-auto mb-3" />
-                          <p className="text-slate-400 font-cairo text-sm">اختر شاشة للمشاهدة من القائمة أعلاه</p>
+                          <Video className="w-12 h-12 text-purple-400 mx-auto mb-3" />
+                          <p className="text-slate-400 font-cairo text-sm">اختر كاميرا للمشاهدة من القائمة أعلاه</p>
                         </div>
                       </div>
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center p-6">
-                          <Monitor className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                          {isScreenShareSupported ? (
-                            <>
-                              <p className="text-slate-400 font-cairo text-sm mb-2">لا توجد شاشات مشاركة حالياً</p>
-                              <p className="text-slate-500 font-cairo text-xs">اضغط "شارك شاشتك" للبدء</p>
-                            </>
-                          ) : (
-                            <>
-                              <p className="text-slate-400 font-cairo text-sm mb-2">مشاركة الشاشة متاحة على الكمبيوتر فقط</p>
-                              <p className="text-slate-500 font-cairo text-xs">افتح التطبيق من متصفح الكمبيوتر لمشاركة شاشتك</p>
-                            </>
-                          )}
+                          <Video className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                          <p className="text-slate-400 font-cairo text-sm mb-2">لا توجد كاميرات نشطة</p>
+                          <p className="text-slate-500 font-cairo text-xs">اضغط "شغّل الكاميرا" للبدء</p>
                         </div>
                       </div>
                     )}
