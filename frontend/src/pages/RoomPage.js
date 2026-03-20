@@ -1105,19 +1105,22 @@ const YallaLiveRoom = ({ user }) => {
                   {isAudioMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
                 </motion.button>
                 
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={canJoinStageDirect ? handleJoinStageDirect : handleTakeSeat}
-                  disabled={pendingRequest}
-                  className={`flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold transition-all ${
-                    pendingRequest 
-                      ? 'bg-slate-800 text-slate-500' 
-                      : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30'
-                  }`}
-                >
-                  <Hand className="w-5 h-5" />
-                  <span>{pendingRequest ? 'قيد المراجعة...' : 'طلب التحدث'}</span>
-                </motion.button>
+                {/* Show speak button ONLY for Owner and Admin */}
+                {(room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') ? (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleJoinStageDirect}
+                    className="flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30"
+                  >
+                    <Mic className="w-5 h-5" />
+                    <span>صعود للمنصة</span>
+                  </motion.button>
+                ) : (
+                  <div className="flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo text-slate-400 bg-slate-800/50">
+                    <Headphones className="w-5 h-5" />
+                    <span>وضع الاستماع</span>
+                  </div>
+                )}
               </>
             )}
           </div>
