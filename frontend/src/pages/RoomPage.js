@@ -956,52 +956,54 @@ const YallaLiveRoom = ({ user }) => {
   const listeners = participants.filter(p => p.seat_number === null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-violet-950/30 to-slate-950 fixed inset-0 overflow-hidden">
-      {/* Animated Background */}
+    <div className="min-h-screen bg-slate-950 fixed inset-0 overflow-hidden">
+      {/* Stadium Background Effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-fuchsia-600/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl animate-pulse delay-500" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-64 bg-gradient-to-b from-lime-500/10 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-950 to-transparent" />
+        {/* Pitch Lines Effect */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-1/2 left-0 right-0 h-px bg-white" />
+          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-white rounded-full" />
+        </div>
       </div>
 
       <div className="w-full max-w-lg mx-auto h-[100dvh] flex flex-col relative z-10">
         
-        {/* Header */}
+        {/* Header - Stadium Style */}
         <motion.div 
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="px-4 py-3 flex items-center justify-between backdrop-blur-xl bg-slate-900/60 border-b border-white/10"
+          className="px-4 py-3 flex items-center justify-between bg-slate-900/80 backdrop-blur-xl border-b border-lime-500/20"
           style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
         >
-          {/* Left Side - Seat Requests (Owner/Admin only) & Close Button */}
+          {/* Left Side Controls */}
           <div className="flex items-center gap-2">
-            {/* Minimize - Keep audio playing */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleMinimize}
-              className="w-10 h-10 rounded-full bg-lime-500/20 backdrop-blur flex items-center justify-center border border-lime-500/30"
-              title="تصغير مع استمرار الصوت"
+              className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center border border-slate-700 transition-colors"
+              title="تصغير"
             >
               <Minimize2 className="w-5 h-5 text-lime-400" />
             </motion.button>
             
-            {/* Full Leave */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleFullLeave}
-              className="w-10 h-10 rounded-full bg-red-500/20 backdrop-blur flex items-center justify-center border border-red-500/30"
-              title="مغادرة الغرفة"
+              className="w-10 h-10 rounded-xl bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center border border-red-500/30 transition-colors"
+              title="مغادرة"
             >
               <X className="w-5 h-5 text-red-400" />
             </motion.button>
             
-            {/* Seat Requests Badge - Owner & Admin only */}
             {(room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') && seatRequests.length > 0 && (
               <motion.button
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 onClick={() => setShowSeatRequestsModal(true)}
-                className="flex items-center gap-1.5 bg-amber-500/30 border border-amber-500/50 px-3 py-1.5 rounded-full"
+                className="flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/40 px-3 py-1.5 rounded-xl"
                 data-testid="seat-requests-button"
               >
                 <Hand className="w-4 h-4 text-amber-400" />
@@ -1012,16 +1014,16 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Room Info - Center */}
           <div className="flex-1 mx-2 text-center">
-            <h1 className="text-white font-cairo font-bold text-base truncate">{room?.title || 'الغرفة'}</h1>
+            <h1 className="text-white font-cairo font-bold text-lg">{room?.title || 'الغرفة'}</h1>
             <motion.button
               onClick={() => setShowConnectedList(!showConnectedList)}
               className="flex items-center justify-center gap-2 mx-auto mt-1"
             >
-              <div className="flex items-center gap-1.5 bg-gradient-to-r from-violet-600/40 to-fuchsia-600/40 backdrop-blur px-3 py-1 rounded-full border border-violet-400/30">
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-white font-bold text-sm">{participants.length}</span>
-                <span className="text-violet-200 text-xs">متصل</span>
-                <ChevronDown className={`w-3 h-3 text-violet-300 transition-transform ${showConnectedList ? 'rotate-180' : ''}`} />
+              <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1 rounded-full border border-lime-500/30">
+                <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+                <span className="text-lime-400 font-bold text-sm">{participants.length}</span>
+                <span className="text-slate-400 text-xs">متصل</span>
+                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${showConnectedList ? 'rotate-180' : ''}`} />
               </div>
             </motion.button>
           </div>
@@ -1031,9 +1033,9 @@ const YallaLiveRoom = ({ user }) => {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setShowRoomSettings(true)}
-              className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/30"
+              className="w-10 h-10 rounded-xl bg-lime-500 hover:bg-lime-400 flex items-center justify-center shadow-lg shadow-lime-500/30 transition-colors"
             >
-              <Settings className="w-5 h-5 text-white" />
+              <Settings className="w-5 h-5 text-slate-900" />
             </motion.button>
           )}
           {!isOwner && <div className="w-10" />}
@@ -1191,13 +1193,16 @@ const YallaLiveRoom = ({ user }) => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="px-4 py-6"
+          className="px-4 py-4"
         >
-          {/* Main Stage Glass Card */}
-          <div className="relative bg-gradient-to-br from-violet-900/40 via-slate-900/60 to-fuchsia-900/40 backdrop-blur-xl rounded-3xl border border-violet-500/30 p-6 shadow-2xl">
-            {/* Decorative Elements */}
-            <div className="absolute top-2 right-2">
-              <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
+          {/* Main Stage Card - Stadium Style */}
+          <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-800 p-4 shadow-xl">
+            {/* Live indicator */}
+            <div className="absolute top-3 right-3">
+              <div className="flex items-center gap-1.5 bg-red-500/20 px-2 py-1 rounded-full border border-red-500/30">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-red-400 text-xs font-bold">LIVE</span>
+              </div>
             </div>
             
             {/* Toggle View Buttons when stream is active */}
@@ -1206,10 +1211,10 @@ const YallaLiveRoom = ({ user }) => {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setViewMode('mics')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-cairo font-bold text-sm transition-all ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
                     viewMode === 'mics' 
-                      ? 'bg-lime-500 text-black' 
-                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                      ? 'bg-lime-500 text-slate-900 shadow-lg shadow-lime-500/30' 
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
                   <Mic className="w-4 h-4" />
@@ -1218,10 +1223,10 @@ const YallaLiveRoom = ({ user }) => {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setViewMode('stream')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-cairo font-bold text-sm transition-all ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
                     viewMode === 'stream' 
-                      ? 'bg-violet-500 text-white' 
-                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                      ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' 
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
                   <Tv className="w-4 h-4" />
@@ -1230,54 +1235,52 @@ const YallaLiveRoom = ({ user }) => {
               </div>
             )}
 
-            {/* Stream View - Shows when user selects stream */}
+            {/* Stream View */}
             {streamActive && streamUrl && viewMode === 'stream' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="mb-4"
               >
-                <div className="bg-black rounded-2xl overflow-hidden border border-violet-500/50 shadow-2xl shadow-violet-500/20">
-                  {/* Stream Header with Channel Switcher */}
-                  <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
-                      </div>
-                      {user.role === 'owner' && (
-                        <button onClick={handleStopStream} className="text-white/80 hover:text-white">
-                          <X className="w-5 h-5" />
-                        </button>
-                      )}
+                <div className="bg-slate-950 rounded-xl overflow-hidden border border-slate-700">
+                  {/* Stream Header */}
+                  <div className="bg-slate-800 px-3 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                      <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
                     </div>
-                    
-                    {/* Channel Buttons - Owner Only */}
-                    {isOwner && (
-                      <div className="flex gap-1 overflow-x-auto hide-scrollbar">
-                        {[1, 2, 3, 4, 5].map((slot) => (
-                          <motion.button
-                            key={slot}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => streamSlots[slot] && handlePlaySlot(slot)}
-                            disabled={!streamSlots[slot]}
-                            className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-cairo font-bold transition-all ${
-                              activeSlot === slot
-                                ? 'bg-white text-violet-600'
-                                : streamSlots[slot]
-                                ? 'bg-white/20 text-white hover:bg-white/30'
-                                : 'bg-white/5 text-white/30 cursor-not-allowed'
-                            }`}
-                          >
-                            قناة {slot}
-                          </motion.button>
-                        ))}
-                      </div>
+                    {user.role === 'owner' && (
+                      <button onClick={handleStopStream} className="text-slate-400 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                      </button>
                     )}
                   </div>
                   
-                  {/* Video Player - Auto plays like TV receiver */}
-                  <div className="relative aspect-video bg-black rounded-xl overflow-hidden">
+                  {/* Channel Buttons - Owner Only */}
+                  {isOwner && (
+                    <div className="flex gap-2 p-2 bg-slate-900 overflow-x-auto hide-scrollbar">
+                      {[1, 2, 3, 4, 5].map((slot) => (
+                        <motion.button
+                          key={slot}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => streamSlots[slot] && handlePlaySlot(slot)}
+                          disabled={!streamSlots[slot]}
+                          className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-cairo font-bold transition-all ${
+                            activeSlot === slot
+                              ? 'bg-lime-500 text-slate-900'
+                              : streamSlots[slot]
+                              ? 'bg-slate-700 text-white hover:bg-slate-600'
+                              : 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                          }`}
+                        >
+                          قناة {slot}
+                        </motion.button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Video Player */}
+                  <div className="relative aspect-video bg-black">
                     <iframe
                       key={`video-${streamKey}`}
                       src={streamUrl}
@@ -1293,7 +1296,7 @@ const YallaLiveRoom = ({ user }) => {
 
             {/* Speakers Grid - Shows when no stream or user selects mics */}
             {(!streamActive || viewMode === 'mics') && (
-              <div className="flex justify-center gap-4 flex-wrap">
+              <div className="flex justify-center gap-3 flex-wrap pt-2">
               {speakers.length > 0 ? speakers.map((seat, index) => (
                 <motion.div
                   key={seat.seat_number}
@@ -1315,16 +1318,16 @@ const YallaLiveRoom = ({ user }) => {
                       <motion.div 
                         animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
-                        className="absolute inset-0 rounded-full bg-gradient-to-r from-green-400 to-emerald-400 blur-lg"
+                        className="absolute inset-0 rounded-full bg-lime-500 blur-lg"
                       />
                     )}
                     
-                    <div className={`relative w-20 h-20 rounded-full overflow-hidden border-4 transition-all ${
+                    <div className={`relative w-16 h-16 rounded-full overflow-hidden border-3 transition-all ${
                       seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
-                        ? 'border-green-400 shadow-lg shadow-green-400/50'
+                        ? 'border-lime-400 shadow-lg shadow-lime-400/50'
                         : seat.user.is_muted
                         ? 'border-red-500'
-                        : 'border-violet-500/50'
+                        : 'border-slate-600'
                     }`}>
                       <img src={seat.user.avatar} alt={seat.user.username} className="w-full h-full object-cover" />
                     </div>
@@ -1455,24 +1458,24 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         </div>
 
-        {/* Bottom Control Bar */}
+        {/* Bottom Control Bar - Stadium Style */}
         <motion.div 
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-slate-900/80 backdrop-blur-xl border-t border-white/10 px-4 py-3"
+          className="bg-slate-900 border-t border-slate-800 px-4 py-3"
           style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
         >
           {/* Main Controls */}
           <div className="flex items-center gap-3">
-            {/* Audio Mute Button - Always visible */}
+            {/* Audio Mute Button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsAudioMuted(!isAudioMuted)}
-              className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
-                isAudioMuted ? 'bg-red-500 shadow-red-500/30' : 'bg-slate-700'
+              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                isAudioMuted ? 'bg-red-500' : 'bg-slate-800 border border-slate-700'
               }`}
             >
-              {isAudioMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
+              {isAudioMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-slate-300" />}
             </motion.button>
 
             {/* Mic/Stage Controls */}
@@ -1481,41 +1484,39 @@ const YallaLiveRoom = ({ user }) => {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={toggleMic}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
                     isMicOn 
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 shadow-green-500/30' 
-                      : 'bg-slate-700'
+                      ? 'bg-lime-500 shadow-lg shadow-lime-500/30' 
+                      : 'bg-slate-800 border border-slate-700'
                   }`}
                 >
-                  {isMicOn ? <Mic className="w-6 h-6 text-white" /> : <MicOff className="w-6 h-6 text-white" />}
+                  {isMicOn ? <Mic className="w-5 h-5 text-slate-900" /> : <MicOff className="w-5 h-5 text-slate-300" />}
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={handleLeaveSeat}
-                  className="w-12 h-12 rounded-full bg-gradient-to-r from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30"
+                  className="w-12 h-12 rounded-xl bg-red-500 flex items-center justify-center"
                 >
-                  <SignOut className="w-6 h-6 text-white" />
+                  <SignOut className="w-5 h-5 text-white" />
                 </motion.button>
                 <div className="flex-1 text-center">
-                  <span className="text-green-400 font-cairo font-bold text-sm">أنت على المنصة</span>
+                  <span className="text-lime-400 font-cairo font-bold text-sm">أنت على المنصة</span>
                 </div>
               </>
             ) : (
               <>
-                {/* Show speak button ONLY for Owner and Admin */}
                 {(room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') ? (
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={handleJoinStageDirect}
-                    className="flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30"
+                    className="flex-1 py-3 rounded-xl flex items-center justify-center gap-2 font-cairo font-bold bg-lime-500 text-slate-900 shadow-lg shadow-lime-500/30"
                   >
                     <Mic className="w-5 h-5" />
                     <span>صعود للمنصة</span>
                   </motion.button>
                 ) : (
-                  /* Regular users can request to speak */
                   pendingRequest ? (
-                    <div className="flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo text-amber-400 bg-amber-500/20 border border-amber-500/50">
+                    <div className="flex-1 py-3 rounded-xl flex items-center justify-center gap-2 font-cairo text-amber-400 bg-amber-500/20 border border-amber-500/40">
                       <Hand className="w-5 h-5 animate-pulse" />
                       <span>في انتظار الموافقة...</span>
                     </div>
@@ -1523,7 +1524,7 @@ const YallaLiveRoom = ({ user }) => {
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={handleTakeSeat}
-                      className="flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30"
+                      className="flex-1 py-3 rounded-xl flex items-center justify-center gap-2 font-cairo font-bold bg-sky-500 text-white shadow-lg shadow-sky-500/30"
                     >
                       <Hand className="w-5 h-5" />
                       <span>طلب التحدث</span>
@@ -1540,13 +1541,13 @@ const YallaLiveRoom = ({ user }) => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="اكتب رسالة..."
-              className="flex-1 bg-white/10 border-white/20 focus:border-violet-400 rounded-full text-white placeholder:text-slate-400 h-11"
+              className="flex-1 bg-slate-800 border-slate-700 focus:border-lime-500 rounded-xl text-white placeholder:text-slate-500 h-11"
               dir="rtl"
             />
             <Button
               type="submit"
               disabled={!newMessage.trim()}
-              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-full w-11 h-11 p-0"
+              className="bg-lime-500 hover:bg-lime-400 text-slate-900 rounded-xl w-11 h-11 p-0"
             >
               <Send className="w-5 h-5" />
             </Button>
