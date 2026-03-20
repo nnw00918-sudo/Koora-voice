@@ -208,6 +208,7 @@ class RoomFull(BaseModel):
     is_closed: bool = False
     total_seats: int = 12
     participant_count: int = 0
+    member_count: int = 0
     created_at: str
 
 class RoomCreate(BaseModel):
@@ -669,9 +670,20 @@ async def get_rooms(category: Optional[str] = None):
     counts_list = await counts_cursor.to_list(100)
     counts_map = {c["_id"]: c["count"] for c in counts_list}
     
-    # Add participant count to each room
+    # Batch count members using aggregation
+    member_pipeline = [
+        {"$match": {"room_id": {"$in": room_ids}}},
+        {"$group": {"_id": "$room_id", "count": {"$sum": 1}}}
+    ]
+    member_counts_cursor = db.room_members.aggregate(member_pipeline)
+    member_counts_list = await member_counts_cursor.to_list(100)
+    member_counts_map = {c["_id"]: c["count"] for c in member_counts_list}
+    
+    # Add counts to each room
     for room in rooms:
         room["participant_count"] = counts_map.get(room["id"], 0)
+        # Member count includes the owner (+1)
+        room["member_count"] = member_counts_map.get(room["id"], 0) + 1
     
     return [RoomFull(**r) for r in rooms]
 
@@ -759,13 +771,129 @@ async def get_room(room_id: str):
     count = await db.room_participants.count_documents({"room_id": room_id})
     room["participant_count"] = count
     
+    # Get member count
+    member_count = await db.room_members.count_documents({"room_id": room_id})
+    room["member_count"] = member_count
+    
     return RoomFull(**room)
 
-@api_router.post("/rooms/{room_id}/join")
-async def join_room(room_id: str, current_user: User = Depends(get_current_user)):
+# ============ Room Membership System ============
+
+@api_router.post("/rooms/{room_id}/membership/join")
+async def join_room_membership(room_id: str, current_user: User = Depends(get_current_user)):
+    """Join a room as a member (subscribe to the room)"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check if already a member
+    existing = await db.room_members.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="أنت عضو في هذه الغرفة بالفعل")
+    
+    # Add as member
+    member_doc = {
+        "room_id": room_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "joined_at": datetime.now(timezone.utc).isoformat(),
+        "role": "member"  # member, admin, mod
+    }
+    await db.room_members.insert_one(member_doc)
+    
+    # Update member count
+    member_count = await db.room_members.count_documents({"room_id": room_id})
+    
+    return {"message": "تم الانضمام للغرفة بنجاح", "member_count": member_count}
+
+@api_router.post("/rooms/{room_id}/membership/leave")
+async def leave_room_membership(room_id: str, current_user: User = Depends(get_current_user)):
+    """Leave a room membership"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Room owner cannot leave
+    if room["owner_id"] == current_user.id:
+        raise HTTPException(status_code=400, detail="لا يمكن لصاحب الغرفة مغادرة العضوية")
+    
+    result = await db.room_members.delete_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=400, detail="أنت لست عضواً في هذه الغرفة")
+    
+    return {"message": "تم إلغاء العضوية بنجاح"}
+
+@api_router.get("/rooms/{room_id}/membership/check")
+async def check_room_membership(room_id: str, current_user: User = Depends(get_current_user)):
+    """Check if user is a member of the room"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Room owner is always a member
+    if room["owner_id"] == current_user.id:
+        return {"is_member": True, "role": "owner"}
+    
+    member = await db.room_members.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    
+    if member:
+        return {"is_member": True, "role": member.get("role", "member")}
+    
+    return {"is_member": False, "role": None}
+
+@api_router.get("/rooms/{room_id}/members")
+async def get_room_members(room_id: str, current_user: User = Depends(get_current_user)):
+    """Get list of room members"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    members = await db.room_members.find({"room_id": room_id}, {"_id": 0}).to_list(1000)
+    
+    # Add room owner to the list
+    owner = await db.users.find_one({"id": room["owner_id"]}, {"_id": 0, "password": 0})
+    if owner:
+        owner_member = {
+            "room_id": room_id,
+            "user_id": owner["id"],
+            "username": owner["username"],
+            "avatar": owner.get("avatar"),
+            "role": "owner"
+        }
+        members.insert(0, owner_member)
+    
+    return {"members": members, "count": len(members)}
+
+# ============ End Room Membership System ============
+
+@api_router.post("/rooms/{room_id}/join")
+async def join_room(room_id: str, current_user: User = Depends(get_current_user)):
+    """Join a room session (enter the room) - requires membership"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check if user is owner or member
+    is_owner = room["owner_id"] == current_user.id
+    is_member = await db.room_members.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    
+    if not is_owner and not is_member:
+        raise HTTPException(status_code=403, detail="يجب أن تكون عضواً في الغرفة للدخول")
     
     existing = await db.room_participants.find_one({
         "room_id": room_id,
@@ -786,7 +914,7 @@ async def join_room(room_id: str, current_user: User = Depends(get_current_user)
         }
         await db.room_participants.insert_one(participant_doc)
     
-    return {"message": "انضممت للغرفة بنجاح"}
+    return {"message": "دخلت الغرفة بنجاح"}
 
 @api_router.post("/rooms/{room_id}/seat/request")
 async def request_seat(room_id: str, current_user: User = Depends(get_current_user)):

@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Users, LogOut, Shield, Home, Trophy, Settings, MessageSquare, User, Lock, Unlock, Search, X } from 'lucide-react';
+import { Users, LogOut, Shield, Home, Trophy, Settings, MessageSquare, User, Lock, Unlock, Search, X, UserPlus, Check } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -21,8 +21,11 @@ const DashboardPage = ({ user, onLogout }) => {
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'live', 'closed'
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [membershipStatus, setMembershipStatus] = useState({}); // {roomId: {is_member, role}}
+  const [joiningRoom, setJoiningRoom] = useState(null);
 
   const isRTL = language === 'ar';
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     fetchRooms();
@@ -67,6 +70,26 @@ const DashboardPage = ({ user, onLogout }) => {
       const params = selectedCategory ? { category: selectedCategory } : {};
       const response = await axios.get(`${API}/rooms`, { params });
       setRooms(response.data);
+      
+      // Check membership status for each room
+      if (token) {
+        const membershipPromises = response.data.map(async (room) => {
+          try {
+            const memberRes = await axios.get(`${API}/rooms/${room.id}/membership/check`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            return { roomId: room.id, ...memberRes.data };
+          } catch {
+            return { roomId: room.id, is_member: false, role: null };
+          }
+        });
+        const membershipResults = await Promise.all(membershipPromises);
+        const statusMap = {};
+        membershipResults.forEach(m => {
+          statusMap[m.roomId] = { is_member: m.is_member, role: m.role };
+        });
+        setMembershipStatus(statusMap);
+      }
     } catch (error) {
       toast.error(isRTL ? 'فشل تحميل الغرف' : 'Failed to load rooms');
     } finally {
@@ -74,7 +97,33 @@ const DashboardPage = ({ user, onLogout }) => {
     }
   };
 
+  const handleJoinMembership = async (roomId, e) => {
+    e.stopPropagation();
+    setJoiningRoom(roomId);
+    try {
+      await axios.post(`${API}/rooms/${roomId}/membership/join`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(isRTL ? 'تم الانضمام للغرفة بنجاح!' : 'Joined room successfully!');
+      setMembershipStatus(prev => ({
+        ...prev,
+        [roomId]: { is_member: true, role: 'member' }
+      }));
+      // Refresh rooms to get updated member count
+      fetchRooms();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || (isRTL ? 'فشل الانضمام' : 'Failed to join'));
+    } finally {
+      setJoiningRoom(null);
+    }
+  };
+
   const handleRoomClick = (roomId) => {
+    const membership = membershipStatus[roomId];
+    if (!membership?.is_member) {
+      toast.error(isRTL ? 'يجب أن تنضم للغرفة أولاً' : 'You must join the room first');
+      return;
+    }
     navigate(`/room/${roomId}`);
   };
 
@@ -320,14 +369,29 @@ const DashboardPage = ({ user, onLogout }) => {
                       <Users className="w-3 h-3 sm:w-4 sm:h-4 text-lime-400" strokeWidth={2} />
                       <span className="text-white font-chivo font-bold text-xs sm:text-sm">{room.participant_count || 0}</span>
                     </div>
+                    
+                    {/* Member Count Badge */}
+                    <div className={`absolute bottom-2 sm:bottom-4 ${isRTL ? 'right-2 sm:right-4' : 'left-2 sm:left-4'} flex items-center gap-1 sm:gap-1.5 bg-violet-500/80 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full`}>
+                      <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 text-white" strokeWidth={2} />
+                      <span className="text-white font-chivo font-bold text-xs sm:text-sm">{room.member_count || 1}</span>
+                      <span className="text-white/70 text-[10px] sm:text-xs">{isRTL ? 'عضو' : 'members'}</span>
+                    </div>
                   </div>
 
                   {/* Content */}
                   <div className="p-3 sm:p-4">
-                    {/* Category */}
-                    <span className="inline-block px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-lime-400/20 text-lime-400 text-[10px] sm:text-xs font-cairo font-bold mb-1.5 sm:mb-2">
-                      {room.category}
-                    </span>
+                    {/* Category & Membership Status */}
+                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                      <span className="inline-block px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-lime-400/20 text-lime-400 text-[10px] sm:text-xs font-cairo font-bold">
+                        {room.category}
+                      </span>
+                      {membershipStatus[room.id]?.is_member && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px] sm:text-xs font-cairo">
+                          <Check className="w-3 h-3" />
+                          {isRTL ? 'عضو' : 'Member'}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Title */}
                     <h3 className={`text-base sm:text-lg md:text-xl font-cairo font-black text-white mb-1.5 sm:mb-2 ${isRTL ? 'text-right' : 'text-left'} line-clamp-2`}>
@@ -354,13 +418,30 @@ const DashboardPage = ({ user, onLogout }) => {
                         </div>
                       </div>
 
-                      {/* Join Button */}
-                      <Button
-                        onClick={() => handleRoomClick(room.id)}
-                        className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm"
-                      >
-                        {t('joinNow')}
-                      </Button>
+                      {/* Join/Enter Button */}
+                      {membershipStatus[room.id]?.is_member ? (
+                        <Button
+                          onClick={() => handleRoomClick(room.id)}
+                          className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm"
+                        >
+                          {isRTL ? 'دخول' : 'Enter'}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={(e) => handleJoinMembership(room.id, e)}
+                          disabled={joiningRoom === room.id}
+                          className="bg-violet-500 hover:bg-violet-400 text-white font-cairo font-bold px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm flex items-center gap-1.5"
+                        >
+                          {joiningRoom === room.id ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <UserPlus className="w-3.5 h-3.5" />
+                              {isRTL ? 'انضمام' : 'Join'}
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </motion.div>
