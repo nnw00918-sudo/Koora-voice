@@ -96,14 +96,12 @@ const YallaLiveRoom = ({ user }) => {
   const [myInvites, setMyInvites] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [showReactions, setShowReactions] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(null);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [selectedPromoteUser, setSelectedPromoteUser] = useState(null);
   const [showParticipants, setShowParticipants] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showConnectedList, setShowConnectedList] = useState(false);
-  const [showChat, setShowChat] = useState(true);
   const [showSeatRequestsModal, setShowSeatRequestsModal] = useState(false);
   
   // Stream states
@@ -868,15 +866,6 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  const sendReaction = async (emoji) => {
-    try {
-      await axios.post(`${API}/rooms/${roomId}/messages`, { content: emoji }, { headers: { Authorization: `Bearer ${token}` } });
-      fetchMessages();
-    } catch (error) {
-      console.error('Failed to send reaction');
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-violet-950/20 to-slate-950 flex items-center justify-center">
@@ -1344,71 +1333,52 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         </motion.div>
 
-        {/* Chat Section */}
-        <div className="flex-1 flex flex-col min-h-0 px-4">
-          {/* Chat Toggle */}
-          <button 
-            onClick={() => setShowChat(!showChat)}
-            className="flex items-center justify-center gap-2 py-2 text-violet-300 hover:text-white transition-colors"
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span className="text-sm font-almarai">الدردشة</span>
-            {showChat ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-          </button>
+        {/* Chat Section - Always visible with fixed height */}
+        <div className="px-4 pb-2">
+          {/* Messages - Always shown with max height */}
+          <div className="overflow-y-auto space-y-2 max-h-32 hide-scrollbar bg-slate-900/50 rounded-xl p-2">
+            {messages.slice(-10).map((message, index) => {
+              const isOwnMessage = message.user_id === user.id;
+              // Check if message is a single emoji (including compound emojis like ❤️)
+              const emojiRegex = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200D(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
+              const isEmoji = emojiRegex.test(message.content);
+              
+              if (isEmoji) {
+                return (
+                  <motion.div 
+                    key={message.id}
+                    initial={{ scale: 0, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    className="flex justify-center"
+                  >
+                    <span className="text-2xl">{message.content}</span>
+                  </motion.div>
+                );
+              }
 
-          {/* Messages */}
-          <AnimatePresence>
-            {showChat && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="flex-1 overflow-y-auto space-y-2 pb-2 hide-scrollbar"
-              >
-                {messages.slice(-20).map((message, index) => {
-                  const isOwnMessage = message.user_id === user.id;
-                  // Check if message is a single emoji (including compound emojis like ❤️)
-                  const emojiRegex = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200D(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
-                  const isEmoji = emojiRegex.test(message.content);
-                  
-                  if (isEmoji) {
-                    return (
-                      <motion.div 
-                        key={message.id}
-                        initial={{ scale: 0, y: 20 }}
-                        animate={{ scale: 1, y: 0 }}
-                        className="flex justify-center"
-                      >
-                        <span className="text-4xl">{message.content}</span>
-                      </motion.div>
-                    );
-                  }
-
-                  return (
-                    <motion.div 
-                      key={message.id}
-                      initial={{ opacity: 0, x: isOwnMessage ? 20 : -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className={`flex gap-2 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
-                    >
-                      <img src={message.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
-                      <div className={`max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                        <p className={`text-xs text-slate-400 mb-1 ${isOwnMessage ? 'text-right' : ''}`}>{message.username}</p>
-                        <div className={`px-4 py-2 rounded-2xl ${
-                          isOwnMessage 
-                            ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white' 
-                            : 'bg-white/10 text-white'
-                        }`}>
-                          <p className="text-sm font-almarai">{message.content}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-                <div ref={messagesEndRef} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+              return (
+                <motion.div 
+                  key={message.id}
+                  initial={{ opacity: 0, x: isOwnMessage ? 20 : -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className={`flex gap-2 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
+                >
+                  <img src={message.avatar} alt="" className="w-6 h-6 rounded-full flex-shrink-0" />
+                  <div className={`max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                    <p className={`text-xs text-slate-400 mb-0.5 ${isOwnMessage ? 'text-right' : ''}`}>{message.username}</p>
+                    <div className={`px-3 py-1.5 rounded-xl text-xs ${
+                      isOwnMessage 
+                        ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white' 
+                        : 'bg-white/10 text-white'
+                    }`}>
+                      <p className="font-almarai">{message.content}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         {/* Bottom Control Bar */}
@@ -1418,20 +1388,6 @@ const YallaLiveRoom = ({ user }) => {
           className="bg-slate-900/80 backdrop-blur-xl border-t border-white/10 px-4 py-3"
           style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
         >
-          {/* Quick Reactions */}
-          <div className="flex justify-center gap-2 mb-3">
-            {['❤️', '🔥', '👏', '😂', '🎉', '💯'].map((emoji) => (
-              <motion.button
-                key={emoji}
-                whileTap={{ scale: 0.8 }}
-                onClick={() => sendReaction(emoji)}
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-              >
-                <span className="text-lg">{emoji}</span>
-              </motion.button>
-            ))}
-          </div>
-
           {/* Main Controls */}
           <div className="flex items-center gap-3">
             {/* Audio Mute Button - Always visible */}
