@@ -1738,14 +1738,17 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
     stream_url = stream_data.url.strip()
     embed_url = stream_url
     
-    # YouTube URL conversion
-    if "youtube.com/watch" in stream_url or "youtu.be" in stream_url:
+    # YouTube URL conversion (including live streams)
+    if "youtube.com/watch" in stream_url or "youtu.be" in stream_url or "youtube.com/live" in stream_url:
+        video_id = ""
         if "youtube.com/watch" in stream_url:
             video_id = stream_url.split("v=")[1].split("&")[0] if "v=" in stream_url else ""
+        elif "youtube.com/live" in stream_url:
+            video_id = stream_url.split("/live/")[1].split("?")[0] if "/live/" in stream_url else ""
         else:
             video_id = stream_url.split("/")[-1].split("?")[0]
         if video_id:
-            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1"
+            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0"
     
     # Twitch URL conversion
     elif "twitch.tv" in stream_url:
