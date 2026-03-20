@@ -722,6 +722,20 @@ const YallaLiveRoom = ({ user }) => {
                             </button>
                           )}
                           
+                          {/* Remove from Stage Button - Owner & Admin (only for speakers) */}
+                          {canKickMuteUser && isSpeaker && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveFromStage(odId);
+                              }}
+                              className="w-9 h-9 rounded-full bg-orange-500 hover:bg-orange-600 flex items-center justify-center transition-colors"
+                              title="إنزال من المنصة"
+                            >
+                              <ArrowDownCircle className="w-4 h-4 text-white" />
+                            </button>
+                          )}
+                          
                           {/* Promote Button - ONLY Owner */}
                           {canPromoteDemote && (
                             <button
