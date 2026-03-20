@@ -38,14 +38,15 @@ const MatchesPage = () => {
   const [loadingFixtures, setLoadingFixtures] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
-  const [selectedDateIndex, setSelectedDateIndex] = useState(2);
+  const [selectedDateIndex, setSelectedDateIndex] = useState(7); // Start at today
   const pollInterval = useRef(null);
+  const calendarRef = useRef(null);
 
-  // Generate calendar dates
+  // Generate calendar dates - 30 days (7 past + 23 future)
   const getCalendarDates = () => {
     const dates = [];
     const today = new Date();
-    for (let i = -2; i <= 5; i++) {
+    for (let i = -7; i <= 30; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       dates.push(date);
@@ -54,6 +55,7 @@ const MatchesPage = () => {
   };
 
   const calendarDates = getCalendarDates();
+  const todayIndex = 7; // Index of today in the array
 
   const formatDateForAPI = (date) => {
     const year = date.getFullYear();
@@ -65,6 +67,16 @@ const MatchesPage = () => {
   useEffect(() => {
     fetchLeagues();
     fetchFixturesForDate(calendarDates[selectedDateIndex]);
+    
+    // Scroll to today in calendar
+    setTimeout(() => {
+      if (calendarRef.current) {
+        const todayButton = calendarRef.current.children[7]; // Index 7 is today
+        if (todayButton) {
+          todayButton.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }
+    }, 100);
     
     pollInterval.current = setInterval(() => {
       if (activeTab === 'matches') {
@@ -180,11 +192,15 @@ const MatchesPage = () => {
 
   const formatDayName = (date, index) => {
     const today = new Date();
-    const diffDays = Math.floor((date - today) / (1000 * 60 * 60 * 24));
+    today.setHours(0, 0, 0, 0);
+    const compareDate = new Date(date);
+    compareDate.setHours(0, 0, 0, 0);
     
-    if (index === 2) return 'اليوم';
-    if (index === 3) return 'غداً';
-    if (index === 1) return 'أمس';
+    const diffDays = Math.round((compareDate - today) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'اليوم';
+    if (diffDays === 1) return 'غداً';
+    if (diffDays === -1) return 'أمس';
     
     const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
     return days[date.getDay()];
@@ -289,7 +305,7 @@ const MatchesPage = () => {
               </div>
               
               {/* Date Buttons */}
-              <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+              <div ref={calendarRef} className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
                 {calendarDates.map((date, i) => {
                   const hijri = getHijriDate(date);
                   return (
