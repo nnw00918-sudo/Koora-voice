@@ -14,6 +14,7 @@ const AuthPage = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    identifier: '',  // Can be email or username for login
     email: '',
     password: '',
     username: ''
@@ -26,8 +27,8 @@ const AuthPage = ({ onLogin }) => {
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
       const payload = isLogin
-        ? { email: formData.email, password: formData.password }
-        : formData;
+        ? { identifier: formData.identifier, password: formData.password }
+        : { email: formData.email, password: formData.password, username: formData.username };
 
       const response = await axios.post(`${API}${endpoint}`, payload);
       const { access_token, user } = response.data;
@@ -91,25 +92,47 @@ const AuthPage = ({ onLogin }) => {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-300 font-almarai text-right block">
-                  البريد الإلكتروني
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute right-3 top-3 w-5 h-5 text-slate-500" strokeWidth={1.5} />
-                  <Input
-                    data-testid="email-input"
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="bg-slate-900 border-slate-700 focus:border-lime-400 rounded-lg text-white pr-10 text-right font-almarai"
-                    placeholder="example@email.com"
-                    required
-                    dir="rtl"
-                  />
+              {isLogin ? (
+                <div className="space-y-2">
+                  <Label htmlFor="identifier" className="text-slate-300 font-almarai text-right block">
+                    اسم المستخدم أو البريد الإلكتروني
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute right-3 top-3 w-5 h-5 text-slate-500" strokeWidth={1.5} />
+                    <Input
+                      data-testid="identifier-input"
+                      id="identifier"
+                      type="text"
+                      value={formData.identifier}
+                      onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                      className="bg-slate-900 border-slate-700 focus:border-lime-400 rounded-lg text-white pr-10 text-right font-almarai"
+                      placeholder="اسم المستخدم أو البريد الإلكتروني"
+                      required
+                      dir="rtl"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-slate-300 font-almarai text-right block">
+                    البريد الإلكتروني
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute right-3 top-3 w-5 h-5 text-slate-500" strokeWidth={1.5} />
+                    <Input
+                      data-testid="email-input"
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="bg-slate-900 border-slate-700 focus:border-lime-400 rounded-lg text-white pr-10 text-right font-almarai"
+                      placeholder="example@email.com"
+                      required
+                      dir="rtl"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-slate-300 font-almarai text-right block">

@@ -94,7 +94,7 @@ class UserRegister(BaseModel):
     name: Optional[str] = None  # Display name
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    identifier: str  # Can be email or username
     password: str
 
 class User(BaseModel):
@@ -323,9 +323,20 @@ async def register(user_data: UserRegister):
 
 @api_router.post("/auth/login", response_model=Token)
 async def login(user_data: UserLogin):
-    user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    # Check if identifier is email or username
+    identifier = user_data.identifier.strip().lower()
+    
+    # Try to find user by email or username
+    user = await db.users.find_one(
+        {"$or": [
+            {"email": identifier},
+            {"username": identifier}
+        ]},
+        {"_id": 0}
+    )
+    
     if not user or not verify_password(user_data.password, user["password"]):
-        raise HTTPException(status_code=401, detail="البريد الإلكتروني أو كلمة المرور غير صحيحة")
+        raise HTTPException(status_code=401, detail="اسم المستخدم/البريد الإلكتروني أو كلمة المرور غير صحيحة")
     
     access_token = create_access_token(data={"sub": user["id"]})
     user_obj = User(**{k: v for k, v in user.items() if k != "password"})
