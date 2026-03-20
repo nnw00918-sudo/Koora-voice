@@ -898,8 +898,12 @@ async def join_room(room_id: str, current_user: User = Depends(get_current_user)
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    # Check if user is owner or member
+    # Check if room is closed (only owner can enter closed rooms)
     is_owner = room["owner_id"] == current_user.id
+    if room.get("is_closed", False) and not is_owner:
+        raise HTTPException(status_code=403, detail="الغرفة مغلقة حالياً")
+    
+    # Check if user is owner or member
     is_member = await db.room_members.find_one({
         "room_id": room_id,
         "user_id": current_user.id
@@ -1607,13 +1611,14 @@ async def delete_room(room_id: str):
 
 @api_router.post("/admin/rooms/{room_id}/toggle")
 async def toggle_room(room_id: str, current_user: User = Depends(get_current_user)):
-    """Toggle room open/closed status - Owner only"""
-    if current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="صلاحيات Owner مطلوبة لإغلاق/فتح الغرف")
-    
+    """Toggle room open/closed status - Room Owner only"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Only room owner can toggle
+    if room["owner_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه إغلاق/فتح الغرفة")
     
     new_status = not room.get("is_closed", False)
     await db.rooms.update_one(
@@ -1626,13 +1631,14 @@ async def toggle_room(room_id: str, current_user: User = Depends(get_current_use
 
 @api_router.delete("/admin/rooms/{room_id}")
 async def delete_room(room_id: str, current_user: User = Depends(get_current_user)):
-    """Delete a room completely - Owner only"""
-    if current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="صلاحيات Owner مطلوبة لحذف الغرف")
-    
+    """Delete a room completely - Room Owner only"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Only room owner can delete
+    if room["owner_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه حذف الغرفة")
     
     # Delete room and all related data
     await db.rooms.delete_one({"id": room_id})
