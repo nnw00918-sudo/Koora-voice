@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { toHijri } from 'hijri-converter';
 import { 
   Trophy, 
   Calendar,
@@ -189,6 +190,30 @@ const MatchesPage = () => {
     return days[date.getDay()];
   };
 
+  // Convert to Hijri date
+  const getHijriDate = (date) => {
+    const hijri = toHijri(date.getFullYear(), date.getMonth() + 1, date.getDate());
+    const hijriMonths = [
+      'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 
+      'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
+      'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
+    ];
+    return {
+      day: hijri.hd,
+      month: hijriMonths[hijri.hm - 1],
+      year: hijri.hy
+    };
+  };
+
+  // Format Gregorian month name in Arabic
+  const getGregorianMonthName = (date) => {
+    const months = [
+      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    ];
+    return months[date.getMonth()];
+  };
+
   const navItems = [
     { id: 'home', icon: Home, label: 'الرئيسية', path: '/dashboard' },
     { id: 'threads', icon: MessageCircle, label: 'المنشورات', path: '/threads' },
@@ -244,30 +269,59 @@ const MatchesPage = () => {
 
           {/* Date Selector */}
           {activeTab === 'matches' && (
-            <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-              {calendarDates.map((date, i) => (
-                <motion.button
-                  key={i}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleDateSelect(i)}
-                  className={`flex-shrink-0 w-16 py-3 rounded-2xl text-center transition-all ${
-                    i === selectedDateIndex
-                      ? 'bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/30'
-                      : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  <p className={`text-xs mb-1 ${
-                    i === selectedDateIndex ? 'text-black/70' : 'text-white/50'
-                  }`}>
-                    {formatDayName(date, i)}
-                  </p>
-                  <p className={`text-lg font-bold ${
-                    i === selectedDateIndex ? 'text-black' : 'text-white'
-                  }`}>
-                    {date.getDate()}
-                  </p>
-                </motion.button>
-              ))}
+            <div className="mb-4">
+              {/* Current Date Display - Gregorian & Hijri */}
+              <div className="text-center mb-4 py-3 bg-white/5 rounded-2xl border border-white/10">
+                {(() => {
+                  const selectedDate = calendarDates[selectedDateIndex];
+                  const hijri = getHijriDate(selectedDate);
+                  return (
+                    <>
+                      <p className="text-amber-400 font-bold text-lg">
+                        {selectedDate.getDate()} {getGregorianMonthName(selectedDate)} {selectedDate.getFullYear()}م
+                      </p>
+                      <p className="text-white/60 text-sm mt-1">
+                        {hijri.day} {hijri.month} {hijri.year}هـ
+                      </p>
+                    </>
+                  );
+                })()}
+              </div>
+              
+              {/* Date Buttons */}
+              <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                {calendarDates.map((date, i) => {
+                  const hijri = getHijriDate(date);
+                  return (
+                    <motion.button
+                      key={i}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleDateSelect(i)}
+                      className={`flex-shrink-0 w-20 py-3 rounded-2xl text-center transition-all ${
+                        i === selectedDateIndex
+                          ? 'bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/30'
+                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <p className={`text-[10px] mb-0.5 ${
+                        i === selectedDateIndex ? 'text-black/70' : 'text-white/50'
+                      }`}>
+                        {formatDayName(date, i)}
+                      </p>
+                      <p className={`text-lg font-bold ${
+                        i === selectedDateIndex ? 'text-black' : 'text-white'
+                      }`}>
+                        {date.getDate()}
+                      </p>
+                      <p className={`text-[10px] ${
+                        i === selectedDateIndex ? 'text-black/60' : 'text-amber-500/70'
+                      }`}>
+                        {hijri.day} {hijri.month.slice(0, 4)}
+                      </p>
+                    </motion.button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -598,6 +652,22 @@ const MatchDetailModal = ({ match, onClose }) => {
   const isLive = match.status === 'LIVE';
   const isFinished = match.status === 'FINISHED';
 
+  // Convert to Hijri date for modal
+  const getHijriDateForModal = (dateStr) => {
+    const date = new Date(dateStr);
+    const hijriMonths = [
+      'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 
+      'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
+      'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
+    ];
+    try {
+      const hijri = toHijri(date.getFullYear(), date.getMonth() + 1, date.getDate());
+      return `${hijri.hd} ${hijriMonths[hijri.hm - 1]} ${hijri.hy}هـ`;
+    } catch {
+      return '';
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -669,7 +739,10 @@ const MatchDetailModal = ({ match, onClose }) => {
           </div>
           <div className="flex items-center gap-3 text-white/60">
             <Calendar className="w-5 h-5 text-amber-500" />
-            <span>{new Date(match.date).toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+            <div className="flex flex-col">
+              <span>{new Date(match.date).toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}م</span>
+              <span className="text-amber-400/70 text-sm">{getHijriDateForModal(match.date)}</span>
+            </div>
           </div>
         </div>
       </motion.div>
