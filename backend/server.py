@@ -3241,8 +3241,8 @@ async def get_football_matches(league_id: Optional[int] = None, status: Optional
     # Get today's date for fixtures
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
-    # Current season available for free plan is 2024
-    CURRENT_SEASON = 2024
+    # Current season 2025-2026
+    CURRENT_SEASON = 2025
     
     # Fetch from API for each league
     if API_FOOTBALL_KEY:
@@ -3310,8 +3310,8 @@ async def get_league_standings(league_id: int):
     """Get league standings/table from real API"""
     league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
     
-    # Current season available for free plan is 2024
-    CURRENT_SEASON = 2024
+    # Current season 2025-2026
+    CURRENT_SEASON = 2025
     
     if API_FOOTBALL_KEY:
         standings_data = await fetch_from_api_football("standings", {
@@ -3349,8 +3349,8 @@ async def get_top_scorers(league_id: int):
     """Get top scorers for a league from real API"""
     league = next((l for l in FOOTBALL_LEAGUES if l["id"] == league_id), None)
     
-    # Current season available for free plan is 2024
-    CURRENT_SEASON = 2024
+    # Current season 2025-2026
+    CURRENT_SEASON = 2025
     
     if API_FOOTBALL_KEY:
         scorers_data = await fetch_from_api_football("players/topscorers", {
