@@ -112,6 +112,9 @@ const YallaLiveRoom = ({ user }) => {
   const [showStreamModal, setShowStreamModal] = useState(false);
   const [streamInputUrl, setStreamInputUrl] = useState('');
   const [viewMode, setViewMode] = useState('mics'); // 'mics' or 'stream'
+  const [streamSlots, setStreamSlots] = useState({});
+  const [activeSlot, setActiveSlot] = useState(null);
+  const [editingSlot, setEditingSlot] = useState(null);
   
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
@@ -680,8 +683,45 @@ const YallaLiveRoom = ({ user }) => {
       const response = await axios.get(`${API}/rooms/${roomId}/stream`);
       setStreamActive(response.data.stream_active);
       setStreamUrl(response.data.stream_url || '');
+      setStreamSlots(response.data.stream_slots || {});
+      setActiveSlot(response.data.active_slot);
     } catch (error) {
       console.error('Failed to fetch stream status');
+    }
+  };
+
+  const handleSaveSlot = async (slot) => {
+    if (!streamInputUrl.trim()) {
+      toast.error('أدخل رابط البث');
+      return;
+    }
+    try {
+      const newSlots = { ...streamSlots, [slot]: streamInputUrl };
+      await axios.post(`${API}/rooms/${roomId}/stream/slots`, 
+        { slots: newSlots }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم حفظ الرابط');
+      setStreamSlots(newSlots);
+      setStreamInputUrl('');
+      setEditingSlot(null);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل حفظ الرابط');
+    }
+  };
+
+  const handlePlaySlot = async (slot) => {
+    try {
+      const response = await axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      setStreamActive(true);
+      setStreamUrl(response.data.stream_url);
+      setActiveSlot(slot);
+      setShowStreamModal(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل تشغيل البث');
     }
   };
 
@@ -692,7 +732,7 @@ const YallaLiveRoom = ({ user }) => {
     }
     try {
       const response = await axios.post(`${API}/rooms/${roomId}/stream/start`, 
-        { url: streamInputUrl }, 
+        { url: streamInputUrl, slot: editingSlot || 1 }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(response.data.message);
@@ -700,6 +740,7 @@ const YallaLiveRoom = ({ user }) => {
       setStreamUrl(response.data.stream_url);
       setShowStreamModal(false);
       setStreamInputUrl('');
+      setEditingSlot(null);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل بدء البث');
     }
@@ -713,6 +754,7 @@ const YallaLiveRoom = ({ user }) => {
       toast.success(response.data.message);
       setStreamActive(false);
       setStreamUrl('');
+      setActiveSlot(null);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل إيقاف البث');
     }
@@ -1626,7 +1668,7 @@ const YallaLiveRoom = ({ user }) => {
           )}
         </AnimatePresence>
 
-        {/* Stream Modal - Enter URL */}
+        {/* Stream Modal - 5 Slots */}
         <AnimatePresence>
           {showStreamModal && user.role === 'owner' && (
             <motion.div 
@@ -1634,46 +1676,102 @@ const YallaLiveRoom = ({ user }) => {
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              onClick={() => setShowStreamModal(false)}
+              onClick={() => { setShowStreamModal(false); setEditingSlot(null); setStreamInputUrl(''); }}
             >
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }} 
                 animate={{ scale: 1, opacity: 1 }} 
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-md rounded-3xl p-6 border border-violet-500/30"
+                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-md rounded-3xl p-6 border border-violet-500/30 max-h-[80vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-center mb-6">
                   <div className="w-16 h-16 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Tv className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-cairo font-bold text-white mb-2">تشغيل بث مباشر</h3>
-                  <p className="text-slate-400 font-almarai text-sm">أدخل رابط البث من YouTube أو Twitch</p>
+                  <h3 className="text-xl font-cairo font-bold text-white mb-2">روابط البث</h3>
+                  <p className="text-slate-400 font-almarai text-sm">5 روابط ثابتة - اضغط للتشغيل أو التعديل</p>
                 </div>
                 
-                <div className="space-y-4">
-                  <Input
-                    value={streamInputUrl}
-                    onChange={(e) => setStreamInputUrl(e.target.value)}
-                    placeholder="https://youtube.com/watch?v=... أو https://twitch.tv/..."
-                    className="bg-slate-800 border-slate-600 text-white text-right font-almarai rounded-xl"
-                    dir="ltr"
-                  />
-                  
-                  <div className="flex gap-3">
-                    <Button onClick={() => setShowStreamModal(false)}
-                      className="flex-1 bg-white/10 hover:bg-white/20 text-white font-cairo font-bold py-3 rounded-xl"
-                    >
-                      إلغاء
-                    </Button>
-                    <Button onClick={handleStartStream}
-                      className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-cairo font-bold py-3 rounded-xl flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-5 h-5" />
-                      تشغيل
-                    </Button>
-                  </div>
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((slot) => (
+                    <div key={slot} className={`p-3 rounded-xl border ${activeSlot === slot && streamActive ? 'bg-violet-500/20 border-violet-500' : 'bg-white/5 border-white/10'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-white font-cairo font-bold">رابط {slot}</span>
+                        <div className="flex items-center gap-2">
+                          {streamSlots[slot] && (
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => handlePlaySlot(slot)}
+                              disabled={activeSlot === slot && streamActive}
+                              className={`px-3 py-1 rounded-full text-xs font-cairo font-bold ${
+                                activeSlot === slot && streamActive 
+                                  ? 'bg-green-500 text-white' 
+                                  : 'bg-violet-500 hover:bg-violet-400 text-white'
+                              }`}
+                            >
+                              {activeSlot === slot && streamActive ? 'يعمل الآن' : 'تشغيل'}
+                            </motion.button>
+                          )}
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => { 
+                              setEditingSlot(slot); 
+                              setStreamInputUrl(streamSlots[slot] || ''); 
+                            }}
+                            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"
+                          >
+                            <Settings className="w-4 h-4 text-white/70" />
+                          </motion.button>
+                        </div>
+                      </div>
+                      
+                      {editingSlot === slot ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={streamInputUrl}
+                            onChange={(e) => setStreamInputUrl(e.target.value)}
+                            placeholder="https://youtube.com/... أو https://twitch.tv/..."
+                            className="bg-slate-800 border-slate-600 text-white text-xs font-almarai rounded-lg"
+                            dir="ltr"
+                          />
+                          <div className="flex gap-2">
+                            <Button onClick={() => handleSaveSlot(slot)}
+                              className="flex-1 bg-lime-500 hover:bg-lime-400 text-black text-xs font-cairo font-bold py-2 rounded-lg"
+                            >
+                              حفظ
+                            </Button>
+                            <Button onClick={() => { setEditingSlot(null); setStreamInputUrl(''); }}
+                              className="bg-white/10 hover:bg-white/20 text-white text-xs font-cairo py-2 px-3 rounded-lg"
+                            >
+                              إلغاء
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-slate-400 text-xs truncate font-almarai" dir="ltr">
+                          {streamSlots[slot] || 'لم يتم إضافة رابط'}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
+
+                {/* Stop Stream Button */}
+                {streamActive && (
+                  <Button onClick={handleStopStream}
+                    className="w-full mt-4 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-cairo font-bold py-3 rounded-xl border border-red-500/50"
+                  >
+                    <Square className="w-5 h-5 mr-2" />
+                    إيقاف البث
+                  </Button>
+                )}
+
+                <Button onClick={() => { setShowStreamModal(false); setEditingSlot(null); }}
+                  className="w-full mt-3 bg-white/10 hover:bg-white/20 text-white font-cairo font-bold py-3 rounded-xl"
+                >
+                  إغلاق
+                </Button>
               </motion.div>
             </motion.div>
           )}

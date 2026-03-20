@@ -1723,6 +1723,10 @@ async def toggle_room(room_id: str, current_user: User = Depends(get_current_use
 
 class StreamRequest(BaseModel):
     url: str
+    slot: int = 1  # 1-5
+
+class StreamSlotsUpdate(BaseModel):
+    slots: dict  # {"1": "url1", "2": "url2", ...}
 
 @api_router.post("/rooms/{room_id}/stream/start")
 async def start_stream(room_id: str, stream_data: StreamRequest, current_user: User = Depends(get_current_user)):
@@ -1758,10 +1762,70 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
     
     await db.rooms.update_one(
         {"id": room_id},
-        {"$set": {"stream_url": embed_url, "stream_active": True}}
+        {"$set": {"stream_url": embed_url, "stream_active": True, "active_slot": stream_data.slot}}
     )
     
-    return {"message": "تم بدء البث", "stream_url": embed_url}
+    return {"message": "تم بدء البث", "stream_url": embed_url, "slot": stream_data.slot}
+
+@api_router.post("/rooms/{room_id}/stream/slots")
+async def update_stream_slots(room_id: str, slots_data: StreamSlotsUpdate, current_user: User = Depends(get_current_user)):
+    """Update saved stream slots - System Owner only"""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="فقط الأونر يمكنه تعديل الروابط")
+    
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"stream_slots": slots_data.slots}}
+    )
+    
+    return {"message": "تم حفظ الروابط", "slots": slots_data.slots}
+
+@api_router.post("/rooms/{room_id}/stream/play/{slot}")
+async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends(get_current_user)):
+    """Play a saved stream slot - System Owner only"""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="فقط الأونر يمكنه تشغيل البث")
+    
+    if slot < 1 or slot > 5:
+        raise HTTPException(status_code=400, detail="رقم الرابط يجب أن يكون من 1 إلى 5")
+    
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    stream_slots = room.get("stream_slots", {})
+    stream_url = stream_slots.get(str(slot), "")
+    
+    if not stream_url:
+        raise HTTPException(status_code=400, detail="هذا الرابط فارغ")
+    
+    # Convert to embed URL
+    embed_url = stream_url
+    if "youtube.com/watch" in stream_url or "youtu.be" in stream_url or "youtube.com/live" in stream_url:
+        video_id = ""
+        if "youtube.com/watch" in stream_url:
+            video_id = stream_url.split("v=")[1].split("&")[0] if "v=" in stream_url else ""
+        elif "youtube.com/live" in stream_url:
+            video_id = stream_url.split("/live/")[1].split("?")[0] if "/live/" in stream_url else ""
+        else:
+            video_id = stream_url.split("/")[-1].split("?")[0]
+        if video_id:
+            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0"
+    elif "twitch.tv" in stream_url:
+        channel = stream_url.split("twitch.tv/")[1].split("/")[0] if "twitch.tv/" in stream_url else ""
+        if channel:
+            embed_url = f"https://player.twitch.tv/?channel={channel}&parent=pitch-chat.preview.emergentagent.com"
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"stream_url": embed_url, "stream_active": True, "active_slot": slot}}
+    )
+    
+    return {"message": "تم تشغيل البث", "stream_url": embed_url, "slot": slot}
 
 @api_router.post("/rooms/{room_id}/stream/stop")
 async def stop_stream(room_id: str, current_user: User = Depends(get_current_user)):
@@ -1789,7 +1853,9 @@ async def get_stream(room_id: str):
     
     return {
         "stream_active": room.get("stream_active", False),
-        "stream_url": room.get("stream_url")
+        "stream_url": room.get("stream_url"),
+        "stream_slots": room.get("stream_slots", {}),
+        "active_slot": room.get("active_slot")
     }
 
 
