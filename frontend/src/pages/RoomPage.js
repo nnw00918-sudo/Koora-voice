@@ -677,8 +677,10 @@ const YallaLiveRoom = ({ user }) => {
                   const speakerData = speakers.find(s => s.user_id === odId);
                   const isMuted = speakerData?.user?.is_muted || false;
                   const isCurrentUser = odId === user.id;
-                  // Show controls only for room owner or admin
-                  const canControl = (room?.owner_id === user.id) || currentUserRole === 'admin' || currentUserRole === 'owner';
+                  // Kick/Mute - show for room owner or admin
+                  const canKickMuteUser = (room?.owner_id === user.id) || currentUserRole === 'admin' || currentUserRole === 'owner';
+                  // Promote/Demote - show ONLY for room owner
+                  const canPromoteDemote = room?.owner_id === user.id;
                   
                   return (
                     <motion.div 
@@ -687,18 +689,54 @@ const YallaLiveRoom = ({ user }) => {
                       animate={{ x: 0, opacity: 1 }}
                       className="flex items-center gap-2 p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
                     >
-                      {/* Admin Controls - Kick button FIRST on the left */}
-                      {canControl && !isCurrentUser && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleKickUser(odId);
-                          }}
-                          className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors flex-shrink-0"
-                          title="طرد"
-                        >
-                          <UserX className="w-5 h-5 text-white" />
-                        </button>
+                      {/* Admin Controls - Left side */}
+                      {!isCurrentUser && (canKickMuteUser || canPromoteDemote) && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {/* Kick Button - Owner & Admin */}
+                          {canKickMuteUser && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleKickUser(odId);
+                              }}
+                              className="w-9 h-9 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors"
+                              title="طرد"
+                            >
+                              <UserX className="w-4 h-4 text-white" />
+                            </button>
+                          )}
+                          
+                          {/* Mute Button - Owner & Admin (only for speakers) */}
+                          {canKickMuteUser && isSpeaker && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                isMuted ? handleUnmuteUser(odId) : handleMuteUser(odId);
+                              }}
+                              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                                isMuted ? 'bg-green-500 hover:bg-green-600' : 'bg-yellow-500 hover:bg-yellow-600'
+                              }`}
+                              title={isMuted ? 'إلغاء الكتم' : 'كتم'}
+                            >
+                              {isMuted ? <Mic className="w-4 h-4 text-white" /> : <MicOff className="w-4 h-4 text-white" />}
+                            </button>
+                          )}
+                          
+                          {/* Promote Button - ONLY Owner */}
+                          {canPromoteDemote && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPromoteUser({ user_id: odId, username: p.username });
+                                setShowPromoteModal(true);
+                              }}
+                              className="w-9 h-9 rounded-full bg-violet-500 hover:bg-violet-600 flex items-center justify-center transition-colors"
+                              title="ترقية / تنزيل"
+                            >
+                              <Crown className="w-4 h-4 text-white" />
+                            </button>
+                          )}
+                        </div>
                       )}
                       
                       {/* Status Badge */}
@@ -1247,6 +1285,80 @@ const YallaLiveRoom = ({ user }) => {
                     قبول
                   </Button>
                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Promote/Demote Modal - ONLY for Room Owner */}
+        <AnimatePresence>
+          {showPromoteModal && selectedPromoteUser && (room?.owner_id === user.id) && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => { setShowPromoteModal(false); setSelectedPromoteUser(null); }}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-violet-500/30"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Crown className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-cairo font-bold text-white">إدارة الرتبة</h3>
+                  <p className="text-violet-300 text-sm mt-1">@{selectedPromoteUser.username}</p>
+                </div>
+                
+                <div className="space-y-3">
+                  {/* Promote to Admin */}
+                  <button 
+                    onClick={() => handlePromoteUser(selectedPromoteUser.user_id, 'admin')}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/50 transition-colors"
+                  >
+                    <Shield className="w-6 h-6 text-violet-400" />
+                    <div className="text-right flex-1">
+                      <span className="text-violet-300 font-cairo font-bold">ترقية إلى أدمن</span>
+                      <p className="text-violet-400/70 text-xs">يستطيع الكتم والطرد</p>
+                    </div>
+                  </button>
+                  
+                  {/* Promote to Mod */}
+                  <button 
+                    onClick={() => handlePromoteUser(selectedPromoteUser.user_id, 'mod')}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 transition-colors"
+                  >
+                    <Star className="w-6 h-6 text-blue-400" />
+                    <div className="text-right flex-1">
+                      <span className="text-blue-300 font-cairo font-bold">ترقية إلى مشرف</span>
+                      <p className="text-blue-400/70 text-xs">يستطيع إدارة المنصة</p>
+                    </div>
+                  </button>
+                  
+                  {/* Demote to User */}
+                  <button 
+                    onClick={() => handlePromoteUser(selectedPromoteUser.user_id, 'user')}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-gray-500/20 hover:bg-gray-500/30 border border-gray-500/50 transition-colors"
+                  >
+                    <Users className="w-6 h-6 text-gray-400" />
+                    <div className="text-right flex-1">
+                      <span className="text-gray-300 font-cairo font-bold">تنزيل إلى عضو</span>
+                      <p className="text-gray-400/70 text-xs">صلاحيات عادية</p>
+                    </div>
+                  </button>
+                </div>
+                
+                <button 
+                  onClick={() => { setShowPromoteModal(false); setSelectedPromoteUser(null); }}
+                  className="w-full mt-4 py-3 rounded-xl bg-white/10 text-white font-cairo font-bold"
+                >
+                  إلغاء
+                </button>
               </motion.div>
             </motion.div>
           )}
