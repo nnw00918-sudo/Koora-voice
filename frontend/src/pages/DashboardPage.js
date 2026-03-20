@@ -172,12 +172,17 @@ const DashboardPage = ({ user, onLogout }) => {
 
         {/* Header Actions */}
         <div className={`p-4 flex items-center justify-between ${isRTL ? '' : 'flex-row-reverse'}`}>
-          <Button
-            onClick={() => navigate('/create-room')}
-            className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-6 py-2 rounded-full"
-          >
-            {t('createRoom')}
-          </Button>
+          {/* Only show create room button for owner */}
+          {user?.role === 'owner' ? (
+            <Button
+              onClick={() => navigate('/create-room')}
+              className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold px-6 py-2 rounded-full"
+            >
+              {t('createRoom')}
+            </Button>
+          ) : (
+            <div></div>
+          )}
           <div className="flex items-center gap-3">
             <Button
               onClick={() => setShowSearch(!showSearch)}
@@ -322,12 +327,14 @@ const DashboardPage = ({ user, onLogout }) => {
                   : (isRTL ? 'لا توجد غرف متاحة' : 'No rooms available')
                 }
               </p>
-              <Button
-                onClick={() => navigate('/create-room')}
-                className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold"
-              >
-                {t('beFirst')}
-              </Button>
+              {user?.role === 'owner' && (
+                <Button
+                  onClick={() => navigate('/create-room')}
+                  className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold"
+                >
+                  {t('beFirst')}
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-4">

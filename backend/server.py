@@ -726,6 +726,10 @@ async def get_rooms(category: Optional[str] = None):
 
 @api_router.post("/rooms/create", response_model=RoomFull)
 async def create_room(room_data: RoomCreate, current_user: User = Depends(get_current_user)):
+    # Only system owner can create rooms
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="فقط الأونر يمكنه إنشاء الغرف")
+    
     from uuid import uuid4
     room_id = str(uuid4())[:8]
     
