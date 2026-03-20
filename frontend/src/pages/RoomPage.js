@@ -633,6 +633,7 @@ const YallaLiveRoom = ({ user }) => {
                 animate={{ scale: 1 }}
                 onClick={() => setShowSeatRequestsModal(true)}
                 className="flex items-center gap-1.5 bg-amber-500/30 border border-amber-500/50 px-3 py-1.5 rounded-full"
+                data-testid="seat-requests-button"
               >
                 <Hand className="w-4 h-4 text-amber-400" />
                 <span className="text-amber-300 font-bold text-sm">{seatRequests.length}</span>
@@ -944,63 +945,6 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         </motion.div>
 
-        {/* Seat Requests - Show for room owner/admin/mod */}
-        {seatRequests.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="px-4 pb-2"
-          >
-            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur border border-amber-500/40 rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-amber-500/30 rounded-full flex items-center justify-center">
-                    <Hand className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div>
-                    <span className="text-white font-cairo font-bold text-sm">طلبات الصعود</span>
-                    <span className="text-amber-400 text-xs mr-2">({seatRequests.length})</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                {seatRequests.map((request) => (
-                  <motion.div 
-                    key={request.request_id} 
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    className="flex items-center gap-3 bg-slate-900/60 backdrop-blur rounded-xl p-3"
-                  >
-                    <img src={request.avatar} alt="" className="w-12 h-12 rounded-full ring-2 ring-amber-500/50" />
-                    <div className="flex-1">
-                      <p className="text-white font-cairo font-bold">{request.username}</p>
-                      <p className="text-amber-400/70 text-xs">يريد التحدث</p>
-                    </div>
-                    {canManageStage && (
-                      <div className="flex gap-2">
-                        <motion.button 
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleApproveSeat(request.user_id)}
-                          className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/30"
-                        >
-                          <Check className="w-5 h-5 text-white" />
-                        </motion.button>
-                        <motion.button 
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleRejectSeat(request.user_id)}
-                          className="w-10 h-10 rounded-full bg-gradient-to-r from-red-500 to-rose-500 flex items-center justify-center shadow-lg shadow-red-500/30"
-                        >
-                          <X className="w-5 h-5 text-white" />
-                        </motion.button>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
         {/* Chat Section */}
         <div className="flex-1 flex flex-col min-h-0 px-4">
           {/* Chat Toggle */}
@@ -1024,14 +968,16 @@ const YallaLiveRoom = ({ user }) => {
               >
                 {messages.slice(-20).map((message, index) => {
                   const isOwnMessage = message.user_id === user.id;
-                  const isEmoji = /^[\u{1F300}-\u{1F9FF}]$/u.test(message.content);
+                  // Check if message is a single emoji (including compound emojis like ❤️)
+                  const emojiRegex = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200D(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
+                  const isEmoji = emojiRegex.test(message.content);
                   
                   if (isEmoji) {
                     return (
                       <motion.div 
                         key={message.id}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
+                        initial={{ scale: 0, y: 20 }}
+                        animate={{ scale: 1, y: 0 }}
                         className="flex justify-center"
                       >
                         <span className="text-4xl">{message.content}</span>
@@ -1391,6 +1337,91 @@ const YallaLiveRoom = ({ user }) => {
                   className="w-full mt-4 py-3 rounded-xl bg-white/10 text-white font-cairo font-bold"
                 >
                   إلغاء
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Seat Requests Modal - Owner & Admin only */}
+        <AnimatePresence>
+          {showSeatRequestsModal && (room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setShowSeatRequestsModal(false)}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-amber-500/30"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Hand className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-cairo font-bold text-white">طلبات الصعود للمنصة</h3>
+                  <p className="text-amber-400 text-sm mt-1">{seatRequests.length} طلب في الانتظار</p>
+                </div>
+                
+                {seatRequests.length > 0 ? (
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {seatRequests.map((request) => (
+                      <motion.div 
+                        key={request.request_id} 
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        className="flex items-center gap-3 bg-slate-800/60 backdrop-blur rounded-xl p-3 border border-amber-500/20"
+                      >
+                        <img 
+                          src={request.avatar} 
+                          alt="" 
+                          className="w-12 h-12 rounded-full ring-2 ring-amber-500/50 flex-shrink-0" 
+                        />
+                        <div className="flex-1 min-w-0 text-right">
+                          <p className="text-white font-cairo font-bold truncate">{request.username}</p>
+                          <p className="text-amber-400/70 text-xs">يريد التحدث</p>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <motion.button 
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => handleApproveSeat(request.user_id)}
+                            className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/30"
+                            data-testid={`approve-seat-${request.user_id}`}
+                          >
+                            <Check className="w-5 h-5 text-white" />
+                          </motion.button>
+                          <motion.button 
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => handleRejectSeat(request.user_id)}
+                            className="w-10 h-10 rounded-full bg-gradient-to-r from-red-500 to-rose-500 flex items-center justify-center shadow-lg shadow-red-500/30"
+                            data-testid={`reject-seat-${request.user_id}`}
+                          >
+                            <X className="w-5 h-5 text-white" />
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Users className="w-8 h-8 text-slate-500" />
+                    </div>
+                    <p className="text-slate-400 font-almarai">لا توجد طلبات حالياً</p>
+                  </div>
+                )}
+                
+                <button 
+                  onClick={() => setShowSeatRequestsModal(false)}
+                  className="w-full mt-4 py-3 rounded-xl bg-white/10 text-white font-cairo font-bold hover:bg-white/20 transition-colors"
+                  data-testid="close-seat-requests-modal"
+                >
+                  إغلاق
                 </button>
               </motion.div>
             </motion.div>

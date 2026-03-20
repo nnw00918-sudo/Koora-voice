@@ -107,6 +107,28 @@ Building a football-themed social media application with voice chat, threads, us
 - Room cards responsive with proper image heights
 - Touch-friendly button sizes (44px minimum)
 
+### Phase 10: Room Membership & Admin Controls ✅ (March 19-20, 2026)
+- **Room Membership System**:
+  - Users must join a room to become a member before entering
+  - "Join" button for non-members, "Enter" button for members
+  - Member count displayed on room cards
+- **Advanced Admin Controls**:
+  - Kick users from room
+  - Mute/unmute speakers
+  - Remove users from stage
+  - Promote/demote users (Owner only)
+- **UI Redesign**:
+  - Complete "Celestial Majlis" theme for RoomPage
+  - Glassmorphism effects with animated gradients
+  - Connected users dropdown with admin controls
+- **Mic Requests Modal** ✅ (March 20, 2026):
+  - Moved mic requests to a dedicated modal
+  - Only visible to room Owner and Admins
+  - Button shows request count in header
+- **Emoji Reactions Fix** ✅ (March 20, 2026):
+  - Fixed regex to support all emoji types (including compound emojis like ❤️)
+  - Emojis now display correctly in center of chat
+
 ---
 
 ## Technical Architecture
@@ -189,12 +211,13 @@ Building a football-themed social media application with voice chat, threads, us
 ---
 
 ## P0 - Upcoming Tasks
-- Fix emoji reactions in voice rooms (reported bug)
+- None (All P0 tasks completed)
 
 ## P1 - Priority Backlog
-1. Complete server.py refactoring into route modules
-2. Add push notifications (PWA)
-3. Add story reactions/replies
+1. Complete server.py refactoring into route modules (3000+ lines - critical tech debt)
+2. Break down RoomPage.js into smaller components (1400+ lines)
+3. Add push notifications (PWA)
+4. Add story reactions/replies
 
 ## P2 - Future Features
 1. User leveling/ranking system with badges
