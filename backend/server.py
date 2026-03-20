@@ -777,6 +777,29 @@ async def end_room(room_id: str, current_user: User = Depends(get_current_user))
     
     return {"message": "تم إنهاء الغرفة"}
 
+class RoomImageUpdate(BaseModel):
+    image: str
+
+@api_router.put("/rooms/{room_id}/image")
+async def update_room_image(room_id: str, data: RoomImageUpdate, current_user: User = Depends(get_current_user)):
+    """Update room cover image - Owner only"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Only room owner or system owner can change image
+    if room["owner_id"] != current_user.id and current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه تغيير الصورة")
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"image": data.image}}
+    )
+    
+    return {"message": "تم تحديث صورة الغرفة", "image": data.image}
+
+
+
 @api_router.post("/rooms/{room_id}/close-and-kick")
 async def close_room_and_kick_all(room_id: str, current_user: User = Depends(get_current_user)):
     """Close room and kick all users - Owner only"""

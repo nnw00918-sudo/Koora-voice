@@ -49,7 +49,8 @@ import {
   Monitor,
   Cast,
   SwitchCamera,
-  Camera
+  Camera,
+  ImageIcon
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -107,6 +108,8 @@ const YallaLiveRoom = ({ user }) => {
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showConnectedList, setShowConnectedList] = useState(false);
   const [showSeatRequestsModal, setShowSeatRequestsModal] = useState(false);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [roomImageUrl, setRoomImageUrl] = useState('');
   
   // Stream states
   const [streamActive, setStreamActive] = useState(false);
@@ -703,6 +706,25 @@ const YallaLiveRoom = ({ user }) => {
       navigate('/dashboard');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل إغلاق الغرفة');
+    }
+  };
+
+  const handleUpdateRoomImage = async () => {
+    if (!roomImageUrl.trim()) {
+      toast.error('أدخل رابط الصورة');
+      return;
+    }
+    try {
+      await axios.put(`${API}/rooms/${roomId}/image`, 
+        { image: roomImageUrl }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم تحديث صورة الغرفة');
+      setRoom(prev => ({ ...prev, image: roomImageUrl }));
+      setShowImagePicker(false);
+      setRoomImageUrl('');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل تحديث الصورة');
     }
   };
 
@@ -1959,6 +1981,41 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
                 
                 <div className="space-y-3">
+                  {/* Change Room Image */}
+                  <button onClick={() => setShowImagePicker(!showImagePicker)}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50"
+                  >
+                    <ImageIcon className="w-6 h-6 text-sky-400" />
+                    <span className="text-sky-400 font-cairo font-bold">تغيير صورة الغرفة</span>
+                  </button>
+                  
+                  {showImagePicker && (
+                    <div className="p-3 bg-slate-800 rounded-xl space-y-3">
+                      <input
+                        type="text"
+                        value={roomImageUrl}
+                        onChange={(e) => setRoomImageUrl(e.target.value)}
+                        placeholder="أدخل رابط الصورة..."
+                        className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white text-sm placeholder:text-slate-400"
+                        dir="ltr"
+                      />
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={handleUpdateRoomImage}
+                          className="flex-1 py-2 bg-sky-500 text-white rounded-lg font-cairo font-bold text-sm"
+                        >
+                          حفظ
+                        </button>
+                        <button 
+                          onClick={() => { setShowImagePicker(false); setRoomImageUrl(''); }}
+                          className="px-4 py-2 bg-slate-600 text-white rounded-lg font-cairo text-sm"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Stream Controls - Only for System Owner */}
                   {user.role === 'owner' && (
                     <>
