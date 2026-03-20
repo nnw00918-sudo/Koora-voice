@@ -68,11 +68,13 @@ const YallaLiveRoom = ({ user }) => {
   const [currentUserRole, setCurrentUserRole] = useState(null);
   const [roleLoading, setRoleLoading] = useState(true);
   
-  const isOwner = currentUserRole === 'owner';
+  // Check if current user is room owner based on room data
+  const isRoomOwner = room?.owner_id === user.id;
+  const isOwner = currentUserRole === 'owner' || isRoomOwner;
   const isAdmin = currentUserRole === 'admin';
   const isMod = currentUserRole === 'mod';
-  const canManageStage = ['owner', 'admin', 'mod'].includes(currentUserRole);
-  const canKickMute = ['owner', 'admin'].includes(currentUserRole);
+  const canManageStage = ['owner', 'admin', 'mod'].includes(currentUserRole) || isRoomOwner;
+  const canKickMute = ['owner', 'admin'].includes(currentUserRole) || isRoomOwner;
   const canJoinStageDirect = ['owner', 'admin', 'mod'].includes(currentUserRole);
   
   const [myInvites, setMyInvites] = useState([]);
@@ -655,6 +657,7 @@ const YallaLiveRoom = ({ user }) => {
         <AnimatePresence>
           {showConnectedList && (
             <motion.div
+              key={`dropdown-${isRoomOwner}-${participants.length}`}
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -662,43 +665,84 @@ const YallaLiveRoom = ({ user }) => {
             >
               <div className="p-4 border-b border-white/10 flex items-center justify-between">
                 <h3 className="text-white font-cairo font-bold">المتصلون</h3>
-                <span className="bg-violet-600/30 text-violet-300 px-2 py-0.5 rounded-full text-sm font-bold">{participants.length}</span>
+                <span className="bg-violet-600/30 text-violet-300 px-2 py-0.5 rounded-full text-sm font-bold">
+                  {[...new Map(participants.map(p => [p.user_id || p.id, p])).values()].length}
+                </span>
               </div>
-              <div className="max-h-64 overflow-y-auto">
-                {participants.map((p) => (
-                  <motion.div 
-                    key={p.user_id || p.id} 
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    onClick={() => {
-                      setShowConnectedList(false);
-                      navigate(`/user/${p.user_id || p.id}`);
-                    }}
-                    className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors cursor-pointer"
-                  >
-                    <div className="relative">
-                      <img 
-                        src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`}
-                        alt=""
-                        className="w-12 h-12 rounded-full ring-2 ring-violet-500/50"
-                      />
-                      {speakers.some(s => s.user_id === (p.user_id || p.id)) && (
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center ring-2 ring-slate-900">
-                          <Mic className="w-3 h-3 text-white" />
-                        </div>
+              <div className="max-h-72 overflow-y-auto overflow-x-visible">
+                {/* Remove duplicates by user_id */}
+                {[...new Map(participants.map(p => [p.user_id || p.id, p])).values()].map((p) => {
+                  const odId = p.user_id || p.id;
+                  const isSpeaker = speakers.some(s => s.user_id === odId);
+                  const speakerData = speakers.find(s => s.user_id === odId);
+                  const isMuted = speakerData?.user?.is_muted || false;
+                  const isCurrentUser = odId === user.id;
+                  const canControl = room?.owner_id === user.id;
+                  
+                  return (
+                    <motion.div 
+                      key={odId} 
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      className="flex items-center gap-2 p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                    >
+                      {/* Admin Controls - Kick button FIRST on the left */}
+                      {canControl && !isCurrentUser && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleKickUser(odId);
+                          }}
+                          className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors flex-shrink-0"
+                          title="طرد"
+                        >
+                          <UserX className="w-5 h-5 text-white" />
+                        </button>
                       )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-white font-cairo font-bold">{p.user?.name || p.username}</p>
-                      <p className="text-violet-300 text-xs">@{p.username}</p>
-                    </div>
-                    {speakers.some(s => s.user_id === (p.user_id || p.id)) ? (
-                      <span className="text-green-400 text-xs bg-green-500/20 px-2 py-1 rounded-full">متحدث</span>
-                    ) : (
-                      <span className="text-slate-400 text-xs bg-slate-700/50 px-2 py-1 rounded-full">مستمع</span>
-                    )}
-                  </motion.div>
-                ))}
+                      
+                      {/* Status Badge */}
+                      <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
+                        isSpeaker 
+                          ? 'text-green-400 bg-green-500/20' 
+                          : 'text-slate-400 bg-slate-700/50'
+                      }`}>
+                        {isSpeaker ? 'متحدث' : 'مستمع'}
+                      </span>
+                      
+                      {/* User Info - Clickable to profile */}
+                      <div 
+                        className="flex-1 min-w-0 cursor-pointer text-right"
+                        onClick={() => {
+                          setShowConnectedList(false);
+                          navigate(`/user/${odId}`);
+                        }}
+                      >
+                        <p className="text-white font-cairo font-bold text-sm truncate">{p.user?.name || p.username}</p>
+                        <p className="text-violet-300 text-xs truncate">@{p.username}</p>
+                      </div>
+                      
+                      {/* Avatar - Clickable to profile */}
+                      <div 
+                        className="relative cursor-pointer flex-shrink-0"
+                        onClick={() => {
+                          setShowConnectedList(false);
+                          navigate(`/user/${odId}`);
+                        }}
+                      >
+                        <img 
+                          src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`}
+                          alt=""
+                          className="w-12 h-12 rounded-full ring-2 ring-violet-500/50"
+                        />
+                        {isSpeaker && (
+                          <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-slate-900 ${isMuted ? 'bg-red-500' : 'bg-green-500'}`}>
+                            {isMuted ? <MicOff className="w-3 h-3 text-white" /> : <Mic className="w-3 h-3 text-white" />}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           )}
