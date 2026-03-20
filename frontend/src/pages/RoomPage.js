@@ -1092,10 +1092,22 @@ const YallaLiveRoom = ({ user }) => {
                     <span>صعود للمنصة</span>
                   </motion.button>
                 ) : (
-                  <div className="flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo text-slate-400 bg-slate-800/50">
-                    <Headphones className="w-5 h-5" />
-                    <span>وضع الاستماع</span>
-                  </div>
+                  /* Regular users can request to speak */
+                  pendingRequest ? (
+                    <div className="flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo text-amber-400 bg-amber-500/20 border border-amber-500/50">
+                      <Hand className="w-5 h-5 animate-pulse" />
+                      <span>في انتظار الموافقة...</span>
+                    </div>
+                  ) : (
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleTakeSeat}
+                      className="flex-1 py-3 rounded-full flex items-center justify-center gap-2 font-cairo font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30"
+                    >
+                      <Hand className="w-5 h-5" />
+                      <span>طلب التحدث</span>
+                    </motion.button>
+                  )
                 )}
               </>
             )}
