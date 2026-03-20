@@ -1752,8 +1752,8 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
         else:
             video_id = stream_url.split("/")[-1].split("?")[0]
         if video_id:
-            # autoplay with sound - user has already interacted with page
-            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1"
+            # youtube-nocookie for better autoplay with sound like TV receiver
+            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1"
     
     # Twitch URL conversion
     elif "twitch.tv" in stream_url:
@@ -1829,8 +1829,8 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
         else:
             video_id = stream_url.split("/")[-1].split("?")[0]
         if video_id:
-            # autoplay with sound - user has already interacted with page
-            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1"
+            # youtube-nocookie for better autoplay with sound like TV receiver
+            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1"
     elif "twitch.tv" in stream_url:
         channel = stream_url.split("twitch.tv/")[1].split("/")[0] if "twitch.tv/" in stream_url else ""
         if channel:

@@ -113,6 +113,7 @@ const YallaLiveRoom = ({ user }) => {
   const [streamSlots, setStreamSlots] = useState({});
   const [activeSlot, setActiveSlot] = useState(null); // Global active slot (set by owner)
   const [editingSlot, setEditingSlot] = useState(null);
+  const [streamKey, setStreamKey] = useState(0); // Force iframe reload
   
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
@@ -708,11 +709,11 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  // Convert URL to embed format locally for instant switching
+  // Convert URL to embed format locally for instant switching - Like TV Receiver
   const convertToEmbedUrl = (url) => {
     if (!url) return '';
     
-    // YouTube - with sound enabled
+    // YouTube - instant play with sound like TV receiver
     if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
       let videoId = '';
       if (url.includes('youtube.com/watch')) {
@@ -723,11 +724,13 @@ const YallaLiveRoom = ({ user }) => {
         videoId = url.split('/').pop()?.split('?')[0] || '';
       }
       if (videoId) {
-        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1&enablejsapi=1`;
+        // Use youtube-nocookie for better autoplay, add timestamp to force reload
+        const timestamp = Date.now();
+        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&controls=1&fs=1&playsinline=1&enablejsapi=1&t=${timestamp}`;
       }
     }
     
-    // Twitch
+    // Twitch - instant play
     if (url.includes('twitch.tv')) {
       const channel = url.split('twitch.tv/')[1]?.split('/')[0] || '';
       if (channel) {
@@ -735,7 +738,7 @@ const YallaLiveRoom = ({ user }) => {
       }
     }
     
-    // Dailymotion
+    // Dailymotion - instant play
     if (url.includes('dailymotion.com')) {
       let videoId = '';
       if (url.includes('/video/')) {
@@ -753,13 +756,13 @@ const YallaLiveRoom = ({ user }) => {
       return `https://www.facebook.com/plugins/video.php?href=${url}&autoplay=true&mute=0`;
     }
     
-    // Already embed URL - add autoplay params if missing
+    // Already embed URL
     if (url.includes('/embed/') || url.includes('player.')) {
-      if (!url.includes('autoplay')) {
-        return url + (url.includes('?') ? '&' : '?') + 'autoplay=1&mute=0';
+      let newUrl = url.replace('mute=1', 'mute=0');
+      if (!newUrl.includes('autoplay')) {
+        newUrl += (newUrl.includes('?') ? '&' : '?') + 'autoplay=1';
       }
-      // Replace mute=1 with mute=0 if exists
-      return url.replace('mute=1', 'mute=0');
+      return newUrl;
     }
     
     return url;
@@ -770,11 +773,15 @@ const YallaLiveRoom = ({ user }) => {
     const rawUrl = streamSlots[slot];
     if (!rawUrl) return;
     
+    // Force iframe to completely reload by incrementing key
+    setStreamKey(prev => prev + 1);
+    
     // Instantly switch the stream locally
     const embedUrl = convertToEmbedUrl(rawUrl);
     setStreamUrl(embedUrl);
     setActiveSlot(slot);
     setStreamActive(true);
+    setViewMode('stream'); // Auto switch to stream view
     
     // Update server in background (don't wait for response)
     axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
@@ -1263,10 +1270,10 @@ const YallaLiveRoom = ({ user }) => {
                     )}
                   </div>
                   
-                  {/* Video Player - with YouTube branding hidden */}
-                  <div className="relative aspect-video overflow-hidden">
+                  {/* Video Player - Auto play like TV Receiver */}
+                  <div className="relative aspect-video overflow-hidden bg-black">
                     <iframe
-                      key={`stream-${activeSlot}-${streamUrl}`}
+                      key={`stream-${streamKey}-${activeSlot}`}
                       src={streamUrl}
                       className="w-full h-full pointer-events-auto"
                       style={{ 
@@ -1275,7 +1282,8 @@ const YallaLiveRoom = ({ user }) => {
                         marginBottom: '-60px'
                       }}
                       allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allow="accelerometer; autoplay *; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                      referrerPolicy="no-referrer-when-downgrade"
                     />
                     {/* Overlay to hide YouTube logo at bottom */}
                     <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black via-black to-transparent pointer-events-none" />
