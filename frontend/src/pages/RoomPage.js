@@ -216,21 +216,21 @@ const YallaLiveRoom = ({ user }) => {
           axios.get(`${API}/rooms/${roomId}/seat/my-request`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
-        // Update seats only if changed
+        // Update seats - always update
         const newSeats = seatsRes.data.seats;
-        setSeats(prev => JSON.stringify(prev) !== JSON.stringify(newSeats) ? newSeats : prev);
+        setSeats(newSeats);
         
-        // Update messages only if changed
+        // Update messages
         const filteredMessages = messagesRes.data.filter(msg => 
           !msg.content?.toLowerCase().includes('test message') &&
           !msg.content?.toLowerCase().includes('voice test') &&
           !msg.username?.toLowerCase().includes('test_user')
         );
-        setMessages(prev => prev.length !== filteredMessages.length ? filteredMessages : prev);
+        setMessages(filteredMessages);
         
-        // Update participants
+        // Update participants - always update to ensure fresh data
         const newParticipants = participantsRes.data;
-        setParticipants(prev => prev.length !== newParticipants.length ? newParticipants : prev);
+        setParticipants(newParticipants);
         
         // Check if current user got approved (is on stage now)
         const myParticipant = newParticipants.find(p => p.user_id === user.id);
