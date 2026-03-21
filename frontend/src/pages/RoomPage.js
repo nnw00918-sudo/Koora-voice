@@ -72,6 +72,9 @@ const YallaLiveRoom = ({ user }) => {
   const [participants, setParticipants] = useState([]);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [showMentionList, setShowMentionList] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState('');
+  const [mentionCursorPos, setMentionCursorPos] = useState(0);
   const [isMicOn, setIsMicOn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [onStage, setOnStage] = useState(false);
@@ -1198,9 +1201,73 @@ const YallaLiveRoom = ({ user }) => {
       const response = await axios.post(`${API}/rooms/${roomId}/messages`, { content: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
       setMessages([...messages, response.data]);
       setNewMessage('');
+      setShowMentionList(false);
     } catch (error) {
       toast.error('فشل إرسال الرسالة');
     }
+  };
+
+  // Handle @ mention input
+  const handleMessageChange = (e) => {
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    setNewMessage(value);
+    setMentionCursorPos(cursorPos);
+
+    // Check if user is typing @
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (atIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(atIndex + 1);
+      // Only show if no space after @
+      if (!textAfterAt.includes(' ')) {
+        setMentionSearch(textAfterAt.toLowerCase());
+        setShowMentionList(true);
+      } else {
+        setShowMentionList(false);
+      }
+    } else {
+      setShowMentionList(false);
+    }
+  };
+
+  // Insert mention into message
+  const insertMention = (username) => {
+    const textBeforeCursor = newMessage.substring(0, mentionCursorPos);
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+    const textAfterCursor = newMessage.substring(mentionCursorPos);
+    
+    const newText = textBeforeCursor.substring(0, atIndex) + '@' + username + ' ' + textAfterCursor;
+    setNewMessage(newText);
+    setShowMentionList(false);
+  };
+
+  // Get filtered participants for mention
+  const filteredMentionUsers = participants.filter(p => 
+    p.username.toLowerCase().includes(mentionSearch) && p.user_id !== user.id
+  );
+
+  // Render message content with mentions highlighted
+  const renderMessageContent = (content) => {
+    const mentionRegex = /@(\S+)/g;
+    const parts = content.split(mentionRegex);
+    
+    return parts.map((part, index) => {
+      // Check if this part is a mention (odd indexes after split)
+      if (index % 2 === 1) {
+        const isMentioningMe = part.toLowerCase() === user.username?.toLowerCase();
+        return (
+          <span 
+            key={index} 
+            className={`font-bold ${isMentioningMe ? 'text-lime-400 bg-lime-500/20 px-1 rounded' : 'text-sky-400'}`}
+          >
+            @{part}
+          </span>
+        );
+      }
+      return part;
+    });
   };
 
   const handleSendGift = async (giftId) => {
@@ -1863,7 +1930,7 @@ const YallaLiveRoom = ({ user }) => {
                         ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white' 
                         : 'bg-white/10 text-white'
                     }`}>
-                      <p className="font-almarai">{message.content}</p>
+                      <p className="font-almarai">{renderMessageContent(message.content)}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -1951,27 +2018,53 @@ const YallaLiveRoom = ({ user }) => {
           </div>
 
           {/* Message Input */}
-          <form onSubmit={handleSendMessage} className="flex gap-2 mt-3" style={{ position: 'relative', zIndex: 10 }}>
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="اكتب رسالة..."
-              className="flex-1 bg-slate-800 border border-slate-700 focus:border-lime-500 rounded-xl text-white placeholder:text-slate-500 h-11 px-4 outline-none"
-              dir="rtl"
-              inputMode="text"
-              enterKeyHint="send"
-              autoComplete="off"
-              autoCorrect="off"
-            />
-            <Button
-              type="submit"
-              disabled={!newMessage.trim()}
-              className="bg-lime-500 hover:bg-lime-400 text-slate-900 rounded-xl w-11 h-11 p-0"
-            >
-              <Send className="w-5 h-5" />
-            </Button>
-          </form>
+          <div className="relative mt-3">
+            {/* Mention List Popup */}
+            <AnimatePresence>
+              {showMentionList && filteredMentionUsers.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute bottom-full mb-2 left-0 right-0 bg-slate-800 border border-lime-500/30 rounded-xl overflow-hidden z-50 max-h-40 overflow-y-auto"
+                >
+                  {filteredMentionUsers.slice(0, 5).map((p) => (
+                    <button
+                      key={p.user_id}
+                      type="button"
+                      onClick={() => insertMention(p.username)}
+                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-700 transition-colors text-right"
+                    >
+                      <img src={p.avatar} alt={p.username} className="w-8 h-8 rounded-full" />
+                      <span className="text-white font-almarai">@{p.username}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            <form onSubmit={handleSendMessage} className="flex gap-2" style={{ position: 'relative', zIndex: 10 }}>
+              <input
+                type="text"
+                value={newMessage}
+                onChange={handleMessageChange}
+                placeholder="اكتب رسالة... (@ للإشارة)"
+                className="flex-1 bg-slate-800 border border-slate-700 focus:border-lime-500 rounded-xl text-white placeholder:text-slate-500 h-11 px-4 outline-none"
+                dir="rtl"
+                inputMode="text"
+                enterKeyHint="send"
+                autoComplete="off"
+                autoCorrect="off"
+              />
+              <Button
+                type="submit"
+                disabled={!newMessage.trim()}
+                className="bg-lime-500 hover:bg-lime-400 text-slate-900 rounded-xl w-11 h-11 p-0"
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            </form>
+          </div>
         </motion.div>
 
         {/* Gift Modal */}
