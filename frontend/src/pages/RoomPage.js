@@ -867,7 +867,7 @@ const YallaLiveRoom = ({ user }) => {
     if (url.includes('twitch.tv')) {
       const channel = url.split('twitch.tv/')[1]?.split('/')[0] || '';
       if (channel) {
-        return `https://player.twitch.tv/?channel=${channel}&parent=pitch-chat.preview.emergentagent.com&autoplay=true&muted=true`;
+        return `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true`;
       }
     }
     
