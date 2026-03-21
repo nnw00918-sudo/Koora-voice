@@ -3735,16 +3735,24 @@ async def get_fixtures_by_date(date: str):
     CURRENT_SEASON = 2025
     
     if API_FOOTBALL_KEY:
-        for league in FOOTBALL_LEAGUES:
+        # Fetch all leagues in parallel for better performance
+        import asyncio
+        
+        async def fetch_league_fixtures(league):
             fixtures = await fetch_from_api_football("fixtures", {
                 "league": league["id"],
                 "date": date,
                 "season": CURRENT_SEASON
             })
-            
-            if fixtures:
-                for fixture in fixtures:
-                    all_fixtures.append(format_match(fixture))
+            return fixtures if fixtures else []
+        
+        # Run all API calls in parallel
+        results = await asyncio.gather(*[fetch_league_fixtures(league) for league in FOOTBALL_LEAGUES])
+        
+        # Process results
+        for fixtures in results:
+            for fixture in fixtures:
+                all_fixtures.append(format_match(fixture))
     
     # If no fixtures from API, return empty
     if not all_fixtures:
@@ -3774,16 +3782,22 @@ async def get_upcoming_fixtures(days: int = 7):
     CURRENT_SEASON = 2025
     
     if API_FOOTBALL_KEY:
-        for league in FOOTBALL_LEAGUES:
+        import asyncio
+        
+        async def fetch_league_upcoming(league):
             fixtures = await fetch_from_api_football("fixtures", {
                 "league": league["id"],
                 "next": 15,
                 "season": CURRENT_SEASON
             })
-            
-            if fixtures:
-                for fixture in fixtures:
-                    all_fixtures.append(format_match(fixture))
+            return fixtures if fixtures else []
+        
+        # Run all API calls in parallel
+        results = await asyncio.gather(*[fetch_league_upcoming(league) for league in FOOTBALL_LEAGUES])
+        
+        for fixtures in results:
+            for fixture in fixtures:
+                all_fixtures.append(format_match(fixture))
     
     # Sort by date
     all_fixtures.sort(key=lambda x: x.get("date", ""))
@@ -3806,16 +3820,22 @@ async def get_today_fixtures():
     CURRENT_SEASON = 2025
     
     if API_FOOTBALL_KEY:
-        for league in FOOTBALL_LEAGUES:
+        import asyncio
+        
+        async def fetch_league_today(league):
             fixtures = await fetch_from_api_football("fixtures", {
                 "league": league["id"],
                 "date": today,
                 "season": CURRENT_SEASON
             })
-            
-            if fixtures:
-                for fixture in fixtures:
-                    all_fixtures.append(format_match(fixture))
+            return fixtures if fixtures else []
+        
+        # Run all API calls in parallel
+        results = await asyncio.gather(*[fetch_league_today(league) for league in FOOTBALL_LEAGUES])
+        
+        for fixtures in results:
+            for fixture in fixtures:
+                all_fixtures.append(format_match(fixture))
     
     # Sort by time
     all_fixtures.sort(key=lambda x: x.get("date", ""))
