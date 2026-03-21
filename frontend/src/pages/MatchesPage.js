@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { toHijri } from 'hijri-converter';
+import BottomNavigation from '../components/BottomNavigation';
 import { 
   Trophy, 
   Calendar,
@@ -565,26 +566,7 @@ const MatchesPage = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a1a]/95 backdrop-blur-xl border-t border-white/10 px-2 py-2 z-50">
-        <div className="flex justify-around items-center max-w-lg mx-auto">
-          {navItems.map(item => {
-            const isActive = item.path === '/matches';
-            return (
-              <motion.button
-                key={item.id}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => navigate(item.path)}
-                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl ${
-                  isActive ? 'text-amber-500' : 'text-white/40'
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </motion.button>
-            );
-          })}
-        </div>
-      </div>
+      <BottomNavigation isRTL={true} />
 
       {/* Match Detail Modal */}
       <AnimatePresence>

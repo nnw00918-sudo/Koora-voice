@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useLanguage } from '../contexts/LanguageContext';
+import BottomNavigation from '../components/BottomNavigation';
 import { 
   Users, 
   LogOut, 
@@ -620,50 +621,7 @@ const DashboardPage = ({ user, onLogout }) => {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-lime-500/20 z-50">
-        <div className={`max-w-[600px] mx-auto flex justify-around py-3 sm:py-4 px-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex flex-col items-center gap-1 text-lime-400 min-w-[50px] relative"
-          >
-            <div className="absolute -top-3 w-12 h-1 bg-lime-400 rounded-full shadow-[0_0_10px_rgba(163,230,53,0.5)]" />
-            <Home className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('home')}</span>
-          </button>
-          <button
-            data-testid="nav-threads-btn"
-            onClick={() => navigate('/threads')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-lime-400 transition-colors min-w-[50px]"
-          >
-            <MessageSquare className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('threads')}</span>
-          </button>
-          <button
-            data-testid="nav-matches-btn"
-            onClick={() => navigate('/matches')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-lime-400 transition-colors min-w-[50px]"
-          >
-            <Trophy className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('matches')}</span>
-          </button>
-          <button
-            data-testid="nav-messages-btn"
-            onClick={() => navigate('/messages')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-lime-400 transition-colors min-w-[50px]"
-          >
-            <Mail className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{isRTL ? 'الرسائل' : 'Messages'}</span>
-          </button>
-          <button
-            data-testid="nav-settings-btn"
-            onClick={() => navigate('/settings')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-lime-400 transition-colors min-w-[50px]"
-          >
-            <Settings className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('settings')}</span>
-          </button>
-        </div>
-      </div>
+      <BottomNavigation isRTL={isRTL} />
 
       {/* PIN Entry Modal */}
       <AnimatePresence>

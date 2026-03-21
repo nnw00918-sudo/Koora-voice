@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
+import BottomNavigation from '../components/BottomNavigation';
 import { 
   Home, Trophy, Settings, MessageSquare, User, ArrowRight, ArrowLeft,
   Search, Send, Check, CheckCheck, MoreHorizontal, X, MessageCircle
@@ -434,7 +435,7 @@ const MessagesPage = ({ user }) => {
       )}
 
       {/* Bottom Navigation */}
-      <BottomNav />
+      <BottomNavigation isRTL={isRTL} />
     </div>
   );
 
@@ -588,34 +589,6 @@ const MessagesPage = ({ user }) => {
         )}
       </div>
     </motion.div>
-  );
-
-  // Bottom Navigation
-  const BottomNav = () => (
-    <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl border-t border-slate-800 z-40">
-      <div className={`max-w-[600px] mx-auto flex justify-around p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-        <button onClick={() => navigate('/dashboard')} className="flex flex-col items-center gap-1 text-slate-400">
-          <Home className="w-6 h-6" strokeWidth={1.5} />
-          <span className="text-xs font-almarai">{t('home')}</span>
-        </button>
-        <button onClick={() => navigate('/threads')} className="flex flex-col items-center gap-1 text-slate-400">
-          <MessageSquare className="w-6 h-6" strokeWidth={1.5} />
-          <span className="text-xs font-almarai">{t('threads')}</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 text-white">
-          <MessageCircle className="w-6 h-6" strokeWidth={2} />
-          <span className="text-xs font-almarai">{txt.messages}</span>
-        </button>
-        <button onClick={() => navigate('/profile')} className="flex flex-col items-center gap-1 text-slate-400">
-          <User className="w-6 h-6" strokeWidth={1.5} />
-          <span className="text-xs font-almarai">{t('profile')}</span>
-        </button>
-        <button onClick={() => navigate('/settings')} className="flex flex-col items-center gap-1 text-slate-400">
-          <Settings className="w-6 h-6" strokeWidth={1.5} />
-          <span className="text-xs font-almarai">{t('settings')}</span>
-        </button>
-      </div>
-    </div>
   );
 
   return (

@@ -5,6 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import Stories from '../components/Stories';
+import BottomNavigation from '../components/BottomNavigation';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
   Share2, MoreHorizontal, Image, X, Video, MapPin, Smile, CalendarDays,
@@ -864,44 +865,7 @@ const ThreadsPage = ({ user }) => {
       </AnimatePresence>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl border-t border-slate-800 z-40">
-        <div className={`max-w-[600px] mx-auto flex justify-around p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
-          >
-            <Home className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('home')}</span>
-          </button>
-          <button
-            className="flex flex-col items-center gap-1 text-white"
-          >
-            <MessageSquare className="w-6 h-6" strokeWidth={2} />
-            <span className="text-xs font-almarai">{txt.threads}</span>
-          </button>
-          <button
-            onClick={() => navigate('/matches')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
-          >
-            <Trophy className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{isRTL ? 'المباريات' : 'Matches'}</span>
-          </button>
-          <button
-            onClick={() => navigate('/messages')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
-          >
-            <Mail className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{isRTL ? 'الرسائل' : 'Messages'}</span>
-          </button>
-          <button
-            onClick={() => navigate('/settings')}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
-          >
-            <Settings className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('settings')}</span>
-          </button>
-        </div>
-      </div>
+      <BottomNavigation isRTL={isRTL} />
     </div>
   );
 };
