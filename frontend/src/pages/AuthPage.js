@@ -33,7 +33,6 @@ const AuthPage = ({ onLogin }) => {
       const response = await axios.post(`${API}${endpoint}`, payload);
       const { access_token, user } = response.data;
 
-      toast.success(isLogin ? 'تم تسجيل الدخول بنجاح!' : 'تم إنشاء الحساب بنجاح!');
       onLogin(access_token, user);
     } catch (error) {
       const message = error.response?.data?.detail || 'حدث خطأ ما';
