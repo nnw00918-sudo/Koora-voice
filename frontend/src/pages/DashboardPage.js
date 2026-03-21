@@ -405,12 +405,12 @@ const DashboardPage = ({ user, onLogout }) => {
               </div>
             </div>
             
-            {/* Scrolling News */}
-            <div className="overflow-hidden py-3 pr-20 pl-4">
-              <div className="news-ticker-wrapper">
-                <div className="news-ticker-content">
-                  {[...sportsNews, ...sportsNews].map((news, index) => (
-                    <span key={index} className="inline-flex items-center gap-2 text-sm shrink-0">
+            {/* Scrolling News - Using marquee style */}
+            <div className="py-3 pr-20 pl-4 overflow-hidden">
+              <marquee behavior="scroll" direction="right" scrollamount="3">
+                <div className="inline-flex gap-8">
+                  {sportsNews.map((news, index) => (
+                    <span key={index} className="inline-flex items-center gap-2 text-sm">
                       <span className="text-base">{news.icon}</span>
                       <span className={`font-almarai ${
                         news.type === 'live' ? 'text-red-400 font-bold' :
@@ -421,11 +421,11 @@ const DashboardPage = ({ user, onLogout }) => {
                       }`}>
                         {news.text}
                       </span>
-                      <span className="text-lime-500/30 mx-2">|</span>
+                      <span className="text-lime-500/30 mx-4">|</span>
                     </span>
                   ))}
                 </div>
-              </div>
+              </marquee>
             </div>
           </div>
         </div>
