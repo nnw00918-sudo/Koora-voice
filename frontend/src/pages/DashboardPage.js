@@ -404,7 +404,7 @@ const DashboardPage = ({ user, onLogout }) => {
               }`}
             >
               <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'live' ? 'bg-white' : 'bg-red-500'} animate-pulse`}></div>
-              {isRTL ? 'مباشر' : 'Live'}
+              {isRTL ? 'دوانية' : 'Live'}
               <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
                 {rooms.filter(r => r.is_live && !r.is_closed).length}
               </span>
