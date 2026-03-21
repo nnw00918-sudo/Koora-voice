@@ -1945,7 +1945,7 @@ const YallaLiveRoom = ({ user }) => {
           </div>
 
           {/* Message Input */}
-          <form onSubmit={handleSendMessage} className="flex gap-2 mt-3">
+          <form onSubmit={handleSendMessage} className="flex gap-2 mt-3" style={{ position: 'relative', zIndex: 10 }}>
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
@@ -1954,6 +1954,7 @@ const YallaLiveRoom = ({ user }) => {
               dir="rtl"
               inputMode="text"
               enterKeyHint="send"
+              style={{ WebkitUserSelect: 'text', userSelect: 'text' }}
             />
             <Button
               type="submit"

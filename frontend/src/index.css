@@ -69,35 +69,30 @@
     @apply font-cairo;
   }
   
-  /* Prevent text selection on mobile for better UX - but allow on inputs */
+  /* Prevent text selection on buttons for better UX */
   button, a {
     -webkit-user-select: none;
     user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
   
-  /* Allow text selection on inputs */
-  input, select, textarea {
-    -webkit-user-select: text;
-    user-select: text;
-  }
-  
-  /* Better touch targets */
-  button, a {
-    touch-action: manipulation;
-  }
-  
-  /* Fix iOS input zoom and improve input behavior */
+  /* Fix iOS input zoom and ensure proper input behavior */
   input, select, textarea {
     font-size: 16px !important;
-    touch-action: auto;
+    -webkit-user-select: text !important;
+    user-select: text !important;
     -webkit-appearance: none;
     appearance: none;
+    touch-action: auto !important;
+    -webkit-touch-callout: default !important;
+    -webkit-tap-highlight-color: transparent;
   }
   
-  /* Ensure inputs are always clickable and focusable */
+  /* Ensure inputs are always interactive */
   input:not([disabled]),
-  textarea:not([disabled]) {
-    pointer-events: auto;
+  textarea:not([disabled]),
+  select:not([disabled]) {
+    pointer-events: auto !important;
     cursor: text;
   }
 }
@@ -127,6 +122,34 @@ textarea {
   -webkit-user-select: text !important;
   user-select: text !important;
   cursor: text !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Fix input focus issues on iOS */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent zoom on focus in iOS */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Make sure forms don't block input clicks */
+form {
+  touch-action: auto;
+}
+
+/* Ensure motion divs don't interfere with inputs */
+[class*="motion"] input,
+[class*="motion"] textarea {
+  position: relative;
+  z-index: 1;
 }
 
 ::-webkit-scrollbar-track {
