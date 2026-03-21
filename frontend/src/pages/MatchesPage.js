@@ -19,7 +19,8 @@ import {
   Home,
   MessageCircle,
   User,
-  Mic
+  Mic,
+  Mail
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -233,8 +234,8 @@ const MatchesPage = () => {
   const navItems = [
     { id: 'home', icon: Home, label: 'الرئيسية', path: '/dashboard' },
     { id: 'threads', icon: MessageCircle, label: 'المنشورات', path: '/threads' },
-    { id: 'rooms', icon: Mic, label: 'الغرف', path: '/dashboard' },
     { id: 'matches', icon: Trophy, label: 'المباريات', path: '/matches' },
+    { id: 'messages', icon: Mail, label: 'الرسائل', path: '/messages' },
     { id: 'profile', icon: User, label: 'حسابي', path: '/profile' },
   ];
 

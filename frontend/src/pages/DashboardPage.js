@@ -28,7 +28,8 @@ import {
   Sparkles,
   Crown,
   Play,
-  Zap
+  Zap,
+  Mail
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -646,12 +647,12 @@ const DashboardPage = ({ user, onLogout }) => {
             <span className="text-xs font-almarai">{t('matches')}</span>
           </button>
           <button
-            data-testid="nav-profile-btn"
-            onClick={() => navigate('/profile')}
+            data-testid="nav-messages-btn"
+            onClick={() => navigate('/messages')}
             className="flex flex-col items-center gap-1 text-slate-400 hover:text-lime-400 transition-colors min-w-[50px]"
           >
-            <User className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('profile')}</span>
+            <Mail className="w-6 h-6" strokeWidth={1.5} />
+            <span className="text-xs font-almarai">{isRTL ? 'الرسائل' : 'Messages'}</span>
           </button>
           <button
             data-testid="nav-settings-btn"
