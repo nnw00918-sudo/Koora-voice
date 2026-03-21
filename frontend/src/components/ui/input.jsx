@@ -2,19 +2,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Input = React.forwardRef(({ className, type, onClick, onFocus, ...props }, ref) => {
-  const handleClick = (e) => {
-    // Ensure the input gets focus on click
-    e.target.focus();
-    if (onClick) onClick(e);
-  };
-
-  const handleFocus = (e) => {
-    // Select the input on focus for better UX
-    e.target.setSelectionRange(e.target.value.length, e.target.value.length);
-    if (onFocus) onFocus(e);
-  };
-
+const Input = React.forwardRef(({ className, type, ...props }, ref) => {
   return (
     <input
       type={type}
@@ -23,8 +11,6 @@ const Input = React.forwardRef(({ className, type, onClick, onFocus, ...props },
         className
       )}
       ref={ref}
-      onClick={handleClick}
-      onFocus={handleFocus}
       autoComplete="off"
       autoCorrect="off"
       autoCapitalize="off"
