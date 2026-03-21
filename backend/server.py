@@ -3495,13 +3495,28 @@ API_FOOTBALL_BASE_URL = "https://v3.football.api-sports.io"
 
 # Football leagues data
 FOOTBALL_LEAGUES = [
-    {"id": 307, "name": "دوري روشن السعودي", "country": "Saudi Arabia", "logo": "https://media.api-sports.io/football/leagues/307.png", "flag": "🇸🇦"},
-    {"id": 39, "name": "الدوري الإنجليزي", "country": "England", "logo": "https://media.api-sports.io/football/leagues/39.png", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
-    {"id": 140, "name": "الدوري الإسباني", "country": "Spain", "logo": "https://media.api-sports.io/football/leagues/140.png", "flag": "🇪🇸"},
-    {"id": 135, "name": "الدوري الإيطالي", "country": "Italy", "logo": "https://media.api-sports.io/football/leagues/135.png", "flag": "🇮🇹"},
-    {"id": 78, "name": "الدوري الألماني", "country": "Germany", "logo": "https://media.api-sports.io/football/leagues/78.png", "flag": "🇩🇪"},
-    {"id": 61, "name": "الدوري الفرنسي", "country": "France", "logo": "https://media.api-sports.io/football/leagues/61.png", "flag": "🇫🇷"},
-    {"id": 2, "name": "دوري أبطال أوروبا", "country": "Europe", "logo": "https://media.api-sports.io/football/leagues/2.png", "flag": "🇪🇺"},
+    # الدوريات الكبرى
+    {"id": 307, "name": "دوري روشن السعودي", "country": "Saudi Arabia", "logo": "https://media.api-sports.io/football/leagues/307.png", "flag": "🇸🇦", "type": "league"},
+    {"id": 39, "name": "الدوري الإنجليزي", "country": "England", "logo": "https://media.api-sports.io/football/leagues/39.png", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "type": "league"},
+    {"id": 140, "name": "الدوري الإسباني", "country": "Spain", "logo": "https://media.api-sports.io/football/leagues/140.png", "flag": "🇪🇸", "type": "league"},
+    {"id": 135, "name": "الدوري الإيطالي", "country": "Italy", "logo": "https://media.api-sports.io/football/leagues/135.png", "flag": "🇮🇹", "type": "league"},
+    {"id": 78, "name": "الدوري الألماني", "country": "Germany", "logo": "https://media.api-sports.io/football/leagues/78.png", "flag": "🇩🇪", "type": "league"},
+    {"id": 61, "name": "الدوري الفرنسي", "country": "France", "logo": "https://media.api-sports.io/football/leagues/61.png", "flag": "🇫🇷", "type": "league"},
+    {"id": 40, "name": "دوري تشامبيونشيب", "country": "England", "logo": "https://media.api-sports.io/football/leagues/40.png", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "type": "league"},
+    
+    # البطولات الأوروبية
+    {"id": 2, "name": "دوري أبطال أوروبا", "country": "Europe", "logo": "https://media.api-sports.io/football/leagues/2.png", "flag": "🇪🇺", "type": "cup"},
+    {"id": 3, "name": "الدوري الأوروبي", "country": "Europe", "logo": "https://media.api-sports.io/football/leagues/3.png", "flag": "🇪🇺", "type": "cup"},
+    {"id": 848, "name": "دوري المؤتمرات الأوروبي", "country": "Europe", "logo": "https://media.api-sports.io/football/leagues/848.png", "flag": "🇪🇺", "type": "cup"},
+    
+    # الكؤوس المحلية
+    {"id": 45, "name": "كأس الاتحاد الإنجليزي", "country": "England", "logo": "https://media.api-sports.io/football/leagues/45.png", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "type": "cup"},
+    {"id": 48, "name": "كأس رابطة الأندية الإنجليزية", "country": "England", "logo": "https://media.api-sports.io/football/leagues/48.png", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "type": "cup"},
+    {"id": 143, "name": "كأس ملك إسبانيا", "country": "Spain", "logo": "https://media.api-sports.io/football/leagues/143.png", "flag": "🇪🇸", "type": "cup"},
+    {"id": 137, "name": "كأس إيطاليا", "country": "Italy", "logo": "https://media.api-sports.io/football/leagues/137.png", "flag": "🇮🇹", "type": "cup"},
+    {"id": 81, "name": "كأس ألمانيا", "country": "Germany", "logo": "https://media.api-sports.io/football/leagues/81.png", "flag": "🇩🇪", "type": "cup"},
+    {"id": 66, "name": "كأس فرنسا", "country": "France", "logo": "https://media.api-sports.io/football/leagues/66.png", "flag": "🇫🇷", "type": "cup"},
+    {"id": 99, "name": "كأس خادم الحرمين الشريفين", "country": "Saudi Arabia", "logo": "https://media.api-sports.io/football/leagues/99.png", "flag": "🇸🇦", "type": "cup"},
 ]
 
 LEAGUE_NAME_MAP = {league["id"]: league for league in FOOTBALL_LEAGUES}

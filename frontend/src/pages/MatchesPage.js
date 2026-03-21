@@ -371,15 +371,37 @@ const MatchesPage = () => {
       {/* League Filter for standings/scorers */}
       {(activeTab === 'standings' || activeTab === 'scorers') && (
         <div className="px-4 pb-4">
-          <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-            {leagues.map(league => (
+          {/* Leagues Section */}
+          <p className="text-xs text-lime-400 font-cairo font-bold mb-2">الدوريات</p>
+          <div className="flex gap-2 overflow-x-auto pb-3 hide-scrollbar">
+            {leagues.filter(l => l.type === 'league' || !l.type).map(league => (
               <motion.button
                 key={league.id}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleLeagueSelect(league)}
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   selectedLeague?.id === league.id
-                    ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/50 text-amber-400'
+                    ? 'bg-gradient-to-r from-lime-500/20 to-emerald-500/20 border border-lime-500/50 text-lime-400'
+                    : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                }`}
+              >
+                <span className="text-lg">{league.flag}</span>
+                <span>{league.name}</span>
+              </motion.button>
+            ))}
+          </div>
+          
+          {/* Cups Section */}
+          <p className="text-xs text-amber-400 font-cairo font-bold mb-2 mt-2">الكؤوس والبطولات</p>
+          <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+            {leagues.filter(l => l.type === 'cup').map(league => (
+              <motion.button
+                key={league.id}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleLeagueSelect(league)}
+                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  selectedLeague?.id === league.id
+                    ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 text-amber-400'
                     : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
                 }`}
               >
