@@ -52,6 +52,7 @@ const DashboardPage = ({ user, onLogout }) => {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [selectedRoomForPin, setSelectedRoomForPin] = useState(null);
+  const [sportsNews, setSportsNews] = useState([]);
 
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
@@ -60,6 +61,21 @@ const DashboardPage = ({ user, onLogout }) => {
     fetchRooms();
     fetchCategories();
   }, [selectedCategory]);
+
+  // Sports News Ticker Data
+  useEffect(() => {
+    const newsData = [
+      { type: 'transfer', icon: '🔄', text: isRTL ? 'رسمياً: انتقال مبابي إلى ريال مدريد بصفقة تاريخية' : 'Official: Mbappé joins Real Madrid in historic deal' },
+      { type: 'result', icon: '⚽', text: isRTL ? 'الهلال 3-1 النصر في ديربي الرياض' : 'Al-Hilal 3-1 Al-Nassr in Riyadh Derby' },
+      { type: 'coach', icon: '🎙️', text: isRTL ? 'أنشيلوتي: نحن جاهزون لدوري الأبطال' : 'Ancelotti: We are ready for Champions League' },
+      { type: 'news', icon: '📰', text: isRTL ? 'فيفا يعلن عن تغييرات جديدة في قوانين التسلل' : 'FIFA announces new offside rule changes' },
+      { type: 'transfer', icon: '🔄', text: isRTL ? 'برشلونة يقترب من ضم لامين يامال' : 'Barcelona close to signing Lamine Yamal' },
+      { type: 'result', icon: '⚽', text: isRTL ? 'ليفربول 2-0 مانشستر سيتي' : 'Liverpool 2-0 Manchester City' },
+      { type: 'coach', icon: '🎙️', text: isRTL ? 'غوارديولا: سنعود أقوى الموسم القادم' : 'Guardiola: We will come back stronger next season' },
+      { type: 'news', icon: '📰', text: isRTL ? 'السعودية تستضيف كأس العالم 2034' : 'Saudi Arabia to host World Cup 2034' },
+    ];
+    setSportsNews(newsData);
+  }, [isRTL]);
 
   useEffect(() => {
     let result = rooms;
@@ -343,36 +359,48 @@ const DashboardPage = ({ user, onLogout }) => {
           )}
         </AnimatePresence>
 
-        {/* Categories */}
+        {/* Sports News Ticker */}
         <div className="px-4 pb-3">
-          <div className={`flex gap-2 overflow-x-auto hide-scrollbar pb-2 ${isRTL ? '' : 'flex-row-reverse'}`}>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedCategory(null)}
-              className={`px-5 py-2.5 rounded-2xl font-cairo font-bold whitespace-nowrap transition-all ${
-                selectedCategory === null
-                  ? 'bg-gradient-to-r from-lime-400 to-emerald-500 text-slate-950 shadow-[0_0_20px_rgba(163,230,53,0.3)]'
-                  : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-slate-700/50'
-              }`}
-            >
-              {t('all')}
-            </motion.button>
-            {categories.map((cat) => (
-              <motion.button
-                key={cat}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-5 py-2.5 rounded-2xl font-cairo font-bold whitespace-nowrap transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-gradient-to-r from-lime-400 to-emerald-500 text-slate-950 shadow-[0_0_20px_rgba(163,230,53,0.3)]'
-                    : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-slate-700/50'
-                }`}
+          <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border border-lime-500/30 rounded-2xl">
+            {/* Live Badge - positioned outside scroll area */}
+            <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center">
+              <div className="flex items-center gap-1.5 bg-gradient-to-l from-red-600 to-red-500 px-3 py-4 rounded-l-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)]">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <span className="text-white text-xs font-cairo font-bold">أخبار</span>
+              </div>
+            </div>
+            
+            {/* Scrolling News Container */}
+            <div className="overflow-hidden py-3 pr-20 pl-4">
+              <motion.div
+                className="flex gap-12 whitespace-nowrap"
+                initial={{ x: '-100%' }}
+                animate={{ x: '100%' }}
+                transition={{
+                  x: {
+                    repeat: Infinity,
+                    repeatType: "loop",
+                    duration: 20,
+                    ease: "linear",
+                  },
+                }}
               >
-                {cat}
-              </motion.button>
-            ))}
+                {[...sportsNews, ...sportsNews].map((news, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm shrink-0" dir="rtl">
+                    <span className="text-base">{news.icon}</span>
+                    <span className={`font-almarai ${
+                      news.type === 'transfer' ? 'text-sky-400' :
+                      news.type === 'result' ? 'text-lime-400' :
+                      news.type === 'coach' ? 'text-amber-400' :
+                      'text-purple-400'
+                    }`}>
+                      {news.text}
+                    </span>
+                    <span className="text-lime-500/50 mx-2">●</span>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
           </div>
         </div>
 
