@@ -500,3 +500,25 @@ textarea:not(:placeholder-shown) {
     height: 40px;
   }
 }
+
+/* News Ticker Marquee Animation */
+.news-ticker-wrapper {
+  width: 100%;
+  overflow: hidden;
+}
+
+.news-ticker-content {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker-scroll 20s linear infinite;
+  padding-right: 100%;
+}
+
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

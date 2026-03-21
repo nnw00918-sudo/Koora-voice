@@ -62,19 +62,40 @@ const DashboardPage = ({ user, onLogout }) => {
     fetchCategories();
   }, [selectedCategory]);
 
-  // Sports News Ticker Data
+  // Sports News Ticker Data - Fetch from API
   useEffect(() => {
-    const newsData = [
-      { type: 'transfer', icon: '🔄', text: isRTL ? 'رسمياً: انتقال مبابي إلى ريال مدريد بصفقة تاريخية' : 'Official: Mbappé joins Real Madrid in historic deal' },
-      { type: 'result', icon: '⚽', text: isRTL ? 'الهلال 3-1 النصر في ديربي الرياض' : 'Al-Hilal 3-1 Al-Nassr in Riyadh Derby' },
-      { type: 'coach', icon: '🎙️', text: isRTL ? 'أنشيلوتي: نحن جاهزون لدوري الأبطال' : 'Ancelotti: We are ready for Champions League' },
-      { type: 'news', icon: '📰', text: isRTL ? 'فيفا يعلن عن تغييرات جديدة في قوانين التسلل' : 'FIFA announces new offside rule changes' },
-      { type: 'transfer', icon: '🔄', text: isRTL ? 'برشلونة يقترب من ضم لامين يامال' : 'Barcelona close to signing Lamine Yamal' },
-      { type: 'result', icon: '⚽', text: isRTL ? 'ليفربول 2-0 مانشستر سيتي' : 'Liverpool 2-0 Manchester City' },
-      { type: 'coach', icon: '🎙️', text: isRTL ? 'غوارديولا: سنعود أقوى الموسم القادم' : 'Guardiola: We will come back stronger next season' },
-      { type: 'news', icon: '📰', text: isRTL ? 'السعودية تستضيف كأس العالم 2034' : 'Saudi Arabia to host World Cup 2034' },
-    ];
-    setSportsNews(newsData);
+    const fetchSportsNews = async () => {
+      try {
+        const response = await axios.get(`${API}/football/news/ticker`);
+        if (response.data?.news && response.data.news.length > 0) {
+          const formattedNews = response.data.news.map(item => ({
+            type: item.type,
+            icon: item.icon,
+            text: isRTL ? item.text : (item.text_en || item.text)
+          }));
+          setSportsNews(formattedNews);
+        }
+      } catch (error) {
+        console.error('Failed to fetch sports news:', error);
+        // Fallback to static news
+        const fallbackNews = [
+          { type: 'transfer', icon: '🔄', text: isRTL ? 'رسمياً: انتقال مبابي إلى ريال مدريد بصفقة تاريخية' : 'Official: Mbappé joins Real Madrid in historic deal' },
+          { type: 'result', icon: '⚽', text: isRTL ? 'الهلال 3-1 النصر في ديربي الرياض' : 'Al-Hilal 3-1 Al-Nassr in Riyadh Derby' },
+          { type: 'coach', icon: '🎙️', text: isRTL ? 'أنشيلوتي: نحن جاهزون لدوري الأبطال' : 'Ancelotti: We are ready for Champions League' },
+          { type: 'news', icon: '📰', text: isRTL ? 'فيفا يعلن عن تغييرات جديدة في قوانين التسلل' : 'FIFA announces new offside rule changes' },
+          { type: 'transfer', icon: '🔄', text: isRTL ? 'برشلونة يقترب من ضم لامين يامال' : 'Barcelona close to signing Lamine Yamal' },
+          { type: 'result', icon: '⚽', text: isRTL ? 'ليفربول 2-0 مانشستر سيتي' : 'Liverpool 2-0 Manchester City' },
+          { type: 'coach', icon: '🎙️', text: isRTL ? 'غوارديولا: سنعود أقوى الموسم القادم' : 'Guardiola: We will come back stronger next season' },
+          { type: 'news', icon: '📰', text: isRTL ? 'السعودية تستضيف كأس العالم 2034' : 'Saudi Arabia to host World Cup 2034' },
+        ];
+        setSportsNews(fallbackNews);
+      }
+    };
+
+    fetchSportsNews();
+    // Refresh news every 2 minutes
+    const interval = setInterval(fetchSportsNews, 120000);
+    return () => clearInterval(interval);
   }, [isRTL]);
 
   useEffect(() => {
@@ -362,7 +383,7 @@ const DashboardPage = ({ user, onLogout }) => {
         {/* Sports News Ticker */}
         <div className="px-4 pb-3">
           <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border border-lime-500/30 rounded-2xl">
-            {/* Live Badge - positioned outside scroll area */}
+            {/* Live Badge */}
             <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center">
               <div className="flex items-center gap-1.5 bg-gradient-to-l from-red-600 to-red-500 px-3 py-4 rounded-l-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)]">
                 <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
@@ -370,36 +391,27 @@ const DashboardPage = ({ user, onLogout }) => {
               </div>
             </div>
             
-            {/* Scrolling News Container */}
+            {/* Scrolling News */}
             <div className="overflow-hidden py-3 pr-20 pl-4">
-              <motion.div
-                className="flex gap-12 whitespace-nowrap"
-                initial={{ x: '-100%' }}
-                animate={{ x: '100%' }}
-                transition={{
-                  x: {
-                    repeat: Infinity,
-                    repeatType: "loop",
-                    duration: 20,
-                    ease: "linear",
-                  },
-                }}
-              >
-                {[...sportsNews, ...sportsNews].map((news, index) => (
-                  <div key={index} className="flex items-center gap-2 text-sm shrink-0" dir="rtl">
-                    <span className="text-base">{news.icon}</span>
-                    <span className={`font-almarai ${
-                      news.type === 'transfer' ? 'text-sky-400' :
-                      news.type === 'result' ? 'text-lime-400' :
-                      news.type === 'coach' ? 'text-amber-400' :
-                      'text-purple-400'
-                    }`}>
-                      {news.text}
+              <div className="news-ticker-wrapper">
+                <div className="news-ticker-content">
+                  {sportsNews.map((news, index) => (
+                    <span key={index} className="inline-flex items-center gap-2 text-sm mx-6">
+                      <span className="text-base">{news.icon}</span>
+                      <span className={`font-almarai ${
+                        news.type === 'live' ? 'text-red-400 font-bold' :
+                        news.type === 'transfer' ? 'text-sky-400' :
+                        news.type === 'result' ? 'text-lime-400' :
+                        news.type === 'coach' ? 'text-amber-400' :
+                        'text-purple-400'
+                      }`}>
+                        {news.text}
+                      </span>
+                      <span className="text-lime-500/30 mr-4">|</span>
                     </span>
-                    <span className="text-lime-500/50 mx-2">●</span>
-                  </div>
-                ))}
-              </motion.div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

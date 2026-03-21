@@ -4243,6 +4243,247 @@ async def get_league_fixtures(league_id: int):
     
     return {"league": league, "fixtures": all_fixtures}
 
+@api_router.get("/football/news/ticker")
+async def get_football_news_ticker():
+    """Get live sports news for the ticker - results, live matches, and events"""
+    news_items = []
+    CURRENT_SEASON = 2025
+    
+    # Team name translations (English to Arabic)
+    TEAM_TRANSLATIONS = {
+        # Saudi Teams
+        "Al-Hilal Saudi FC": "الهلال",
+        "Al-Hilal": "الهلال",
+        "Al-Nassr": "النصر",
+        "Al-Ittihad": "الاتحاد",
+        "Al-Ahli Saudi FC": "الأهلي",
+        "Al Shabab": "الشباب",
+        "Al-Fateh": "الفتح",
+        "Al Khaleej Saihat": "الخليج",
+        "Al Okhdood": "الأخدود",
+        "Damac FC": "ضمك",
+        "Al Feiha": "الفيحاء",
+        "Al-Taawoun": "التعاون",
+        "Al Raed": "الرائد",
+        "Abha Club": "أبها",
+        "Al-Ettifaq": "الاتفاق",
+        "Al-Riyadh": "الرياض",
+        "Al-Qadsiah": "القادسية",
+        "Al Wehda": "الوحدة",
+        # Premier League
+        "Liverpool": "ليفربول",
+        "Manchester City": "مانشستر سيتي",
+        "Manchester United": "مانشستر يونايتد",
+        "Arsenal": "أرسنال",
+        "Chelsea": "تشيلسي",
+        "Tottenham": "توتنهام",
+        "Newcastle": "نيوكاسل",
+        "Aston Villa": "أستون فيلا",
+        "Brighton": "برايتون",
+        "West Ham": "وست هام",
+        "Bournemouth": "بورنموث",
+        "Fulham": "فولهام",
+        "Wolves": "وولفز",
+        "Crystal Palace": "كريستال بالاس",
+        "Brentford": "برينتفورد",
+        "Everton": "إيفرتون",
+        "Nottingham Forest": "نوتينغهام فورست",
+        "Leicester City": "ليستر سيتي",
+        "Ipswich": "إيبسويتش",
+        "Southampton": "ساوثهامبتون",
+        # La Liga
+        "Real Madrid": "ريال مدريد",
+        "Barcelona": "برشلونة",
+        "Atletico Madrid": "أتلتيكو مدريد",
+        "Athletic Club": "أتلتيك بيلباو",
+        "Real Sociedad": "ريال سوسيداد",
+        "Villarreal": "فياريال",
+        "Real Betis": "ريال بيتيس",
+        "Sevilla": "إشبيلية",
+        "Valencia": "فالنسيا",
+        "Osasuna": "أوساسونا",
+        "Rayo Vallecano": "رايو فاييكانو",
+        "Getafe": "خيتافي",
+        "Celta Vigo": "سيلتا فيغو",
+        "Mallorca": "مايوركا",
+        "Las Palmas": "لاس بالماس",
+        "Girona": "جيرونا",
+        "Alaves": "ألافيس",
+        "Espanyol": "إسبانيول",
+        "Real Valladolid": "بلد الوليد",
+        "Leganes": "ليغانيس",
+        "Levante": "ليفانتي",
+        # Serie A
+        "Inter": "إنتر ميلان",
+        "AC Milan": "ميلان",
+        "Juventus": "يوفنتوس",
+        "Napoli": "نابولي",
+        "AS Roma": "روما",
+        "Lazio": "لاتسيو",
+        "Atalanta": "أتالانتا",
+        "Fiorentina": "فيورنتينا",
+        "Bologna": "بولونيا",
+        "Torino": "تورينو",
+        "Udinese": "أودينيزي",
+        "Genoa": "جنوى",
+        "Cagliari": "كالياري",
+        "Empoli": "إمبولي",
+        "Parma": "بارما",
+        "Como": "كومو",
+        "Hellas Verona": "هيلاس فيرونا",
+        "Lecce": "ليتشي",
+        "Monza": "مونزا",
+        "Venezia": "فينيسيا",
+        "Cremonese": "كريمونيزي",
+        # Bundesliga
+        "Bayern Munich": "بايرن ميونخ",
+        "Borussia Dortmund": "دورتموند",
+        "RB Leipzig": "لايبزيج",
+        "Bayer Leverkusen": "باير ليفركوزن",
+        "VfB Stuttgart": "شتوتغارت",
+        "Eintracht Frankfurt": "آينتراخت فرانكفورت",
+        "SC Freiburg": "فرايبورغ",
+        "Wolfsburg": "فولفسبورغ",
+        "Union Berlin": "يونيون برلين",
+        "Borussia Monchengladbach": "مونشنغلادباخ",
+        "Werder Bremen": "فيردر بريمن",
+        "Mainz 05": "ماينز",
+        "FC Augsburg": "أوغسبورغ",
+        "1899 Hoffenheim": "هوفنهايم",
+        "VfL Bochum": "بوخوم",
+        "FC Heidenheim": "هايدنهايم",
+        "Holstein Kiel": "هولشتاين كيل",
+        "FC St. Pauli": "سانت باولي",
+        # Ligue 1
+        "Paris Saint Germain": "باريس سان جيرمان",
+        "PSG": "باريس سان جيرمان",
+        "Marseille": "مارسيليا",
+        "Monaco": "موناكو",
+        "Lyon": "ليون",
+        "Lille": "ليل",
+        "Nice": "نيس",
+        "Lens": "لانس",
+        "Rennes": "رين",
+        "Strasbourg": "ستراسبورغ",
+        "Nantes": "نانت",
+        "Toulouse": "تولوز",
+        "Montpellier": "مونبلييه",
+        "Reims": "ريمس",
+        "Brest": "بريست",
+        "Le Havre": "لوهافر",
+        "Auxerre": "أوكسير",
+        "Angers": "أنجيه",
+        "Saint-Etienne": "سانت إتيان",
+    }
+    
+    # League name translations
+    LEAGUE_TRANSLATIONS = {
+        "Pro League": "دوري روشن",
+        "Premier League": "الدوري الإنجليزي",
+        "La Liga": "الدوري الإسباني",
+        "Serie A": "الدوري الإيطالي",
+        "Bundesliga": "البوندسليغا",
+        "Ligue 1": "الدوري الفرنسي",
+        "UEFA Champions League": "دوري أبطال أوروبا",
+        "Championship": "تشامبيونشيب",
+    }
+    
+    def translate_team(name):
+        return TEAM_TRANSLATIONS.get(name, name)
+    
+    def translate_league(name):
+        return LEAGUE_TRANSLATIONS.get(name, name)
+    
+    # League IDs we want news from
+    target_leagues = [307, 39, 140, 135, 78, 61, 2, 40]  # Saudi, Big 5, UCL, Championship
+    
+    if API_FOOTBALL_KEY:
+        import asyncio
+        
+        # Fetch live matches
+        async def fetch_live_matches():
+            return await fetch_from_api_football("fixtures", {"live": "all"})
+        
+        # Fetch recent finished matches (last 24 hours)
+        async def fetch_recent_results(league_id):
+            return await fetch_from_api_football("fixtures", {
+                "league": league_id,
+                "season": CURRENT_SEASON,
+                "last": 3
+            })
+        
+        try:
+            # Get live matches
+            live_matches = await fetch_live_matches()
+            
+            if live_matches:
+                for match in live_matches:
+                    league_id = match.get("league", {}).get("id")
+                    if league_id in target_leagues:
+                        home = match.get("teams", {}).get("home", {}).get("name", "")
+                        away = match.get("teams", {}).get("away", {}).get("name", "")
+                        home_ar = translate_team(home)
+                        away_ar = translate_team(away)
+                        home_score = match.get("goals", {}).get("home", 0)
+                        away_score = match.get("goals", {}).get("away", 0)
+                        minute = match.get("fixture", {}).get("status", {}).get("elapsed", 0)
+                        league_name = match.get("league", {}).get("name", "")
+                        league_ar = translate_league(league_name)
+                        
+                        news_items.append({
+                            "type": "live",
+                            "icon": "🔴",
+                            "text": f"مباشر: {home_ar} {home_score} - {away_score} {away_ar} (د{minute}') - {league_ar}",
+                            "text_en": f"LIVE: {home} {home_score} - {away_score} {away} ({minute}') - {league_name}",
+                            "priority": 1
+                        })
+            
+            # Get recent results in parallel
+            results = await asyncio.gather(*[fetch_recent_results(lid) for lid in target_leagues[:6]])
+            
+            for fixtures in results:
+                if fixtures:
+                    for match in fixtures:
+                        status = match.get("fixture", {}).get("status", {}).get("short", "")
+                        if status in ["FT", "AET", "PEN"]:
+                            home = match.get("teams", {}).get("home", {}).get("name", "")
+                            away = match.get("teams", {}).get("away", {}).get("name", "")
+                            home_ar = translate_team(home)
+                            away_ar = translate_team(away)
+                            home_score = match.get("goals", {}).get("home", 0)
+                            away_score = match.get("goals", {}).get("away", 0)
+                            league_name = match.get("league", {}).get("name", "")
+                            league_ar = translate_league(league_name)
+                            
+                            news_items.append({
+                                "type": "result",
+                                "icon": "⚽",
+                                "text": f"نتيجة: {home_ar} {home_score} - {away_score} {away_ar} - {league_ar}",
+                                "text_en": f"Result: {home} {home_score} - {away_score} {away} - {league_name}",
+                                "priority": 2
+                            })
+        except Exception as e:
+            logger.error(f"Error fetching news ticker: {e}")
+    
+    # Add static transfer/coach news as fallback or supplement
+    static_news = [
+        {"type": "transfer", "icon": "🔄", "text": "رسمياً: انتقال مبابي إلى ريال مدريد", "text_en": "Official: Mbappé joins Real Madrid", "priority": 3},
+        {"type": "coach", "icon": "🎙️", "text": "أنشيلوتي: مستعدون لدوري الأبطال", "text_en": "Ancelotti: Ready for Champions League", "priority": 4},
+        {"type": "news", "icon": "📰", "text": "السعودية تستضيف كأس العالم 2034", "text_en": "Saudi Arabia to host World Cup 2034", "priority": 4},
+        {"type": "transfer", "icon": "🔄", "text": "برشلونة يجدد عقد يامال حتى 2030", "text_en": "Barcelona renews Yamal until 2030", "priority": 3},
+        {"type": "coach", "icon": "🎙️", "text": "غوارديولا: الموسم القادم سيكون أفضل", "text_en": "Guardiola: Next season will be better", "priority": 4},
+        {"type": "news", "icon": "📰", "text": "فيفا يعلن قواعد جديدة للتسلل باستخدام الذكاء الاصطناعي", "text_en": "FIFA announces new AI-powered offside rules", "priority": 4},
+        {"type": "transfer", "icon": "🔄", "text": "النصر يضم نجم جديد من الدوري الإنجليزي", "text_en": "Al-Nassr signs new star from Premier League", "priority": 3},
+        {"type": "coach", "icon": "🎙️", "text": "مدرب الهلال: نطمح للقب الآسيوي", "text_en": "Al-Hilal coach: We aim for Asian title", "priority": 4},
+    ]
+    
+    # Combine and sort by priority
+    all_news = news_items + static_news
+    all_news.sort(key=lambda x: x.get("priority", 5))
+    
+    # Limit to 15 items
+    return {"news": all_news[:15], "total": len(all_news)}
+
 # Include the API router - must be at the end after all routes are defined
 app.include_router(api_router)
 
