@@ -154,6 +154,8 @@ const YallaLiveRoom = ({ user }) => {
     const streamPoll = setInterval(fetchStreamStatus, 10000);
 
     return () => {
+      // Clear messages when leaving room (ephemeral chat like Snapchat)
+      setMessages([]);
       leaveRoom();
       stopPolling();
       stopHeartbeat();
@@ -533,6 +535,8 @@ const YallaLiveRoom = ({ user }) => {
   const leaveRoom = async () => {
     try {
       await axios.post(`${API}/rooms/${roomId}/leave`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      // Clear local messages when leaving (ephemeral chat like Snapchat)
+      setMessages([]);
     } catch (error) {
       console.error('Failed to leave room');
     }
@@ -540,6 +544,8 @@ const YallaLiveRoom = ({ user }) => {
 
   // Leave room completely (disconnect audio)
   const handleFullLeave = async () => {
+    // Clear messages first (ephemeral chat)
+    setMessages([]);
     await leaveRoom();
     await cleanupAgora();
     await globalDisconnect();

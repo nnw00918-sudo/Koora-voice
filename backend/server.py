@@ -1608,7 +1608,29 @@ async def leave_room(room_id: str, current_user: User = Depends(get_current_user
         "room_id": room_id,
         "user_id": current_user.id
     })
+    
+    # Check if room is now empty - if so, delete all messages (like Snapchat)
+    remaining_participants = await db.room_participants.count_documents({"room_id": room_id})
+    if remaining_participants == 0:
+        # Delete all messages when room becomes empty
+        await db.messages.delete_many({"room_id": room_id})
+        logger.info(f"Room {room_id} is empty - cleared all messages")
+    
     return {"message": "غادرت الغرفة"}
+
+@api_router.delete("/rooms/{room_id}/messages/clear")
+async def clear_room_messages(room_id: str, current_user: User = Depends(get_current_user)):
+    """Clear all messages in a room (for ephemeral chat like Snapchat)"""
+    # Verify user has permission (room owner or admin)
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if room.get("owner_id") != current_user.id and current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="غير مصرح لك بمسح الرسائل")
+    
+    result = await db.messages.delete_many({"room_id": room_id})
+    return {"message": "تم مسح جميع الرسائل", "deleted_count": result.deleted_count}
 
 @api_router.post("/rooms/{room_id}/heartbeat")
 async def room_heartbeat(room_id: str, current_user: User = Depends(get_current_user)):
