@@ -82,7 +82,7 @@ function App() {
               <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
               <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
               <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
-              <Route path="/admin" element={user ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
+              <Route path="/admin" element={user?.role === 'owner' ? <AdminDashboard user={user} /> : <Navigate to="/dashboard" />} />
               <Route path="/matches" element={user ? <MatchesPage user={user} /> : <Navigate to="/" />} />
               <Route path="/league/:leagueId" element={user ? <LeagueDetailPage user={user} /> : <Navigate to="/" />} />
               <Route path="/threads" element={user ? <ThreadsPage user={user} /> : <Navigate to="/" />} />

@@ -232,7 +232,7 @@ const DashboardPage = ({ user, onLogout }) => {
               </div>
             </div>
             <div className="flex gap-2">
-              {(user.role === 'admin' || user.role === 'owner') && (
+              {user.role === 'owner' && (
                 <Button
                   data-testid="admin-dashboard-btn"
                   onClick={() => navigate('/admin')}
