@@ -1946,15 +1946,17 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Message Input */}
           <form onSubmit={handleSendMessage} className="flex gap-2 mt-3" style={{ position: 'relative', zIndex: 10 }}>
-            <Input
+            <input
+              type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="اكتب رسالة..."
-              className="flex-1 bg-slate-800 border-slate-700 focus:border-lime-500 rounded-xl text-white placeholder:text-slate-500 h-11"
+              className="flex-1 bg-slate-800 border border-slate-700 focus:border-lime-500 rounded-xl text-white placeholder:text-slate-500 h-11 px-4 outline-none"
               dir="rtl"
               inputMode="text"
               enterKeyHint="send"
-              style={{ WebkitUserSelect: 'text', userSelect: 'text' }}
+              autoComplete="off"
+              autoCorrect="off"
             />
             <Button
               type="submit"

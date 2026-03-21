@@ -284,20 +284,25 @@ const MessagesPage = ({ user }) => {
     }
   };
 
+  // Debounced typing handler to prevent lag
+  const typingDebounceRef = useRef(null);
+  
   const handleTyping = () => {
+    // Debounce to prevent sending too many typing indicators
+    if (typingDebounceRef.current) {
+      return; // Already sent typing indicator recently
+    }
+    
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentConversation) {
-      // Clear previous timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      
       wsRef.current.send(JSON.stringify({
         type: 'typing',
         conversation_id: currentConversation.id
       }));
       
-      // Throttle typing indicator
-      typingTimeoutRef.current = setTimeout(() => {}, 2000);
+      // Set debounce flag
+      typingDebounceRef.current = setTimeout(() => {
+        typingDebounceRef.current = null;
+      }, 1000); // Only send typing indicator once per second
     }
   };
 
@@ -511,13 +516,11 @@ const MessagesPage = ({ user }) => {
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
-              handleTyping();
-            }}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+            onFocus={handleTyping}
             placeholder={txt.typeMessage}
-            className={`flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-3 text-white font-almarai outline-none focus:border-sky-500 touch-action-auto ${isRTL ? 'text-right' : 'text-left'}`}
+            className={`flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-3 text-white font-almarai outline-none focus:border-sky-500 ${isRTL ? 'text-right' : 'text-left'}`}
             inputMode="text"
             enterKeyHint="send"
             autoComplete="off"

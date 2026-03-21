@@ -151,6 +151,8 @@ textarea {
   user-select: text !important;
   cursor: text !important;
   -webkit-tap-highlight-color: transparent;
+  /* Disable any transitions that could slow typing */
+  transition: none !important;
 }
 
 /* Fix input focus issues on iOS */
@@ -159,6 +161,8 @@ textarea:focus,
 select:focus {
   outline: none;
   -webkit-tap-highlight-color: transparent;
+  /* Disable transitions on focus to prevent lag */
+  transition: none !important;
 }
 
 /* Prevent zoom on focus in iOS */
@@ -173,11 +177,11 @@ form {
   touch-action: auto;
 }
 
-/* Ensure motion divs don't interfere with inputs */
-[class*="motion"] input,
-[class*="motion"] textarea {
-  position: relative;
-  z-index: 1;
+/* Remove any animation from inputs during typing */
+input:not(:placeholder-shown),
+textarea:not(:placeholder-shown) {
+  animation: none !important;
+  transition: none !important;
 }
 
 ::-webkit-scrollbar-track {
