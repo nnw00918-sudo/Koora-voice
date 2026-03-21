@@ -52,7 +52,10 @@ const DashboardPage = ({ user, onLogout }) => {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [selectedRoomForPin, setSelectedRoomForPin] = useState(null);
-  const [sportsNews, setSportsNews] = useState([]);
+  const [sportsNews, setSportsNews] = useState([
+    { type: 'result', icon: '⚽', text: 'جاري تحميل الأخبار...' }
+  ]);
+  const [newsLoading, setNewsLoading] = useState(true);
 
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
@@ -65,8 +68,10 @@ const DashboardPage = ({ user, onLogout }) => {
   // Sports News Ticker Data - Fetch from API
   useEffect(() => {
     const fetchSportsNews = async () => {
+      setNewsLoading(true);
       try {
         const response = await axios.get(`${API}/football/news/ticker`);
+        console.log('News response:', response.data);
         if (response.data?.news && response.data.news.length > 0) {
           const formattedNews = response.data.news.map(item => ({
             type: item.type,
@@ -74,6 +79,13 @@ const DashboardPage = ({ user, onLogout }) => {
             text: isRTL ? item.text : (item.text_en || item.text)
           }));
           setSportsNews(formattedNews);
+        } else {
+          // Use fallback if no news
+          setSportsNews([
+            { type: 'result', icon: '⚽', text: 'الهلال 1-0 الفتح - دوري روشن' },
+            { type: 'transfer', icon: '🔄', text: 'رسمياً: انتقال مبابي إلى ريال مدريد' },
+            { type: 'result', icon: '⚽', text: 'ليفربول 1-1 توتنهام - الدوري الإنجليزي' },
+          ]);
         }
       } catch (error) {
         console.error('Failed to fetch sports news:', error);
@@ -89,6 +101,8 @@ const DashboardPage = ({ user, onLogout }) => {
           { type: 'news', icon: '📰', text: isRTL ? 'السعودية تستضيف كأس العالم 2034' : 'Saudi Arabia to host World Cup 2034' },
         ];
         setSportsNews(fallbackNews);
+      } finally {
+        setNewsLoading(false);
       }
     };
 
@@ -395,8 +409,8 @@ const DashboardPage = ({ user, onLogout }) => {
             <div className="overflow-hidden py-3 pr-20 pl-4">
               <div className="news-ticker-wrapper">
                 <div className="news-ticker-content">
-                  {sportsNews.map((news, index) => (
-                    <span key={index} className="inline-flex items-center gap-2 text-sm mx-6">
+                  {[...sportsNews, ...sportsNews].map((news, index) => (
+                    <span key={index} className="inline-flex items-center gap-2 text-sm shrink-0">
                       <span className="text-base">{news.icon}</span>
                       <span className={`font-almarai ${
                         news.type === 'live' ? 'text-red-400 font-bold' :
@@ -407,7 +421,7 @@ const DashboardPage = ({ user, onLogout }) => {
                       }`}>
                         {news.text}
                       </span>
-                      <span className="text-lime-500/30 mr-4">|</span>
+                      <span className="text-lime-500/30 mx-2">|</span>
                     </span>
                   ))}
                 </div>

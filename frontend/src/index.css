@@ -505,20 +505,22 @@ textarea:not(:placeholder-shown) {
 .news-ticker-wrapper {
   width: 100%;
   overflow: hidden;
+  position: relative;
 }
 
 .news-ticker-content {
-  display: inline-block;
+  display: inline-flex;
+  gap: 2rem;
   white-space: nowrap;
-  animation: ticker-scroll 20s linear infinite;
-  padding-right: 100%;
+  animation: scroll-rtl 20s linear infinite;
+  will-change: transform;
 }
 
-@keyframes ticker-scroll {
-  0% {
+@keyframes scroll-rtl {
+  from {
     transform: translateX(0);
   }
-  100% {
-    transform: translateX(100%);
+  to {
+    transform: translateX(50%);
   }
 }
