@@ -2830,6 +2830,183 @@ async def get_user_profile(
         }
     }
 
+# ==================== USER SETTINGS ====================
+
+class UserSettings(BaseModel):
+    privacy: Optional[dict] = None
+    security: Optional[dict] = None
+    notifications: Optional[dict] = None
+    display: Optional[dict] = None
+
+@api_router.get("/users/settings")
+async def get_user_settings(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get user settings"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    settings = await db.user_settings.find_one({"user_id": user_id})
+    
+    if not settings:
+        # Return default settings
+        default_settings = {
+            "privacy": {
+                "privateAccount": False,
+                "showOnlineStatus": True,
+                "showLastSeen": True,
+                "allowMessages": "everyone",
+                "allowComments": "everyone",
+                "allowMentions": True,
+                "hideFromSearch": False,
+            },
+            "security": {
+                "twoFactorEnabled": False,
+                "loginAlerts": True,
+            },
+            "notifications": {
+                "pushEnabled": True,
+                "emailEnabled": True,
+                "messages": True,
+                "likes": True,
+                "comments": True,
+                "follows": True,
+                "mentions": True,
+                "roomInvites": True,
+                "liveNotifications": True,
+                "matchReminders": True,
+                "soundEnabled": True,
+                "vibrationEnabled": True,
+            },
+            "display": {
+                "darkMode": True,
+                "autoPlayVideos": True,
+                "dataServerMode": False,
+                "fontSize": "medium",
+            }
+        }
+        return default_settings
+    
+    return {
+        "privacy": settings.get("privacy", {}),
+        "security": settings.get("security", {}),
+        "notifications": settings.get("notifications", {}),
+        "display": settings.get("display", {})
+    }
+
+@api_router.put("/users/settings")
+async def update_user_settings(
+    settings_data: UserSettings,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Update user settings"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    update_data = {"user_id": user_id, "updated_at": datetime.now(timezone.utc)}
+    
+    if settings_data.privacy:
+        update_data["privacy"] = settings_data.privacy
+    if settings_data.security:
+        update_data["security"] = settings_data.security
+    if settings_data.notifications:
+        update_data["notifications"] = settings_data.notifications
+    if settings_data.display:
+        update_data["display"] = settings_data.display
+    
+    await db.user_settings.update_one(
+        {"user_id": user_id},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Settings updated"}
+
+@api_router.get("/users/blocked")
+async def get_blocked_users(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get list of blocked users"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user = await db.users.find_one({"id": user_id})
+    blocked_ids = user.get("blocked", []) if user else []
+    
+    blocked_users = []
+    for blocked_id in blocked_ids:
+        blocked_user = await db.users.find_one({"id": blocked_id})
+        if blocked_user:
+            blocked_users.append({
+                "id": blocked_user["id"],
+                "username": blocked_user["username"],
+                "name": blocked_user.get("name", blocked_user["username"]),
+                "avatar": blocked_user.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={blocked_user['username']}")
+            })
+    
+    return {"blocked": blocked_users}
+
+@api_router.post("/users/{target_user_id}/block")
+async def block_user(
+    target_user_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Block a user"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    if user_id == target_user_id:
+        raise HTTPException(status_code=400, detail="Cannot block yourself")
+    
+    # Add to blocked list
+    await db.users.update_one(
+        {"id": user_id},
+        {"$addToSet": {"blocked": target_user_id}}
+    )
+    
+    # Remove from followers/following
+    await db.users.update_one(
+        {"id": user_id},
+        {"$pull": {"followers": target_user_id, "following": target_user_id}}
+    )
+    await db.users.update_one(
+        {"id": target_user_id},
+        {"$pull": {"followers": user_id, "following": user_id}}
+    )
+    
+    return {"success": True, "message": "User blocked"}
+
+@api_router.delete("/users/{target_user_id}/block")
+async def unblock_user(
+    target_user_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Unblock a user"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$pull": {"blocked": target_user_id}}
+    )
+    
+    return {"success": True, "message": "User unblocked"}
+
 # ==================== DIRECT MESSAGES ====================
 
 class MessageSend(BaseModel):
