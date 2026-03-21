@@ -307,13 +307,16 @@ const DashboardPage = ({ user, onLogout }) => {
               <div className={`relative flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <Search className={`absolute ${isRTL ? 'right-4' : 'left-4'} w-5 h-5 text-lime-400`} />
                 <input
-                  type="text"
+                  type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={isRTL ? 'ابحث عن غرفة...' : 'Search rooms...'}
-                  className={`w-full bg-slate-900/80 border border-lime-500/30 rounded-2xl py-4 ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} text-white font-almarai placeholder-slate-500 focus:outline-none focus:border-lime-400/70 focus:ring-2 focus:ring-lime-400/20 transition-all`}
+                  className={`w-full bg-slate-900/80 border border-lime-500/30 rounded-2xl py-4 ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} text-white font-almarai placeholder-slate-500 focus:outline-none focus:border-lime-400/70 focus:ring-2 focus:ring-lime-400/20 transition-all touch-action-auto`}
                   autoFocus
                   data-testid="search-rooms-input"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
                 />
                 {searchQuery && (
                   <button

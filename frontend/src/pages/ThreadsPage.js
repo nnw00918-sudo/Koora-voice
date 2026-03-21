@@ -505,9 +505,11 @@ const ThreadsPage = ({ user }) => {
                       value={replyContent}
                       onChange={(e) => setReplyContent(e.target.value)}
                       placeholder={txt.writeReply}
-                      className={`w-full bg-transparent text-white font-almarai outline-none resize-none text-sm ${isRTL ? 'text-right' : 'text-left'}`}
+                      className={`w-full bg-transparent text-white font-almarai outline-none resize-none text-sm touch-action-auto ${isRTL ? 'text-right' : 'text-left'}`}
                       rows={2}
                       maxLength={280}
+                      inputMode="text"
+                      autoComplete="off"
                     />
                     <div className={`flex items-center justify-between mt-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <span className="text-slate-500 text-xs">{replyContent.length}/280</span>
@@ -719,8 +721,10 @@ const ThreadsPage = ({ user }) => {
                       value={newThread}
                       onChange={(e) => setNewThread(e.target.value)}
                       placeholder={txt.whatsNew}
-                      className={`w-full bg-transparent text-white text-xl font-almarai outline-none resize-none min-h-[120px] placeholder-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}
+                      className={`w-full bg-transparent text-white text-xl font-almarai outline-none resize-none min-h-[120px] placeholder-slate-600 touch-action-auto ${isRTL ? 'text-right' : 'text-left'}`}
                       autoFocus
+                      inputMode="text"
+                      autoComplete="off"
                     />
                     
                     {/* Media Preview */}
@@ -760,12 +764,14 @@ const ThreadsPage = ({ user }) => {
                     {showTwitterInput && (
                       <div className="mt-3 rounded-2xl border border-slate-700 p-3 bg-slate-900/50">
                         <input
-                          type="text"
+                          type="url"
                           value={twitterUrl}
                           onChange={(e) => setTwitterUrl(e.target.value)}
                           placeholder={txt.twitterPlaceholder}
-                          className="w-full bg-transparent text-white text-sm outline-none mb-3"
+                          className="w-full bg-transparent text-white text-sm outline-none mb-3 touch-action-auto"
                           dir="ltr"
+                          inputMode="url"
+                          autoComplete="off"
                         />
                         <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                           <button

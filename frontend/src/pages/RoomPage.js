@@ -1952,6 +1952,8 @@ const YallaLiveRoom = ({ user }) => {
               placeholder="اكتب رسالة..."
               className="flex-1 bg-slate-800 border-slate-700 focus:border-lime-500 rounded-xl text-white placeholder:text-slate-500 h-11"
               dir="rtl"
+              inputMode="text"
+              enterKeyHint="send"
             />
             <Button
               type="submit"

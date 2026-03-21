@@ -517,7 +517,11 @@ const MessagesPage = ({ user }) => {
             }}
             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
             placeholder={txt.typeMessage}
-            className={`flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-white font-almarai outline-none focus:border-sky-500 ${isRTL ? 'text-right' : 'text-left'}`}
+            className={`flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-3 text-white font-almarai outline-none focus:border-sky-500 touch-action-auto ${isRTL ? 'text-right' : 'text-left'}`}
+            inputMode="text"
+            enterKeyHint="send"
+            autoComplete="off"
+            autoCorrect="off"
           />
           <button
             onClick={sendMessage}
@@ -551,8 +555,11 @@ const MessagesPage = ({ user }) => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={txt.searchUsers}
-              className={`w-full bg-slate-900 border border-slate-700 rounded-full py-2 text-white font-almarai outline-none focus:border-sky-500 ${isRTL ? 'pr-10 pl-4 text-right' : 'pl-10 pr-4 text-left'}`}
+              className={`w-full bg-slate-900 border border-slate-700 rounded-full py-3 text-white font-almarai outline-none focus:border-sky-500 touch-action-auto ${isRTL ? 'pr-10 pl-4 text-right' : 'pl-10 pr-4 text-left'}`}
               autoFocus
+              inputMode="search"
+              enterKeyHint="search"
+              autoComplete="off"
             />
           </div>
         </div>

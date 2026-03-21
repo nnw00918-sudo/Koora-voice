@@ -69,20 +69,36 @@
     @apply font-cairo;
   }
   
-  /* Prevent text selection on mobile for better UX */
+  /* Prevent text selection on mobile for better UX - but allow on inputs */
   button, a {
     -webkit-user-select: none;
     user-select: none;
   }
   
+  /* Allow text selection on inputs */
+  input, select, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  
   /* Better touch targets */
-  button, a, input, select, textarea {
+  button, a {
     touch-action: manipulation;
   }
   
-  /* Fix iOS input zoom */
+  /* Fix iOS input zoom and improve input behavior */
   input, select, textarea {
     font-size: 16px !important;
+    touch-action: auto;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  
+  /* Ensure inputs are always clickable and focusable */
+  input:not([disabled]),
+  textarea:not([disabled]) {
+    pointer-events: auto;
+    cursor: text;
   }
 }
 
@@ -90,6 +106,27 @@
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
+}
+
+/* Force touch action auto on inputs */
+.touch-action-auto {
+  touch-action: auto !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* Ensure inputs work properly on mobile */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+textarea {
+  touch-action: auto !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  cursor: text !important;
 }
 
 ::-webkit-scrollbar-track {
