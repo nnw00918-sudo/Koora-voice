@@ -1,7 +1,7 @@
 {
-  "short_name": "KoraVerse",
-  "name": "KoraVerse - الاستاد الرقمي",
-  "description": "منصة الغرف الصوتية لمحبي كرة القدم",
+  "short_name": "Koora Voice",
+  "name": "Koora Voice - صوت الكورة",
+  "description": "الاستاد الرقمي لعشاق كرة القدم - غرف صوتية ومباريات حية",
   "icons": [
     {
       "src": "favicon.ico",
@@ -12,23 +12,99 @@
       "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#0f0f0f",
-  "background_color": "#0f0f0f",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "theme_color": "#020617",
+  "background_color": "#020617",
   "lang": "ar",
   "dir": "rtl",
   "categories": ["social", "entertainment", "sports"],
-  "screenshots": [],
-  "prefer_related_applications": false
+  "id": "koora-voice-app",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "screenshots": [
+    {
+      "src": "logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "الصفحة الرئيسية"
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "shortcuts": [
+    {
+      "name": "الغرف الصوتية",
+      "short_name": "الغرف",
+      "description": "انضم للغرف الصوتية",
+      "url": "/dashboard",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "المباريات",
+      "short_name": "مباريات",
+      "description": "تابع المباريات المباشرة",
+      "url": "/matches",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "الرسائل",
+      "short_name": "رسائل",
+      "description": "المحادثات الخاصة",
+      "url": "/messages",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "media",
+          "accept": ["image/*", "video/*"]
+        }
+      ]
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+kooravoice",
+      "url": "/handle?url=%s"
+    }
+  ]
 }

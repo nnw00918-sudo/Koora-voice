@@ -29,7 +29,7 @@ const BottomNavigation = ({ isRTL = true }) => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
+    <div className="fixed bottom-0 left-0 right-0 z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       {/* Gradient blur background */}
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/98 to-slate-950/90 backdrop-blur-xl" />
       
@@ -96,9 +96,6 @@ const BottomNavigation = ({ isRTL = true }) => {
           );
         })}
       </div>
-      
-      {/* Bottom safe area for mobile */}
-      <div className="h-safe-area-inset-bottom bg-slate-950" />
     </div>
   );
 };

@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Variables for safe areas */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+/* Dynamic viewport height for mobile */
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+  .h-screen {
+    height: 100dvh;
+  }
+}
+
+/* Safe area padding utilities */
+.pt-safe { padding-top: var(--sat); }
+.pb-safe { padding-bottom: var(--sab); }
+.pl-safe { padding-left: var(--sal); }
+.pr-safe { padding-right: var(--sar); }
+
+.h-safe-area-inset-bottom {
+  height: var(--sab);
+}
+
 @layer base {
   :root {
     --background: 222.2 84% 4.9%;
