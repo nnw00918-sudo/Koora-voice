@@ -84,6 +84,9 @@ const YallaLiveRoom = ({ user }) => {
   const [userCoins, setUserCoins] = useState(user.coins || 1000);
   const [remoteUsers, setRemoteUsers] = useState([]);
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
+  const [localVideoTrack, setLocalVideoTrack] = useState(null);
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [remoteVideoUsers, setRemoteVideoUsers] = useState([]); // Users with active video
   const [seatRequests, setSeatRequests] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState(null);
@@ -229,6 +232,14 @@ const YallaLiveRoom = ({ user }) => {
               return prev;
             });
           }
+          if (mediaType === 'video') {
+            // Add user to remote video users list
+            setRemoteVideoUsers(prev => {
+              const exists = prev.find(u => u.uid === remoteUser.uid);
+              if (!exists) return [...prev, remoteUser];
+              return prev.map(u => u.uid === remoteUser.uid ? remoteUser : u);
+            });
+          }
         } catch (err) {
           console.error('Error subscribing:', err);
         }
@@ -238,10 +249,14 @@ const YallaLiveRoom = ({ user }) => {
         if (mediaType === 'audio') {
           setRemoteUsers(prev => prev.filter(u => u.uid !== remoteUser.uid));
         }
+        if (mediaType === 'video') {
+          setRemoteVideoUsers(prev => prev.filter(u => u.uid !== remoteUser.uid));
+        }
       });
 
       agoraClient.current.on('user-left', (remoteUser) => {
         setRemoteUsers(prev => prev.filter(u => u.uid !== remoteUser.uid));
+        setRemoteVideoUsers(prev => prev.filter(u => u.uid !== remoteUser.uid));
       });
 
       const generatedUid = Math.floor(Math.random() * 1000000);
@@ -269,6 +284,10 @@ const YallaLiveRoom = ({ user }) => {
       if (localAudioTrack) {
         localAudioTrack.stop();
         localAudioTrack.close();
+      }
+      if (localVideoTrack) {
+        localVideoTrack.stop();
+        localVideoTrack.close();
       }
       if (agoraClient.current) {
         await agoraClient.current.leave();
@@ -1254,6 +1273,14 @@ const YallaLiveRoom = ({ user }) => {
   const handleLeaveSeat = async () => {
     try {
       if (isMicOn) await toggleMic();
+      // Stop camera if on
+      if (isCameraOn && localVideoTrack) {
+        await agoraClient.current.unpublish([localVideoTrack]);
+        localVideoTrack.stop();
+        localVideoTrack.close();
+        setLocalVideoTrack(null);
+        setIsCameraOn(false);
+      }
       const response = await axios.post(`${API}/rooms/${roomId}/seat/leave`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(response.data.message);
       setOnStage(false);
@@ -1293,6 +1320,69 @@ const YallaLiveRoom = ({ user }) => {
         errorMessage = 'تم رفض إذن الميكروفون';
       }
       toast.error(errorMessage);
+    }
+  };
+
+  // Toggle Camera with Agora
+  const toggleCamera = async () => {
+    if (!onStage) {
+      toast.error('يجب أن تكون على المنصة لتشغيل الكاميرا');
+      return;
+    }
+    try {
+      if (!isCameraOn) {
+        toast.info('جاري طلب إذن الكاميرا...');
+        const videoTrack = await AgoraRTC.createCameraVideoTrack({
+          encoderConfig: '720p_2',
+          facingMode: cameraFacing
+        });
+        setLocalVideoTrack(videoTrack);
+        await agoraClient.current.publish([videoTrack]);
+        setIsCameraOn(true);
+        setViewMode('mirror'); // Auto switch to video view
+        toast.success('تم تشغيل الكاميرا');
+      } else {
+        if (localVideoTrack) {
+          await agoraClient.current.unpublish([localVideoTrack]);
+          localVideoTrack.stop();
+          localVideoTrack.close();
+          setLocalVideoTrack(null);
+        }
+        setIsCameraOn(false);
+        toast.info('تم إيقاف الكاميرا');
+      }
+    } catch (error) {
+      console.error('Error toggling camera:', error);
+      let errorMessage = 'فشل تشغيل الكاميرا';
+      if (error.code === 'PERMISSION_DENIED' || error.name === 'NotAllowedError') {
+        errorMessage = 'تم رفض إذن الكاميرا';
+      }
+      toast.error(errorMessage);
+    }
+  };
+
+  // Switch camera (front/back)
+  const switchAgoraCamera = async () => {
+    if (!localVideoTrack) return;
+    try {
+      const newFacing = cameraFacing === 'user' ? 'environment' : 'user';
+      // Stop current track
+      await agoraClient.current.unpublish([localVideoTrack]);
+      localVideoTrack.stop();
+      localVideoTrack.close();
+      
+      // Create new track with different camera
+      const videoTrack = await AgoraRTC.createCameraVideoTrack({
+        encoderConfig: '720p_2',
+        facingMode: newFacing
+      });
+      setLocalVideoTrack(videoTrack);
+      await agoraClient.current.publish([videoTrack]);
+      setCameraFacing(newFacing);
+      toast.success(newFacing === 'user' ? 'الكاميرا الأمامية' : 'الكاميرا الخلفية');
+    } catch (error) {
+      console.error('Error switching camera:', error);
+      toast.error('فشل تبديل الكاميرا');
     }
   };
 
@@ -1638,21 +1728,21 @@ const YallaLiveRoom = ({ user }) => {
           {/* Main Stage Card - Stadium Style */}
           <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-800 p-4 shadow-xl">
             
-            {/* Toggle View Buttons when stream is active */}
-            {streamActive && streamUrl && (
-              <div className="flex justify-center gap-2 mb-4">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setViewMode('mics')}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
-                    viewMode === 'mics' 
-                      ? 'bg-lime-500 text-slate-900 shadow-lg shadow-lime-500/30' 
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                  }`}
-                >
-                  <Mic className="w-4 h-4" />
-                  المايكات
-                </motion.button>
+            {/* Toggle View Buttons - Always show video option */}
+            <div className="flex justify-center gap-2 mb-4">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewMode('mics')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
+                  viewMode === 'mics' 
+                    ? 'bg-lime-500 text-slate-900 shadow-lg shadow-lime-500/30' 
+                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                <Mic className="w-4 h-4" />
+                المايكات
+              </motion.button>
+              {streamActive && streamUrl && (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setViewMode('stream')}
@@ -1665,20 +1755,25 @@ const YallaLiveRoom = ({ user }) => {
                   <Tv className="w-4 h-4" />
                   البث المباشر
                 </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setViewMode('mirror')}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
-                    viewMode === 'mirror' 
-                      ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' 
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                  }`}
-                >
-                  <Video className="w-4 h-4" />
-                  البث المرئي
-                </motion.button>
-              </div>
-            )}
+              )}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewMode('mirror')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
+                  viewMode === 'mirror' 
+                    ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' 
+                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                <Video className="w-4 h-4" />
+                الكاميرات
+                {(remoteVideoUsers.length > 0 || isCameraOn) && (
+                  <span className="bg-white/20 text-xs px-1.5 py-0.5 rounded-full">
+                    {remoteVideoUsers.length + (isCameraOn ? 1 : 0)}
+                  </span>
+                )}
+              </motion.button>
+            </div>
 
             {/* Stream View */}
             {streamActive && streamUrl && viewMode === 'stream' && (
@@ -1739,7 +1834,7 @@ const YallaLiveRoom = ({ user }) => {
               </motion.div>
             )}
 
-            {/* Camera/Screen Share View - Discord Style */}
+            {/* Camera/Screen Share View - Agora WebRTC */}
             {viewMode === 'mirror' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -1752,28 +1847,26 @@ const YallaLiveRoom = ({ user }) => {
                     <div className="flex items-center gap-2">
                       <Video className="w-4 h-4 text-purple-400" />
                       <span className="text-white font-cairo font-bold text-sm">البث المرئي</span>
-                      {screenShares.length > 0 && (
+                      {(remoteVideoUsers.length > 0 || isCameraOn) && (
                         <span className="bg-purple-500/30 text-purple-300 text-xs px-2 py-0.5 rounded-full">
-                          {screenShares.length} نشط
+                          {remoteVideoUsers.length + (isCameraOn ? 1 : 0)} نشط
                         </span>
                       )}
                     </div>
                     
                     {/* Controls */}
                     <div className="flex items-center gap-2">
-                      {isScreenSharing ? (
+                      {isCameraOn ? (
                         <>
-                          {/* Switch Camera - only for camera mode */}
-                          {cameraFacing && (
-                            <button 
-                              onClick={switchCamera}
-                              className="flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-white text-xs px-2 py-1.5 rounded-lg transition-colors"
-                            >
-                              <SwitchCamera className="w-4 h-4" />
-                            </button>
-                          )}
+                          {/* Switch Camera */}
                           <button 
-                            onClick={stopScreenShare}
+                            onClick={switchAgoraCamera}
+                            className="flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-white text-xs px-2 py-1.5 rounded-lg transition-colors"
+                          >
+                            <SwitchCamera className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={toggleCamera}
                             className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
                           >
                             <VideoOff className="w-3 h-3" />
@@ -1783,23 +1876,13 @@ const YallaLiveRoom = ({ user }) => {
                       ) : (
                         <div className="flex items-center gap-1">
                           {/* Camera Button */}
-                          {isCameraSupported && (
+                          {isCameraSupported && onStage && (
                             <button 
-                              onClick={() => startScreenShare()}
+                              onClick={toggleCamera}
                               className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
                             >
                               <Camera className="w-3 h-3" />
                               كاميرا
-                            </button>
-                          )}
-                          {/* Screen Share Button */}
-                          {isScreenShareSupported && (
-                            <button 
-                              onClick={startScreenMirror}
-                              className="flex items-center gap-1 bg-sky-500 hover:bg-sky-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
-                            >
-                              <Monitor className="w-3 h-3" />
-                              شاشة
                             </button>
                           )}
                         </div>
@@ -1807,69 +1890,69 @@ const YallaLiveRoom = ({ user }) => {
                     </div>
                   </div>
                   
-                  {/* Active Shares List */}
-                  {screenShares.length > 0 && (
-                    <div className="flex gap-2 p-2 bg-slate-900 overflow-x-auto hide-scrollbar">
-                      {screenShares.map((share) => (
-                        <motion.button
-                          key={share.user_id}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => watchScreenShare(share)}
-                          className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-                            watchingScreenShare?.user_id === share.user_id
-                              ? 'bg-purple-500 text-white'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                          }`}
-                        >
-                          <img src={share.avatar || '/default-avatar.png'} alt="" className="w-6 h-6 rounded-full" />
-                          <span className="text-sm font-cairo">{share.username}</span>
-                          {share.type === 'screen' && <Monitor className="w-3 h-3" />}
-                          {share.user_id === user.id && (
-                            <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded">أنت</span>
-                          )}
-                        </motion.button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Video Display Area */}
-                  <div className="aspect-video bg-black relative">
-                    {watchingScreenShare?.stream ? (
-                      <video
-                        ref={(el) => {
-                          if (el && watchingScreenShare.stream) {
-                            el.srcObject = watchingScreenShare.stream;
-                            el.play().catch(console.error);
-                          }
-                        }}
-                        autoPlay
-                        playsInline
-                        muted={watchingScreenShare.user_id === user.id}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : watchingScreenShare ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                          <p className="text-slate-400 font-cairo text-sm">جاري الاتصال...</p>
+                  {/* Video Grid - Shows all active video streams */}
+                  <div className={`grid gap-2 p-2 bg-black ${
+                    (remoteVideoUsers.length + (isCameraOn ? 1 : 0)) <= 1 ? 'grid-cols-1' :
+                    (remoteVideoUsers.length + (isCameraOn ? 1 : 0)) <= 4 ? 'grid-cols-2' :
+                    'grid-cols-3'
+                  }`}>
+                    {/* Local Video (Your Camera) */}
+                    {isCameraOn && localVideoTrack && (
+                      <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden">
+                        <div 
+                          ref={(el) => {
+                            if (el && localVideoTrack) {
+                              localVideoTrack.play(el);
+                            }
+                          }}
+                          className="w-full h-full"
+                        />
+                        <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded-lg flex items-center gap-1">
+                          <span className="text-white text-xs font-cairo">أنت</span>
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                         </div>
                       </div>
-                    ) : screenShares.length > 0 ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center p-6">
-                          <Video className="w-12 h-12 text-purple-400 mx-auto mb-3" />
-                          <p className="text-slate-400 font-cairo text-sm">اختر بثاً للمشاهدة من القائمة</p>
+                    )}
+                    
+                    {/* Remote Videos (Other Users' Cameras) */}
+                    {remoteVideoUsers.map((remoteUser) => {
+                      // Find participant info by Agora UID
+                      const participant = participants.find(p => {
+                        // Match by checking if this user might be the one
+                        return remoteUsers.some(ru => ru.uid === remoteUser.uid);
+                      });
+                      return (
+                        <div key={remoteUser.uid} className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden">
+                          <div 
+                            ref={(el) => {
+                              if (el && remoteUser.videoTrack) {
+                                remoteUser.videoTrack.play(el);
+                              }
+                            }}
+                            className="w-full h-full"
+                          />
+                          <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded-lg">
+                            <span className="text-white text-xs font-cairo">
+                              {participant?.username || `مستخدم ${remoteUser.uid}`}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
+                      );
+                    })}
+                    
+                    {/* Empty State */}
+                    {!isCameraOn && remoteVideoUsers.length === 0 && (
+                      <div className="col-span-full aspect-video flex items-center justify-center">
                         <div className="text-center p-6">
                           <div className="flex justify-center gap-4 mb-4">
                             <Camera className="w-12 h-12 text-purple-500" />
-                            <Monitor className="w-12 h-12 text-sky-500" />
                           </div>
-                          <p className="text-slate-400 font-cairo text-sm mb-2">شارك الكاميرا أو الشاشة</p>
-                          <p className="text-slate-500 font-cairo text-xs">اضغط "كاميرا" أو "شاشة" للبدء</p>
+                          <p className="text-slate-400 font-cairo text-sm mb-2">
+                            {onStage ? 'شارك الكاميرا' : 'اصعد للمنصة أولاً لتشغيل الكاميرا'}
+                          </p>
+                          {onStage && (
+                            <p className="text-slate-500 font-cairo text-xs">اضغط "كاميرا" للبدء</p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -2186,6 +2269,18 @@ const YallaLiveRoom = ({ user }) => {
                   }`}
                 >
                   {isMicOn ? <Mic className="w-5 h-5 text-slate-900" /> : <MicOff className="w-5 h-5 text-slate-300" />}
+                </motion.button>
+                {/* Camera Button */}
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={toggleCamera}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                    isCameraOn 
+                      ? 'bg-purple-500 shadow-lg shadow-purple-500/30' 
+                      : 'bg-slate-800 border border-slate-700'
+                  }`}
+                >
+                  {isCameraOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-slate-300" />}
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
