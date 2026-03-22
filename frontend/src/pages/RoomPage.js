@@ -2402,136 +2402,29 @@ const YallaLiveRoom = ({ user }) => {
 
             {/* Speakers Grid - Shows when no stream or user selects mics */}
             {(!streamActive || viewMode === 'mics') && (
-              <div className="px-1 py-1">
-                {/* Stage Header - Mini */}
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/20 to-transparent" />
-                  <div className="flex items-center gap-1 px-2 py-0.5 bg-lime-500/10 border border-lime-500/20 rounded-full">
-                    <Star className="w-2.5 h-2.5 text-lime-400" />
-                    <span className="text-lime-400 font-cairo font-bold text-[10px]">المنصة</span>
-                    <span className="text-lime-300/70 text-[8px]">({speakers.length}/12)</span>
-                  </div>
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/20 to-transparent" />
-                </div>
-
-                {/* Speakers Grid - Mini */}
-                <div className="grid grid-cols-6 gap-1 justify-items-center max-w-xs mx-auto">
+              <div className="px-2">
+                {/* Ultra Mini Stage - Single Line */}
+                <div className="flex items-center justify-center gap-2 py-1">
+                  <Star className="w-3 h-3 text-lime-400/70" />
+                  
                   {speakers.length > 0 ? speakers.map((seat, index) => (
-                    <motion.div
-                      key={seat.seat_number}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: index * 0.05, type: "spring" }}
-                      className="flex flex-col items-center"
-                    >
-                      <button
-                        onClick={() => {
-                          if (isOwner && seat.user.user_id !== user.id) {
-                            setShowUserMenu(showUserMenu === seat.user.user_id ? null : seat.user.user_id);
-                          }
-                        }}
-                        className="relative group"
-                      >
-                        {/* Glow Effect for Speaking */}
-                        {(seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)) && (
-                          <>
-                            <motion.div 
-                              animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
-                              transition={{ duration: 1.5, repeat: Infinity }}
-                              className="absolute inset-0 rounded-full bg-lime-500 blur-lg"
-                            />
-                            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-lime-400 to-lime-600 opacity-75 blur-sm animate-pulse" />
-                          </>
-                        )}
-                        
-                        <div className={`relative w-8 h-8 rounded-full overflow-hidden border-2 transition-all ${
-                          seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
-                            ? 'border-lime-500 ring-1 ring-lime-500/50 shadow-[0_0_10px_rgba(132,204,22,0.4)]'
-                            : seat.user.is_muted
-                            ? 'border-red-500/50 grayscale-[50%]'
-                            : 'border-slate-600 group-hover:border-lime-500/50'
-                        }`}>
-                          <img src={seat.user.avatar} alt={seat.user.username} className="w-full h-full object-cover" />
-                          
-                          {/* Owner Badge */}
-                          {seat.user.user_id === room?.owner_id && (
-                            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-amber-500 flex items-center justify-center">
-                              <Crown className="w-1.5 h-1.5 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Mic Status Badge */}
-                        <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full flex items-center justify-center border border-slate-950 ${
-                          seat.user.is_muted ? 'bg-red-500' : 'bg-lime-500'
-                        }`}>
-                          {seat.user.is_muted ? <MicOff className="w-2 h-2 text-white" /> : <Mic className="w-2 h-2 text-slate-900" />}
-                        </div>
-                      </button>
-                      
-                      {/* Name - Hidden for compact view */}
-                      <p className="text-white text-[8px] font-cairo mt-0.5 truncate max-w-[40px] text-center leading-tight">
-                        {seat.user.user_id === user.id ? 'أنت' : seat.user.username?.slice(0,4)}
-                      </p>
-
-                  {/* User Menu */}
-                  <AnimatePresence>
-                    {isOwner && showUserMenu === seat.user.user_id && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8, y: -10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, y: -10 }}
-                        className="absolute top-24 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-xl rounded-xl p-2 shadow-2xl border border-violet-500/30 z-50 min-w-[140px]"
-                      >
-                        <div className="space-y-1">
-                          {seat.user.is_muted ? (
-                            <button onClick={() => { handleUnmuteUser(seat.user.user_id); setShowUserMenu(null); }}
-                              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-green-500/20 text-green-400 text-sm">
-                              <Mic className="w-4 h-4" /> إلغاء الكتم
-                            </button>
-                          ) : (
-                            <button onClick={() => { handleMuteUser(seat.user.user_id); setShowUserMenu(null); }}
-                              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-yellow-500/20 text-yellow-400 text-sm">
-                              <MicOff className="w-4 h-4" /> كتم
-                            </button>
-                          )}
-                          <button onClick={() => { handleRemoveFromStage(seat.user.user_id); setShowUserMenu(null); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-orange-500/20 text-orange-400 text-sm">
-                            <ArrowDownCircle className="w-4 h-4" /> إنزال
-                          </button>
-                          <button onClick={() => { handleKickUser(seat.user.user_id); setShowUserMenu(null); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-500/20 text-red-400 text-sm">
-                            <UserX className="w-4 h-4" /> طرد
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              )) : (
-                // Empty Stage Placeholder - Mini
-                <div className="col-span-6 flex flex-col items-center justify-center py-2">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
-                      <div key={i} className="w-6 h-6 rounded-full bg-slate-800/50 border border-dashed border-lime-500/20 flex items-center justify-center">
-                        <span className="text-lime-500/40 text-xs">+</span>
+                    <div key={seat.seat_number} className="relative">
+                      <div className={`w-6 h-6 rounded-full overflow-hidden border ${
+                        seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_6px_rgba(132,204,22,0.5)]' : 'border-slate-600'
+                      }`}>
+                        <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
                       </div>
-                    ))}
-                  </div>
-                  <p className="text-slate-500 font-cairo text-[10px] mt-1">لا يوجد متحدثين</p>
-                </div>
-              )}
-              </div>
-
-              {/* Stats */}
-              <div className="flex justify-center gap-4 mt-4">
-                <div className="flex items-center gap-2 bg-lime-500/20 px-3 py-1.5 rounded-full">
-                  <Mic className="w-4 h-4 text-lime-400" />
-                  <span className="text-lime-400 font-bold text-sm">{speakers.length}</span>
-                  <span className="text-lime-300/70 text-xs">متحدث</span>
+                      {seat.user.is_muted && <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full" />}
+                    </div>
+                  )) : (
+                    [...Array(6)].map((_, i) => (
+                      <div key={i} className="w-6 h-6 rounded-full border border-dashed border-lime-500/20 bg-slate-800/30" />
+                    ))
+                  )}
+                  
+                  <span className="text-lime-400/50 text-[9px]">{speakers.length}/12</span>
                 </div>
               </div>
-            </div>
             )}
           </div>
         </motion.div>
