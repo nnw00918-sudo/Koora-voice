@@ -2225,12 +2225,37 @@ const YallaLiveRoom = ({ user }) => {
                   </div>
                 </div>
                 <div className="relative aspect-video bg-black">
-                  <iframe
-                    src={streamUrl}
-                    className="absolute inset-0 w-full h-full border-0"
-                    allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-                    allowFullScreen
-                  />
+                  {(() => {
+                    // Convert YouTube URL to embed URL
+                    let embedUrl = streamUrl;
+                    
+                    // YouTube watch URL
+                    const ytMatch = streamUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
+                    if (ytMatch) {
+                      embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+                    }
+                    
+                    // YouTube live URL
+                    const ytLiveMatch = streamUrl.match(/youtube\.com\/live\/([^?]+)/);
+                    if (ytLiveMatch) {
+                      embedUrl = `https://www.youtube.com/embed/${ytLiveMatch[1]}?autoplay=1`;
+                    }
+                    
+                    // Twitch URL
+                    const twitchMatch = streamUrl.match(/twitch\.tv\/([^?/]+)/);
+                    if (twitchMatch) {
+                      embedUrl = `https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${window.location.hostname}`;
+                    }
+                    
+                    return (
+                      <iframe
+                        src={embedUrl}
+                        className="absolute inset-0 w-full h-full border-0"
+                        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             </div>
