@@ -68,6 +68,26 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const AGORA_APP_ID = process.env.REACT_APP_AGORA_APP_ID;
 
+// Remote Video Circle Component for stage avatars
+const RemoteVideoCircle = ({ remoteUser }) => {
+  const videoRef = useRef(null);
+  
+  useEffect(() => {
+    if (remoteUser?.videoTrack && videoRef.current) {
+      remoteUser.videoTrack.play(videoRef.current);
+    }
+    return () => {
+      if (remoteUser?.videoTrack) {
+        remoteUser.videoTrack.stop();
+      }
+    };
+  }, [remoteUser]);
+  
+  return (
+    <div ref={videoRef} className="w-full h-full object-cover" />
+  );
+};
+
 const YallaLiveRoom = ({ user }) => {
   const { roomId } = useParams();
   const navigate = useNavigate();
@@ -2259,16 +2279,42 @@ const YallaLiveRoom = ({ user }) => {
             <div className="relative z-10 border-b border-lime-500/20 px-4 py-5">
               <div className="flex items-center justify-center gap-6">
                 <Star className="w-7 h-7 text-lime-400" />
-                {speakers.length > 0 ? speakers.map((seat) => (
-                  <div key={seat.seat_number} className="relative">
-                    <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
-                      seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_14px_rgba(132,204,22,0.6)]' : 'border-slate-600'
-                    }`}>
-                      <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
+                {speakers.length > 0 ? speakers.map((seat) => {
+                  // Check if this user has active video
+                  const isLocalUser = seat.user.user_id === user.id;
+                  const hasLocalCamera = isLocalUser && isCameraOn && localCameraStream.current;
+                  const remoteVideo = remoteVideoUsers.find(rv => rv.uid === seat.user.user_id || rv.uid === seat.user.agora_uid);
+                  const hasVideo = hasLocalCamera || remoteVideo;
+                  
+                  return (
+                    <div key={seat.seat_number} className="relative">
+                      <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
+                        seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_14px_rgba(132,204,22,0.6)]' : 
+                        hasVideo ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'border-slate-600'
+                      }`}>
+                        {hasLocalCamera ? (
+                          <video
+                            ref={(el) => {
+                              if (el && localCameraStream.current) {
+                                el.srcObject = localCameraStream.current;
+                              }
+                            }}
+                            autoPlay
+                            playsInline
+                            muted
+                            className="w-full h-full object-cover"
+                          />
+                        ) : remoteVideo ? (
+                          <RemoteVideoCircle remoteUser={remoteVideo} />
+                        ) : (
+                          <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      {seat.user.is_muted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full" />}
+                      {hasVideo && <div className="absolute -top-1 -left-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center"><Video className="w-3 h-3 text-white" /></div>}
                     </div>
-                    {seat.user.is_muted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full" />}
-                  </div>
-                )) : (
+                  );
+                }) : (
                   [...Array(2)].map((_, i) => (
                     <div key={i} className="w-16 h-16 rounded-full border-2 border-dashed border-lime-500/30 bg-slate-800/30" />
                   ))
