@@ -1941,23 +1941,7 @@ const YallaLiveRoom = ({ user }) => {
               ) : (
                 messages.slice(-20).map((message, index) => {
               const isOwnMessage = message.user_id === user.id;
-              // Check if message is a single emoji (including compound emojis like ❤️)
-              const emojiRegex = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200D(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
-              const isEmoji = emojiRegex.test(message.content);
               
-              if (isEmoji) {
-                return (
-                  <motion.div 
-                    key={message.id}
-                    initial={{ scale: 0, y: 20 }}
-                    animate={{ scale: 1, y: 0 }}
-                    className="flex justify-center"
-                  >
-                    <span className="text-2xl">{message.content}</span>
-                  </motion.div>
-                );
-              }
-
               return (
                 <motion.div 
                   key={message.id}
