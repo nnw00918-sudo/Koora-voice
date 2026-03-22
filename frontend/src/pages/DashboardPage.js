@@ -116,9 +116,7 @@ const DashboardPage = ({ user, onLogout }) => {
     let result = rooms;
     
     if (statusFilter === 'live') {
-      result = result.filter(room => room.is_live && !room.is_closed);
-    } else if (statusFilter === 'closed') {
-      result = result.filter(room => room.is_closed);
+      result = result.filter(room => room.room_type === 'diwaniya' || room.is_live);
     }
     
     if (searchQuery.trim()) {
@@ -458,25 +456,9 @@ const DashboardPage = ({ user, onLogout }) => {
               }`}
             >
               <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'live' ? 'bg-white' : 'bg-red-500'} animate-pulse`}></div>
-              {isRTL ? 'دوانية' : 'Live'}
+              {isRTL ? 'دوانية' : 'Diwaniya'}
               <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-                {rooms.filter(r => r.is_live && !r.is_closed).length}
-              </span>
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setStatusFilter('closed')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
-                statusFilter === 'closed'
-                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)]'
-                  : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 border border-slate-700/50'
-              }`}
-            >
-              <Lock className="w-3.5 h-3.5" />
-              {isRTL ? 'مغلقة' : 'Closed'}
-              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-                {rooms.filter(r => r.is_closed).length}
+                {rooms.filter(r => r.room_type === 'diwaniya' || r.is_live).length}
               </span>
             </motion.button>
           </div>
@@ -554,14 +536,6 @@ const DashboardPage = ({ user, onLogout }) => {
                       </motion.div>
                     )}
                     
-                    {/* Closed Badge */}
-                    {room.is_closed && (
-                      <div className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'} flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(249,115,22,0.4)]`}>
-                        <Lock className="w-4 h-4 text-white" />
-                        <span className="text-white font-cairo font-bold text-sm">{isRTL ? 'مغلقة' : 'Closed'}</span>
-                      </div>
-                    )}
-                    
                     {/* Participants Count */}
                     <div className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'} flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-full border border-white/10`}>
                       <Users className="w-4 h-4 text-lime-400" strokeWidth={2} />
@@ -603,23 +577,7 @@ const DashboardPage = ({ user, onLogout }) => {
                     </p>
 
                     {/* Host & Join Button */}
-                    <div className={`flex items-center justify-between ${isRTL ? '' : 'flex-row-reverse'}`}>
-                      {/* Host */}
-                      <div className={`flex items-center gap-3 ${isRTL ? '' : 'flex-row-reverse'}`}>
-                        <div className="relative">
-                          <img
-                            src={room.owner_avatar}
-                            alt={room.owner_name}
-                            className="w-10 h-10 rounded-full ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)]"
-                          />
-                          <Crown className="absolute -top-1 -right-1 w-4 h-4 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.8)]" />
-                        </div>
-                        <div className={isRTL ? 'text-left' : 'text-right'}>
-                          <p className="text-xs text-slate-500 font-almarai">{t('host')}</p>
-                          <p className="text-sm text-white font-cairo font-bold">{room.owner_name}</p>
-                        </div>
-                      </div>
-
+                    <div className={`flex items-center justify-end ${isRTL ? '' : 'flex-row-reverse'}`}>
                       {/* Join/Enter Button */}
                       {room.is_closed && user.role !== 'owner' ? (
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>

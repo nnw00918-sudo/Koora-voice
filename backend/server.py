@@ -220,6 +220,7 @@ class RoomCreate(BaseModel):
     description: str
     category: str
     image: str
+    room_type: str = "all"  # "all" or "diwaniya"
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -741,10 +742,11 @@ async def create_room(room_data: RoomCreate, current_user: User = Depends(get_cu
         "description": room_data.description,
         "category": room_data.category,
         "image": room_data.image,
+        "room_type": room_data.room_type,  # "all" or "diwaniya"
         "owner_id": current_user.id,
         "owner_name": current_user.username,
         "owner_avatar": current_user.avatar,
-        "is_live": True,
+        "is_live": room_data.room_type == "diwaniya",  # Diwaniya rooms are always live
         "is_closed": False,
         "total_seats": 12,
         "participant_count": 0,

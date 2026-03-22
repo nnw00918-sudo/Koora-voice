@@ -19,6 +19,7 @@ const CreateRoomPage = ({ user }) => {
     title: '',
     description: '',
     category: '',
+    room_type: 'all', // 'all' or 'diwaniya'
     image: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55'
   });
 
@@ -132,6 +133,39 @@ const CreateRoomPage = ({ user }) => {
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
+            </div>
+
+            {/* Room Type - الكل أو دوانية */}
+            <div className="space-y-2">
+              <Label className="text-slate-300 font-almarai text-right block">
+                تصنيف الغرفة *
+              </Label>
+              <div className="flex gap-3 justify-end">
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setFormData({ ...formData, room_type: 'all' })}
+                  className={`flex-1 py-3 px-4 rounded-xl font-cairo font-bold text-sm transition-all ${
+                    formData.room_type === 'all'
+                      ? 'bg-sky-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.4)]'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  }`}
+                >
+                  الكل
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setFormData({ ...formData, room_type: 'diwaniya' })}
+                  className={`flex-1 py-3 px-4 rounded-xl font-cairo font-bold text-sm transition-all ${
+                    formData.room_type === 'diwaniya'
+                      ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  }`}
+                >
+                  🔴 دوانية
+                </motion.button>
+              </div>
             </div>
 
             {/* Image URL */}
