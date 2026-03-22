@@ -171,6 +171,7 @@ const YallaLiveRoom = ({ user }) => {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [watchingScreenShare, setWatchingScreenShare] = useState(null);
   const [cameraFacing, setCameraFacing] = useState('user'); // 'user' = front, 'environment' = back
+  const [expandedVideo, setExpandedVideo] = useState(null); // For viewing video fullscreen
   const screenShareStream = useRef(null);
   const screenShareVideoRef = useRef(null);
   
@@ -2288,10 +2289,18 @@ const YallaLiveRoom = ({ user }) => {
                   
                   return (
                     <div key={seat.seat_number} className="relative">
-                      <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
-                        seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_14px_rgba(132,204,22,0.6)]' : 
-                        hasVideo ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'border-slate-600'
-                      }`}>
+                      <button
+                        onClick={() => hasVideo && setExpandedVideo({ 
+                          isLocal: isLocalUser, 
+                          remoteUser: remoteVideo,
+                          username: seat.user.username,
+                          avatar: seat.user.avatar
+                        })}
+                        className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
+                          seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_14px_rgba(132,204,22,0.6)]' : 
+                          hasVideo ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'border-slate-600'
+                        } ${hasVideo ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+                      >
                         {hasLocalCamera ? (
                           <video
                             ref={(el) => {
@@ -2309,7 +2318,7 @@ const YallaLiveRoom = ({ user }) => {
                         ) : (
                           <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
                         )}
-                      </div>
+                      </button>
                       {seat.user.is_muted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full" />}
                       {hasVideo && <div className="absolute -top-1 -left-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center"><Video className="w-3 h-3 text-white" /></div>}
                     </div>
@@ -3271,6 +3280,89 @@ const YallaLiveRoom = ({ user }) => {
           onClose={() => setShowWatchPartyModal(false)}
           onStart={handleStartWatchParty}
         />
+
+        {/* Expanded Video Modal */}
+        <AnimatePresence>
+          {expandedVideo && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+              onClick={() => setExpandedVideo(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="relative w-full max-w-md aspect-[3/4] bg-slate-900 rounded-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Video */}
+                {expandedVideo.isLocal && localCameraStream.current ? (
+                  <video
+                    ref={(el) => {
+                      if (el && localCameraStream.current) {
+                        el.srcObject = localCameraStream.current;
+                      }
+                    }}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                ) : expandedVideo.remoteUser ? (
+                  <div className="w-full h-full">
+                    <RemoteVideoCircle remoteUser={expandedVideo.remoteUser} />
+                  </div>
+                ) : (
+                  <img src={expandedVideo.avatar} alt="" className="w-full h-full object-cover" />
+                )}
+
+                {/* Header */}
+                <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/70 to-transparent">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-cairo font-bold">{expandedVideo.username}</span>
+                    <button
+                      onClick={() => setExpandedVideo(null)}
+                      className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
+                    >
+                      <X className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Controls - Only for local camera */}
+                {expandedVideo.isLocal && (
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
+                    <div className="flex items-center justify-center gap-4">
+                      {/* Switch Camera Button */}
+                      <button
+                        onClick={switchAgoraCamera}
+                        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-purple-500 text-white font-cairo font-bold"
+                      >
+                        <SwitchCamera className="w-5 h-5" />
+                        <span>تبديل الكاميرا</span>
+                      </button>
+                      
+                      {/* Close Camera */}
+                      <button
+                        onClick={() => {
+                          toggleCamera();
+                          setExpandedVideo(null);
+                        }}
+                        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500 text-white font-cairo font-bold"
+                      >
+                        <VideoOff className="w-5 h-5" />
+                        <span>إيقاف</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
