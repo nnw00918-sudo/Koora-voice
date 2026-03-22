@@ -556,6 +556,13 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Update local video when camera stream changes
+  useEffect(() => {
+    if (localVideoRef.current && localCameraStream.current) {
+      localVideoRef.current.srcObject = localCameraStream.current;
+    }
+  }, [isCameraOn, cameraFacing]);
+
   const fetchSeatRequests = async () => {
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/seat/requests`, {
@@ -1338,7 +1345,11 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  // Toggle Camera with Agora
+  // Local camera stream reference
+  const localCameraStream = useRef(null);
+  const localVideoRef = useRef(null);
+
+  // Toggle Camera - Uses phone camera directly
   const toggleCamera = async () => {
     if (!onStage) {
       toast.error('يجب أن تكون على المنصة لتشغيل الكاميرا');
@@ -1347,16 +1358,38 @@ const YallaLiveRoom = ({ user }) => {
     try {
       if (!isCameraOn) {
         toast.info('جاري طلب إذن الكاميرا...');
+        
+        // Get camera stream directly from phone
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: cameraFacing,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        });
+        
+        localCameraStream.current = stream;
+        
+        // Also publish to Agora for others to see
         const videoTrack = await AgoraRTC.createCameraVideoTrack({
           encoderConfig: '720p_2',
           facingMode: cameraFacing
         });
         setLocalVideoTrack(videoTrack);
         await agoraClient.current.publish([videoTrack]);
+        
         setIsCameraOn(true);
-        setViewMode('mirror'); // Auto switch to video view
+        setViewMode('mirror');
         toast.success('تم تشغيل الكاميرا');
       } else {
+        // Stop local stream
+        if (localCameraStream.current) {
+          localCameraStream.current.getTracks().forEach(track => track.stop());
+          localCameraStream.current = null;
+        }
+        
+        // Stop Agora track
         if (localVideoTrack) {
           await agoraClient.current.unpublish([localVideoTrack]);
           localVideoTrack.stop();
@@ -1378,21 +1411,40 @@ const YallaLiveRoom = ({ user }) => {
 
   // Switch camera (front/back)
   const switchAgoraCamera = async () => {
-    if (!localVideoTrack) return;
+    if (!isCameraOn) return;
     try {
       const newFacing = cameraFacing === 'user' ? 'environment' : 'user';
-      // Stop current track
-      await agoraClient.current.unpublish([localVideoTrack]);
-      localVideoTrack.stop();
-      localVideoTrack.close();
       
-      // Create new track with different camera
+      // Stop current local stream
+      if (localCameraStream.current) {
+        localCameraStream.current.getTracks().forEach(track => track.stop());
+      }
+      
+      // Get new stream with different camera
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: newFacing,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+      localCameraStream.current = stream;
+      
+      // Update Agora track
+      if (localVideoTrack) {
+        await agoraClient.current.unpublish([localVideoTrack]);
+        localVideoTrack.stop();
+        localVideoTrack.close();
+      }
+      
       const videoTrack = await AgoraRTC.createCameraVideoTrack({
         encoderConfig: '720p_2',
         facingMode: newFacing
       });
       setLocalVideoTrack(videoTrack);
       await agoraClient.current.publish([videoTrack]);
+      
       setCameraFacing(newFacing);
       toast.success(newFacing === 'user' ? 'الكاميرا الأمامية' : 'الكاميرا الخلفية');
     } catch (error) {
@@ -2038,16 +2090,16 @@ const YallaLiveRoom = ({ user }) => {
                     (remoteVideoUsers.length + (isCameraOn ? 1 : 0)) <= 4 ? 'grid-cols-2' :
                     'grid-cols-3'
                   }`}>
-                    {/* Local Video (Your Camera) */}
-                    {isCameraOn && localVideoTrack && (
+                    {/* Local Video (Your Camera) - Direct from phone */}
+                    {isCameraOn && localCameraStream.current && (
                       <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden">
-                        <div 
-                          ref={(el) => {
-                            if (el && localVideoTrack) {
-                              localVideoTrack.play(el);
-                            }
-                          }}
-                          className="w-full h-full"
+                        <video
+                          ref={localVideoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="w-full h-full object-cover"
+                          style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
                         />
                         <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded-lg flex items-center gap-1">
                           <span className="text-white text-xs font-cairo">أنت</span>
