@@ -2341,7 +2341,7 @@ const YallaLiveRoom = ({ user }) => {
             
             {/* Mini Stage Inside Card */}
             <div className="relative z-10 border-b border-lime-500/20 px-4 py-5">
-              <div className="flex items-center justify-center gap-6">
+              <div className="flex items-center justify-center gap-4">
                 <Star className="w-7 h-7 text-lime-400" />
                 {speakers.length > 0 ? speakers.map((seat) => {
                   // Check if this user has active video
@@ -2351,45 +2351,55 @@ const YallaLiveRoom = ({ user }) => {
                   const hasVideo = hasLocalCamera || remoteVideo;
                   
                   return (
-                    <div key={seat.seat_number} className="relative">
-                      <button
-                        onClick={() => hasVideo && setExpandedVideo({ 
-                          isLocal: isLocalUser, 
-                          remoteUser: remoteVideo,
-                          username: seat.user.username,
-                          avatar: seat.user.avatar
-                        })}
-                        className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
-                          seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_14px_rgba(132,204,22,0.6)]' : 
-                          hasVideo ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'border-slate-600'
-                        } ${hasVideo ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
-                      >
-                        {hasLocalCamera ? (
-                          <video
-                            ref={(el) => {
-                              if (el && localCameraStream.current) {
-                                el.srcObject = localCameraStream.current;
-                              }
-                            }}
-                            autoPlay
-                            playsInline
-                            muted
-                            className="w-full h-full object-cover"
-                            style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
-                          />
-                        ) : remoteVideo ? (
-                          <RemoteVideoCircle remoteUser={remoteVideo} />
-                        ) : (
-                          <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
-                        )}
-                      </button>
-                      {seat.user.is_muted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full" />}
-                      {hasVideo && <div className="absolute -top-1 -left-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center"><Video className="w-3 h-3 text-white" /></div>}
+                    <div key={seat.seat_number} className="flex flex-col items-center">
+                      {/* Avatar */}
+                      <div className="relative">
+                        <button
+                          onClick={() => hasVideo && setExpandedVideo({ 
+                            isLocal: isLocalUser, 
+                            remoteUser: remoteVideo,
+                            username: seat.user.username,
+                            avatar: seat.user.avatar
+                          })}
+                          className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
+                            seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_14px_rgba(132,204,22,0.6)]' : 
+                            hasVideo ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'border-slate-600'
+                          } ${hasVideo ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+                        >
+                          {hasLocalCamera ? (
+                            <video
+                              ref={(el) => {
+                                if (el && localCameraStream.current) {
+                                  el.srcObject = localCameraStream.current;
+                                }
+                              }}
+                              autoPlay
+                              playsInline
+                              muted
+                              className="w-full h-full object-cover"
+                              style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
+                            />
+                          ) : remoteVideo ? (
+                            <RemoteVideoCircle remoteUser={remoteVideo} />
+                          ) : (
+                            <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
+                          )}
+                        </button>
+                        {seat.user.is_muted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"><MicOff className="w-3 h-3 text-white" /></div>}
+                        {hasVideo && <div className="absolute -top-1 -left-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center"><Video className="w-3 h-3 text-white" /></div>}
+                      </div>
+                      {/* Name */}
+                      <p className="text-white text-xs font-cairo mt-1.5 max-w-[70px] truncate text-center">
+                        {seat.user.name || seat.user.username}
+                      </p>
                     </div>
                   );
                 }) : (
                   [...Array(2)].map((_, i) => (
-                    <div key={i} className="w-16 h-16 rounded-full border-2 border-dashed border-lime-500/30 bg-slate-800/30" />
+                    <div key={i} className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-full border-2 border-dashed border-lime-500/30 bg-slate-800/30" />
+                      <p className="text-slate-500 text-xs font-cairo mt-1.5">فارغ</p>
+                    </div>
                   ))
                 )}
                 <span className="text-lime-400 text-sm font-cairo font-bold">{speakers.length}/12</span>
