@@ -2410,45 +2410,82 @@ const YallaLiveRoom = ({ user }) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="absolute bottom-full mb-3 left-4 right-4 bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-xl"
+                className="absolute bottom-full mb-3 left-2 right-2 bg-slate-900/95 backdrop-blur-xl rounded-2xl p-5 border border-slate-700/50 shadow-2xl z-50"
               >
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {/* Mic Volume */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-3">
                       <span className="text-white font-cairo text-sm flex items-center gap-2">
-                        <Mic className="w-4 h-4 text-lime-400" />
+                        <div className="w-8 h-8 rounded-lg bg-lime-500/20 flex items-center justify-center">
+                          <Mic className="w-4 h-4 text-lime-400" />
+                        </div>
                         صوت المايك
                       </span>
-                      <span className="text-lime-400 text-sm font-bold">{micVolume}%</span>
+                      <span className="text-lime-400 text-lg font-bold min-w-[50px] text-left">{micVolume}%</span>
                     </div>
                     <input
                       type="range"
                       min="0"
                       max="100"
+                      step="1"
                       value={micVolume}
                       onChange={(e) => setMicVolume(Number(e.target.value))}
-                      className="w-full h-2 bg-slate-700 rounded-full appearance-none cursor-pointer accent-lime-500"
+                      onInput={(e) => setMicVolume(Number(e.target.value))}
+                      className="w-full h-2 rounded-full cursor-pointer"
+                      dir="ltr"
+                      style={{
+                        background: `linear-gradient(to right, #84cc16 ${micVolume}%, rgb(51, 65, 85) ${micVolume}%)`
+                      }}
                     />
                   </div>
                   
                   {/* Stream Volume */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-3">
                       <span className="text-white font-cairo text-sm flex items-center gap-2">
-                        <Volume2 className="w-4 h-4 text-sky-400" />
+                        <div className="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center">
+                          <Volume2 className="w-4 h-4 text-sky-400" />
+                        </div>
                         صوت البث
                       </span>
-                      <span className="text-sky-400 text-sm font-bold">{streamVolume}%</span>
+                      <span className="text-sky-400 text-lg font-bold min-w-[50px] text-left">{streamVolume}%</span>
                     </div>
                     <input
                       type="range"
                       min="0"
                       max="100"
+                      step="1"
                       value={streamVolume}
                       onChange={(e) => setStreamVolume(Number(e.target.value))}
-                      className="w-full h-2 bg-slate-700 rounded-full appearance-none cursor-pointer accent-sky-500"
+                      onInput={(e) => setStreamVolume(Number(e.target.value))}
+                      className="w-full h-2 rounded-full cursor-pointer stream-volume"
+                      dir="ltr"
+                      style={{
+                        background: `linear-gradient(to right, #0ea5e9 ${streamVolume}%, rgb(51, 65, 85) ${streamVolume}%)`
+                      }}
                     />
+                  </div>
+                  
+                  {/* Quick Volume Buttons */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-700/50">
+                    <span className="text-slate-400 text-xs">سريع:</span>
+                    {[0, 25, 50, 75, 100].map((vol) => (
+                      <button
+                        key={vol}
+                        onClick={() => {
+                          setMicVolume(vol);
+                          setStreamVolume(vol);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                          micVolume === vol && streamVolume === vol
+                            ? 'bg-lime-500 text-slate-900'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                        }`}
+                      >
+                        {vol}%
+                      </button>
+                    ))}
                   </div>
                 </div>
               </motion.div>
