@@ -2847,6 +2847,19 @@ const YallaLiveRoom = ({ user }) => {
                     </>
                   )}
                   
+                  <button onClick={handleToggleRoom}
+                    className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-colors ${
+                      room?.is_closed 
+                        ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/50' 
+                        : 'bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50'
+                    }`}
+                  >
+                    {room?.is_closed ? <Unlock className="w-6 h-6 text-green-400" /> : <Lock className="w-6 h-6 text-orange-400" />}
+                    <span className={`font-cairo font-bold ${room?.is_closed ? 'text-green-400' : 'text-orange-400'}`}>
+                      {room?.is_closed ? 'فتح الغرفة' : 'إغلاق الغرفة'}
+                    </span>
+                  </button>
+                  
                   <button onClick={handleDeleteRoom}
                     className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50"
                   >
