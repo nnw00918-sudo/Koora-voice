@@ -140,8 +140,27 @@ const YallaLiveRoom = ({ user }) => {
   const [myInvites, setMyInvites] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [micVolume, setMicVolume] = useState(100); // Microphone volume 0-100
-  const [streamVolume, setStreamVolume] = useState(100); // Stream/broadcast volume 0-100
+  
+  // Volume states with localStorage persistence
+  const [micVolume, setMicVolumeState] = useState(() => {
+    const saved = localStorage.getItem('koora_mic_volume');
+    return saved ? Number(saved) : 100;
+  });
+  const [streamVolume, setStreamVolumeState] = useState(() => {
+    const saved = localStorage.getItem('koora_stream_volume');
+    return saved ? Number(saved) : 100;
+  });
+  
+  // Wrapper functions to save to localStorage
+  const setMicVolume = (value) => {
+    setMicVolumeState(value);
+    localStorage.setItem('koora_mic_volume', value.toString());
+  };
+  const setStreamVolume = (value) => {
+    setStreamVolumeState(value);
+    localStorage.setItem('koora_stream_volume', value.toString());
+  };
+  
   const [showVolumeControls, setShowVolumeControls] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(null);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
