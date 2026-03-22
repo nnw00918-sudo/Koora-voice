@@ -1,7 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Volume2, VolumeX, Maximize, Users, X, Link, Youtube } from 'lucide-react';
-import ReactPlayer from 'react-player';
+import { Play, Pause, Volume2, VolumeX, X, Link, Youtube } from 'lucide-react';
+
+// Helper function to convert YouTube URL to embed URL
+const getYouTubeEmbedUrl = (url) => {
+  if (!url) return null;
+  
+  // Already an embed URL
+  if (url.includes('/embed/')) {
+    return url;
+  }
+  
+  let videoId = null;
+  
+  // YouTube Live URL: youtube.com/live/VIDEO_ID
+  const liveMatch = url.match(/youtube\.com\/live\/([^?&]+)/);
+  if (liveMatch) {
+    videoId = liveMatch[1];
+  }
+  
+  // YouTube Watch URL: youtube.com/watch?v=VIDEO_ID
+  const watchMatch = url.match(/[?&]v=([^?&]+)/);
+  if (watchMatch) {
+    videoId = watchMatch[1];
+  }
+  
+  // YouTube Short URL: youtu.be/VIDEO_ID
+  const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+  if (shortMatch) {
+    videoId = shortMatch[1];
+  }
+  
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1`;
+  }
+  
+  return url;
+};
 
 // Watch Party Player Component
 export const WatchPartyPlayer = ({ 
@@ -10,19 +45,11 @@ export const WatchPartyPlayer = ({
   onSync,
   onEnd 
 }) => {
-  const [isPlaying, setIsPlaying] = useState(watchParty?.is_playing ?? true);
   const [isMuted, setIsMuted] = useState(false);
-  const playerRef = useRef(null);
-
-  const handlePlayPause = () => {
-    const newState = !isPlaying;
-    setIsPlaying(newState);
-    if (isHost && onSync) {
-      onSync(playerRef.current?.getCurrentTime() || 0, newState);
-    }
-  };
 
   if (!watchParty?.video_url) return null;
+  
+  const embedUrl = getYouTubeEmbedUrl(watchParty.video_url);
 
   return (
     <motion.div
@@ -46,42 +73,19 @@ export const WatchPartyPlayer = ({
         )}
       </div>
 
-      {/* Video Player */}
+      {/* Video Player - Using iframe for better compatibility */}
       <div className="relative aspect-video bg-black">
-        <ReactPlayer
-          ref={playerRef}
-          url={watchParty.video_url}
-          playing={isPlaying}
-          muted={isMuted}
-          controls={true}
-          width="100%"
-          height="100%"
-          config={{
-            youtube: {
-              playerVars: { showinfo: 1 }
-            }
-          }}
+        <iframe
+          src={embedUrl}
+          className="absolute inset-0 w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allowFullScreen
         />
       </div>
 
       {/* Controls */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-800">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handlePlayPause}
-            className="w-10 h-10 rounded-full bg-lime-500 flex items-center justify-center text-slate-900"
-          >
-            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-          </button>
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white"
-          >
-            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-          </button>
-        </div>
-        
-        <div className="text-right">
+        <div className="text-right flex-1">
           <p className="text-white font-cairo font-bold text-sm">{watchParty.title || 'Watch Party'}</p>
           <p className="text-slate-400 text-xs">مضيف: {watchParty.host_name || 'غير معروف'}</p>
         </div>
