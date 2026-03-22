@@ -2211,8 +2211,8 @@ const YallaLiveRoom = ({ user }) => {
             )}
           </AnimatePresence>
 
-          {/* Main Stage Card with Glow Border */}
-          <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-lime-500/30 p-4 shadow-[0_0_30px_rgba(132,204,22,0.1)]">
+          {/* Main Stage Card with Glow Border - Compact */}
+          <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-xl border border-lime-500/30 p-2 shadow-[0_0_20px_rgba(132,204,22,0.1)]">
 
             {/* Stream View */}
             {streamActive && streamUrl && viewMode === 'stream' && (
@@ -2258,8 +2258,8 @@ const YallaLiveRoom = ({ user }) => {
                     </div>
                   )}
                   
-                  {/* Video Player */}
-                  <div className="relative aspect-video bg-black">
+                  {/* Video Player - Smaller */}
+                  <div className="relative aspect-[16/9] max-h-[180px] bg-black">
                     <iframe
                       key={`video-${streamKey}`}
                       src={streamUrl}
@@ -2329,15 +2329,15 @@ const YallaLiveRoom = ({ user }) => {
                     </div>
                   </div>
                   
-                  {/* Video Grid - Shows all active video streams */}
-                  <div className={`grid gap-2 p-2 bg-black ${
+                  {/* Video Grid - Compact - Shows all active video streams */}
+                  <div className={`grid gap-1 p-1 bg-black max-h-[200px] ${
                     (remoteVideoUsers.length + (isCameraOn ? 1 : 0)) <= 1 ? 'grid-cols-1' :
                     (remoteVideoUsers.length + (isCameraOn ? 1 : 0)) <= 4 ? 'grid-cols-2' :
                     'grid-cols-3'
                   }`}>
                     {/* Local Video (Your Camera) - Direct from phone */}
                     {isCameraOn && localCameraStream.current && (
-                      <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden">
+                      <div className="relative aspect-video max-h-[90px] bg-slate-900 rounded-lg overflow-hidden">
                         <video
                           ref={localVideoRef}
                           autoPlay
@@ -2402,20 +2402,20 @@ const YallaLiveRoom = ({ user }) => {
 
             {/* Speakers Grid - Shows when no stream or user selects mics */}
             {(!streamActive || viewMode === 'mics') && (
-              <div className="px-2 py-4">
-                {/* Stage Header */}
-                <div className="flex items-center justify-center gap-3 mb-6">
+              <div className="px-2 py-2">
+                {/* Stage Header - Compact */}
+                <div className="flex items-center justify-center gap-2 mb-3">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/30 to-transparent" />
-                  <div className="flex items-center gap-2 px-4 py-1.5 bg-lime-500/10 border border-lime-500/30 rounded-full">
-                    <Star className="w-4 h-4 text-lime-400" />
-                    <span className="text-lime-400 font-cairo font-bold text-sm">المنصة</span>
-                    <span className="text-lime-300/70 text-xs">({speakers.length}/12)</span>
+                  <div className="flex items-center gap-1.5 px-3 py-1 bg-lime-500/10 border border-lime-500/30 rounded-full">
+                    <Star className="w-3 h-3 text-lime-400" />
+                    <span className="text-lime-400 font-cairo font-bold text-xs">المنصة</span>
+                    <span className="text-lime-300/70 text-[10px]">({speakers.length}/12)</span>
                   </div>
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/30 to-transparent" />
                 </div>
 
-                {/* Speakers Grid */}
-                <div className="grid grid-cols-4 gap-4 justify-items-center max-w-md mx-auto">
+                {/* Speakers Grid - Compact */}
+                <div className="grid grid-cols-6 gap-2 justify-items-center max-w-sm mx-auto">
                   {speakers.length > 0 ? speakers.map((seat, index) => (
                     <motion.div
                       key={seat.seat_number}
@@ -2444,9 +2444,9 @@ const YallaLiveRoom = ({ user }) => {
                           </>
                         )}
                         
-                        <div className={`relative w-16 h-16 rounded-full overflow-hidden border-3 transition-all ${
+                        <div className={`relative w-10 h-10 rounded-full overflow-hidden border-2 transition-all ${
                           seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
-                            ? 'border-lime-500 ring-4 ring-lime-500/50 shadow-[0_0_30px_rgba(132,204,22,0.5)]'
+                            ? 'border-lime-500 ring-2 ring-lime-500/50 shadow-[0_0_15px_rgba(132,204,22,0.5)]'
                             : seat.user.is_muted
                             ? 'border-red-500/50 grayscale-[50%]'
                             : 'border-slate-600 group-hover:border-lime-500/50'
@@ -2455,26 +2455,26 @@ const YallaLiveRoom = ({ user }) => {
                           
                           {/* Owner Badge */}
                           {seat.user.user_id === room?.owner_id && (
-                            <div className="absolute top-0 right-0 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
-                              <Crown className="w-3 h-3 text-white" />
+                            <div className="absolute top-0 right-0 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                              <Crown className="w-2 h-2 text-white" />
                             </div>
                           )}
                         </div>
                         
                         {/* Mic Status Badge */}
-                        <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full flex items-center justify-center border-2 border-slate-950 ${
+                        <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-950 ${
                           seat.user.is_muted ? 'bg-red-500' : 'bg-lime-500'
                         }`}>
-                          {seat.user.is_muted ? <MicOff className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-slate-900" />}
+                          {seat.user.is_muted ? <MicOff className="w-2.5 h-2.5 text-white" /> : <Mic className="w-2.5 h-2.5 text-slate-900" />}
                         </div>
                       </button>
                       
                       {/* Name */}
-                      <p className="text-white text-xs font-cairo font-bold mt-2 truncate max-w-[70px] text-center">
+                      <p className="text-white text-[10px] font-cairo font-bold mt-1 truncate max-w-[50px] text-center">
                         {seat.user.user_id === user.id ? 'أنت' : seat.user.username}
                       </p>
                       {seat.user.user_id === user.id && (
-                        <p className="text-lime-400 text-[10px]">على المنصة</p>
+                        <p className="text-lime-400 text-[8px]">على المنصة</p>
                       )}
 
                   {/* User Menu */}
@@ -2512,17 +2512,16 @@ const YallaLiveRoom = ({ user }) => {
                   </AnimatePresence>
                 </motion.div>
               )) : (
-                // Empty Stage Placeholder
-                <div className="col-span-4 flex flex-col items-center justify-center py-8">
-                  <div className="flex gap-4 mb-4">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="w-14 h-14 rounded-full bg-slate-800/50 border-2 border-dashed border-lime-500/30 flex items-center justify-center">
-                        <span className="text-lime-500/50 text-xl">+</span>
+                // Empty Stage Placeholder - Compact
+                <div className="col-span-6 flex flex-col items-center justify-center py-3">
+                  <div className="flex gap-2 mb-2">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div key={i} className="w-8 h-8 rounded-full bg-slate-800/50 border border-dashed border-lime-500/30 flex items-center justify-center">
+                        <span className="text-lime-500/50 text-sm">+</span>
                       </div>
                     ))}
                   </div>
-                  <p className="text-slate-500 font-cairo text-sm">لا يوجد متحدثين حالياً</p>
-                  <p className="text-slate-600 font-cairo text-xs mt-1">اطلب الصعود للمنصة للتحدث</p>
+                  <p className="text-slate-500 font-cairo text-xs">لا يوجد متحدثين</p>
                 </div>
               )}
               </div>
