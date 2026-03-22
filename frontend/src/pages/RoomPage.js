@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
+import ReactPlayer from 'react-player';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useRoomAudio } from '../contexts/RoomAudioContext';
