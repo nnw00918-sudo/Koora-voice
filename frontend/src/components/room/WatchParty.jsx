@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Link, Youtube, Tv } from 'lucide-react';
+import { X, Tv } from 'lucide-react';
 
 // Helper function to convert YouTube URL to embed URL
 const getYouTubeEmbedUrl = (url) => {
@@ -28,27 +28,39 @@ const getYouTubeEmbedUrl = (url) => {
 export const WatchPartyPlayer = ({ 
   watchParty, 
   isHost,
-  onSync,
   onEnd,
   onChangeChannel
 }) => {
-  const [activeChannel, setActiveChannel] = useState(1);
+  const [activeChannel, setActiveChannel] = useState(watchParty?.active_channel || 1);
   
-  // Get channels from watchParty or use defaults
+  // Update active channel when watchParty changes (synced from server)
+  useEffect(() => {
+    if (watchParty?.active_channel && watchParty.active_channel !== activeChannel) {
+      setActiveChannel(watchParty.active_channel);
+    }
+  }, [watchParty?.active_channel]);
+  
+  // Get channels from watchParty
   const channels = watchParty?.channels || [
     { id: 1, url: watchParty?.video_url, name: 'قناة 1' },
-    { id: 2, url: '', name: 'قناة 2' },
-    { id: 3, url: '', name: 'قناة 3' },
-    { id: 4, url: '', name: 'قناة 4' },
-    { id: 5, url: '', name: 'قناة 5' },
   ];
 
-  const currentChannel = channels.find(c => c.id === activeChannel) || channels[0];
+  const currentChannel = channels.find(c => c.id === activeChannel);
   const currentUrl = currentChannel?.url || watchParty?.video_url;
 
   if (!watchParty) return null;
   
   const embedUrl = getYouTubeEmbedUrl(currentUrl);
+
+  const handleChannelChange = (channelId) => {
+    const channel = channels.find(c => c.id === channelId);
+    if (channel?.url) {
+      setActiveChannel(channelId);
+      if (isHost && onChangeChannel) {
+        onChangeChannel(channelId);
+      }
+    }
+  };
 
   return (
     <motion.div
@@ -57,11 +69,31 @@ export const WatchPartyPlayer = ({
       exit={{ opacity: 0, y: -20 }}
       className="bg-slate-900 rounded-2xl overflow-hidden border border-lime-500/30 shadow-lg"
     >
-      {/* Header with Channels */}
+      {/* Video Player First */}
+      <div className="relative aspect-video bg-black">
+        {embedUrl ? (
+          <iframe
+            key={embedUrl}
+            src={embedUrl}
+            className="absolute inset-0 w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <Tv className="w-12 h-12 text-slate-600 mx-auto mb-2" />
+              <p className="text-slate-500 font-cairo text-sm">اختر قناة</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Channel Buttons - Bottom like remote */}
       <div className="flex items-center justify-between px-3 py-2 bg-slate-800">
         <div className="flex items-center gap-2">
-          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-cairo font-bold flex items-center gap-1">
-            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+          <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-cairo font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
             مباشر
           </span>
         </div>
@@ -74,13 +106,14 @@ export const WatchPartyPlayer = ({
             return (
               <button
                 key={num}
-                onClick={() => hasUrl && setActiveChannel(num)}
-                className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                onClick={() => handleChannelChange(num)}
+                disabled={!hasUrl}
+                className={`w-9 h-9 rounded-lg text-sm font-bold transition-all ${
                   activeChannel === num 
-                    ? 'bg-lime-500 text-slate-900' 
+                    ? 'bg-lime-500 text-slate-900 scale-110' 
                     : hasUrl 
-                      ? 'bg-slate-700 text-white hover:bg-slate-600' 
-                      : 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                      ? 'bg-slate-700 text-white hover:bg-slate-600 active:scale-95' 
+                      : 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
                 }`}
               >
                 {num}
@@ -92,29 +125,10 @@ export const WatchPartyPlayer = ({
         {isHost && (
           <button
             onClick={onEnd}
-            className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 font-cairo font-bold text-xs border border-red-500/50"
+            className="px-3 py-1.5 rounded-lg bg-red-500 text-white font-cairo font-bold text-xs"
           >
             إنهاء
           </button>
-        )}
-      </div>
-
-      {/* Video Player */}
-      <div className="relative aspect-video bg-black">
-        {embedUrl ? (
-          <iframe
-            src={embedUrl}
-            className="absolute inset-0 w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowFullScreen
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <Tv className="w-12 h-12 text-slate-600 mx-auto mb-2" />
-              <p className="text-slate-500 font-cairo text-sm">لا يوجد بث</p>
-            </div>
-          </div>
         )}
       </div>
     </motion.div>
@@ -130,7 +144,6 @@ export const StartWatchPartyModal = ({ isOpen, onClose, onStart }) => {
     { id: 4, url: '', name: 'قناة 4' },
     { id: 5, url: '', name: 'قناة 5' },
   ]);
-  const [title, setTitle] = useState('');
 
   const updateChannel = (id, url) => {
     setChannels(prev => prev.map(c => c.id === id ? { ...c, url } : c));
@@ -143,8 +156,8 @@ export const StartWatchPartyModal = ({ isOpen, onClose, onStart }) => {
     
     onStart({
       video_url: activeChannels[0].url,
-      title: title || 'بث مباشر',
-      channels: channels
+      title: 'بث مباشر',
+      channels: channels.filter(c => c.url.trim())
     });
     
     // Reset
@@ -155,7 +168,6 @@ export const StartWatchPartyModal = ({ isOpen, onClose, onStart }) => {
       { id: 4, url: '', name: 'قناة 4' },
       { id: 5, url: '', name: 'قناة 5' },
     ]);
-    setTitle('');
   };
 
   if (!isOpen) return null;
@@ -191,7 +203,7 @@ export const StartWatchPartyModal = ({ isOpen, onClose, onStart }) => {
             {/* Channel Inputs */}
             {channels.map((channel) => (
               <div key={channel.id} className="flex items-center gap-2">
-                <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                <span className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${
                   channel.url ? 'bg-lime-500 text-slate-900' : 'bg-slate-700 text-slate-400'
                 }`}>
                   {channel.id}
@@ -200,7 +212,7 @@ export const StartWatchPartyModal = ({ isOpen, onClose, onStart }) => {
                   type="url"
                   value={channel.url}
                   onChange={(e) => updateChannel(channel.id, e.target.value)}
-                  placeholder={`رابط القناة ${channel.id}`}
+                  placeholder={`رابط القناة ${channel.id} (YouTube)`}
                   className="flex-1 bg-slate-800 border border-slate-700 focus:border-lime-500 rounded-lg text-white placeholder:text-slate-500 h-10 px-3 text-sm outline-none"
                   dir="ltr"
                 />
@@ -211,7 +223,7 @@ export const StartWatchPartyModal = ({ isOpen, onClose, onStart }) => {
             <button
               type="submit"
               disabled={!channels.some(c => c.url.trim())}
-              className="w-full py-3 rounded-xl bg-lime-500 text-slate-900 font-cairo font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-xl bg-lime-500 text-slate-900 font-cairo font-bold disabled:opacity-50 disabled:cursor-not-allowed mt-4"
             >
               بدء البث
             </button>

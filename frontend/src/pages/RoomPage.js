@@ -1885,6 +1885,17 @@ const YallaLiveRoom = ({ user }) => {
       toast.error('فشل إنهاء Watch Party');
     }
   };
+
+  // Change Watch Party Channel
+  const handleChangeChannel = async (channelId) => {
+    try {
+      await axios.put(`${API}/rooms/${roomId}/watch-party/channel/${channelId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Failed to change channel:', error);
+    }
+  };
   // ===== End Playback Features =====
 
   if (loading) {
@@ -2193,6 +2204,7 @@ const YallaLiveRoom = ({ user }) => {
                   isHost={watchParty?.host_id === user.id || isOwner}
                   onSync={handleSyncWatchParty}
                   onEnd={handleEndWatchParty}
+                  onChangeChannel={handleChangeChannel}
                 />
               </motion.div>
             )}

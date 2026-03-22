@@ -1898,9 +1898,15 @@ async def close_poll(
 
 # ============ WATCH PARTY SYSTEM ============
 
+class WatchPartyChannel(BaseModel):
+    id: int
+    url: str
+    name: str = ""
+
 class WatchPartyCreate(BaseModel):
     video_url: str  # YouTube or other video URL
     title: str = ""
+    channels: list = []  # List of channels
 
 
 @api_router.post("/rooms/{room_id}/watch-party")
@@ -1909,7 +1915,7 @@ async def start_watch_party(
     party_data: WatchPartyCreate,
     current_user: User = Depends(get_current_user)
 ):
-    """Start a watch party with a video"""
+    """Start a watch party with channels"""
     room = await db.rooms.find_one({"id": room_id})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
@@ -1917,26 +1923,60 @@ async def start_watch_party(
     if room.get("owner_id") != current_user.id and current_user.role not in ["admin", "owner"]:
         raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه بدء Watch Party")
     
+    # Prepare channels - ensure we have 5 channels
+    channels = party_data.channels if party_data.channels else []
+    if not channels:
+        channels = [{"id": 1, "url": party_data.video_url, "name": "قناة 1"}]
+    
     watch_party = {
         "id": str(int(time.time() * 1000)),
         "room_id": room_id,
         "video_url": party_data.video_url,
         "title": party_data.title,
+        "channels": channels,
+        "active_channel": 1,
         "host_id": current_user.id,
         "host_name": current_user.username,
         "is_playing": True,
-        "current_time": 0,  # in seconds
+        "current_time": 0,
         "started_at": datetime.now(timezone.utc).isoformat(),
         "last_sync": datetime.now(timezone.utc).isoformat()
     }
     
-    # Update room with watch party info
     await db.rooms.update_one(
         {"id": room_id},
         {"$set": {"watch_party": watch_party}}
     )
     
     return {"message": "تم بدء Watch Party", "watch_party": watch_party}
+
+
+# Change channel endpoint
+@api_router.put("/rooms/{room_id}/watch-party/channel/{channel_id}")
+async def change_watch_party_channel(
+    room_id: str,
+    channel_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    """Change active channel"""
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    watch_party = room.get("watch_party")
+    if not watch_party:
+        raise HTTPException(status_code=404, detail="لا يوجد Watch Party نشط")
+    
+    # Only host or owner can change channel
+    if watch_party.get("host_id") != current_user.id and room.get("owner_id") != current_user.id:
+        raise HTTPException(status_code=403, detail="فقط المضيف يمكنه تغيير القناة")
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"watch_party.active_channel": channel_id}}
+    )
+    
+    return {"message": "تم تغيير القناة", "active_channel": channel_id}
 
 
 class WatchPartySync(BaseModel):
