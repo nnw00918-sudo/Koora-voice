@@ -104,6 +104,9 @@ const YallaLiveRoom = ({ user }) => {
   const [myInvites, setMyInvites] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [micVolume, setMicVolume] = useState(100); // Microphone volume 0-100
+  const [streamVolume, setStreamVolume] = useState(100); // Stream/broadcast volume 0-100
+  const [showVolumeControls, setShowVolumeControls] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(null);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [selectedPromoteUser, setSelectedPromoteUser] = useState(null);
@@ -187,6 +190,22 @@ const YallaLiveRoom = ({ user }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Mic volume control
+  useEffect(() => {
+    if (localAudioTrack) {
+      localAudioTrack.setVolume(micVolume);
+    }
+  }, [micVolume, localAudioTrack]);
+
+  // Stream volume control - affects remote users audio
+  useEffect(() => {
+    remoteUsers.forEach(remoteUser => {
+      if (remoteUser.audioTrack) {
+        remoteUser.audioTrack.setVolume(streamVolume);
+      }
+    });
+  }, [streamVolume, remoteUsers]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1964,17 +1983,92 @@ const YallaLiveRoom = ({ user }) => {
           className="bg-slate-900 border-t border-slate-800 px-4 py-3"
           style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
         >
+          {/* Volume Controls Panel */}
+          <AnimatePresence>
+            {showVolumeControls && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="absolute bottom-full mb-3 left-4 right-4 bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-xl"
+              >
+                <div className="space-y-4">
+                  {/* Mic Volume */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white font-cairo text-sm flex items-center gap-2">
+                        <Mic className="w-4 h-4 text-lime-400" />
+                        صوت المايك
+                      </span>
+                      <span className="text-lime-400 text-sm font-bold">{micVolume}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={micVolume}
+                      onChange={(e) => setMicVolume(Number(e.target.value))}
+                      className="w-full h-2 bg-slate-700 rounded-full appearance-none cursor-pointer accent-lime-500"
+                    />
+                  </div>
+                  
+                  {/* Stream Volume */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white font-cairo text-sm flex items-center gap-2">
+                        <Volume2 className="w-4 h-4 text-sky-400" />
+                        صوت البث
+                      </span>
+                      <span className="text-sky-400 text-sm font-bold">{streamVolume}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={streamVolume}
+                      onChange={(e) => setStreamVolume(Number(e.target.value))}
+                      className="w-full h-2 bg-slate-700 rounded-full appearance-none cursor-pointer accent-sky-500"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Main Controls */}
           <div className="flex items-center gap-3">
-            {/* Audio Mute Button */}
+            {/* Audio Mute Button - Long press for volume controls */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsAudioMuted(!isAudioMuted)}
-              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setShowVolumeControls(!showVolumeControls);
+              }}
+              onTouchStart={() => {
+                const timer = setTimeout(() => setShowVolumeControls(!showVolumeControls), 500);
+                return () => clearTimeout(timer);
+              }}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors relative ${
                 isAudioMuted ? 'bg-red-500' : 'bg-slate-800 border border-slate-700'
               }`}
             >
               {isAudioMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-slate-300" />}
+              {/* Volume indicator dot */}
+              {showVolumeControls && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-lime-400 rounded-full animate-pulse" />
+              )}
+            </motion.button>
+
+            {/* Volume Control Toggle Button */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowVolumeControls(!showVolumeControls)}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                showVolumeControls ? 'bg-sky-500' : 'bg-slate-800 border border-slate-700'
+              }`}
+            >
+              <Headphones className="w-4 h-4 text-white" />
             </motion.button>
 
             {/* Mic/Stage Controls */}
