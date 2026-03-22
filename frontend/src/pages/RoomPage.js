@@ -53,7 +53,10 @@ import {
   ImageIcon,
   Circle,
   StopCircle,
-  Download
+  Download,
+  ArrowRight,
+  Phone,
+  AtSign
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -2157,61 +2160,80 @@ const YallaLiveRoom = ({ user }) => {
 
             {/* Speakers Grid - Shows when no stream or user selects mics */}
             {(!streamActive || viewMode === 'mics') && (
-              <div className="flex justify-center gap-2 flex-wrap pt-1 pb-2">
-              {speakers.length > 0 ? speakers.map((seat, index) => (
-                <motion.div
-                  key={seat.seat_number}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: index * 0.05, type: "spring" }}
-                  className="relative"
-                >
-                  <button
-                    onClick={() => {
-                      if (isOwner && seat.user.user_id !== user.id) {
-                        setShowUserMenu(showUserMenu === seat.user.user_id ? null : seat.user.user_id);
-                      }
-                    }}
-                    className="relative group"
-                  >
-                    {/* Glow Effect for Speaking */}
-                    {(seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)) && (
-                      <motion.div 
-                        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="absolute inset-0 rounded-full bg-lime-500 blur-md"
-                      />
-                    )}
-                    
-                    <div className={`relative w-12 h-12 rounded-full overflow-hidden border-2 transition-all ${
-                      seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
-                        ? 'border-lime-400 shadow-lg shadow-lime-400/50'
-                        : seat.user.is_muted
-                        ? 'border-red-500'
-                        : 'border-slate-600'
-                    }`}>
-                      <img src={seat.user.avatar} alt={seat.user.username} className="w-full h-full object-cover" />
-                    </div>
-                    
-                    {/* Mic Status Badge */}
-                    <div className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-slate-900 ${
-                      seat.user.is_muted ? 'bg-red-500' : 
-                      (seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)) ? 'bg-green-500' : 'bg-slate-700'
-                    }`}>
-                      {seat.user.is_muted ? <MicOff className="w-2.5 h-2.5 text-white" /> : <Mic className="w-2.5 h-2.5 text-white" />}
-                    </div>
-                    
-                    {/* Owner Crown */}
-                    {seat.user.user_id === room?.owner_id && (
-                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2">
-                        <Crown className="w-4 h-4 text-amber-400 drop-shadow-lg" fill="currentColor" />
-                      </div>
-                    )}
-                  </button>
-                  
-                  <p className="text-center text-white text-[10px] font-almarai mt-1 truncate max-w-[60px]">
-                    {seat.user.username}
-                  </p>
+              <div className="px-2 py-4">
+                {/* Stage Header */}
+                <div className="flex items-center justify-center gap-3 mb-6">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/30 to-transparent" />
+                  <div className="flex items-center gap-2 px-4 py-1.5 bg-lime-500/10 border border-lime-500/30 rounded-full">
+                    <Star className="w-4 h-4 text-lime-400" />
+                    <span className="text-lime-400 font-cairo font-bold text-sm">المنصة</span>
+                    <span className="text-lime-300/70 text-xs">({speakers.length}/12)</span>
+                  </div>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/30 to-transparent" />
+                </div>
+
+                {/* Speakers Grid */}
+                <div className="grid grid-cols-4 gap-4 justify-items-center max-w-md mx-auto">
+                  {speakers.length > 0 ? speakers.map((seat, index) => (
+                    <motion.div
+                      key={seat.seat_number}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: index * 0.05, type: "spring" }}
+                      className="flex flex-col items-center"
+                    >
+                      <button
+                        onClick={() => {
+                          if (isOwner && seat.user.user_id !== user.id) {
+                            setShowUserMenu(showUserMenu === seat.user.user_id ? null : seat.user.user_id);
+                          }
+                        }}
+                        className="relative group"
+                      >
+                        {/* Glow Effect for Speaking */}
+                        {(seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)) && (
+                          <>
+                            <motion.div 
+                              animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                              className="absolute inset-0 rounded-full bg-lime-500 blur-lg"
+                            />
+                            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-lime-400 to-lime-600 opacity-75 blur-sm animate-pulse" />
+                          </>
+                        )}
+                        
+                        <div className={`relative w-16 h-16 rounded-full overflow-hidden border-3 transition-all ${
+                          seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
+                            ? 'border-lime-500 ring-4 ring-lime-500/50 shadow-[0_0_30px_rgba(132,204,22,0.5)]'
+                            : seat.user.is_muted
+                            ? 'border-red-500/50 grayscale-[50%]'
+                            : 'border-slate-600 group-hover:border-lime-500/50'
+                        }`}>
+                          <img src={seat.user.avatar} alt={seat.user.username} className="w-full h-full object-cover" />
+                          
+                          {/* Owner Badge */}
+                          {seat.user.user_id === room?.owner_id && (
+                            <div className="absolute top-0 right-0 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                              <Crown className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Mic Status Badge */}
+                        <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full flex items-center justify-center border-2 border-slate-950 ${
+                          seat.user.is_muted ? 'bg-red-500' : 'bg-lime-500'
+                        }`}>
+                          {seat.user.is_muted ? <MicOff className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-slate-900" />}
+                        </div>
+                      </button>
+                      
+                      {/* Name */}
+                      <p className="text-white text-xs font-cairo font-bold mt-2 truncate max-w-[70px] text-center">
+                        {seat.user.user_id === user.id ? 'أنت' : seat.user.username}
+                      </p>
+                      {seat.user.user_id === user.id && (
+                        <p className="text-lime-400 text-[10px]">على المنصة</p>
+                      )}
 
                   {/* User Menu */}
                   <AnimatePresence>
@@ -2248,26 +2270,31 @@ const YallaLiveRoom = ({ user }) => {
                   </AnimatePresence>
                 </motion.div>
               )) : (
-                // Empty Stage Placeholder - Smaller
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-12 h-12 rounded-full bg-white/5 border-2 border-dashed border-violet-500/30 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-violet-500/50" />
-                    </div>
-                  ))}
+                // Empty Stage Placeholder
+                <div className="col-span-4 flex flex-col items-center justify-center py-8">
+                  <div className="flex gap-4 mb-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="w-14 h-14 rounded-full bg-slate-800/50 border-2 border-dashed border-lime-500/30 flex items-center justify-center">
+                        <span className="text-lime-500/50 text-xl">+</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-slate-500 font-cairo text-sm">لا يوجد متحدثين حالياً</p>
+                  <p className="text-slate-600 font-cairo text-xs mt-1">اطلب الصعود للمنصة للتحدث</p>
                 </div>
               )}
-            </div>
-            )}
+              </div>
 
-            {/* Stats */}
-            <div className="flex justify-center gap-4 mt-4">
-              <div className="flex items-center gap-2 bg-green-500/20 px-3 py-1.5 rounded-full">
-                <Mic className="w-4 h-4 text-green-400" />
-                <span className="text-green-400 font-bold text-sm">{speakers.length}</span>
-                <span className="text-green-300/70 text-xs">متحدث</span>
+              {/* Stats */}
+              <div className="flex justify-center gap-4 mt-4">
+                <div className="flex items-center gap-2 bg-lime-500/20 px-3 py-1.5 rounded-full">
+                  <Mic className="w-4 h-4 text-lime-400" />
+                  <span className="text-lime-400 font-bold text-sm">{speakers.length}</span>
+                  <span className="text-lime-300/70 text-xs">متحدث</span>
+                </div>
               </div>
             </div>
+            )}
           </div>
         </motion.div>
 
@@ -2355,15 +2382,21 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         </motion.div>
 
-        {/* Bottom Control Bar - Stadium Style */}
+        {/* Bottom Control Bar - Modern Design */}
         <motion.div 
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-slate-900 border-t border-slate-800 px-4 py-3"
-          style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+          className="relative"
         >
-          {/* Volume Controls Panel */}
-          <AnimatePresence>
+          {/* Gradient Fade */}
+          <div className="absolute inset-x-0 bottom-full h-20 bg-gradient-to-t from-slate-950 to-transparent pointer-events-none" />
+          
+          <div 
+            className="bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/50 px-4 py-4"
+            style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+          >
+            {/* Volume Controls Panel */}
+            <AnimatePresence>
             {showVolumeControls && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -2566,6 +2599,7 @@ const YallaLiveRoom = ({ user }) => {
                 <Send className="w-5 h-5" />
               </Button>
             </form>
+          </div>
           </div>
         </motion.div>
 
