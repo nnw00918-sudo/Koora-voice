@@ -2163,7 +2163,7 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
         elif "youtube.com/c/" in stream_url:
             channel_id = stream_url.split("/c/")[1].split("/")[0].split("?")[0]
         if channel_id:
-            embed_url = f"https://www.youtube-nocookie.com/embed/live_stream?channel={channel_id}&autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1"
+            embed_url = f"https://www.youtube.com/embed/live_stream?channel={channel_id}&autoplay=1"
     
     # YouTube Video URL conversion (including live streams)
     elif "youtube.com/watch" in stream_url or "youtu.be" in stream_url or "youtube.com/live" in stream_url:
@@ -2175,7 +2175,7 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
         else:
             video_id = stream_url.split("/")[-1].split("?")[0]
         if video_id:
-            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}?autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1"
+            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0&playsinline=1"
     
     # Twitch URL conversion
     elif "twitch.tv" in stream_url:
@@ -2253,7 +2253,7 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
         elif "youtube.com/c/" in stream_url:
             channel_id = stream_url.split("/c/")[1].split("/")[0].split("?")[0]
         if channel_id:
-            embed_url = f"https://www.youtube-nocookie.com/embed/live_stream?channel={channel_id}&autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1"
+            embed_url = f"https://www.youtube.com/embed/live_stream?channel={channel_id}&autoplay=1"
     
     # YouTube Video
     elif "youtube.com/watch" in stream_url or "youtu.be" in stream_url or "youtube.com/live" in stream_url:
@@ -2265,7 +2265,7 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
         else:
             video_id = stream_url.split("/")[-1].split("?")[0]
         if video_id:
-            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}?autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1"
+            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1"
     
     # Twitch
     elif "twitch.tv" in stream_url:
