@@ -2038,17 +2038,17 @@ const YallaLiveRoom = ({ user }) => {
                     (remoteVideoUsers.length + (isCameraOn ? 1 : 0)) <= 4 ? 'grid-cols-2' :
                     'grid-cols-3'
                   }`}>
-                    {/* Local Video (Your Camera) - Mirrored for front camera */}
+                    {/* Local Video (Your Camera) */}
                     {isCameraOn && localVideoTrack && (
                       <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden">
                         <div 
                           ref={(el) => {
                             if (el && localVideoTrack) {
-                              localVideoTrack.play(el);
+                              // Agora handles mirroring internally for front camera
+                              localVideoTrack.play(el, { mirror: cameraFacing === 'user' });
                             }
                           }}
                           className="w-full h-full"
-                          style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
                         />
                         <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded-lg flex items-center gap-1">
                           <span className="text-white text-xs font-cairo">أنت</span>
