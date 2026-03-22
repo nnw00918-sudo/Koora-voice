@@ -536,6 +536,14 @@ const DashboardPage = ({ user, onLogout }) => {
                       </motion.div>
                     )}
                     
+                    {/* Closed Badge - Only show when room is actually closed */}
+                    {room.is_closed && (
+                      <div className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'} flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(249,115,22,0.4)]`}>
+                        <Lock className="w-4 h-4 text-white" />
+                        <span className="text-white font-cairo font-bold text-sm">{isRTL ? 'مغلقة' : 'Closed'}</span>
+                      </div>
+                    )}
+                    
                     {/* Participants Count */}
                     <div className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'} flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-full border border-white/10`}>
                       <Users className="w-4 h-4 text-lime-400" strokeWidth={2} />
