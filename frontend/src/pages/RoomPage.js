@@ -2211,232 +2211,38 @@ const YallaLiveRoom = ({ user }) => {
             )}
           </AnimatePresence>
 
-          {/* Main Stage Card with Glow Border - Compact */}
-          <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-xl border border-lime-500/30 p-2 shadow-[0_0_20px_rgba(132,204,22,0.1)]">
-
-            {/* Stream View */}
-            {streamActive && streamUrl && viewMode === 'stream' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mb-4"
-              >
-                <div className="bg-slate-950 rounded-xl overflow-hidden border border-slate-700">
-                  {/* Stream Header */}
-                  <div className="bg-slate-800 px-3 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                      <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
-                    </div>
-                    {user.role === 'owner' && (
-                      <button onClick={handleStopStream} className="text-slate-400 hover:text-white transition-colors">
-                        <X className="w-5 h-5" />
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* Channel Buttons - Owner Only */}
-                  {isOwner && (
-                    <div className="flex gap-2 p-2 bg-slate-900 overflow-x-auto hide-scrollbar">
-                      {[1, 2, 3, 4, 5].map((slot) => (
-                        <motion.button
-                          key={slot}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => streamSlots[slot] && handlePlaySlot(slot)}
-                          disabled={!streamSlots[slot]}
-                          className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-cairo font-bold transition-all ${
-                            activeSlot === slot
-                              ? 'bg-lime-500 text-slate-900'
-                              : streamSlots[slot]
-                              ? 'bg-slate-700 text-white hover:bg-slate-600'
-                              : 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                          }`}
-                        >
-                          قناة {slot}
-                        </motion.button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Video Player - Smaller */}
-                  <div className="relative aspect-[16/9] max-h-[180px] bg-black">
-                    <iframe
-                      key={`video-${streamKey}`}
-                      src={streamUrl}
-                      className="absolute inset-0 w-full h-full border-0"
-                      allow="autoplay *; encrypted-media; fullscreen"
-                      allowFullScreen
-                      loading="eager"
-                    />
+          {/* Stream View Only - No separate stage card */}
+          {streamActive && streamUrl && viewMode === 'stream' && (
+            <div className="px-4 mb-2">
+              <div className="bg-slate-950 rounded-xl overflow-hidden border border-slate-700">
+                <div className="bg-slate-800 px-3 py-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
                   </div>
                 </div>
-              </motion.div>
-            )}
-
-            {/* Camera/Screen Share View - Agora WebRTC */}
-            {viewMode === 'mirror' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mb-4"
-              >
-                <div className="bg-slate-950 rounded-xl overflow-hidden border border-purple-500/30">
-                  {/* Header */}
-                  <div className="bg-slate-800 px-3 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Video className="w-4 h-4 text-purple-400" />
-                      <span className="text-white font-cairo font-bold text-sm">البث المرئي</span>
-                      {(remoteVideoUsers.length > 0 || isCameraOn) && (
-                        <span className="bg-purple-500/30 text-purple-300 text-xs px-2 py-0.5 rounded-full">
-                          {remoteVideoUsers.length + (isCameraOn ? 1 : 0)} نشط
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Controls */}
-                    <div className="flex items-center gap-2">
-                      {isCameraOn ? (
-                        <>
-                          {/* Switch Camera */}
-                          <button 
-                            onClick={switchAgoraCamera}
-                            className="flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-white text-xs px-2 py-1.5 rounded-lg transition-colors"
-                          >
-                            <SwitchCamera className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={toggleCamera}
-                            className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
-                          >
-                            <VideoOff className="w-3 h-3" />
-                            إيقاف
-                          </button>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-1">
-                          {/* Camera Button */}
-                          {isCameraSupported && onStage && (
-                            <button 
-                              onClick={toggleCamera}
-                              className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded-lg font-cairo transition-colors"
-                            >
-                              <Camera className="w-3 h-3" />
-                              كاميرا
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Video Grid - Compact - Shows all active video streams */}
-                  <div className={`grid gap-1 p-1 bg-black max-h-[200px] ${
-                    (remoteVideoUsers.length + (isCameraOn ? 1 : 0)) <= 1 ? 'grid-cols-1' :
-                    (remoteVideoUsers.length + (isCameraOn ? 1 : 0)) <= 4 ? 'grid-cols-2' :
-                    'grid-cols-3'
-                  }`}>
-                    {/* Local Video (Your Camera) - Direct from phone */}
-                    {isCameraOn && localCameraStream.current && (
-                      <div className="relative aspect-video max-h-[90px] bg-slate-900 rounded-lg overflow-hidden">
-                        <video
-                          ref={localVideoRef}
-                          autoPlay
-                          playsInline
-                          muted
-                          className="w-full h-full object-cover"
-                          style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
-                        />
-                        <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded-lg flex items-center gap-1">
-                          <span className="text-white text-xs font-cairo">أنت</span>
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Remote Videos (Other Users' Cameras) */}
-                    {remoteVideoUsers.map((remoteUser) => {
-                      // Find participant info by Agora UID
-                      const participant = participants.find(p => {
-                        // Match by checking if this user might be the one
-                        return remoteUsers.some(ru => ru.uid === remoteUser.uid);
-                      });
-                      return (
-                        <div key={remoteUser.uid} className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden">
-                          <div 
-                            ref={(el) => {
-                              if (el && remoteUser.videoTrack) {
-                                remoteUser.videoTrack.play(el);
-                              }
-                            }}
-                            className="w-full h-full"
-                          />
-                          <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded-lg">
-                            <span className="text-white text-xs font-cairo">
-                              {participant?.username || `مستخدم ${remoteUser.uid}`}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    
-                    {/* Empty State */}
-                    {!isCameraOn && remoteVideoUsers.length === 0 && (
-                      <div className="col-span-full aspect-video flex items-center justify-center">
-                        <div className="text-center p-6">
-                          <div className="flex justify-center gap-4 mb-4">
-                            <Camera className="w-12 h-12 text-purple-500" />
-                          </div>
-                          <p className="text-slate-400 font-cairo text-sm mb-2">
-                            {onStage ? 'شارك الكاميرا' : 'اصعد للمنصة أولاً لتشغيل الكاميرا'}
-                          </p>
-                          {onStage && (
-                            <p className="text-slate-500 font-cairo text-xs">اضغط "كاميرا" للبدء</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Speakers Grid - Shows when no stream or user selects mics */}
-            {(!streamActive || viewMode === 'mics') && (
-              <div className="px-2">
-                {/* Ultra Mini Stage - Single Line */}
-                <div className="flex items-center justify-center gap-2 py-1">
-                  <Star className="w-3 h-3 text-lime-400/70" />
-                  
-                  {speakers.length > 0 ? speakers.map((seat, index) => (
-                    <div key={seat.seat_number} className="relative">
-                      <div className={`w-6 h-6 rounded-full overflow-hidden border ${
-                        seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_6px_rgba(132,204,22,0.5)]' : 'border-slate-600'
-                      }`}>
-                        <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      {seat.user.is_muted && <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full" />}
-                    </div>
-                  )) : (
-                    [...Array(6)].map((_, i) => (
-                      <div key={i} className="w-6 h-6 rounded-full border border-dashed border-lime-500/20 bg-slate-800/30" />
-                    ))
-                  )}
-                  
-                  <span className="text-lime-400/50 text-[9px]">{speakers.length}/12</span>
+                <div className="relative aspect-[16/9] max-h-[150px] bg-black">
+                  <ReactPlayer
+                    url={streamUrl}
+                    playing={true}
+                    controls={true}
+                    width="100%"
+                    height="100%"
+                    muted={isAudioMuted}
+                  />
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </motion.div>
-
-        {/* Chat Section - With Glow Border */}
+        {/* Combined Stage + Chat Section */}
         <motion.div 
           className="px-4 pb-2 flex-1 min-h-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
           <div 
-            className="rounded-2xl h-full flex flex-col relative overflow-hidden border border-lime-500/40 shadow-[0_0_30px_rgba(132,204,22,0.15)]"
+            className="rounded-xl h-full flex flex-col relative overflow-hidden border border-lime-500/30 shadow-[0_0_20px_rgba(132,204,22,0.1)]"
             style={{
               backgroundImage: chatBackground ? `url(${chatBackground})` : 'none',
               backgroundSize: 'cover',
@@ -2449,19 +2255,39 @@ const YallaLiveRoom = ({ user }) => {
               <div className="absolute inset-0 bg-black/40" />
             )}
             
+            {/* Mini Stage Inside Card */}
+            <div className="relative z-10 border-b border-lime-500/20 px-3 py-2">
+              <div className="flex items-center justify-center gap-2">
+                <Star className="w-3 h-3 text-lime-400/70" />
+                {speakers.length > 0 ? speakers.map((seat) => (
+                  <div key={seat.seat_number} className="relative">
+                    <div className={`w-6 h-6 rounded-full overflow-hidden border ${
+                      seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_6px_rgba(132,204,22,0.5)]' : 'border-slate-600'
+                    }`}>
+                      <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    {seat.user.is_muted && <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full" />}
+                  </div>
+                )) : (
+                  [...Array(6)].map((_, i) => (
+                    <div key={i} className="w-6 h-6 rounded-full border border-dashed border-lime-500/20 bg-slate-800/30" />
+                  ))
+                )}
+                <span className="text-lime-400/50 text-[9px]">{speakers.length}/12</span>
+              </div>
+            </div>
+            
             {/* Chat Header */}
-            <div className="flex items-center justify-between mb-2 relative z-10">
+            <div className="flex items-center justify-between px-3 py-1.5 relative z-10 border-b border-slate-700/50">
               <span className="text-slate-400 text-xs font-cairo">💬 الدردشة</span>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500 text-xs">{messages.length} رسالة</span>
-                {/* Background change button - Owner only */}
+                <span className="text-slate-500 text-[10px]">{messages.length} رسالة</span>
                 {room?.owner_id === user.id && (
                   <button
                     onClick={() => setShowBackgroundPicker(true)}
-                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                    title="تغيير خلفية الدردشة"
+                    className="p-1 rounded bg-white/10 hover:bg-white/20"
                   >
-                    <ImageIcon className="w-3.5 h-3.5 text-lime-400" />
+                    <ImageIcon className="w-3 h-3 text-lime-400" />
                   </button>
                 )}
               </div>
