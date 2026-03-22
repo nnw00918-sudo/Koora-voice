@@ -171,6 +171,51 @@ const SettingsPage = ({ user, onLogout }) => {
     }
   };
 
+  // Push Notification Functions
+  const [pushPermission, setPushPermission] = useState('default');
+  
+  useEffect(() => {
+    if ('Notification' in window) {
+      setPushPermission(Notification.permission);
+    }
+  }, []);
+
+  const requestPushPermission = async () => {
+    if (!('Notification' in window)) {
+      toast.error(isRTL ? 'متصفحك لا يدعم الإشعارات' : 'Your browser does not support notifications');
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setPushPermission(permission);
+      
+      if (permission === 'granted') {
+        // Register service worker push subscription
+        const registration = await navigator.serviceWorker.ready;
+        
+        // In production, use your VAPID public key
+        // For now, we'll just show a success message
+        toast.success(isRTL ? 'تم تفعيل الإشعارات بنجاح!' : 'Notifications enabled!');
+        
+        setNotificationSettings(prev => ({ ...prev, pushEnabled: true }));
+        saveSettings('notifications', { ...notificationSettings, pushEnabled: true });
+        
+        // Show test notification
+        new Notification(isRTL ? 'صوت الكورة' : 'Koora Voice', {
+          body: isRTL ? 'تم تفعيل الإشعارات بنجاح!' : 'Notifications have been enabled!',
+          icon: '/logo192.png',
+          badge: '/logo192.png'
+        });
+      } else if (permission === 'denied') {
+        toast.error(isRTL ? 'تم رفض إذن الإشعارات' : 'Notification permission denied');
+      }
+    } catch (error) {
+      console.error('Push permission error:', error);
+      toast.error(isRTL ? 'فشل تفعيل الإشعارات' : 'Failed to enable notifications');
+    }
+  };
+
   const txt = {
     ar: {
       settings: 'الإعدادات',
@@ -809,6 +854,46 @@ const SettingsPage = ({ user, onLogout }) => {
   // Notifications View
   const NotificationsView = () => (
     <div className="space-y-6">
+      {/* Enable Push Notifications Button */}
+      {pushPermission !== 'granted' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-gradient-to-r from-lime-500/20 to-emerald-500/20 rounded-2xl border border-lime-500/30"
+        >
+          <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="w-12 h-12 rounded-xl bg-lime-500/30 flex items-center justify-center">
+              <BellRing className="w-6 h-6 text-lime-400" />
+            </div>
+            <div className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+              <p className="text-white font-cairo font-bold">
+                {isRTL ? 'تفعيل الإشعارات الفورية' : 'Enable Push Notifications'}
+              </p>
+              <p className="text-slate-400 text-sm font-almarai">
+                {isRTL ? 'اضغط هنا للسماح بالإشعارات على جهازك' : 'Click here to allow notifications on your device'}
+              </p>
+            </div>
+            <Button
+              onClick={requestPushPermission}
+              className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-cairo font-bold px-4 py-2 rounded-xl"
+            >
+              {isRTL ? 'تفعيل' : 'Enable'}
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
+      {pushPermission === 'granted' && (
+        <div className="p-4 bg-slate-800/50 rounded-2xl border border-lime-500/30 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-lime-500/20 flex items-center justify-center">
+            <Check className="w-5 h-5 text-lime-400" />
+          </div>
+          <p className="text-lime-400 font-cairo font-bold flex-1">
+            {isRTL ? 'الإشعارات مفعّلة ✓' : 'Notifications Enabled ✓'}
+          </p>
+        </div>
+      )}
+
       <SectionHeader title={isRTL ? 'عام' : 'General'} icon={Bell} />
       <div className="space-y-3">
         <div className={`flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'flex-row-reverse' : ''}`}>

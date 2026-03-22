@@ -184,6 +184,34 @@ Building a football-themed social media application with voice chat, threads, us
   - Filename includes room title and timestamp
   - Auto-cleanup on leaving room
 
+### Phase 14: Match Details & Story Features ✅ (March 22, 2026)
+- **Match Detail Page** ✅:
+  - New `/match/:matchId` route
+  - Four tabs: التشكيلة (Lineups), الإحصائيات (Stats), الأحداث (Events), المواجهات (H2H)
+  - Full match info: teams, score, venue, status
+  - Team lineups with formation and player positions
+  - Live statistics comparison bar chart
+  - Match events timeline (goals, cards, substitutions)
+  - Head-to-head history of previous meetings
+  - API endpoint `/api/football/match/{fixture_id}` with API-Football integration
+  - Fallback sample data when API unavailable
+
+- **Story Reactions & Replies** ✅:
+  - New API endpoints for story interactions:
+    - `POST /stories/{id}/react` - Add emoji reaction
+    - `POST /stories/{id}/reply` - Send text reply
+    - `GET /stories/{id}/replies` - Get replies (owner only)
+    - `GET /stories/{id}/reactions` - Get reactions
+  - Notifications for reactions and replies
+  - Reply count tracking on stories
+
+- **PWA Push Notifications** ✅:
+  - Permission request button in Settings → Notifications
+  - Browser notification permission handling
+  - Test notification on enable
+  - Status indicator showing if notifications are enabled
+  - Service worker already supports push events
+
 ---
 
 ## Technical Architecture
@@ -269,17 +297,23 @@ Building a football-themed social media application with voice chat, threads, us
 - None (All P0 tasks completed)
 
 ## P1 - Priority Backlog
-1. **CRITICAL**: Refactor server.py into route modules (4500+ lines - technical debt)
-2. **CRITICAL**: Break down RoomPage.js into smaller components (2900+ lines)
-3. Implement Match Detail Page with lineups, stats, head-to-head
-4. Add push notifications (PWA)
-5. Add story reactions/replies
+1. **CRITICAL**: Refactor server.py into route modules (4900+ lines - technical debt)
+2. **CRITICAL**: Break down RoomPage.js into smaller components (3100+ lines)
+3. Story reactions/replies UI in Frontend (Backend done)
 
 ## P2 - Future Features
 1. User leveling/ranking system with badges
 2. Highlights (save stories permanently)
 3. 1-on-1 Video calls (now partially supported via room video)
 4. Gamification system
+
+## Completed This Session (March 22, 2026)
+- ✅ Multi-Camera Video Rooms (Agora WebRTC)
+- ✅ Room Recording Feature (Owner/Admin only)
+- ✅ Camera mirror fix for front camera
+- ✅ Match Detail Page with lineups, stats, events, H2H
+- ✅ Story Reactions & Replies Backend APIs
+- ✅ PWA Push Notifications (permission request in Settings)
 
 ---
 

@@ -431,7 +431,7 @@ const MatchesPage = () => {
                   key={leagueName}
                   league={matches[0]?.league}
                   matches={matches}
-                  onMatchClick={setSelectedMatch}
+                  onMatchClick={(match) => navigate(`/match/${match.id}`)}
                   onLeagueClick={(leagueId) => navigate(`/league/${leagueId}`)}
                 />
               ))

@@ -3571,6 +3571,208 @@ async def get_story_viewers(
     
     return {"viewers": viewers, "total": len(viewers)}
 
+
+# Story Reactions
+@api_router.post("/stories/{story_id}/react")
+async def react_to_story(
+    story_id: str,
+    reaction: str = Form(...),  # emoji reaction
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """React to a story (emoji)"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    story = await db.stories.find_one({"id": story_id})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Create reaction
+    reaction_doc = {
+        "id": str(int(time.time() * 1000)),
+        "story_id": story_id,
+        "user_id": user_id,
+        "reaction": reaction,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.story_reactions.insert_one(reaction_doc)
+    
+    # Notify story owner
+    if story["author_id"] != user_id:
+        notification = {
+            "id": str(int(time.time() * 1000) + 1),
+            "user_id": story["author_id"],
+            "type": "story_reaction",
+            "title": "تفاعل على قصتك",
+            "message": f"{user['username']} تفاعل على قصتك {reaction}",
+            "data": {
+                "story_id": story_id,
+                "reactor_id": user_id,
+                "reactor_username": user["username"],
+                "reactor_avatar": user.get("avatar"),
+                "reaction": reaction
+            },
+            "read": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.notifications.insert_one(notification)
+    
+    return {"message": "Reaction added", "reaction_id": reaction_doc["id"]}
+
+
+@api_router.post("/stories/{story_id}/reply")
+async def reply_to_story(
+    story_id: str,
+    content: str = Form(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Reply to a story (private message)"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    story = await db.stories.find_one({"id": story_id})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Create reply as a story reply (not direct message)
+    reply_doc = {
+        "id": str(int(time.time() * 1000)),
+        "story_id": story_id,
+        "user_id": user_id,
+        "content": content.strip()[:500],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.story_replies.insert_one(reply_doc)
+    
+    # Update story replies count
+    await db.stories.update_one({"id": story_id}, {"$inc": {"replies_count": 1}})
+    
+    # Notify story owner
+    if story["author_id"] != user_id:
+        notification = {
+            "id": str(int(time.time() * 1000) + 1),
+            "user_id": story["author_id"],
+            "type": "story_reply",
+            "title": "رد على قصتك",
+            "message": f"{user['username']}: {content[:50]}...",
+            "data": {
+                "story_id": story_id,
+                "reply_id": reply_doc["id"],
+                "replier_id": user_id,
+                "replier_username": user["username"],
+                "replier_avatar": user.get("avatar"),
+                "content": content[:100]
+            },
+            "read": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.notifications.insert_one(notification)
+    
+    return {"message": "Reply sent", "reply_id": reply_doc["id"]}
+
+
+@api_router.get("/stories/{story_id}/replies")
+async def get_story_replies(
+    story_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get replies for a story (only story owner can see)"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    story = await db.stories.find_one({"id": story_id})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    # Only story owner can see replies
+    if story["author_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    replies_cursor = db.story_replies.find({"story_id": story_id}).sort("created_at", -1)
+    replies = await replies_cursor.to_list(length=100)
+    
+    result = []
+    for reply in replies:
+        replier = await db.users.find_one({"id": reply["user_id"]}, {"_id": 0, "password": 0})
+        if replier:
+            result.append({
+                "id": reply["id"],
+                "content": reply["content"],
+                "user": {
+                    "id": replier["id"],
+                    "username": replier["username"],
+                    "name": replier.get("name", replier["username"]),
+                    "avatar": replier.get("avatar")
+                },
+                "created_at": reply["created_at"]
+            })
+    
+    return {"replies": result, "total": len(result)}
+
+
+@api_router.get("/stories/{story_id}/reactions")
+async def get_story_reactions(
+    story_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get reactions for a story"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    story = await db.stories.find_one({"id": story_id})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    # Only story owner can see detailed reactions
+    if story["author_id"] != user_id:
+        # For non-owners, just return count
+        count = await db.story_reactions.count_documents({"story_id": story_id})
+        return {"total": count, "reactions": []}
+    
+    reactions_cursor = db.story_reactions.find({"story_id": story_id}).sort("created_at", -1)
+    reactions = await reactions_cursor.to_list(length=100)
+    
+    result = []
+    for react in reactions:
+        reactor = await db.users.find_one({"id": react["user_id"]}, {"_id": 0, "password": 0})
+        if reactor:
+            result.append({
+                "id": react["id"],
+                "reaction": react["reaction"],
+                "user": {
+                    "id": reactor["id"],
+                    "username": reactor["username"],
+                    "name": reactor.get("name", reactor["username"]),
+                    "avatar": reactor.get("avatar")
+                },
+                "created_at": react["created_at"]
+            })
+    
+    return {"reactions": result, "total": len(result)}
+
+
 # Helper function to create notification
 async def create_notification(user_id: str, notif_type: str, from_user_id: str, thread_id: str = None, message: str = None):
     """Create a notification and send via WebSocket if user is online"""
@@ -4311,6 +4513,183 @@ async def get_league_fixtures(league_id: int):
     all_fixtures.sort(key=lambda x: x.get("date", ""), reverse=True)
     
     return {"league": league, "fixtures": all_fixtures}
+
+
+@api_router.get("/football/match/{fixture_id}")
+async def get_match_details(fixture_id: str):
+    """Get detailed match information including lineups, stats, and H2H"""
+    CURRENT_SEASON = 2025
+    
+    match_data = {
+        "id": fixture_id,
+        "lineups": None,
+        "statistics": None,
+        "events": None,
+        "h2h": None,
+        "match": None
+    }
+    
+    if API_FOOTBALL_KEY:
+        # Get match details
+        fixture_response = await fetch_from_api_football("fixtures", {"id": fixture_id})
+        if fixture_response and len(fixture_response) > 0:
+            fixture = fixture_response[0]
+            match_data["match"] = format_match(fixture)
+            
+            home_id = fixture.get("teams", {}).get("home", {}).get("id")
+            away_id = fixture.get("teams", {}).get("away", {}).get("id")
+            
+            # Get lineups
+            lineups_response = await fetch_from_api_football("fixtures/lineups", {"fixture": fixture_id})
+            if lineups_response:
+                match_data["lineups"] = {
+                    "home": lineups_response[0] if len(lineups_response) > 0 else None,
+                    "away": lineups_response[1] if len(lineups_response) > 1 else None
+                }
+            
+            # Get statistics
+            stats_response = await fetch_from_api_football("fixtures/statistics", {"fixture": fixture_id})
+            if stats_response:
+                match_data["statistics"] = {
+                    "home": stats_response[0].get("statistics", []) if len(stats_response) > 0 else [],
+                    "away": stats_response[1].get("statistics", []) if len(stats_response) > 1 else []
+                }
+            
+            # Get events (goals, cards, subs)
+            events_response = await fetch_from_api_football("fixtures/events", {"fixture": fixture_id})
+            if events_response:
+                match_data["events"] = events_response
+            
+            # Get H2H
+            if home_id and away_id:
+                h2h_response = await fetch_from_api_football("fixtures/headtohead", {
+                    "h2h": f"{home_id}-{away_id}",
+                    "last": 10
+                })
+                if h2h_response:
+                    match_data["h2h"] = [format_match(m) for m in h2h_response]
+    
+    # Sample fallback data if no API data
+    if not match_data["match"]:
+        # Return sample data
+        match_data["match"] = {
+            "id": fixture_id,
+            "league": FOOTBALL_LEAGUES[0] if FOOTBALL_LEAGUES else {},
+            "home_team": {"name": "الهلال", "logo": "https://media.api-sports.io/football/teams/2932.png", "score": 2},
+            "away_team": {"name": "النصر", "logo": "https://media.api-sports.io/football/teams/2939.png", "score": 1},
+            "status": "FINISHED",
+            "minute": 90,
+            "date": datetime.now(timezone.utc).isoformat(),
+            "venue": "استاد الملك فهد الدولي"
+        }
+        
+        match_data["lineups"] = {
+            "home": {
+                "team": {"name": "الهلال", "logo": "https://media.api-sports.io/football/teams/2932.png"},
+                "formation": "4-3-3",
+                "startXI": [
+                    {"player": {"name": "عبدالله الميوف", "number": 21, "pos": "G"}},
+                    {"player": {"name": "سعود عبدالحميد", "number": 12, "pos": "D"}},
+                    {"player": {"name": "علي البليهي", "number": 13, "pos": "D"}},
+                    {"player": {"name": "كالدو", "number": 4, "pos": "D"}},
+                    {"player": {"name": "ريبول", "number": 3, "pos": "D"}},
+                    {"player": {"name": "رويدة", "number": 6, "pos": "M"}},
+                    {"player": {"name": "ميلينكوفيتش سافيتش", "number": 8, "pos": "M"}},
+                    {"player": {"name": "نيمار", "number": 10, "pos": "M"}},
+                    {"player": {"name": "ميتروفيتش", "number": 9, "pos": "F"}},
+                    {"player": {"name": "مالكوم", "number": 11, "pos": "F"}},
+                    {"player": {"name": "الدوسري", "number": 7, "pos": "F"}}
+                ],
+                "substitutes": [
+                    {"player": {"name": "الشهراني", "number": 20, "pos": "D"}},
+                    {"player": {"name": "الفراج", "number": 23, "pos": "M"}}
+                ]
+            },
+            "away": {
+                "team": {"name": "النصر", "logo": "https://media.api-sports.io/football/teams/2939.png"},
+                "formation": "4-2-3-1",
+                "startXI": [
+                    {"player": {"name": "العقيدي", "number": 1, "pos": "G"}},
+                    {"player": {"name": "الغنام", "number": 2, "pos": "D"}},
+                    {"player": {"name": "لابورت", "number": 14, "pos": "D"}},
+                    {"player": {"name": "سيماكان", "number": 4, "pos": "D"}},
+                    {"player": {"name": "تيليز", "number": 12, "pos": "D"}},
+                    {"player": {"name": "بروزوفيتش", "number": 8, "pos": "M"}},
+                    {"player": {"name": "أوتافيو", "number": 10, "pos": "M"}},
+                    {"player": {"name": "أندرسون تاليسكا", "number": 20, "pos": "M"}},
+                    {"player": {"name": "ساديو ماني", "number": 11, "pos": "F"}},
+                    {"player": {"name": "كريستيانو رونالدو", "number": 7, "pos": "F"}},
+                    {"player": {"name": "العبيد", "number": 19, "pos": "F"}}
+                ],
+                "substitutes": [
+                    {"player": {"name": "الخيبري", "number": 22, "pos": "D"}},
+                    {"player": {"name": "العمري", "number": 23, "pos": "M"}}
+                ]
+            }
+        }
+        
+        match_data["statistics"] = {
+            "home": [
+                {"type": "Ball Possession", "value": "55%"},
+                {"type": "Total Shots", "value": 15},
+                {"type": "Shots on Goal", "value": 7},
+                {"type": "Corner Kicks", "value": 8},
+                {"type": "Fouls", "value": 12},
+                {"type": "Yellow Cards", "value": 2},
+                {"type": "Red Cards", "value": 0},
+                {"type": "Passes", "value": 485},
+                {"type": "Pass Accuracy", "value": "87%"}
+            ],
+            "away": [
+                {"type": "Ball Possession", "value": "45%"},
+                {"type": "Total Shots", "value": 11},
+                {"type": "Shots on Goal", "value": 4},
+                {"type": "Corner Kicks", "value": 5},
+                {"type": "Fouls", "value": 14},
+                {"type": "Yellow Cards", "value": 3},
+                {"type": "Red Cards", "value": 0},
+                {"type": "Passes", "value": 395},
+                {"type": "Pass Accuracy", "value": "82%"}
+            ]
+        }
+        
+        match_data["events"] = [
+            {"time": {"elapsed": 23}, "team": {"name": "الهلال"}, "player": {"name": "ميتروفيتش"}, "type": "Goal", "detail": "Normal Goal"},
+            {"time": {"elapsed": 45}, "team": {"name": "النصر"}, "player": {"name": "رونالدو"}, "type": "Goal", "detail": "Penalty"},
+            {"time": {"elapsed": 67}, "team": {"name": "الهلال"}, "player": {"name": "نيمار"}, "type": "Goal", "detail": "Normal Goal"},
+            {"time": {"elapsed": 72}, "team": {"name": "النصر"}, "player": {"name": "بروزوفيتش"}, "type": "Card", "detail": "Yellow Card"},
+            {"time": {"elapsed": 85}, "team": {"name": "الهلال"}, "player": {"name": "الفراج"}, "type": "subst", "detail": "Substitution", "assist": {"name": "نيمار"}}
+        ]
+        
+        match_data["h2h"] = [
+            {
+                "id": "h2h_1",
+                "league": FOOTBALL_LEAGUES[0] if FOOTBALL_LEAGUES else {},
+                "home_team": {"name": "الهلال", "logo": "https://media.api-sports.io/football/teams/2932.png", "score": 2},
+                "away_team": {"name": "النصر", "logo": "https://media.api-sports.io/football/teams/2939.png", "score": 0},
+                "status": "FINISHED",
+                "date": (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+            },
+            {
+                "id": "h2h_2",
+                "league": FOOTBALL_LEAGUES[0] if FOOTBALL_LEAGUES else {},
+                "home_team": {"name": "النصر", "logo": "https://media.api-sports.io/football/teams/2939.png", "score": 1},
+                "away_team": {"name": "الهلال", "logo": "https://media.api-sports.io/football/teams/2932.png", "score": 1},
+                "status": "FINISHED",
+                "date": (datetime.now(timezone.utc) - timedelta(days=180)).isoformat()
+            },
+            {
+                "id": "h2h_3",
+                "league": FOOTBALL_LEAGUES[0] if FOOTBALL_LEAGUES else {},
+                "home_team": {"name": "الهلال", "logo": "https://media.api-sports.io/football/teams/2932.png", "score": 3},
+                "away_team": {"name": "النصر", "logo": "https://media.api-sports.io/football/teams/2939.png", "score": 2},
+                "status": "FINISHED",
+                "date": (datetime.now(timezone.utc) - timedelta(days=270)).isoformat()
+            }
+        ]
+    
+    return match_data
+
 
 @api_router.get("/football/news/ticker")
 async def get_football_news_ticker():
