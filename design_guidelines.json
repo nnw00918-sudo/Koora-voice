@@ -1,113 +1,121 @@
 {
-  "identity": {
-    "name": "KoraVerse",
-    "persona": "The Digital Stadium",
-    "vibe": "Electric, Passionate, Night-Match Atmosphere",
-    "audience": "Arabic-speaking Football Fans",
-    "theme_mode": "dark"
+  "project_name": "Koora Voice - صوت الكورة",
+  "theme": "dark",
+  "color_palette": {
+    "background": {
+      "base": "bg-slate-950",
+      "surface": "bg-slate-900",
+      "surface_elevated": "bg-slate-800",
+      "glass": "bg-slate-900/80 backdrop-blur-xl"
+    },
+    "primary": {
+      "main": "lime-500",
+      "light": "lime-400",
+      "dark": "lime-600",
+      "foreground": "text-slate-950",
+      "bg": "bg-lime-500",
+      "hover": "hover:bg-lime-400"
+    },
+    "text": {
+      "primary": "text-white",
+      "secondary": "text-slate-300",
+      "muted": "text-slate-400",
+      "inverse": "text-slate-950"
+    },
+    "status": {
+      "speaking": "ring-lime-500",
+      "muted": "bg-slate-800 text-slate-400",
+      "recording": "text-rose-500 bg-rose-500/10",
+      "gift": "text-amber-400 bg-amber-400/10",
+      "live": "bg-rose-600"
+    }
   },
   "typography": {
-    "font_family": {
-      "heading": "Cairo, sans-serif",
-      "body": "Almarai, sans-serif",
-      "numbers": "Chivo, sans-serif"
-    },
-    "scale": {
-      "h1": "text-4xl md:text-5xl font-bold tracking-tight",
-      "h2": "text-3xl font-bold",
-      "h3": "text-2xl font-semibold",
-      "body": "text-base leading-relaxed",
-      "small": "text-sm text-slate-400"
-    },
-    "import_instructions": "Import 'Cairo' (Weights: 400, 700, 900) and 'Almarai' (Weights: 400, 700) from Google Fonts in index.css"
+    "font_family": "Cairo, sans-serif",
+    "headings": "font-black tracking-tight",
+    "body": "font-medium leading-relaxed",
+    "labels": "font-bold uppercase tracking-wider text-xs"
   },
-  "colors": {
-    "palette": {
-      "background": {
-        "default": "#020617",
-        "paper": "#0F172A",
-        "subtle": "#1E293B"
-      },
-      "primary": {
-        "main": "#A3E635",
-        "hover": "#BEF264",
-        "text_contrast": "#0F172A"
-      },
-      "secondary": {
-        "main": "#38BDF8",
-        "hover": "#7DD3FC"
-      },
-      "text": {
-        "primary": "#F8FAFC",
-        "secondary": "#94A3B8",
-        "disabled": "#475569"
-      },
-      "status": {
-        "success": "#22C55E",
-        "error": "#EF4444",
-        "warning": "#F59E0B"
-      }
-    },
-    "usage": {
-      "page_background": "bg-slate-950",
-      "card_background": "bg-slate-900/50 backdrop-blur-md border border-slate-800",
-      "primary_action": "bg-lime-400 hover:bg-lime-300 text-slate-900 font-bold",
-      "secondary_action": "bg-slate-800 hover:bg-slate-700 text-white",
-      "divider": "border-slate-800"
-    }
+  "layouts": {
+    "direction": "rtl",
+    "app_container": "min-h-screen flex flex-col bg-slate-950 text-white overflow-hidden dir-rtl font-cairo",
+    "header": "flex items-center justify-between p-4 md:px-8 md:py-6 bg-slate-900/60 backdrop-blur-2xl border-b border-white/5 z-10",
+    "main_content": "flex-1 overflow-y-auto p-4 md:p-8 pb-32 flex flex-col lg:flex-row gap-6 lg:gap-8",
+    "stage_area": "flex-1 flex flex-col",
+    "speakers_grid": "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-8 justify-items-center w-full max-w-4xl mx-auto mt-4",
+    "chat_area": "w-full lg:w-96 h-80 lg:h-full bg-slate-900/40 rounded-3xl border border-white/5 p-4 flex flex-col mt-6 lg:mt-0",
+    "bottom_bar": "fixed bottom-0 left-0 right-0 p-4 md:px-8 md:py-5 bg-slate-950/90 backdrop-blur-3xl border-t border-white/5 flex items-center justify-center gap-3 md:gap-6 z-20 pb-safe"
+  },
+  "visual_enhancers": {
+    "glassmorphism": "bg-slate-900/70 backdrop-blur-2xl border border-white/10 shadow-2xl",
+    "glow": "drop-shadow-[0_0_12px_rgba(132,204,22,0.4)]",
+    "speaking_indicator": "ring-4 ring-lime-500 ring-offset-4 ring-offset-slate-950 shadow-[0_0_20px_rgba(132,204,22,0.5)]"
   },
   "components": {
-    "buttons": {
-      "default": "rounded-lg px-6 py-3 font-bold transition-all active:scale-95",
-      "primary": "bg-lime-400 text-slate-950 hover:shadow-[0_0_20px_rgba(163,230,53,0.3)]",
-      "ghost": "hover:bg-slate-800 text-slate-300"
-    },
-    "inputs": {
-      "default": "bg-slate-900 border-slate-700 focus:border-lime-400 rounded-lg text-white placeholder:text-slate-500"
-    },
-    "cards": {
-      "room_card": "relative overflow-hidden rounded-xl border border-slate-800 hover:border-lime-400/50 transition-all group cursor-pointer h-48",
-      "glass": "bg-white/5 backdrop-blur-lg border border-white/10"
-    },
-    "avatars": {
-      "speaking": "ring-4 ring-lime-500 ring-opacity-50 animate-pulse",
-      "silent": "ring-2 ring-slate-700"
-    }
-  },
-  "layout": {
-    "container": "max-w-md mx-auto min-h-screen bg-slate-950 relative overflow-hidden shadow-2xl",
-    "grid": "grid grid-cols-1 md:grid-cols-2 gap-4 p-4",
-    "navigation": "fixed bottom-0 w-full max-w-md bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 p-4 flex justify-around z-50"
-  },
-  "image_urls": {
-    "rooms": {
-      "general": "https://images.unsplash.com/photo-1762013315117-1c8005ad2b41",
-      "fantasy": "https://images.unsplash.com/photo-1761853320977-bcd046cfaea9",
-      "games": "https://images.unsplash.com/photo-1766051666522-9cfa12675f5b",
-      "analysis": "https://images.unsplash.com/photo-1556056504-dc77ff4d11b0",
-      "podcast": "https://images.unsplash.com/photo-1709846486154-f9172678be6f",
-      "transfers": "https://images.unsplash.com/photo-1643917367212-018cf11bf790"
-    },
-    "users": {
-      "avatar_placeholder": "https://images.unsplash.com/photo-1761358531581-06e457ed7744"
-    }
+    "SpeakerAvatar": "Circular avatar (w-16 h-16 or w-20 h-20). When active speaker: add 'speaking_indicator' glow and subtle scale. Name below with max-width truncation. Mic status icon overlaid on corner.",
+    "ControlBarButton": "Rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center transition-transform hover:scale-105. Primary action (Mic/Hand) uses lime-500. Others use slate-800 hover:bg-slate-700 text-white.",
+    "ChatMessage": "Small rounded-2xl blocks. Mention (@name) colored in lime-400 font-bold. Disappearing messages fade out after delay.",
+    "Modals": "Unified Shadcn dialogs. Dark glassmorphic bg, crisp white text, lime primary buttons. No generic gray overlays.",
+    "Tabs": "Used for Requests (Speakers vs Admin) and Room Settings. Pill-shaped active tab bg-slate-800.",
+    "GiftsMenu": "Horizontal scrolling list or grid of animated SVGs/emojis."
   },
   "motion": {
-    "page_transition": {
-      "initial": { "opacity": 0, "y": 20 },
-      "animate": { "opacity": 1, "y": 0 },
-      "exit": { "opacity": 0, "y": -20 },
-      "transition": { "duration": 0.3 }
-    }
+    "hover": "scale-105 transition-transform duration-200 ease-out",
+    "tap": "scale-95",
+    "entrance": "fade-in-up duration-500",
+    "active_speaker": "animate-pulse-slow",
+    "chat_message_enter": "animate-slide-in-right"
   },
-  "universal_guidelines": [
-    "Always assume Dark Mode. Do not implement a light mode toggle unless specifically asked.",
-    "Use 'Cairo' font for all Arabic text to maintain the modern sports feel.",
-    "Ensure high contrast for accessibility: Lime-400 on Slate-900 is excellent.",
-    "Room cards should have a dark gradient overlay (bg-gradient-to-t from-slate-950 to-transparent) to ensure text readability over images.",
-    "Voice indicators are critical: Use the 'speaking' ring animation when a user is talking.",
-    "Use Lucide-React icons with stroke-width={1.5} for a sleek look.",
-    "Keep the UI 'App-like': Hide scrollbars, use fixed headers/footers where appropriate for a mobile feel."
+  "accessibility": {
+    "contrast": "Ensure white text over slate-900 meets 4.5:1 ratio.",
+    "reduced_motion": "Respect prefers-reduced-motion for animations.",
+    "focus": "focus-visible:ring-2 focus-visible:ring-lime-500 focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+  },
+  "media": {
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1554400695-5973d75d179e?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "category": "Speaker Avatar",
+        "description": "Arab man in white thobe"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1652784549134-bae822a7c4a3?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "category": "Speaker Avatar",
+        "description": "Arab man portrait"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1771041564650-55f067de005d?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "category": "Speaker Avatar",
+        "description": "Soccer fan portrait"
+      }
+    ],
+    "icons_library": "lucide-react"
+  },
+  "instructions_to_main_agent": [
+    "Build a single RoomPage (export default function RoomPage) that integrates all the requested features.",
+    "Ensure 'dir=\"rtl\"' is applied to the main wrapper.",
+    "Use 'slate-950' and 'lime-500' extensively. No purple or teal.",
+    "Create a mobile-first responsive layout where the chat is side-by-side on desktop but stacked or accessed via a drawer/modal on mobile.",
+    "Implement the fixed bottom bar with clear icon buttons for Mic, Video, Leave Stage, Chat (toggle on mobile), Hand Raise, Gifts, Settings.",
+    "Implement multiple view modes (Mics Grid vs Camera Video spots vs Broadcast).",
+    "Use framer-motion (<motion.div>) for smooth entrance of speakers, message bubbles, and active speaker pulsing rings.",
+    "For the active speaker, implement a glowing ring (ring-2 ring-lime-500 shadow-[0_0_15px_rgba(132,204,22,0.5)]).",
+    "Load 'Cairo' font from Google Fonts (import in css or next/font) and apply 'font-cairo' class globally.",
+    "Use Shadcn UI (Dialog, Tabs, Button, Input, DropdownMenu, Avatar) for settings and requests. Style them to fit the dark theme."
   ],
-  "instructions_to_main_agent": "1. Install 'framer-motion' for animations. 2. Add the Google Fonts link to public/index.html immediately. 3. Update tailwind.config.js to include the custom colors (slate-950, lime-400). 4. Create a 'Layout' component that enforces the mobile-app width limit on desktop (max-w-md mx-auto) to simulate a mobile experience."
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: 'transition: all'. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms.",
+    "You MUST NOT center align the app container, ie do not add '.App { text-align: center; }' in the css file. This disrupts the human natural reading flow of text.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "All interactive and key informational elements MUST include a 'data-testid' attribute to facilitate robust automated testing.",
+    "Components MUST use named exports (export const ComponentName = ...), Pages MUST use default exports (export default function PageName() {...}).",
+    "DO NOT use complete 'transparent' background in header, overlays, any surface that has content under it. Example: Dropdown with transparent background."
+  ]
 }
