@@ -1920,10 +1920,26 @@ const YallaLiveRoom = ({ user }) => {
         </motion.div>
 
         {/* Chat Section - Always visible with fixed height */}
-        <div className="px-4 pb-2">
-          {/* Messages - Always shown with max height */}
-          <div className="overflow-y-auto space-y-2 max-h-32 hide-scrollbar bg-slate-900/50 rounded-xl p-2">
-            {messages.slice(-10).map((message, index) => {
+        <motion.div 
+          className="px-4 pb-2 flex-1 min-h-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="bg-slate-900/50 rounded-xl p-3 h-full flex flex-col">
+            {/* Chat Header */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-400 text-xs font-cairo">💬 الدردشة</span>
+              <span className="text-slate-500 text-xs">{messages.length} رسالة</span>
+            </div>
+            
+            {/* Messages - Scrollable area */}
+            <div className="flex-1 overflow-y-auto space-y-2 hide-scrollbar min-h-[120px] max-h-[200px]">
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+                  لا توجد رسائل - ابدأ المحادثة!
+                </div>
+              ) : (
+                messages.slice(-20).map((message, index) => {
               const isOwnMessage = message.user_id === user.id;
               // Check if message is a single emoji (including compound emojis like ❤️)
               const emojiRegex = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200D(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
@@ -1971,10 +1987,12 @@ const YallaLiveRoom = ({ user }) => {
                   </div>
                 </motion.div>
               );
-            })}
+            })
+              )}
             <div ref={messagesEndRef} />
           </div>
-        </div>
+          </div>
+        </motion.div>
 
         {/* Bottom Control Bar - Stadium Style */}
         <motion.div 
