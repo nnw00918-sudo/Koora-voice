@@ -2225,13 +2225,11 @@ const YallaLiveRoom = ({ user }) => {
                   </div>
                 </div>
                 <div className="relative aspect-video bg-black">
-                  <ReactPlayer
-                    url={streamUrl}
-                    playing={true}
-                    controls={true}
-                    width="100%"
-                    height="100%"
-                    muted={isAudioMuted}
+                  <iframe
+                    src={streamUrl}
+                    className="absolute inset-0 w-full h-full border-0"
+                    allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                    allowFullScreen
                   />
                 </div>
               </div>
