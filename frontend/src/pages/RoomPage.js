@@ -2044,8 +2044,7 @@ const YallaLiveRoom = ({ user }) => {
                         <div 
                           ref={(el) => {
                             if (el && localVideoTrack) {
-                              // Agora handles mirroring internally for front camera
-                              localVideoTrack.play(el, { mirror: cameraFacing === 'user' });
+                              localVideoTrack.play(el);
                             }
                           }}
                           className="w-full h-full"
