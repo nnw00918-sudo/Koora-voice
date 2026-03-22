@@ -2257,20 +2257,20 @@ const YallaLiveRoom = ({ user }) => {
             
             {/* Mini Stage Inside Card */}
             <div className="relative z-10 border-b border-lime-500/20 px-3 py-3">
-              <div className="flex items-center justify-center gap-3">
-                <Star className="w-4 h-4 text-lime-400" />
+              <div className="flex items-center justify-center gap-4">
+                <Star className="w-5 h-5 text-lime-400" />
                 {speakers.length > 0 ? speakers.map((seat) => (
                   <div key={seat.seat_number} className="relative">
-                    <div className={`w-9 h-9 rounded-full overflow-hidden border-2 ${
-                      seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_8px_rgba(132,204,22,0.6)]' : 'border-slate-600'
+                    <div className={`w-12 h-12 rounded-full overflow-hidden border-2 ${
+                      seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_10px_rgba(132,204,22,0.6)]' : 'border-slate-600'
                     }`}>
                       <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
                     </div>
-                    {seat.user.is_muted && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full" />}
+                    {seat.user.is_muted && <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full" />}
                   </div>
                 )) : (
-                  [...Array(6)].map((_, i) => (
-                    <div key={i} className="w-9 h-9 rounded-full border-2 border-dashed border-lime-500/30 bg-slate-800/30" />
+                  [...Array(2)].map((_, i) => (
+                    <div key={i} className="w-12 h-12 rounded-full border-2 border-dashed border-lime-500/30 bg-slate-800/30" />
                   ))
                 )}
                 <span className="text-lime-400/70 text-xs font-cairo">{speakers.length}/12</span>
