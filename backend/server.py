@@ -1712,6 +1712,282 @@ async def get_room_messages(room_id: str, limit: int = 50):
     messages.reverse()
     return [Message(**m) for m in messages]
 
+
+# ============ REACTIONS SYSTEM ============
+
+@api_router.post("/rooms/{room_id}/reactions")
+async def send_reaction(
+    room_id: str,
+    reaction: str = Form(...),  # emoji like ⚽🔥👏❤️
+    current_user: User = Depends(get_current_user)
+):
+    """Send a floating reaction in the room"""
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    reaction_doc = {
+        "id": str(int(time.time() * 1000)),
+        "room_id": room_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "reaction": reaction,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.room_reactions.insert_one(reaction_doc)
+    
+    # Auto-delete after 5 seconds (reactions are temporary)
+    # In production, use a background task or TTL index
+    
+    return {"message": "تم إرسال التفاعل", "reaction": reaction_doc}
+
+
+@api_router.get("/rooms/{room_id}/reactions")
+async def get_room_reactions(room_id: str, since: str = None):
+    """Get recent reactions (last 10 seconds)"""
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=10)
+    query = {"room_id": room_id, "created_at": {"$gte": cutoff.isoformat()}}
+    
+    if since:
+        query["created_at"]["$gt"] = since
+    
+    reactions = await db.room_reactions.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return {"reactions": reactions}
+
+
+# ============ POLLS SYSTEM ============
+
+class PollCreate(BaseModel):
+    question: str
+    options: List[str]  # List of options
+    duration_minutes: int = 5  # How long the poll is active
+
+
+@api_router.post("/rooms/{room_id}/polls")
+async def create_poll(
+    room_id: str,
+    poll_data: PollCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a poll in the room (owner/admin only)"""
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check if user is owner or admin
+    if room.get("owner_id") != current_user.id and current_user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه إنشاء استطلاع")
+    
+    # Close any existing active poll
+    await db.room_polls.update_many(
+        {"room_id": room_id, "is_active": True},
+        {"$set": {"is_active": False}}
+    )
+    
+    poll_id = str(int(time.time() * 1000))
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=poll_data.duration_minutes)
+    
+    poll_doc = {
+        "id": poll_id,
+        "room_id": room_id,
+        "creator_id": current_user.id,
+        "creator_name": current_user.username,
+        "question": poll_data.question,
+        "options": [{"id": str(i), "text": opt, "votes": 0} for i, opt in enumerate(poll_data.options)],
+        "voters": [],  # List of user_ids who voted
+        "total_votes": 0,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": expires_at.isoformat()
+    }
+    
+    await db.room_polls.insert_one(poll_doc)
+    poll_doc.pop("_id", None)
+    
+    return {"message": "تم إنشاء الاستطلاع", "poll": poll_doc}
+
+
+@api_router.post("/rooms/{room_id}/polls/{poll_id}/vote")
+async def vote_on_poll(
+    room_id: str,
+    poll_id: str,
+    option_id: str = Form(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Vote on a poll"""
+    poll = await db.room_polls.find_one({"id": poll_id, "room_id": room_id})
+    if not poll:
+        raise HTTPException(status_code=404, detail="الاستطلاع غير موجود")
+    
+    if not poll.get("is_active"):
+        raise HTTPException(status_code=400, detail="الاستطلاع منتهي")
+    
+    # Check if already voted
+    if current_user.id in poll.get("voters", []):
+        raise HTTPException(status_code=400, detail="لقد صوتت بالفعل")
+    
+    # Check if poll expired
+    expires_at = datetime.fromisoformat(poll["expires_at"].replace("Z", "+00:00"))
+    if datetime.now(timezone.utc) > expires_at:
+        await db.room_polls.update_one({"id": poll_id}, {"$set": {"is_active": False}})
+        raise HTTPException(status_code=400, detail="انتهى وقت الاستطلاع")
+    
+    # Update vote count
+    await db.room_polls.update_one(
+        {"id": poll_id, "options.id": option_id},
+        {
+            "$inc": {"options.$.votes": 1, "total_votes": 1},
+            "$push": {"voters": current_user.id}
+        }
+    )
+    
+    # Get updated poll
+    updated_poll = await db.room_polls.find_one({"id": poll_id}, {"_id": 0})
+    
+    return {"message": "تم التصويت", "poll": updated_poll}
+
+
+@api_router.get("/rooms/{room_id}/polls/active")
+async def get_active_poll(room_id: str):
+    """Get the current active poll in the room"""
+    poll = await db.room_polls.find_one(
+        {"room_id": room_id, "is_active": True},
+        {"_id": 0}
+    )
+    
+    if poll:
+        # Check if expired
+        expires_at = datetime.fromisoformat(poll["expires_at"].replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) > expires_at:
+            await db.room_polls.update_one({"id": poll["id"]}, {"$set": {"is_active": False}})
+            poll["is_active"] = False
+    
+    return {"poll": poll}
+
+
+@api_router.delete("/rooms/{room_id}/polls/{poll_id}")
+async def close_poll(
+    room_id: str,
+    poll_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Close a poll early"""
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if room.get("owner_id") != current_user.id and current_user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="غير مصرح")
+    
+    await db.room_polls.update_one({"id": poll_id}, {"$set": {"is_active": False}})
+    
+    return {"message": "تم إغلاق الاستطلاع"}
+
+
+# ============ WATCH PARTY SYSTEM ============
+
+class WatchPartyCreate(BaseModel):
+    video_url: str  # YouTube or other video URL
+    title: str = ""
+
+
+@api_router.post("/rooms/{room_id}/watch-party")
+async def start_watch_party(
+    room_id: str,
+    party_data: WatchPartyCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Start a watch party with a video"""
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if room.get("owner_id") != current_user.id and current_user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه بدء Watch Party")
+    
+    watch_party = {
+        "id": str(int(time.time() * 1000)),
+        "room_id": room_id,
+        "video_url": party_data.video_url,
+        "title": party_data.title,
+        "host_id": current_user.id,
+        "host_name": current_user.username,
+        "is_playing": True,
+        "current_time": 0,  # in seconds
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "last_sync": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Update room with watch party info
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"watch_party": watch_party}}
+    )
+    
+    return {"message": "تم بدء Watch Party", "watch_party": watch_party}
+
+
+@api_router.put("/rooms/{room_id}/watch-party/sync")
+async def sync_watch_party(
+    room_id: str,
+    current_time: float = Form(...),
+    is_playing: bool = Form(True),
+    current_user: User = Depends(get_current_user)
+):
+    """Sync watch party playback state (host only)"""
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    watch_party = room.get("watch_party")
+    if not watch_party:
+        raise HTTPException(status_code=404, detail="لا يوجد Watch Party نشط")
+    
+    if watch_party.get("host_id") != current_user.id and room.get("owner_id") != current_user.id:
+        raise HTTPException(status_code=403, detail="فقط المضيف يمكنه التحكم")
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {
+            "watch_party.current_time": current_time,
+            "watch_party.is_playing": is_playing,
+            "watch_party.last_sync": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "تم المزامنة", "current_time": current_time, "is_playing": is_playing}
+
+
+@api_router.get("/rooms/{room_id}/watch-party")
+async def get_watch_party(room_id: str):
+    """Get current watch party state"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0, "watch_party": 1})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    return {"watch_party": room.get("watch_party")}
+
+
+@api_router.delete("/rooms/{room_id}/watch-party")
+async def end_watch_party(
+    room_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """End the watch party"""
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    if room.get("owner_id") != current_user.id and current_user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="غير مصرح")
+    
+    await db.rooms.update_one({"id": room_id}, {"$unset": {"watch_party": ""}})
+    
+    return {"message": "تم إنهاء Watch Party"}
+
+
 @api_router.get("/users/me", response_model=User)
 async def get_current_user_profile(current_user: User = Depends(get_current_user)):
     return current_user

@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useRoomAudio } from '../contexts/RoomAudioContext';
+import { FloatingReactions, ReactionBar, PollCard, CreatePollModal } from '../components/room/Reactions';
+import { WatchPartyPlayer, StartWatchPartyModal } from '../components/room/WatchParty';
 import {
   ArrowLeft,
   Mic,
@@ -56,7 +58,9 @@ import {
   Download,
   ArrowRight,
   Phone,
-  AtSign
+  AtSign,
+  BarChart3,
+  Youtube
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
