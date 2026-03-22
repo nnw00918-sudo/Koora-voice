@@ -2836,14 +2836,7 @@ const YallaLiveRoom = ({ user }) => {
                   {/* Stream Controls - Only for System Owner */}
                   {user.role === 'owner' && (
                     <>
-                      {streamActive ? (
-                        <button onClick={handleStopStream}
-                          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50"
-                        >
-                          <VideoOff className="w-6 h-6 text-red-400" />
-                          <span className="text-red-400 font-cairo font-bold">إيقاف البث</span>
-                        </button>
-                      ) : (
+                      {!streamActive && (
                         <button onClick={() => { setShowRoomSettings(false); setShowStreamModal(true); }}
                           className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/50"
                         >
@@ -2853,26 +2846,6 @@ const YallaLiveRoom = ({ user }) => {
                       )}
                     </>
                   )}
-                  
-                  <button onClick={handleToggleRoom}
-                    className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-colors ${
-                      room?.is_closed 
-                        ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/50' 
-                        : 'bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50'
-                    }`}
-                  >
-                    {room?.is_closed ? <Unlock className="w-6 h-6 text-green-400" /> : <Lock className="w-6 h-6 text-orange-400" />}
-                    <span className={`font-cairo font-bold ${room?.is_closed ? 'text-green-400' : 'text-orange-400'}`}>
-                      {room?.is_closed ? 'فتح الغرفة' : 'إغلاق الغرفة'}
-                    </span>
-                  </button>
-                  
-                  <button onClick={handleCloseAndKickAll}
-                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50"
-                  >
-                    <Power className="w-6 h-6 text-orange-400" />
-                    <span className="text-orange-400 font-cairo font-bold">إغلاق وطرد الجميع</span>
-                  </button>
                   
                   <button onClick={handleDeleteRoom}
                     className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50"
