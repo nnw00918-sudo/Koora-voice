@@ -2584,36 +2584,24 @@ const YallaLiveRoom = ({ user }) => {
             )}
           </AnimatePresence>
 
-          {/* Main Controls */}
-          <div className="flex items-center gap-3">
-            {/* Audio Mute Button - Long press for volume controls */}
+          {/* Main Controls - Compact */}
+          <div className="flex items-center gap-2">
+            {/* Audio Mute Button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsAudioMuted(!isAudioMuted)}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                setShowVolumeControls(!showVolumeControls);
-              }}
-              onTouchStart={() => {
-                const timer = setTimeout(() => setShowVolumeControls(!showVolumeControls), 500);
-                return () => clearTimeout(timer);
-              }}
-              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors relative ${
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 isAudioMuted ? 'bg-red-500' : 'bg-slate-800 border border-slate-700'
               }`}
             >
-              {isAudioMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-slate-300" />}
-              {/* Volume indicator dot */}
-              {showVolumeControls && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-lime-400 rounded-full animate-pulse" />
-              )}
+              {isAudioMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-slate-300" />}
             </motion.button>
 
-            {/* Volume Control Toggle Button */}
+            {/* Headphones */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setShowVolumeControls(!showVolumeControls)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 showVolumeControls ? 'bg-sky-500' : 'bg-slate-800 border border-slate-700'
               }`}
             >
@@ -2626,36 +2614,28 @@ const YallaLiveRoom = ({ user }) => {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={toggleMic}
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
-                    isMicOn 
-                      ? 'bg-lime-500 shadow-lg shadow-lime-500/40' 
-                      : 'bg-slate-800 border border-slate-700'
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isMicOn ? 'bg-lime-500' : 'bg-slate-800 border border-slate-700'
                   }`}
                 >
-                  {isMicOn ? <Mic className="w-6 h-6 text-slate-900" /> : <MicOff className="w-6 h-6 text-slate-300" />}
+                  {isMicOn ? <Mic className="w-4 h-4 text-slate-900" /> : <MicOff className="w-4 h-4 text-slate-300" />}
                 </motion.button>
-                {/* Camera Button */}
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={toggleCamera}
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
-                    isCameraOn 
-                      ? 'bg-lime-500 shadow-lg shadow-lime-500/40' 
-                      : 'bg-slate-800 border border-slate-700'
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isCameraOn ? 'bg-lime-500' : 'bg-slate-800 border border-slate-700'
                   }`}
                 >
-                  {isCameraOn ? <Video className="w-6 h-6 text-slate-900" /> : <VideoOff className="w-6 h-6 text-slate-300" />}
+                  {isCameraOn ? <Video className="w-4 h-4 text-slate-900" /> : <VideoOff className="w-4 h-4 text-slate-300" />}
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={handleLeaveSeat}
-                  className="w-14 h-14 rounded-2xl bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30"
+                  className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center"
                 >
-                  <SignOut className="w-6 h-6 text-white" />
+                  <SignOut className="w-4 h-4 text-white" />
                 </motion.button>
-                <div className="flex-1 text-center">
-                  <span className="text-lime-400 font-cairo font-bold text-sm">أنت على المنصة</span>
-                </div>
               </>
             ) : (
               <>
@@ -2663,24 +2643,24 @@ const YallaLiveRoom = ({ user }) => {
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={handleJoinStageDirect}
-                    className="flex-1 py-4 rounded-2xl flex items-center justify-center gap-3 font-cairo font-bold text-lg bg-lime-500 text-slate-900 shadow-xl shadow-lime-500/40"
+                    className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 font-cairo font-bold text-sm bg-lime-500 text-slate-900"
                   >
-                    <Mic className="w-6 h-6" />
+                    <Mic className="w-4 h-4" />
                     <span>صعود للمنصة</span>
                   </motion.button>
                 ) : (
                   pendingRequest ? (
-                    <div className="flex-1 py-4 rounded-2xl flex items-center justify-center gap-3 font-cairo font-bold text-amber-400 bg-amber-500/20 border-2 border-amber-500/40">
-                      <Hand className="w-6 h-6 animate-pulse" />
+                    <div className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 font-cairo text-sm text-amber-400 bg-amber-500/20 border border-amber-500/40">
+                      <Hand className="w-4 h-4 animate-pulse" />
                       <span>في انتظار الموافقة...</span>
                     </div>
                   ) : (
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={handleTakeSeat}
-                      className="flex-1 py-4 rounded-2xl flex items-center justify-center gap-3 font-cairo font-bold text-lg bg-lime-500 text-slate-900 shadow-xl shadow-lime-500/40"
+                      className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 font-cairo font-bold text-sm bg-lime-500 text-slate-900"
                     >
-                      <Hand className="w-6 h-6" />
+                      <Hand className="w-4 h-4" />
                       <span>صعود للمنصة</span>
                     </motion.button>
                   )
@@ -2689,13 +2669,10 @@ const YallaLiveRoom = ({ user }) => {
             )}
           </div>
 
-          {/* Reaction Bar - Playback Feature */}
-          <div className="py-2">
-            <ReactionBar onReact={handleSendReaction} disabled={false} />
-          </div>
+          {/* Reaction Bar - Playback Feature - REMOVED */}
 
-          {/* Message Input */}
-          <div className="relative mt-3">
+          {/* Message Input - Compact */}
+          <div className="relative mt-2">
             {/* Mention List Popup */}
             <AnimatePresence>
               {showMentionList && filteredMentionUsers.length > 0 && (
@@ -2725,8 +2702,8 @@ const YallaLiveRoom = ({ user }) => {
                 type="text"
                 value={newMessage}
                 onChange={handleMessageChange}
-                placeholder="اكتب رسالة... (@ للإشارة)"
-                className="flex-1 bg-slate-800 border border-slate-700 focus:border-lime-500 rounded-xl text-white placeholder:text-slate-500 h-11 px-4 outline-none"
+                placeholder="اكتب رسالة..."
+                className="flex-1 bg-slate-800 border border-slate-700 focus:border-lime-500 rounded-lg text-white placeholder:text-slate-500 h-9 px-3 text-sm outline-none"
                 dir="rtl"
                 inputMode="text"
                 enterKeyHint="send"
@@ -2736,9 +2713,9 @@ const YallaLiveRoom = ({ user }) => {
               <Button
                 type="submit"
                 disabled={!newMessage.trim()}
-                className="bg-lime-500 hover:bg-lime-400 text-slate-900 rounded-xl w-11 h-11 p-0"
+                className="bg-lime-500 hover:bg-lime-400 text-slate-900 rounded-lg w-9 h-9 p-0"
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4" />
               </Button>
             </form>
           </div>
