@@ -2256,21 +2256,21 @@ const YallaLiveRoom = ({ user }) => {
             )}
             
             {/* Mini Stage Inside Card */}
-            <div className="relative z-10 border-b border-lime-500/20 px-4 py-4">
-              <div className="flex items-center justify-center gap-5">
-                <Star className="w-6 h-6 text-lime-400" />
+            <div className="relative z-10 border-b border-lime-500/20 px-4 py-5">
+              <div className="flex items-center justify-center gap-6">
+                <Star className="w-7 h-7 text-lime-400" />
                 {speakers.length > 0 ? speakers.map((seat) => (
                   <div key={seat.seat_number} className="relative">
-                    <div className={`w-14 h-14 rounded-full overflow-hidden border-2 ${
-                      seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_12px_rgba(132,204,22,0.6)]' : 'border-slate-600'
+                    <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
+                      seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_14px_rgba(132,204,22,0.6)]' : 'border-slate-600'
                     }`}>
                       <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
                     </div>
-                    {seat.user.is_muted && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-red-500 rounded-full" />}
+                    {seat.user.is_muted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full" />}
                   </div>
                 )) : (
                   [...Array(2)].map((_, i) => (
-                    <div key={i} className="w-14 h-14 rounded-full border-2 border-dashed border-lime-500/30 bg-slate-800/30" />
+                    <div key={i} className="w-16 h-16 rounded-full border-2 border-dashed border-lime-500/30 bg-slate-800/30" />
                   ))
                 )}
                 <span className="text-lime-400 text-sm font-cairo font-bold">{speakers.length}/12</span>
