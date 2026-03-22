@@ -149,6 +149,26 @@ Building a football-themed social media application with voice chat, threads, us
   - League standings with full stats (wins, draws, losses, GD, points)
   - Top scorers and assist leaders
 
+### Phase 12: Multi-Camera Video Rooms ✅ (March 22, 2026)
+- **Agora Video Integration** ✅:
+  - Full video publishing/subscribing via Agora SDK
+  - Multiple simultaneous camera streams support
+  - Video track management (create, publish, unpublish, stop)
+  - Remote video users state tracking
+- **Camera Controls** ✅:
+  - Camera toggle button in control bar (when on stage)
+  - Front/back camera switch functionality
+  - Auto-cleanup on leaving stage
+- **Video View Mode** ✅:
+  - New "الكاميرات" (Cameras) toggle button always visible
+  - Grid layout for multiple video streams
+  - Local video preview with "أنت" (You) badge
+  - Remote video display with username labels
+  - Empty state with instructions
+- **Follow from Participants List** ✅:
+  - Follow/unfollow button in participants dropdown
+  - Click on user to navigate to profile
+
 ---
 
 ## Technical Architecture
@@ -234,8 +254,8 @@ Building a football-themed social media application with voice chat, threads, us
 - None (All P0 tasks completed)
 
 ## P1 - Priority Backlog
-1. **CRITICAL**: Refactor server.py into route modules (4000+ lines - technical debt)
-2. **CRITICAL**: Break down RoomPage.js into smaller components (2300+ lines)
+1. **CRITICAL**: Refactor server.py into route modules (4500+ lines - technical debt)
+2. **CRITICAL**: Break down RoomPage.js into smaller components (2900+ lines)
 3. Implement Match Detail Page with lineups, stats, head-to-head
 4. Add push notifications (PWA)
 5. Add story reactions/replies
@@ -243,7 +263,7 @@ Building a football-themed social media application with voice chat, threads, us
 ## P2 - Future Features
 1. User leveling/ranking system with badges
 2. Highlights (save stories permanently)
-3. 1-on-1 Video calls
+3. 1-on-1 Video calls (now partially supported via room video)
 4. Gamification system
 
 ---
