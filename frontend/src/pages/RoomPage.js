@@ -20,6 +20,8 @@ import {
   Gift,
   LogOut as SignOut,
   Crown,
+  ArrowUp,
+  ArrowDown,
   UserX,
   Volume2,
   VolumeX,
@@ -2049,7 +2051,7 @@ const YallaLiveRoom = ({ user }) => {
           </motion.button>
         )}
 
-        {/* Connected Users Dropdown */}
+        {/* Connected Users Dropdown - Enhanced */}
         <AnimatePresence>
           {showConnectedList && (
             <motion.div
@@ -2057,133 +2059,185 @@ const YallaLiveRoom = ({ user }) => {
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              className="absolute top-24 left-4 right-4 z-50 bg-slate-900/95 backdrop-blur-xl border border-lime-500/30 rounded-2xl shadow-2xl overflow-hidden"
+              className="absolute top-24 left-4 right-4 z-50 bg-slate-900 border border-lime-500/30 rounded-2xl shadow-2xl overflow-hidden"
             >
-              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-                <h3 className="text-white font-cairo font-bold">المتصلون</h3>
-                <span className="bg-lime-500/30 text-lime-300 px-3 py-1 rounded-full text-sm font-bold">
-                  {[...new Map(participants.map(p => [p.user_id || p.id, p])).values()].length}
-                </span>
+              {/* Header */}
+              <div className="p-4 border-b border-slate-700 flex items-center justify-between bg-slate-800/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-lime-500/20 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-lime-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-cairo font-bold">المتصلون</h3>
+                    <p className="text-slate-400 text-xs">اضغط على العضو للخيارات</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-lime-500/30 text-lime-300 px-3 py-1 rounded-full text-sm font-bold">
+                    {[...new Map(participants.map(p => [p.user_id || p.id, p])).values()].length}
+                  </span>
+                  <button
+                    onClick={() => setShowConnectedList(false)}
+                    className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4 text-slate-400" />
+                  </button>
+                </div>
               </div>
-              <div className="max-h-80 overflow-y-auto">
-                {/* Remove duplicates by user_id */}
+              
+              {/* Participants List */}
+              <div className="max-h-96 overflow-y-auto">
                 {[...new Map(participants.map(p => [p.user_id || p.id, p])).values()].map((p) => {
                   const odId = p.user_id || p.id;
                   const isSpeaker = speakers.some(s => s.user_id === odId);
                   const speakerData = speakers.find(s => s.user_id === odId);
                   const isMuted = speakerData?.user?.is_muted || false;
                   const isCurrentUser = odId === user.id;
-                  const canKickMuteUser = (room?.owner_id === user.id) || currentUserRole === 'admin' || currentUserRole === 'owner';
-                  const canPromoteDemote = room?.owner_id === user.id;
+                  const isOwner = room?.owner_id === odId;
+                  const canManage = (room?.owner_id === user.id) || currentUserRole === 'admin' || currentUserRole === 'owner';
+                  const canPromote = room?.owner_id === user.id;
                   
                   return (
-                    <motion.div 
+                    <div 
                       key={odId} 
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      className="flex items-center gap-3 p-3 hover:bg-slate-800/50 transition-colors border-b border-slate-800 last:border-0"
+                      className="border-b border-slate-800 last:border-0"
                     >
-                      {/* Avatar */}
-                      <div 
-                        className="relative cursor-pointer flex-shrink-0"
-                        onClick={() => {
-                          setShowConnectedList(false);
-                          navigate(`/user/${odId}`);
-                        }}
-                      >
-                        <img 
-                          src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`}
-                          alt=""
-                          className="w-12 h-12 rounded-full ring-2 ring-slate-700"
-                        />
-                        {isSpeaker && (
-                          <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-slate-900 ${isMuted ? 'bg-red-500' : 'bg-lime-500'}`}>
-                            {isMuted ? <MicOff className="w-3 h-3 text-white" /> : <Mic className="w-3 h-3 text-white" />}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* User Info - Clickable */}
-                      <div 
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => {
-                          setShowConnectedList(false);
-                          navigate(`/user/${odId}`);
-                        }}
-                      >
-                        <p className="text-white font-cairo font-bold text-sm truncate">{p.user?.name || p.username}</p>
-                        <p className="text-slate-400 text-xs truncate">@{p.username}</p>
-                      </div>
-                      
-                      {/* Status Badge */}
-                      <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
-                        isSpeaker 
-                          ? 'text-lime-400 bg-lime-500/20' 
-                          : 'text-slate-400 bg-slate-700/50'
-                      }`}>
-                        {isSpeaker ? 'متحدث' : 'مستمع'}
-                      </span>
-                      
-                      {/* Follow Button - Not for current user */}
-                      {!isCurrentUser && (
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            try {
-                              await axios.post(`${API}/users/${odId}/follow`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                              toast.success(`تمت متابعة ${p.username}`);
-                            } catch (error) {
-                              if (error.response?.status === 400) {
-                                // Already following, so unfollow
-                                await axios.delete(`${API}/users/${odId}/follow`, { headers: { Authorization: `Bearer ${token}` } });
-                                toast.success(`تم إلغاء متابعة ${p.username}`);
-                              } else {
-                                toast.error('فشلت العملية');
-                              }
-                            }
+                      {/* User Row */}
+                      <div className="flex items-center gap-3 p-4 hover:bg-slate-800/50 transition-colors">
+                        {/* Avatar */}
+                        <div 
+                          className="relative cursor-pointer flex-shrink-0"
+                          onClick={() => {
+                            setShowConnectedList(false);
+                            navigate(`/user/${odId}`);
                           }}
-                          className="flex-shrink-0 bg-lime-500 hover:bg-lime-400 text-slate-900 text-xs px-3 py-1.5 rounded-lg font-cairo font-bold transition-colors"
                         >
-                          <UserPlus className="w-4 h-4" />
-                        </motion.button>
-                      )}
+                          <img 
+                            src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`}
+                            alt=""
+                            className={`w-14 h-14 rounded-full ring-2 ${isOwner ? 'ring-amber-500' : isSpeaker ? 'ring-lime-500' : 'ring-slate-700'}`}
+                          />
+                          {isSpeaker && (
+                            <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ring-2 ring-slate-900 ${isMuted ? 'bg-red-500' : 'bg-lime-500'}`}>
+                              {isMuted ? <MicOff className="w-3 h-3 text-white" /> : <Mic className="w-3 h-3 text-white" />}
+                            </div>
+                          )}
+                          {isOwner && (
+                            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center ring-2 ring-slate-900">
+                              <Crown className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* User Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-white font-cairo font-bold truncate">{p.user?.name || p.username}</p>
+                            {isCurrentUser && (
+                              <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">أنت</span>
+                            )}
+                          </div>
+                          <p className="text-slate-400 text-sm truncate">@{p.username}</p>
+                          {/* Role Badge */}
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              isOwner 
+                                ? 'text-amber-400 bg-amber-500/20' 
+                                : isSpeaker 
+                                  ? 'text-lime-400 bg-lime-500/20' 
+                                  : 'text-slate-400 bg-slate-700/50'
+                            }`}>
+                              {isOwner ? 'مالك الغرفة' : isSpeaker ? 'متحدث' : 'مستمع'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                       
-                      {/* Admin Controls */}
-                      {!isCurrentUser && (canKickMuteUser || canPromoteDemote) && (
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {canKickMuteUser && (
+                      {/* Action Buttons - Only for non-current users and if has permission */}
+                      {!isCurrentUser && !isOwner && canManage && (
+                        <div className="px-4 pb-4 flex flex-wrap gap-2">
+                          {/* Promote to Speaker / Demote to Listener */}
+                          {canPromote && (
+                            isSpeaker ? (
+                              <button
+                                onClick={() => handleDemoteSpeaker(odId)}
+                                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 text-sm font-cairo transition-colors"
+                              >
+                                <ArrowDown className="w-4 h-4" />
+                                تنزيل لمستمع
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setSelectedPromoteUser(p);
+                                  setShowPromoteModal(true);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-lime-500/20 hover:bg-lime-500/30 text-lime-400 text-sm font-cairo transition-colors"
+                              >
+                                <ArrowUp className="w-4 h-4" />
+                                ترقية لمتحدث
+                              </button>
+                            )
+                          )}
+                          
+                          {/* Mute/Unmute - Only for speakers */}
+                          {canManage && isSpeaker && (
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleKickUser(odId);
-                              }}
-                              className="w-8 h-8 rounded-lg bg-red-500/20 hover:bg-red-500/40 flex items-center justify-center transition-colors"
-                              title="طرد"
+                              onClick={() => isMuted ? handleUnmuteUser(odId) : handleMuteUser(odId)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-cairo transition-colors ${
+                                isMuted 
+                                  ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400' 
+                                  : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400'
+                              }`}
                             >
-                              <UserX className="w-4 h-4 text-red-400" />
+                              {isMuted ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                              {isMuted ? 'إلغاء الكتم' : 'كتم'}
                             </button>
                           )}
                           
-                          {canKickMuteUser && isSpeaker && (
+                          {/* Kick User */}
+                          {canManage && (
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                isMuted ? handleUnmuteUser(odId) : handleMuteUser(odId);
-                              }}
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                                isMuted ? 'bg-green-500/20 hover:bg-green-500/40' : 'bg-yellow-500/20 hover:bg-yellow-500/40'
-                              }`}
-                              title={isMuted ? 'إلغاء الكتم' : 'كتم'}
+                              onClick={() => handleKickUser(odId)}
+                              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-cairo transition-colors"
                             >
-                              {isMuted ? <Mic className="w-4 h-4 text-green-400" /> : <MicOff className="w-4 h-4 text-yellow-400" />}
+                              <UserX className="w-4 h-4" />
+                              طرد
                             </button>
                           )}
+                          
+                          {/* Follow */}
+                          <button
+                            onClick={async () => {
+                              try {
+                                await axios.post(`${API}/users/${odId}/follow`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                                toast.success(`تمت متابعة ${p.username}`);
+                              } catch (error) {
+                                if (error.response?.status === 400) {
+                                  await axios.delete(`${API}/users/${odId}/follow`, { headers: { Authorization: `Bearer ${token}` } });
+                                  toast.success(`تم إلغاء متابعة ${p.username}`);
+                                } else {
+                                  toast.error('فشلت العملية');
+                                }
+                              }
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 text-sm font-cairo transition-colors"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                            متابعة
+                          </button>
                         </div>
                       )}
-                    </motion.div>
+                    </div>
                   );
                 })}
+                
+                {participants.length === 0 && (
+                  <div className="p-8 text-center text-slate-400">
+                    <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p className="font-cairo">لا يوجد متصلون حالياً</p>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
