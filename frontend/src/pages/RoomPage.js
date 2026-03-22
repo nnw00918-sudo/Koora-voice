@@ -2226,25 +2226,27 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
                 <div className="relative aspect-video bg-black">
                   {(() => {
-                    // Convert YouTube URL to embed URL
                     let embedUrl = streamUrl;
                     
+                    // If already an embed URL, use it directly
+                    if (streamUrl.includes('/embed/') || streamUrl.includes('player.twitch.tv')) {
+                      // Fix youtube-nocookie to regular youtube
+                      embedUrl = streamUrl.replace('youtube-nocookie.com', 'youtube.com');
+                    }
                     // YouTube watch URL
-                    const ytMatch = streamUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
-                    if (ytMatch) {
-                      embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+                    else if (streamUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/)) {
+                      const match = streamUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
+                      embedUrl = `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
                     }
-                    
                     // YouTube live URL
-                    const ytLiveMatch = streamUrl.match(/youtube\.com\/live\/([^?]+)/);
-                    if (ytLiveMatch) {
-                      embedUrl = `https://www.youtube.com/embed/${ytLiveMatch[1]}?autoplay=1`;
+                    else if (streamUrl.match(/youtube\.com\/live\/([^?]+)/)) {
+                      const match = streamUrl.match(/youtube\.com\/live\/([^?]+)/);
+                      embedUrl = `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
                     }
-                    
                     // Twitch URL
-                    const twitchMatch = streamUrl.match(/twitch\.tv\/([^?/]+)/);
-                    if (twitchMatch) {
-                      embedUrl = `https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${window.location.hostname}`;
+                    else if (streamUrl.match(/twitch\.tv\/([^?/]+)/)) {
+                      const match = streamUrl.match(/twitch\.tv\/([^?/]+)/);
+                      embedUrl = `https://player.twitch.tv/?channel=${match[1]}&parent=${window.location.hostname}`;
                     }
                     
                     return (
@@ -2253,6 +2255,7 @@ const YallaLiveRoom = ({ user }) => {
                         className="absolute inset-0 w-full h-full border-0"
                         allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                         allowFullScreen
+                        referrerPolicy="no-referrer-when-downgrade"
                       />
                     );
                   })()}
