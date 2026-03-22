@@ -9,6 +9,7 @@ import { Input } from '../components/ui/input';
 import { useRoomAudio } from '../contexts/RoomAudioContext';
 import { FloatingReactions, ReactionBar, PollCard, CreatePollModal } from '../components/room/Reactions';
 import { WatchPartyPlayer, StartWatchPartyModal } from '../components/room/WatchParty';
+import { InviteFriendsModal, InviteFriendsButton } from '../components/room/InviteFriends';
 import {
   ArrowLeft,
   Mic,
@@ -61,7 +62,8 @@ import {
   Phone,
   AtSign,
   BarChart3,
-  Youtube
+  Youtube,
+  Share2
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -146,6 +148,7 @@ const YallaLiveRoom = ({ user }) => {
   const [selectedPromoteUser, setSelectedPromoteUser] = useState(null);
   const [showParticipants, setShowParticipants] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
+  const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false);
   const [showConnectedList, setShowConnectedList] = useState(false);
   const [showSeatRequestsModal, setShowSeatRequestsModal] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
@@ -1949,13 +1952,25 @@ const YallaLiveRoom = ({ user }) => {
           style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
         >
           {/* Settings Button - Left */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setShowRoomSettings(true)}
-            className="w-11 h-11 rounded-xl bg-lime-500 hover:bg-lime-400 flex items-center justify-center shadow-lg shadow-lime-500/30 transition-colors"
-          >
-            <Settings className="w-5 h-5 text-slate-900" />
-          </motion.button>
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowRoomSettings(true)}
+              className="w-11 h-11 rounded-xl bg-lime-500 hover:bg-lime-400 flex items-center justify-center shadow-lg shadow-lime-500/30 transition-colors"
+            >
+              <Settings className="w-5 h-5 text-slate-900" />
+            </motion.button>
+            
+            {/* Invite Friends Button */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowInviteFriendsModal(true)}
+              className="w-11 h-11 rounded-xl bg-[#CCFF00]/20 hover:bg-[#CCFF00]/30 flex items-center justify-center border border-[#CCFF00]/30 transition-colors"
+              title="دعوة أصدقاء"
+            >
+              <Share2 className="w-5 h-5 text-[#CCFF00]" />
+            </motion.button>
+          </div>
 
           {/* Room Info - Center */}
           <div className="flex-1 mx-3 text-center">
@@ -3325,6 +3340,14 @@ const YallaLiveRoom = ({ user }) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Invite Friends Modal */}
+        <InviteFriendsModal
+          isOpen={showInviteFriendsModal}
+          onClose={() => setShowInviteFriendsModal(false)}
+          roomId={roomId}
+          roomTitle={room?.title || 'غرفة صوت الكورة'}
+        />
       </div>
     </div>
   );
