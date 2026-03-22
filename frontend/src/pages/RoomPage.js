@@ -2294,7 +2294,7 @@ const YallaLiveRoom = ({ user }) => {
             </div>
             
             {/* Messages - Scrollable area */}
-            <div className="flex-1 overflow-y-auto space-y-3 hide-scrollbar min-h-[120px] max-h-[200px] relative z-10 p-3">
+            <div className="flex-1 overflow-y-auto space-y-2 hide-scrollbar relative z-10 p-2">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-slate-500 text-sm font-cairo">
                   لا توجد رسائل - ابدأ المحادثة!
