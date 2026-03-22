@@ -1715,10 +1715,14 @@ async def get_room_messages(room_id: str, limit: int = 50):
 
 # ============ REACTIONS SYSTEM ============
 
+class ReactionCreate(BaseModel):
+    reaction: str  # emoji like ⚽🔥👏❤️
+
+
 @api_router.post("/rooms/{room_id}/reactions")
 async def send_reaction(
     room_id: str,
-    reaction: str = Form(...),  # emoji like ⚽🔥👏❤️
+    reaction_data: ReactionCreate,
     current_user: User = Depends(get_current_user)
 ):
     """Send a floating reaction in the room"""
@@ -1732,11 +1736,13 @@ async def send_reaction(
         "user_id": current_user.id,
         "username": current_user.username,
         "avatar": current_user.avatar,
-        "reaction": reaction,
+        "reaction": reaction_data.reaction,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.room_reactions.insert_one(reaction_doc)
+    # Copy for insertion to avoid _id mutation
+    doc_to_insert = reaction_doc.copy()
+    await db.room_reactions.insert_one(doc_to_insert)
     
     # Auto-delete after 5 seconds (reactions are temporary)
     # In production, use a background task or TTL index
@@ -1809,11 +1815,15 @@ async def create_poll(
     return {"message": "تم إنشاء الاستطلاع", "poll": poll_doc}
 
 
+class VoteCreate(BaseModel):
+    option_id: str
+
+
 @api_router.post("/rooms/{room_id}/polls/{poll_id}/vote")
 async def vote_on_poll(
     room_id: str,
     poll_id: str,
-    option_id: str = Form(...),
+    vote_data: VoteCreate,
     current_user: User = Depends(get_current_user)
 ):
     """Vote on a poll"""
@@ -1836,7 +1846,7 @@ async def vote_on_poll(
     
     # Update vote count
     await db.room_polls.update_one(
-        {"id": poll_id, "options.id": option_id},
+        {"id": poll_id, "options.id": vote_data.option_id},
         {
             "$inc": {"options.$.votes": 1, "total_votes": 1},
             "$push": {"voters": current_user.id}
@@ -1929,11 +1939,15 @@ async def start_watch_party(
     return {"message": "تم بدء Watch Party", "watch_party": watch_party}
 
 
+class WatchPartySync(BaseModel):
+    current_time: float
+    is_playing: bool = True
+
+
 @api_router.put("/rooms/{room_id}/watch-party/sync")
 async def sync_watch_party(
     room_id: str,
-    current_time: float = Form(...),
-    is_playing: bool = Form(True),
+    sync_data: WatchPartySync,
     current_user: User = Depends(get_current_user)
 ):
     """Sync watch party playback state (host only)"""
@@ -1951,13 +1965,13 @@ async def sync_watch_party(
     await db.rooms.update_one(
         {"id": room_id},
         {"$set": {
-            "watch_party.current_time": current_time,
-            "watch_party.is_playing": is_playing,
+            "watch_party.current_time": sync_data.current_time,
+            "watch_party.is_playing": sync_data.is_playing,
             "watch_party.last_sync": datetime.now(timezone.utc).isoformat()
         }}
     )
     
-    return {"message": "تم المزامنة", "current_time": current_time, "is_playing": is_playing}
+    return {"message": "تم المزامنة", "current_time": sync_data.current_time, "is_playing": sync_data.is_playing}
 
 
 @api_router.get("/rooms/{room_id}/watch-party")

@@ -162,6 +162,17 @@ const YallaLiveRoom = ({ user }) => {
   const recordingTimerRef = useRef(null);
   const recordingStreamRef = useRef(null);
   
+  // Playback features state (Reactions, Polls, Watch Party)
+  const [floatingReactions, setFloatingReactions] = useState([]);
+  const [activePoll, setActivePoll] = useState(null);
+  const [showCreatePollModal, setShowCreatePollModal] = useState(false);
+  const [watchParty, setWatchParty] = useState(null);
+  const [showWatchPartyModal, setShowWatchPartyModal] = useState(false);
+  const reactionIdRef = useRef(0);
+  const reactionsPollingRef = useRef(null);
+  const pollPollingRef = useRef(null);
+  const watchPartyPollingRef = useRef(null);
+  
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const requestsPollInterval = useRef(null);
@@ -234,6 +245,81 @@ const YallaLiveRoom = ({ user }) => {
       }
     });
   }, [streamVolume, remoteUsers]);
+
+  // Playback features polling (Reactions, Polls, Watch Party)
+  useEffect(() => {
+    // Start polling for reactions
+    const fetchReactions = async () => {
+      try {
+        const response = await axios.get(`${API}/rooms/${roomId}/reactions`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.reactions?.length > 0) {
+          // Add new reactions with unique IDs for animation
+          const newReactions = response.data.reactions.map(r => ({
+            ...r,
+            id: `${r.id}-${reactionIdRef.current++}`
+          }));
+          setFloatingReactions(prev => [...prev, ...newReactions]);
+          
+          // Auto-remove after 3 seconds
+          setTimeout(() => {
+            setFloatingReactions(prev => 
+              prev.filter(r => !newReactions.some(nr => nr.id === r.id))
+            );
+          }, 3500);
+        }
+      } catch (error) {
+        console.error('Error fetching reactions:', error);
+      }
+    };
+
+    // Start polling for active poll
+    const fetchActivePoll = async () => {
+      try {
+        const response = await axios.get(`${API}/rooms/${roomId}/polls/active`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setActivePoll(response.data.poll);
+      } catch (error) {
+        if (error.response?.status !== 404) {
+          console.error('Error fetching poll:', error);
+        }
+        setActivePoll(null);
+      }
+    };
+
+    // Start polling for watch party
+    const fetchWatchParty = async () => {
+      try {
+        const response = await axios.get(`${API}/rooms/${roomId}/watch-party`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setWatchParty(response.data.watch_party);
+      } catch (error) {
+        if (error.response?.status !== 404) {
+          console.error('Error fetching watch party:', error);
+        }
+        setWatchParty(null);
+      }
+    };
+
+    // Initial fetch
+    fetchReactions();
+    fetchActivePoll();
+    fetchWatchParty();
+
+    // Set up polling intervals
+    reactionsPollingRef.current = setInterval(fetchReactions, 2000);
+    pollPollingRef.current = setInterval(fetchActivePoll, 3000);
+    watchPartyPollingRef.current = setInterval(fetchWatchParty, 5000);
+
+    return () => {
+      if (reactionsPollingRef.current) clearInterval(reactionsPollingRef.current);
+      if (pollPollingRef.current) clearInterval(pollPollingRef.current);
+      if (watchPartyPollingRef.current) clearInterval(watchPartyPollingRef.current);
+    };
+  }, [roomId, token]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1668,6 +1754,113 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // ===== Playback Features Functions =====
+  
+  // Send Reaction
+  const handleSendReaction = async (emoji) => {
+    try {
+      await axios.post(`${API}/rooms/${roomId}/reactions`, 
+        { reaction: emoji },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // Immediately show own reaction locally
+      const localReaction = {
+        id: `local-${reactionIdRef.current++}`,
+        reaction: emoji,
+        user_id: user.id,
+        username: user.username
+      };
+      setFloatingReactions(prev => [...prev, localReaction]);
+      setTimeout(() => {
+        setFloatingReactions(prev => prev.filter(r => r.id !== localReaction.id));
+      }, 3500);
+    } catch (error) {
+      toast.error('فشل إرسال التفاعل');
+    }
+  };
+
+  // Create Poll
+  const handleCreatePoll = async (pollData) => {
+    try {
+      const response = await axios.post(`${API}/rooms/${roomId}/polls`, pollData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setActivePoll(response.data.poll);
+      toast.success('تم إنشاء الاستطلاع');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل إنشاء الاستطلاع');
+    }
+  };
+
+  // Vote in Poll
+  const handleVotePoll = async (optionId) => {
+    if (!activePoll) return;
+    try {
+      const response = await axios.post(
+        `${API}/rooms/${roomId}/polls/${activePoll.id}/vote`,
+        { option_id: optionId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setActivePoll(response.data.poll);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل التصويت');
+    }
+  };
+
+  // Close Poll
+  const handleClosePoll = async () => {
+    if (!activePoll) return;
+    try {
+      await axios.delete(`${API}/rooms/${roomId}/polls/${activePoll.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setActivePoll(null);
+      toast.success('تم إغلاق الاستطلاع');
+    } catch (error) {
+      toast.error('فشل إغلاق الاستطلاع');
+    }
+  };
+
+  // Start Watch Party
+  const handleStartWatchParty = async (data) => {
+    try {
+      const response = await axios.post(`${API}/rooms/${roomId}/watch-party`, data, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setWatchParty(response.data.watch_party);
+      toast.success('تم بدء Watch Party! 🎉');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل بدء Watch Party');
+    }
+  };
+
+  // Sync Watch Party
+  const handleSyncWatchParty = async (currentTime, isPlaying) => {
+    if (!watchParty) return;
+    try {
+      await axios.put(`${API}/rooms/${roomId}/watch-party/sync`, 
+        { current_time: currentTime, is_playing: isPlaying },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.error('Failed to sync watch party:', error);
+    }
+  };
+
+  // End Watch Party
+  const handleEndWatchParty = async () => {
+    try {
+      await axios.delete(`${API}/rooms/${roomId}/watch-party`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setWatchParty(null);
+      toast.success('تم إنهاء Watch Party');
+    } catch (error) {
+      toast.error('فشل إنهاء Watch Party');
+    }
+  };
+  // ===== End Playback Features =====
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-violet-950/20 to-slate-950 flex items-center justify-center">
@@ -1687,6 +1880,9 @@ const YallaLiveRoom = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-slate-950 fixed inset-0 overflow-hidden">
+      {/* Floating Reactions - Playback Feature */}
+      <FloatingReactions reactions={floatingReactions} />
+      
       {/* Starry Background Effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Stars/Sparkles */}
@@ -1975,6 +2171,45 @@ const YallaLiveRoom = ({ user }) => {
               )}
             </motion.button>
           </div>
+
+          {/* Watch Party Section - Playback Feature */}
+          <AnimatePresence>
+            {watchParty && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-4"
+              >
+                <WatchPartyPlayer
+                  watchParty={watchParty}
+                  isHost={watchParty?.host_id === user.id || isOwner}
+                  onSync={handleSyncWatchParty}
+                  onEnd={handleEndWatchParty}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Active Poll Section - Playback Feature */}
+          <AnimatePresence>
+            {activePoll && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-4"
+              >
+                <PollCard
+                  poll={activePoll}
+                  onVote={handleVotePoll}
+                  currentUserId={user.id}
+                  onClose={handleClosePoll}
+                  isOwner={isOwner}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Main Stage Card with Glow Border */}
           <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-lime-500/30 p-4 shadow-[0_0_30px_rgba(132,204,22,0.1)]">
@@ -2565,6 +2800,11 @@ const YallaLiveRoom = ({ user }) => {
             )}
           </div>
 
+          {/* Reaction Bar - Playback Feature */}
+          <div className="py-2">
+            <ReactionBar onReact={handleSendReaction} disabled={false} />
+          </div>
+
           {/* Message Input */}
           <div className="relative mt-3">
             {/* Mention List Popup */}
@@ -2761,6 +3001,59 @@ const YallaLiveRoom = ({ user }) => {
                       </div>
                     </div>
                   )}
+                  
+                  {/* Playback Features Section */}
+                  <div className="pt-2 border-t border-slate-700">
+                    <p className="text-slate-500 text-xs font-cairo mb-2">ميزات Playback</p>
+                    
+                    {/* Watch Party Button */}
+                    {!watchParty ? (
+                      <button 
+                        onClick={() => { setShowRoomSettings(false); setShowWatchPartyModal(true); }}
+                        className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 mb-2"
+                        data-testid="start-watch-party-btn"
+                      >
+                        <Youtube className="w-6 h-6 text-red-400" />
+                        <div className="flex-1 text-right">
+                          <span className="text-red-400 font-cairo font-bold">بدء Watch Party</span>
+                          <p className="text-red-300/70 text-xs">شاهدوا معاً بشكل متزامن</p>
+                        </div>
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => { handleEndWatchParty(); setShowRoomSettings(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500 hover:bg-red-600 mb-2"
+                        data-testid="end-watch-party-btn"
+                      >
+                        <Youtube className="w-6 h-6 text-white" />
+                        <span className="text-white font-cairo font-bold">إنهاء Watch Party</span>
+                      </button>
+                    )}
+                    
+                    {/* Create Poll Button */}
+                    {!activePoll ? (
+                      <button 
+                        onClick={() => { setShowRoomSettings(false); setShowCreatePollModal(true); }}
+                        className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50"
+                        data-testid="create-poll-btn"
+                      >
+                        <BarChart3 className="w-6 h-6 text-amber-400" />
+                        <div className="flex-1 text-right">
+                          <span className="text-amber-400 font-cairo font-bold">إنشاء استطلاع</span>
+                          <p className="text-amber-300/70 text-xs">اسأل الجمهور رأيهم</p>
+                        </div>
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => { handleClosePoll(); setShowRoomSettings(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-amber-500 hover:bg-amber-600"
+                        data-testid="close-poll-btn"
+                      >
+                        <BarChart3 className="w-6 h-6 text-white" />
+                        <span className="text-white font-cairo font-bold">إغلاق الاستطلاع</span>
+                      </button>
+                    )}
+                  </div>
                   
                   {/* Recording Controls - Owner/Admin only */}
                   {(isOwner || isAdmin) && (
@@ -3226,6 +3519,20 @@ const YallaLiveRoom = ({ user }) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Create Poll Modal - Playback Feature */}
+        <CreatePollModal
+          isOpen={showCreatePollModal}
+          onClose={() => setShowCreatePollModal(false)}
+          onSubmit={handleCreatePoll}
+        />
+
+        {/* Start Watch Party Modal - Playback Feature */}
+        <StartWatchPartyModal
+          isOpen={showWatchPartyModal}
+          onClose={() => setShowWatchPartyModal(false)}
+          onStart={handleStartWatchParty}
+        />
       </div>
     </div>
   );
