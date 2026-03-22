@@ -2402,20 +2402,20 @@ const YallaLiveRoom = ({ user }) => {
 
             {/* Speakers Grid - Shows when no stream or user selects mics */}
             {(!streamActive || viewMode === 'mics') && (
-              <div className="px-2 py-2">
-                {/* Stage Header - Compact */}
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/30 to-transparent" />
-                  <div className="flex items-center gap-1.5 px-3 py-1 bg-lime-500/10 border border-lime-500/30 rounded-full">
-                    <Star className="w-3 h-3 text-lime-400" />
-                    <span className="text-lime-400 font-cairo font-bold text-xs">المنصة</span>
-                    <span className="text-lime-300/70 text-[10px]">({speakers.length}/12)</span>
+              <div className="px-1 py-1">
+                {/* Stage Header - Mini */}
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/20 to-transparent" />
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-lime-500/10 border border-lime-500/20 rounded-full">
+                    <Star className="w-2.5 h-2.5 text-lime-400" />
+                    <span className="text-lime-400 font-cairo font-bold text-[10px]">المنصة</span>
+                    <span className="text-lime-300/70 text-[8px]">({speakers.length}/12)</span>
                   </div>
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/30 to-transparent" />
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-lime-500/20 to-transparent" />
                 </div>
 
-                {/* Speakers Grid - Compact */}
-                <div className="grid grid-cols-6 gap-2 justify-items-center max-w-sm mx-auto">
+                {/* Speakers Grid - Mini */}
+                <div className="grid grid-cols-6 gap-1 justify-items-center max-w-xs mx-auto">
                   {speakers.length > 0 ? speakers.map((seat, index) => (
                     <motion.div
                       key={seat.seat_number}
@@ -2444,9 +2444,9 @@ const YallaLiveRoom = ({ user }) => {
                           </>
                         )}
                         
-                        <div className={`relative w-10 h-10 rounded-full overflow-hidden border-2 transition-all ${
+                        <div className={`relative w-8 h-8 rounded-full overflow-hidden border-2 transition-all ${
                           seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
-                            ? 'border-lime-500 ring-2 ring-lime-500/50 shadow-[0_0_15px_rgba(132,204,22,0.5)]'
+                            ? 'border-lime-500 ring-1 ring-lime-500/50 shadow-[0_0_10px_rgba(132,204,22,0.4)]'
                             : seat.user.is_muted
                             ? 'border-red-500/50 grayscale-[50%]'
                             : 'border-slate-600 group-hover:border-lime-500/50'
@@ -2455,27 +2455,24 @@ const YallaLiveRoom = ({ user }) => {
                           
                           {/* Owner Badge */}
                           {seat.user.user_id === room?.owner_id && (
-                            <div className="absolute top-0 right-0 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
-                              <Crown className="w-2 h-2 text-white" />
+                            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-amber-500 flex items-center justify-center">
+                              <Crown className="w-1.5 h-1.5 text-white" />
                             </div>
                           )}
                         </div>
                         
                         {/* Mic Status Badge */}
-                        <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-950 ${
+                        <div className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full flex items-center justify-center border border-slate-950 ${
                           seat.user.is_muted ? 'bg-red-500' : 'bg-lime-500'
                         }`}>
-                          {seat.user.is_muted ? <MicOff className="w-2.5 h-2.5 text-white" /> : <Mic className="w-2.5 h-2.5 text-slate-900" />}
+                          {seat.user.is_muted ? <MicOff className="w-2 h-2 text-white" /> : <Mic className="w-2 h-2 text-slate-900" />}
                         </div>
                       </button>
                       
-                      {/* Name */}
-                      <p className="text-white text-[10px] font-cairo font-bold mt-1 truncate max-w-[50px] text-center">
-                        {seat.user.user_id === user.id ? 'أنت' : seat.user.username}
+                      {/* Name - Hidden for compact view */}
+                      <p className="text-white text-[8px] font-cairo mt-0.5 truncate max-w-[40px] text-center leading-tight">
+                        {seat.user.user_id === user.id ? 'أنت' : seat.user.username?.slice(0,4)}
                       </p>
-                      {seat.user.user_id === user.id && (
-                        <p className="text-lime-400 text-[8px]">على المنصة</p>
-                      )}
 
                   {/* User Menu */}
                   <AnimatePresence>
@@ -2512,16 +2509,16 @@ const YallaLiveRoom = ({ user }) => {
                   </AnimatePresence>
                 </motion.div>
               )) : (
-                // Empty Stage Placeholder - Compact
-                <div className="col-span-6 flex flex-col items-center justify-center py-3">
-                  <div className="flex gap-2 mb-2">
+                // Empty Stage Placeholder - Mini
+                <div className="col-span-6 flex flex-col items-center justify-center py-2">
+                  <div className="flex gap-1">
                     {[1, 2, 3, 4, 5, 6].map((i) => (
-                      <div key={i} className="w-8 h-8 rounded-full bg-slate-800/50 border border-dashed border-lime-500/30 flex items-center justify-center">
-                        <span className="text-lime-500/50 text-sm">+</span>
+                      <div key={i} className="w-6 h-6 rounded-full bg-slate-800/50 border border-dashed border-lime-500/20 flex items-center justify-center">
+                        <span className="text-lime-500/40 text-xs">+</span>
                       </div>
                     ))}
                   </div>
-                  <p className="text-slate-500 font-cairo text-xs">لا يوجد متحدثين</p>
+                  <p className="text-slate-500 font-cairo text-[10px] mt-1">لا يوجد متحدثين</p>
                 </div>
               )}
               </div>
