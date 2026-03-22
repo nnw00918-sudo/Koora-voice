@@ -56,6 +56,9 @@ const MessagesPage = ({ user }) => {
       follow: 'متابعة',
       following: 'متابَع',
       message: 'رسالة',
+      deleteConversation: 'مسح المحادثة',
+      confirmDelete: 'هل أنت متأكد من مسح هذه المحادثة؟',
+      deleted: 'تم مسح المحادثة',
     },
     en: {
       messages: 'Messages',
@@ -74,6 +77,9 @@ const MessagesPage = ({ user }) => {
       following: 'Following',
       message: 'Message',
       typing: 'typing...',
+      deleteConversation: 'Delete conversation',
+      confirmDelete: 'Are you sure you want to delete this conversation?',
+      deleted: 'Conversation deleted',
     }
   }[language];
 
@@ -284,6 +290,27 @@ const MessagesPage = ({ user }) => {
     }
   };
 
+  // Delete conversation
+  const deleteConversation = async () => {
+    if (!currentConversation) return;
+    
+    if (!window.confirm(txt.confirmDelete)) return;
+    
+    try {
+      await axios.delete(`${API}/conversations/${currentConversation.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(txt.deleted);
+      setCurrentConversation(null);
+      setMessages([]);
+      setCurrentView('list');
+      fetchConversations();
+      navigate('/messages');
+    } catch (error) {
+      toast.error(isRTL ? 'فشل مسح المحادثة' : 'Failed to delete conversation');
+    }
+  };
+
   // Debounced typing handler to prevent lag
   const typingDebounceRef = useRef(null);
   
@@ -469,6 +496,16 @@ const MessagesPage = ({ user }) => {
                 <p className="font-cairo font-bold text-white">{currentConversation.user.name}</p>
                 <p className="text-slate-500 text-xs" dir="ltr">@{currentConversation.user.username}</p>
               </div>
+            </button>
+          )}
+          {/* Delete Conversation Button */}
+          {currentConversation && (
+            <button 
+              onClick={deleteConversation}
+              className="w-10 h-10 flex items-center justify-center text-red-500 hover:bg-red-500/20 rounded-full transition-colors"
+              title={txt.deleteConversation}
+            >
+              <X className="w-5 h-5" />
             </button>
           )}
         </div>

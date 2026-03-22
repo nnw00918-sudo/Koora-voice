@@ -308,6 +308,14 @@ const YallaLiveRoom = ({ user }) => {
         const newParticipants = participantsRes.data;
         setParticipants(prev => {
           if (JSON.stringify(prev) !== JSON.stringify(newParticipants)) {
+            // Check for new members and show notification
+            const prevIds = prev.map(p => p.user_id);
+            const newMembers = newParticipants.filter(p => !prevIds.includes(p.user_id));
+            newMembers.forEach(member => {
+              if (member.user_id !== user.id) {
+                toast.success(`انضم ${member.username} للغرفة 👋`, { duration: 3000 });
+              }
+            });
             return newParticipants;
           }
           return prev;
@@ -1924,7 +1932,16 @@ const YallaLiveRoom = ({ user }) => {
                 >
                   <img src={message.avatar} alt="" className="w-6 h-6 rounded-full flex-shrink-0" />
                   <div className={`max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                    <p className={`text-xs text-slate-400 mb-0.5 ${isOwnMessage ? 'text-right' : ''}`}>{message.username}</p>
+                    <button 
+                      onClick={() => {
+                        if (message.user_id !== user.id) {
+                          setNewMessage(prev => prev + `@${message.username} `);
+                        }
+                      }}
+                      className={`text-xs mb-0.5 ${isOwnMessage ? 'text-right' : ''} ${message.user_id !== user.id ? 'text-sky-400 hover:text-sky-300 cursor-pointer' : 'text-slate-400'}`}
+                    >
+                      @{message.username}
+                    </button>
                     <div className={`px-3 py-1.5 rounded-xl text-xs ${
                       isOwnMessage 
                         ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white' 

@@ -3250,6 +3250,31 @@ async def mark_messages_read(
     
     return {"marked_read": result.modified_count}
 
+@api_router.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Delete/clear a conversation and all its messages"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Verify user is participant
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user_id not in convo.get("participants", []):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Delete all messages in the conversation
+    messages_result = await db.direct_messages.delete_many({"conversation_id": conversation_id})
+    
+    # Delete the conversation itself
+    await db.conversations.delete_one({"id": conversation_id})
+    
+    return {"deleted": True, "messages_deleted": messages_result.deleted_count}
+
 # ==================== NOTIFICATIONS ====================
 
 @api_router.get("/notifications")
