@@ -2175,9 +2175,9 @@ const YallaLiveRoom = ({ user }) => {
             )}
           </div>
 
-          {/* Watch Party Section - Playback Feature */}
+          {/* Watch Party Section - Playback Feature (Only show if no stream active) */}
           <AnimatePresence>
-            {watchParty && (
+            {watchParty && !streamActive && (
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2214,9 +2214,9 @@ const YallaLiveRoom = ({ user }) => {
             )}
           </AnimatePresence>
 
-          {/* Stream View Only - No separate stage card */}
+          {/* Stream View Only */}
           {streamActive && streamUrl && viewMode === 'stream' && (
-            <div className="px-4 mb-2">
+            <div className="mb-2">
               <div className="bg-slate-950 rounded-xl overflow-hidden border border-slate-700">
                 <div className="bg-slate-800 px-3 py-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -2224,7 +2224,7 @@ const YallaLiveRoom = ({ user }) => {
                     <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
                   </div>
                 </div>
-                <div className="relative aspect-[16/9] max-h-[150px] bg-black">
+                <div className="relative aspect-video bg-black">
                   <ReactPlayer
                     url={streamUrl}
                     playing={true}
