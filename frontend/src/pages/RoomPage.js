@@ -2256,24 +2256,24 @@ const YallaLiveRoom = ({ user }) => {
             )}
             
             {/* Mini Stage Inside Card */}
-            <div className="relative z-10 border-b border-lime-500/20 px-3 py-2">
-              <div className="flex items-center justify-center gap-2">
-                <Star className="w-3 h-3 text-lime-400/70" />
+            <div className="relative z-10 border-b border-lime-500/20 px-3 py-3">
+              <div className="flex items-center justify-center gap-3">
+                <Star className="w-4 h-4 text-lime-400" />
                 {speakers.length > 0 ? speakers.map((seat) => (
                   <div key={seat.seat_number} className="relative">
-                    <div className={`w-6 h-6 rounded-full overflow-hidden border ${
-                      seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_6px_rgba(132,204,22,0.5)]' : 'border-slate-600'
+                    <div className={`w-9 h-9 rounded-full overflow-hidden border-2 ${
+                      seat.user.is_speaking ? 'border-lime-400 shadow-[0_0_8px_rgba(132,204,22,0.6)]' : 'border-slate-600'
                     }`}>
                       <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
                     </div>
-                    {seat.user.is_muted && <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full" />}
+                    {seat.user.is_muted && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full" />}
                   </div>
                 )) : (
                   [...Array(6)].map((_, i) => (
-                    <div key={i} className="w-6 h-6 rounded-full border border-dashed border-lime-500/20 bg-slate-800/30" />
+                    <div key={i} className="w-9 h-9 rounded-full border-2 border-dashed border-lime-500/30 bg-slate-800/30" />
                   ))
                 )}
-                <span className="text-lime-400/50 text-[9px]">{speakers.length}/12</span>
+                <span className="text-lime-400/70 text-xs font-cairo">{speakers.length}/12</span>
               </div>
             </div>
             
