@@ -1,121 +1,117 @@
 {
   "project_name": "Koora Voice - صوت الكورة",
   "theme": "dark",
-  "color_palette": {
-    "background": {
-      "base": "bg-slate-950",
-      "surface": "bg-slate-900",
-      "surface_elevated": "bg-slate-800",
-      "glass": "bg-slate-900/80 backdrop-blur-xl"
+  "rtl": true,
+  "typography": {
+    "headings": {
+      "family": "'Cairo', sans-serif",
+      "weights": ["700", "900"],
+      "usage": "Hero titles, section headers, prominent numbers. Must use tracking-tight."
     },
-    "primary": {
-      "main": "lime-500",
-      "light": "lime-400",
-      "dark": "lime-600",
-      "foreground": "text-slate-950",
-      "bg": "bg-lime-500",
-      "hover": "hover:bg-lime-400"
-    },
-    "text": {
-      "primary": "text-white",
-      "secondary": "text-slate-300",
-      "muted": "text-slate-400",
-      "inverse": "text-slate-950"
-    },
-    "status": {
-      "speaking": "ring-lime-500",
-      "muted": "bg-slate-800 text-slate-400",
-      "recording": "text-rose-500 bg-rose-500/10",
-      "gift": "text-amber-400 bg-amber-400/10",
-      "live": "bg-rose-600"
+    "body": {
+      "family": "'Almarai', sans-serif",
+      "weights": ["400", "700"],
+      "usage": "Paragraphs, labels, button text, chat messages. Clean and legible."
     }
   },
-  "typography": {
-    "font_family": "Cairo, sans-serif",
-    "headings": "font-black tracking-tight",
-    "body": "font-medium leading-relaxed",
-    "labels": "font-bold uppercase tracking-wider text-xs"
-  },
-  "layouts": {
-    "direction": "rtl",
-    "app_container": "min-h-screen flex flex-col bg-slate-950 text-white overflow-hidden dir-rtl font-cairo",
-    "header": "flex items-center justify-between p-4 md:px-8 md:py-6 bg-slate-900/60 backdrop-blur-2xl border-b border-white/5 z-10",
-    "main_content": "flex-1 overflow-y-auto p-4 md:p-8 pb-32 flex flex-col lg:flex-row gap-6 lg:gap-8",
-    "stage_area": "flex-1 flex flex-col",
-    "speakers_grid": "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-8 justify-items-center w-full max-w-4xl mx-auto mt-4",
-    "chat_area": "w-full lg:w-96 h-80 lg:h-full bg-slate-900/40 rounded-3xl border border-white/5 p-4 flex flex-col mt-6 lg:mt-0",
-    "bottom_bar": "fixed bottom-0 left-0 right-0 p-4 md:px-8 md:py-5 bg-slate-950/90 backdrop-blur-3xl border-t border-white/5 flex items-center justify-center gap-3 md:gap-6 z-20 pb-safe"
+  "colors": {
+    "background": {
+      "primary": "#0A0A0A",
+      "secondary": "#121212",
+      "tertiary": "#1A1A1A"
+    },
+    "brand": {
+      "primary": "#CCFF00", 
+      "primary_hover": "#B3E600",
+      "secondary": "#00FF66",
+      "live_red": "#FF3B30"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A3A3A3",
+      "muted": "#737373",
+      "inverted": "#0A0A0A"
+    },
+    "borders": {
+      "subtle": "rgba(255, 255, 255, 0.05)",
+      "active": "rgba(204, 255, 0, 0.3)"
+    }
   },
   "visual_enhancers": {
-    "glassmorphism": "bg-slate-900/70 backdrop-blur-2xl border border-white/10 shadow-2xl",
-    "glow": "drop-shadow-[0_0_12px_rgba(132,204,22,0.4)]",
-    "speaking_indicator": "ring-4 ring-lime-500 ring-offset-4 ring-offset-slate-950 shadow-[0_0_20px_rgba(132,204,22,0.5)]"
+    "glassmorphism": "bg-[#121212]/80 backdrop-blur-xl border border-white/5",
+    "glow": "drop-shadow-[0_0_15px_rgba(204,255,0,0.4)]",
+    "noise_texture": "Subtle grain overlay using SVG or CSS to break digital flatness.",
+    "grid_lines": "Subtle 1px border lines to separate stats/bento items (The Tactical Look).",
+    "pulse_animation": "Animate a drop-shadow or background opacity for 'Live' badges."
   },
-  "components": {
-    "SpeakerAvatar": "Circular avatar (w-16 h-16 or w-20 h-20). When active speaker: add 'speaking_indicator' glow and subtle scale. Name below with max-width truncation. Mic status icon overlaid on corner.",
-    "ControlBarButton": "Rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center transition-transform hover:scale-105. Primary action (Mic/Hand) uses lime-500. Others use slate-800 hover:bg-slate-700 text-white.",
-    "ChatMessage": "Small rounded-2xl blocks. Mention (@name) colored in lime-400 font-bold. Disappearing messages fade out after delay.",
-    "Modals": "Unified Shadcn dialogs. Dark glassmorphic bg, crisp white text, lime primary buttons. No generic gray overlays.",
-    "Tabs": "Used for Requests (Speakers vs Admin) and Room Settings. Pill-shaped active tab bg-slate-800.",
-    "GiftsMenu": "Horizontal scrolling list or grid of animated SVGs/emojis."
+  "layouts": {
+    "hero": "Mobile-first full screen or min-h-[80vh]. Heavy dark gradient mask (bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/90 to-transparent) over the background image. Content should be bottom-heavy to feel grounded.",
+    "bento_grid": "Mobile-first grid-cols-1 or grid-cols-2. Asymmetric row-spans for a dynamic look. Flat backgrounds with 1px borders. Use inner glows instead of heavy drop shadows.",
+    "spacing": "Generous spacing. p-6 to p-8 for cards. gap-4 to gap-6 for bento grid to ensure breathing room."
   },
   "motion": {
-    "hover": "scale-105 transition-transform duration-200 ease-out",
-    "tap": "scale-95",
-    "entrance": "fade-in-up duration-500",
-    "active_speaker": "animate-pulse-slow",
-    "chat_message_enter": "animate-slide-in-right"
+    "hover": "Scale buttons up by 1.05. Interactive cards get a slightly lighter bg or a glowing border.",
+    "entrance": "Framer motion staggered fade-in-up for grid items. Adds premium feel.",
+    "active": "Scale down to 0.95 on tap/click."
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "Clean, sharp. Use brand primary color (#CCFF00) for active/highlighted icons."
+  },
+  "images": [
+    {
+      "url": "https://images.pexels.com/photos/4122451/pexels-photo-4122451.jpeg",
+      "description": "Vibrant nighttime soccer match in an illuminated stadium",
+      "category": "Hero Background (Needs heavy dark gradient overlay)"
+    },
+    {
+      "url": "https://images.pexels.com/photos/1657338/pexels-photo-1657338.jpeg",
+      "description": "Excited fans cheer during a soccer match",
+      "category": "Community Section / Background Blend"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1697562160779-fed83c21a2cd",
+      "description": "Stadium lit up at night",
+      "category": "Live Scores / Voice Rooms banner"
+    }
+  ],
+  "components_strategy": {
+    "buttons": "Pill-shaped or rounded-xl. Primary button MUST be the Electric Lime (#CCFF00) with dark text (#0A0A0A) for extreme contrast and high visibility.",
+    "cards": "Cardless or sharp 12px radius. Flat #121212 background with 1px border-white/5. Hover effect adds border-[#CCFF00]/30.",
+    "navigation": "Floating bottom nav or sticky top nav using 'Crystal Glass' effect (bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/10).",
+    "badges": "Live badges for 'Live Scores' or 'Active Voice Rooms'. Red (#FF3B30) or Lime (#CCFF00) with pulse animation."
   },
   "accessibility": {
-    "contrast": "Ensure white text over slate-900 meets 4.5:1 ratio.",
-    "reduced_motion": "Respect prefers-reduced-motion for animations.",
-    "focus": "focus-visible:ring-2 focus-visible:ring-lime-500 focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-  },
-  "media": {
-    "images": [
-      {
-        "url": "https://images.unsplash.com/photo-1554400695-5973d75d179e?crop=entropy&cs=srgb&fm=jpg&q=85",
-        "category": "Speaker Avatar",
-        "description": "Arab man in white thobe"
-      },
-      {
-        "url": "https://images.unsplash.com/photo-1652784549134-bae822a7c4a3?crop=entropy&cs=srgb&fm=jpg&q=85",
-        "category": "Speaker Avatar",
-        "description": "Arab man portrait"
-      },
-      {
-        "url": "https://images.unsplash.com/photo-1771041564650-55f067de005d?crop=entropy&cs=srgb&fm=jpg&q=85",
-        "category": "Speaker Avatar",
-        "description": "Soccer fan portrait"
-      }
-    ],
-    "icons_library": "lucide-react"
+    "contrast": "Ensure text over images has sufficient text-shadow. #CCFF00 on #0A0A0A passes AAA.",
+    "rtl": "Use Tailwind logical properties (e.g., ms-, me-, ps-, pe-, text-start, border-s, rounded-e) exclusively.",
+    "motion": "Respect prefers-reduced-motion."
   },
   "instructions_to_main_agent": [
-    "Build a single RoomPage (export default function RoomPage) that integrates all the requested features.",
-    "Ensure 'dir=\"rtl\"' is applied to the main wrapper.",
-    "Use 'slate-950' and 'lime-500' extensively. No purple or teal.",
-    "Create a mobile-first responsive layout where the chat is side-by-side on desktop but stacked or accessed via a drawer/modal on mobile.",
-    "Implement the fixed bottom bar with clear icon buttons for Mic, Video, Leave Stage, Chat (toggle on mobile), Hand Raise, Gifts, Settings.",
-    "Implement multiple view modes (Mics Grid vs Camera Video spots vs Broadcast).",
-    "Use framer-motion (<motion.div>) for smooth entrance of speakers, message bubbles, and active speaker pulsing rings.",
-    "For the active speaker, implement a glowing ring (ring-2 ring-lime-500 shadow-[0_0_15px_rgba(132,204,22,0.5)]).",
-    "Load 'Cairo' font from Google Fonts (import in css or next/font) and apply 'font-cairo' class globally.",
-    "Use Shadcn UI (Dialog, Tabs, Button, Input, DropdownMenu, Avatar) for settings and requests. Style them to fit the dark theme."
+    "You are building a mobile-first PWA landing page in Arabic for 'Koora Voice'. Target file: /app/frontend/src/pages/HomePage.js",
+    "RTL MANDATORY: Use `dir='rtl'` structure or logical CSS properties (e.g., `ms-4` instead of `ml-4`, `pe-2` instead of `pr-2`, `text-start`). Do not use generic centering for text.",
+    "Import Google Fonts 'Cairo' and 'Almarai' in the index.css. Apply them globally or specifically to headings and body.",
+    "Use framer-motion for high-energy entrance animations. Stagger the bento grid items.",
+    "Hero Section: Use the provided stadium image as an absolute background with a heavy overlay of `bg-black/60` and a gradient to `bg-[#0A0A0A]` at the bottom so it blends seamlessly into the next section.",
+    "Features: Build a 'Bento Grid' for Voice Rooms (غرف صوتية), Live Chat (دردشة حية), Live Scores (نتائج مباشرة), Community (مجتمع رياضي).",
+    "Feature Cards: Adopt 'The Tactical Look'. Dark background, 1px subtle white/5 border. Include a Lucide icon and title. Make the 'Live Scores' card span 2 columns and show a mockup of a live match score (e.g., ريال مدريد 2 - 1 برشلونة).",
+    "Add `data-testid` attributes to all interactive elements for robust testing.",
+    "Keep the vibe 'Electric & Neon' (Archetype 7 mixed with Archetype 2: The Performance Pro). Sporty, aggressive, passionate.",
+    "Do NOT use 'transparent' background for nav or floating elements. Use the specified 'glassmorphism' classes.",
+    "Implement a 'Pulse' animation on the 'Live' indicators (e.g., a glowing red dot for live matches)."
   ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Avoid generic, 'on distribution' outputs. Make creative, distinctive frontends that surprise and delight.",
     "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
-    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
     "Create depth through layered design elements with z-index hierarchy.",
     "Use glass-morphism effects with backdrop filters (12-24px blur).",
-    "You MUST NOT apply universal transition. Eg: 'transition: all'. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms.",
-    "You MUST NOT center align the app container, ie do not add '.App { text-align: center; }' in the css file. This disrupts the human natural reading flow of text.",
+    "You MUST NOT apply universal transition. Eg: `transition: all`. This results in breaking transforms. Always add transitions for specific interactive elements.",
+    "You MUST NOT center align the app container, ie do not add `.App { text-align: center; }` in the css file. This disrupts the human natural reading flow of text.",
     "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
-    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
-    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
-    "All interactive and key informational elements MUST include a 'data-testid' attribute to facilitate robust automated testing.",
-    "Components MUST use named exports (export const ComponentName = ...), Pages MUST use default exports (export default function PageName() {...}).",
-    "DO NOT use complete 'transparent' background in header, overlays, any surface that has content under it. Example: Dropdown with transparent background."
+    "NEVER use AI assistant Emoji characters for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Components MUST use named exports, Pages MUST use default exports.",
+    "Use `sonner` for toasts if needed."
   ]
 }
