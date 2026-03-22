@@ -2173,25 +2173,6 @@ const YallaLiveRoom = ({ user }) => {
                 المباشر
               </motion.button>
             )}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setViewMode('mirror')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
-                viewMode === 'mirror' 
-                  ? 'bg-lime-500 text-slate-900 shadow-lg shadow-lime-500/30' 
-                  : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 border border-slate-700'
-              }`}
-            >
-              <Video className="w-4 h-4" />
-              الكاميرات
-              {(remoteVideoUsers.length > 0 || isCameraOn) && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                  viewMode === 'mirror' ? 'bg-slate-900/30' : 'bg-lime-500/30 text-lime-400'
-                }`}>
-                  {remoteVideoUsers.length + (isCameraOn ? 1 : 0)}
-                </span>
-              )}
-            </motion.button>
           </div>
 
           {/* Watch Party Section - Playback Feature */}
