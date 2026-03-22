@@ -2312,6 +2312,7 @@ const YallaLiveRoom = ({ user }) => {
                             playsInline
                             muted
                             className="w-full h-full object-cover"
+                            style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
                           />
                         ) : remoteVideo ? (
                           <RemoteVideoCircle remoteUser={remoteVideo} />
@@ -3310,6 +3311,7 @@ const YallaLiveRoom = ({ user }) => {
                     playsInline
                     muted
                     className="w-full h-full object-cover"
+                    style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
                   />
                 ) : expandedVideo.remoteUser ? (
                   <div className="w-full h-full">
