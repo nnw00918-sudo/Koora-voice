@@ -169,6 +169,21 @@ Building a football-themed social media application with voice chat, threads, us
   - Follow/unfollow button in participants dropdown
   - Click on user to navigate to profile
 
+### Phase 13: Room Recording Feature ✅ (March 22, 2026)
+- **Recording Controls** ✅:
+  - Record button in Room Settings (Owner/Admin only)
+  - Uses MediaRecorder API for local recording
+  - Captures audio and video from the room
+  - Unlimited recording duration
+- **Recording UI** ✅:
+  - Recording indicator in room header with elapsed time
+  - Red pulsing dot to show active recording
+  - Stop recording button with timer display
+- **Recording Output** ✅:
+  - Auto-downloads as .webm file when stopped
+  - Filename includes room title and timestamp
+  - Auto-cleanup on leaving room
+
 ---
 
 ## Technical Architecture

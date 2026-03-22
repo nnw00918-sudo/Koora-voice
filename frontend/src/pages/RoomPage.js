@@ -50,7 +50,10 @@ import {
   Cast,
   SwitchCamera,
   Camera,
-  ImageIcon
+  ImageIcon,
+  Circle,
+  StopCircle,
+  Download
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -144,6 +147,14 @@ const YallaLiveRoom = ({ user }) => {
   const screenShareStream = useRef(null);
   const screenShareVideoRef = useRef(null);
   
+  // Recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [recordedChunks, setRecordedChunks] = useState([]);
+  const mediaRecorderRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+  const recordingStreamRef = useRef(null);
+  
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const requestsPollInterval = useRef(null);
@@ -173,6 +184,10 @@ const YallaLiveRoom = ({ user }) => {
       stopHeartbeat();
       cleanupAgora();
       clearInterval(streamPoll);
+      // Stop recording if active
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        stopRecording();
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
@@ -1386,6 +1401,124 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Recording Functions - Owner/Admin Only
+  const startRecording = async () => {
+    try {
+      // Get display media (screen + audio) or camera + mic
+      let stream;
+      
+      // Try to capture the room content
+      if (localVideoTrack && localAudioTrack) {
+        // Combine local video and audio tracks
+        const videoStream = localVideoTrack.getMediaStreamTrack();
+        const audioStream = localAudioTrack.getMediaStreamTrack();
+        stream = new MediaStream([videoStream, audioStream]);
+      } else if (localAudioTrack) {
+        // Audio only
+        const audioStream = localAudioTrack.getMediaStreamTrack();
+        stream = new MediaStream([audioStream]);
+      } else {
+        // Fallback: capture screen/window with audio
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { 
+            cursor: 'always',
+            displaySurface: 'browser'
+          },
+          audio: true
+        });
+      }
+      
+      recordingStreamRef.current = stream;
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9,opus'
+      });
+      
+      const chunks = [];
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        setRecordedChunks(chunks);
+        // Auto download when recording stops
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const date = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+        a.download = `room_recording_${room?.title || roomId}_${date}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success('تم حفظ التسجيل');
+      };
+      
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(1000); // Collect data every second
+      
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      // Start timer
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
+      toast.success('بدأ التسجيل');
+      
+      // Handle stream ending (user stops sharing)
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+        stopRecording();
+      });
+      
+    } catch (error) {
+      console.error('Recording error:', error);
+      if (error.name === 'NotAllowedError') {
+        toast.error('تم رفض إذن التسجيل');
+      } else {
+        toast.error('فشل بدء التسجيل');
+      }
+    }
+  };
+  
+  const stopRecording = () => {
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      
+      if (recordingStreamRef.current) {
+        recordingStreamRef.current.getTracks().forEach(track => track.stop());
+        recordingStreamRef.current = null;
+      }
+      
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      
+      setIsRecording(false);
+    } catch (error) {
+      console.error('Stop recording error:', error);
+    }
+  };
+  
+  // Format recording time
+  const formatRecordingTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -1552,7 +1685,16 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Room Info - Center */}
           <div className="flex-1 mx-2 text-center">
-            <h1 className="text-white font-cairo font-bold text-lg">{room?.title || 'الغرفة'}</h1>
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-white font-cairo font-bold text-lg">{room?.title || 'الغرفة'}</h1>
+              {/* Recording Indicator */}
+              {isRecording && (
+                <div className="flex items-center gap-1 bg-red-500/20 px-2 py-0.5 rounded-full border border-red-500/50">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  <span className="text-red-400 text-xs font-bold font-mono">{formatRecordingTime(recordingTime)}</span>
+                </div>
+              )}
+            </div>
             <motion.button
               onClick={() => setShowConnectedList(!showConnectedList)}
               className="flex items-center justify-center gap-2 mx-auto mt-1"
@@ -2519,6 +2661,35 @@ const YallaLiveRoom = ({ user }) => {
                         </div>
                       </div>
                     </div>
+                  )}
+                  
+                  {/* Recording Controls - Owner/Admin only */}
+                  {(isOwner || isAdmin) && (
+                    <>
+                      {isRecording ? (
+                        <button 
+                          onClick={() => { stopRecording(); setShowRoomSettings(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50"
+                        >
+                          <div className="flex items-center gap-2">
+                            <StopCircle className="w-6 h-6 text-red-400" />
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                          </div>
+                          <div className="flex-1 text-right">
+                            <span className="text-red-400 font-cairo font-bold">إيقاف التسجيل</span>
+                            <span className="text-red-300 text-sm mr-2 font-mono">{formatRecordingTime(recordingTime)}</span>
+                          </div>
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => { startRecording(); setShowRoomSettings(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50"
+                        >
+                          <Circle className="w-6 h-6 text-rose-400" fill="currentColor" />
+                          <span className="text-rose-400 font-cairo font-bold">تسجيل الغرفة</span>
+                        </button>
+                      )}
+                    </>
                   )}
                   
                   {/* Stream Controls - Only for System Owner */}
