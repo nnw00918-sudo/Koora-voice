@@ -1880,13 +1880,13 @@ const YallaLiveRoom = ({ user }) => {
 
             {/* Speakers Grid - Shows when no stream or user selects mics */}
             {(!streamActive || viewMode === 'mics') && (
-              <div className="flex justify-center gap-3 flex-wrap pt-2">
+              <div className="flex justify-center gap-2 flex-wrap pt-1 pb-2">
               {speakers.length > 0 ? speakers.map((seat, index) => (
                 <motion.div
                   key={seat.seat_number}
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: index * 0.1, type: "spring" }}
+                  transition={{ delay: index * 0.05, type: "spring" }}
                   className="relative"
                 >
                   <button
@@ -1902,11 +1902,11 @@ const YallaLiveRoom = ({ user }) => {
                       <motion.div 
                         animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
-                        className="absolute inset-0 rounded-full bg-lime-500 blur-lg"
+                        className="absolute inset-0 rounded-full bg-lime-500 blur-md"
                       />
                     )}
                     
-                    <div className={`relative w-16 h-16 rounded-full overflow-hidden border-3 transition-all ${
+                    <div className={`relative w-12 h-12 rounded-full overflow-hidden border-2 transition-all ${
                       seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)
                         ? 'border-lime-400 shadow-lg shadow-lime-400/50'
                         : seat.user.is_muted
@@ -1917,22 +1917,22 @@ const YallaLiveRoom = ({ user }) => {
                     </div>
                     
                     {/* Mic Status Badge */}
-                    <div className={`absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center ring-4 ring-slate-900 ${
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-slate-900 ${
                       seat.user.is_muted ? 'bg-red-500' : 
                       (seat.user.is_speaking || (seat.user.user_id === user.id && isMicOn)) ? 'bg-green-500' : 'bg-slate-700'
                     }`}>
-                      {seat.user.is_muted ? <MicOff className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
+                      {seat.user.is_muted ? <MicOff className="w-2.5 h-2.5 text-white" /> : <Mic className="w-2.5 h-2.5 text-white" />}
                     </div>
                     
                     {/* Owner Crown */}
                     {seat.user.user_id === room?.owner_id && (
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-                        <Crown className="w-5 h-5 text-amber-400 drop-shadow-lg" fill="currentColor" />
+                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2">
+                        <Crown className="w-4 h-4 text-amber-400 drop-shadow-lg" fill="currentColor" />
                       </div>
                     )}
                   </button>
                   
-                  <p className="text-center text-white text-xs font-almarai mt-2 truncate max-w-[80px]">
+                  <p className="text-center text-white text-[10px] font-almarai mt-1 truncate max-w-[60px]">
                     {seat.user.username}
                   </p>
 
@@ -1971,11 +1971,11 @@ const YallaLiveRoom = ({ user }) => {
                   </AnimatePresence>
                 </motion.div>
               )) : (
-                // Empty Stage Placeholder
-                <div className="flex gap-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="w-20 h-20 rounded-full bg-white/5 border-2 border-dashed border-violet-500/30 flex items-center justify-center">
-                      <Users className="w-8 h-8 text-violet-500/50" />
+                // Empty Stage Placeholder - Smaller
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-12 h-12 rounded-full bg-white/5 border-2 border-dashed border-violet-500/30 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-violet-500/50" />
                     </div>
                   ))}
                 </div>
