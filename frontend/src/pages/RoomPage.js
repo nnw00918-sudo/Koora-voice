@@ -2217,56 +2217,6 @@ const YallaLiveRoom = ({ user }) => {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Stream View Only */}
-          {streamActive && streamUrl && viewMode === 'stream' && (
-            <div className="mb-2">
-              <div className="bg-slate-950 rounded-xl overflow-hidden border border-slate-700">
-                <div className="bg-slate-800 px-3 py-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    <span className="text-white font-cairo font-bold text-sm">بث مباشر</span>
-                  </div>
-                </div>
-                <div className="relative aspect-video bg-black">
-                  {(() => {
-                    let embedUrl = streamUrl;
-                    
-                    // If already an embed URL, use it directly
-                    if (streamUrl.includes('/embed/') || streamUrl.includes('player.twitch.tv')) {
-                      // Fix youtube-nocookie to regular youtube
-                      embedUrl = streamUrl.replace('youtube-nocookie.com', 'youtube.com');
-                    }
-                    // YouTube watch URL
-                    else if (streamUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/)) {
-                      const match = streamUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
-                      embedUrl = `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
-                    }
-                    // YouTube live URL
-                    else if (streamUrl.match(/youtube\.com\/live\/([^?]+)/)) {
-                      const match = streamUrl.match(/youtube\.com\/live\/([^?]+)/);
-                      embedUrl = `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
-                    }
-                    // Twitch URL
-                    else if (streamUrl.match(/twitch\.tv\/([^?/]+)/)) {
-                      const match = streamUrl.match(/twitch\.tv\/([^?/]+)/);
-                      embedUrl = `https://player.twitch.tv/?channel=${match[1]}&parent=${window.location.hostname}`;
-                    }
-                    
-                    return (
-                      <iframe
-                        src={embedUrl}
-                        className="absolute inset-0 w-full h-full border-0"
-                        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-                        allowFullScreen
-                        referrerPolicy="no-referrer-when-downgrade"
-                      />
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-          )}
         </motion.div>
         {/* Combined Stage + Chat Section */}
         <motion.div 
