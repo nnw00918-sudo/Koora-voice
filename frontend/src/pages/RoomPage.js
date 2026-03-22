@@ -117,6 +117,9 @@ const YallaLiveRoom = ({ user }) => {
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [roomImageUrl, setRoomImageUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [chatBackground, setChatBackground] = useState('');
+  const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
+  const backgroundInputRef = useRef(null);
   const fileInputRef = useRef(null);
   
   // Stream states
@@ -431,6 +434,11 @@ const YallaLiveRoom = ({ user }) => {
 
       const roomData = roomRes.data;
       setRoom(roomData);
+      
+      // Set chat background if exists
+      if (roomData.chat_background) {
+        setChatBackground(roomData.chat_background);
+      }
       
       // Check if room was closed and user should be kicked (only system owner stays)
       if (roomData.is_closed && user.role !== 'owner') {
@@ -815,6 +823,73 @@ const YallaLiveRoom = ({ user }) => {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  // Handle chat background upload
+  const handleBackgroundUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('نوع الملف غير مدعوم. استخدم JPG, PNG, GIF أو WebP');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الملف كبير جداً. الحد الأقصى 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadResponse = await axios.post(`${API}/upload/image`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const imageUrl = uploadResponse.data.url;
+      
+      // Update room chat background
+      await axios.put(`${API}/rooms/${roomId}/chat-background`, 
+        { background_url: imageUrl }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('تم تحديث خلفية الدردشة');
+      setChatBackground(imageUrl);
+      setShowBackgroundPicker(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل رفع الخلفية');
+    } finally {
+      setUploadingImage(false);
+      if (backgroundInputRef.current) {
+        backgroundInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Remove chat background
+  const removeBackground = async () => {
+    try {
+      await axios.put(`${API}/rooms/${roomId}/chat-background`, 
+        { background_url: '' }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم إزالة الخلفية');
+      setChatBackground('');
+      setShowBackgroundPicker(false);
+    } catch (error) {
+      toast.error('فشل إزالة الخلفية');
     }
   };
 
@@ -1925,15 +2000,40 @@ const YallaLiveRoom = ({ user }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <div className="bg-slate-900/50 rounded-xl p-3 h-full flex flex-col">
+          <div 
+            className="rounded-xl p-3 h-full flex flex-col relative overflow-hidden"
+            style={{
+              backgroundImage: chatBackground ? `url(${chatBackground})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundColor: chatBackground ? 'transparent' : 'rgba(15, 23, 42, 0.5)'
+            }}
+          >
+            {/* Dark overlay for readability */}
+            {chatBackground && (
+              <div className="absolute inset-0 bg-black/40" />
+            )}
+            
             {/* Chat Header */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 relative z-10">
               <span className="text-slate-400 text-xs font-cairo">💬 الدردشة</span>
-              <span className="text-slate-500 text-xs">{messages.length} رسالة</span>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 text-xs">{messages.length} رسالة</span>
+                {/* Background change button - Owner only */}
+                {room?.owner_id === user.id && (
+                  <button
+                    onClick={() => setShowBackgroundPicker(true)}
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                    title="تغيير خلفية الدردشة"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-lime-400" />
+                  </button>
+                )}
+              </div>
             </div>
             
             {/* Messages - Scrollable area */}
-            <div className="flex-1 overflow-y-auto space-y-2 hide-scrollbar min-h-[120px] max-h-[200px]">
+            <div className="flex-1 overflow-y-auto space-y-2 hide-scrollbar min-h-[120px] max-h-[200px] relative z-10">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-slate-500 text-sm">
                   لا توجد رسائل - ابدأ المحادثة!
@@ -2376,6 +2476,75 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
                 
                 <button onClick={() => setShowRoomSettings(false)}
+                  className="w-full mt-4 py-3 rounded-xl bg-white/10 text-white font-cairo font-bold"
+                >
+                  إلغاء
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Background Picker Modal */}
+        <AnimatePresence>
+          {showBackgroundPicker && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setShowBackgroundPicker(false)}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-lime-500/30"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-cairo font-bold text-white mb-4 text-center">🖼️ خلفية الدردشة</h3>
+                
+                {/* Current Background Preview */}
+                {chatBackground && (
+                  <div className="mb-4 relative rounded-xl overflow-hidden h-32">
+                    <img src={chatBackground} alt="الخلفية الحالية" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <span className="text-white text-sm font-almarai">الخلفية الحالية</span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-3">
+                  {/* Upload from album */}
+                  <label className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-lime-500/20 hover:bg-lime-500/30 border border-lime-500/50 cursor-pointer transition-colors">
+                    <ImageIcon className="w-6 h-6 text-lime-400" />
+                    <span className="text-lime-400 font-cairo font-bold">
+                      {uploadingImage ? 'جاري الرفع...' : 'اختر من الألبوم'}
+                    </span>
+                    <input
+                      type="file"
+                      ref={backgroundInputRef}
+                      onChange={handleBackgroundUpload}
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      className="hidden"
+                      disabled={uploadingImage}
+                    />
+                  </label>
+                  
+                  {/* Remove background */}
+                  {chatBackground && (
+                    <button 
+                      onClick={removeBackground}
+                      className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50"
+                    >
+                      <Trash2 className="w-6 h-6 text-red-400" />
+                      <span className="text-red-400 font-cairo font-bold">إزالة الخلفية</span>
+                    </button>
+                  )}
+                </div>
+                
+                <button 
+                  onClick={() => setShowBackgroundPicker(false)}
                   className="w-full mt-4 py-3 rounded-xl bg-white/10 text-white font-cairo font-bold"
                 >
                   إلغاء
