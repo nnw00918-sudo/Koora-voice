@@ -1846,12 +1846,16 @@ const YallaLiveRoom = ({ user }) => {
   // Start Watch Party
   const handleStartWatchParty = async (data) => {
     try {
+      console.log('Starting Watch Party with data:', data);
       const response = await axios.post(`${API}/rooms/${roomId}/watch-party`, data, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('Watch Party started:', response.data);
       setWatchParty(response.data.watch_party);
+      setShowWatchPartyModal(false);
       toast.success('تم بدء Watch Party! 🎉');
     } catch (error) {
+      console.error('Watch Party error:', error);
       toast.error(error.response?.data?.detail || 'فشل بدء Watch Party');
     }
   };
@@ -2175,9 +2179,9 @@ const YallaLiveRoom = ({ user }) => {
             )}
           </div>
 
-          {/* Watch Party Section - Playback Feature (Only show if no stream active) */}
+          {/* Watch Party Section - Always show if active */}
           <AnimatePresence>
-            {watchParty && !streamActive && (
+            {watchParty && (
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
