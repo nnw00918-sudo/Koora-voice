@@ -2179,9 +2179,9 @@ const YallaLiveRoom = ({ user }) => {
             )}
           </div>
 
-          {/* Watch Party Section - Always show if active */}
+          {/* Watch Party Section - Only show in stream view */}
           <AnimatePresence>
-            {watchParty && (
+            {watchParty && viewMode === 'stream' && (
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
