@@ -2,6 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* iOS Keyboard Fix - Prevent viewport resize */
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+}
+
+/* Prevent iOS zoom on input focus */
+input, textarea, select {
+  font-size: 16px !important;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Fix for iOS Safari keyboard pushing content */
+@supports (-webkit-touch-callout: none) {
+  body.keyboard-open {
+    position: fixed;
+    width: 100%;
+  }
+}
+
 /* CSS Variables for safe areas */
 :root {
   --sat: env(safe-area-inset-top, 0px);

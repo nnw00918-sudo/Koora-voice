@@ -456,85 +456,111 @@ const ProfilePage = ({ user: initialUser }) => {
   );
 
   // Edit Profile Modal
-  const EditProfileModal = () => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black z-50 overflow-y-auto"
-    >
-      <div className="sticky top-0 bg-black border-b border-slate-800 px-4 py-3 z-10">
-        <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <button onClick={() => setIsEditingProfile(false)} className="text-white font-almarai">{txt.cancel}</button>
-          <h1 className="text-lg font-cairo font-bold text-white">{txt.editProfile}</h1>
-          <button onClick={handleSaveProfile} disabled={savingProfile} className="text-[#fe2c55] font-cairo font-bold disabled:opacity-50">
-            {savingProfile ? '...' : txt.save}
-          </button>
-        </div>
-      </div>
+  const EditProfileModal = () => {
+    // Handle iOS keyboard
+    const handleInputFocus = (e) => {
+      // Prevent iOS viewport resize
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      setTimeout(() => {
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    };
 
-      <div className="p-6 pb-[350px]">
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative mb-4">
-            <img src={editAvatar || user.avatar} alt="" className="w-24 h-24 rounded-full border-2 border-slate-700" />
-            <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-[#fe2c55] rounded-full flex items-center justify-center border-2 border-black">
-              <Camera className="w-4 h-4 text-white" />
-            </button>
-          </div>
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-          <div className="flex gap-3">
-            <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-slate-800 rounded-lg text-white text-sm font-almarai flex items-center gap-2">
-              <Image className="w-4 h-4" /> {txt.album}
-            </button>
-            <button onClick={generateRandomAvatar} className="px-4 py-2 bg-slate-800 rounded-lg text-white text-sm font-almarai flex items-center gap-2">
-              <Shuffle className="w-4 h-4" /> {txt.random}
+    const handleInputBlur = () => {
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black z-50 flex flex-col"
+        style={{ height: '100%', maxHeight: '100vh' }}
+      >
+        <div className="flex-shrink-0 bg-black border-b border-slate-800 px-4 py-3 z-10">
+          <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <button onClick={() => setIsEditingProfile(false)} className="text-white font-almarai">{txt.cancel}</button>
+            <h1 className="text-lg font-cairo font-bold text-white">{txt.editProfile}</h1>
+            <button onClick={handleSaveProfile} disabled={savingProfile} className="text-[#fe2c55] font-cairo font-bold disabled:opacity-50">
+              {savingProfile ? '...' : txt.save}
             </button>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div>
-            <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.name}</label>
-            <input 
-              type="text" 
-              value={editName} 
-              onChange={(e) => setEditName(e.target.value)} 
-              onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-              className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai ${isRTL ? 'text-right' : 'text-left'}`} 
-              maxLength={30} 
-            />
-          </div>
-          <div>
-            <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.username}</label>
-            <div className="relative">
-              <span className={`absolute top-1/2 -translate-y-1/2 text-slate-500 ${isRTL ? 'right-4' : 'left-4'}`}>@</span>
-              <input 
-                type="text" 
-                value={editUsername} 
-                onChange={(e) => setEditUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))} 
-                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl py-3 text-white font-almarai ${isRTL ? 'text-right pr-10' : 'text-left pl-10'}`} 
-                maxLength={20} 
-                dir="ltr" 
-              />
+        <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="p-6 pb-96">
+            <div className="flex flex-col items-center mb-8">
+              <div className="relative mb-4">
+                <img src={editAvatar || user.avatar} alt="" className="w-24 h-24 rounded-full border-2 border-slate-700" />
+                <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-[#fe2c55] rounded-full flex items-center justify-center border-2 border-black">
+                  <Camera className="w-4 h-4 text-white" />
+                </button>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+              <div className="flex gap-3">
+                <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-slate-800 rounded-lg text-white text-sm font-almarai flex items-center gap-2">
+                  <Image className="w-4 h-4" /> {txt.album}
+                </button>
+                <button onClick={generateRandomAvatar} className="px-4 py-2 bg-slate-800 rounded-lg text-white text-sm font-almarai flex items-center gap-2">
+                  <Shuffle className="w-4 h-4" /> {txt.random}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.name}</label>
+                <input 
+                  type="text" 
+                  value={editName} 
+                  onChange={(e) => setEditName(e.target.value)} 
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai text-base ${isRTL ? 'text-right' : 'text-left'}`} 
+                  maxLength={30}
+                  style={{ fontSize: '16px' }}
+                />
+              </div>
+              <div>
+                <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.username}</label>
+                <div className="relative">
+                  <span className={`absolute top-1/2 -translate-y-1/2 text-slate-500 ${isRTL ? 'right-4' : 'left-4'}`}>@</span>
+                  <input 
+                    type="text" 
+                    value={editUsername} 
+                    onChange={(e) => setEditUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))} 
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    className={`w-full bg-slate-900 border border-slate-700 rounded-xl py-3 text-white font-almarai text-base ${isRTL ? 'text-right pr-10' : 'text-left pl-10'}`} 
+                    maxLength={20} 
+                    dir="ltr"
+                    style={{ fontSize: '16px' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.bio}</label>
+                <textarea 
+                  value={editBio} 
+                  onChange={(e) => setEditBio(e.target.value)} 
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  placeholder={txt.bioPlaceholder} 
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai resize-none h-24 text-base ${isRTL ? 'text-right' : 'text-left'}`} 
+                  maxLength={80}
+                  style={{ fontSize: '16px' }}
+                />
+                <p className={`text-slate-500 text-xs mt-1 ${isRTL ? 'text-left' : 'text-right'}`}>{editBio.length}/80</p>
+              </div>
             </div>
           </div>
-          <div>
-            <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.bio}</label>
-            <textarea 
-              value={editBio} 
-              onChange={(e) => setEditBio(e.target.value)} 
-              onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-              placeholder={txt.bioPlaceholder} 
-              className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai resize-none h-24 ${isRTL ? 'text-right' : 'text-left'}`} 
-              maxLength={80} 
-            />
-            <p className={`text-slate-500 text-xs mt-1 ${isRTL ? 'text-left' : 'text-right'}`}>{editBio.length}/80</p>
-          </div>
         </div>
-      </div>
-    </motion.div>
-  );
+      </motion.div>
+    );
+  };
 
   // Main Profile View
   const ProfileView = () => (
