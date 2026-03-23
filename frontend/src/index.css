@@ -2,17 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   iOS/Android Keyboard Fix - Comprehensive Solution
+   ============================================ */
+
+/* Prevent automatic scrolling on input focus */
+html {
+  scroll-behavior: auto !important;
+}
+
+/* Fixed layout to prevent viewport resize issues */
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+}
+
+/* Prevent iOS zoom on input focus - CRITICAL */
+input, textarea, select {
+  font-size: 16px !important;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+/* Prevent automatic scroll to input */
+input:focus, textarea:focus, select:focus {
+  scroll-margin: 0 !important;
+}
+
 /* CSS Variables for safe areas */
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
-}
-
-/* Prevent iOS zoom on input focus */
-input, textarea, select {
-  font-size: 16px !important;
 }
 
 /* Dynamic viewport height for mobile */
