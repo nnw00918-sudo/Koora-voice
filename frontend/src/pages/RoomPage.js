@@ -80,6 +80,7 @@ const RemoteVideoCircle = ({ remoteUser }) => {
   
   useEffect(() => {
     if (remoteUser?.videoTrack && videoRef.current) {
+      // Play video track on the video element
       remoteUser.videoTrack.play(videoRef.current);
     }
     return () => {
@@ -87,10 +88,16 @@ const RemoteVideoCircle = ({ remoteUser }) => {
         remoteUser.videoTrack.stop();
       }
     };
-  }, [remoteUser]);
+  }, [remoteUser, remoteUser?.videoTrack]);
   
   return (
-    <div ref={videoRef} className="w-full h-full object-cover" />
+    <video 
+      ref={videoRef} 
+      autoPlay 
+      playsInline 
+      className="w-full h-full object-cover"
+      style={{ transform: 'scaleX(-1)' }}
+    />
   );
 };
 
@@ -434,6 +441,17 @@ const YallaLiveRoom = ({ user }) => {
         tokenResponse.data.token,
         generatedUid
       );
+      
+      // Send agora_uid to backend for video matching
+      try {
+        await axios.put(
+          `${API}/rooms/${roomId}/agora-uid`,
+          { agora_uid: generatedUid },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (err) {
+        console.error('Failed to update agora_uid:', err);
+      }
     } catch (error) {
       console.error('Agora error:', error);
     }

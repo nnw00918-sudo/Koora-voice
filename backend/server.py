@@ -165,6 +165,7 @@ class RoomParticipant(BaseModel):
     can_speak: bool = False
     is_muted: bool = False
     last_active: Optional[str] = None
+    agora_uid: Optional[int] = None  # Agora UID for video matching
 
 class SeatRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -1097,6 +1098,18 @@ async def join_room(room_id: str, join_data: JoinWithPinRequest = None, current_
         )
     
     return {"message": "دخلت الغرفة بنجاح"}
+
+# Update Agora UID for video matching
+class UpdateAgoraUid(BaseModel):
+    agora_uid: int
+
+@api_router.put("/rooms/{room_id}/agora-uid")
+async def update_agora_uid(room_id: str, data: UpdateAgoraUid, current_user: User = Depends(get_current_user)):
+    await db.room_participants.update_one(
+        {"room_id": room_id, "user_id": current_user.id},
+        {"$set": {"agora_uid": data.agora_uid}}
+    )
+    return {"message": "تم تحديث معرف Agora"}
 
 @api_router.post("/rooms/{room_id}/seat/request")
 async def request_seat(room_id: str, current_user: User = Depends(get_current_user)):
