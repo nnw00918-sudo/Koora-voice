@@ -265,7 +265,7 @@ const YallaLiveRoom = ({ user }) => {
 
   // Separate polling for seat requests (only for owners/admins) - FAST
   useEffect(() => {
-    if (isOwner || isAdmin || room?.owner_id === user?.id) {
+    if (isOwner || isRoomAdmin || room?.owner_id === user?.id) {
       fetchSeatRequests();
       fetchMyInvites();
       requestsPollInterval.current = setInterval(() => {
@@ -277,7 +277,7 @@ const YallaLiveRoom = ({ user }) => {
       if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOwner, isAdmin, room?.owner_id]);
+  }, [isOwner, isRoomAdmin, room?.owner_id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -2936,7 +2936,7 @@ const YallaLiveRoom = ({ user }) => {
                   </div>
                   
                   {/* Recording Controls - Owner/Admin only */}
-                  {(isOwner || isAdmin) && (
+                  {(isOwner || isRoomAdmin) && (
                     <>
                       {isRecording ? (
                         <button 
