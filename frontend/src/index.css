@@ -3,21 +3,31 @@
 @tailwind utilities;
 
 /* ============================================
-   iOS/Android Keyboard Fix - v2
+   iOS/Android Keyboard Fix - v3
    ============================================ */
 
-/* CSS Variables for safe areas */
+/* CSS Variables for safe areas and keyboard */
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
+  --keyboard-height: 0px;
 }
 
 /* Prevent iOS zoom on input focus - CRITICAL */
 input, textarea, select {
   font-size: 16px !important;
   -webkit-text-size-adjust: 100%;
+  /* Disable iOS auto-scroll to input */
+  scroll-margin: 0;
+  scroll-padding: 0;
+}
+
+/* Prevent touch callout and text selection issues */
+input, textarea {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Dynamic viewport height for mobile */
