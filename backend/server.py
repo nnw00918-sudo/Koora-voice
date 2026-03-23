@@ -215,6 +215,7 @@ class RoomFull(BaseModel):
     created_at: str
     stream_url: Optional[str] = None
     stream_active: bool = False
+    chat_background: Optional[str] = None  # Chat background image URL
 
 class RoomCreate(BaseModel):
     title: str
