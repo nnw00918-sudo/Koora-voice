@@ -2457,6 +2457,8 @@ const YallaLiveRoom = ({ user }) => {
                   const hasLocalCamera = isLocalUser && isCameraOn && localCameraStream.current;
                   const remoteVideo = remoteVideoUsers.find(rv => rv.uid === seat.user.user_id || rv.uid === seat.user.agora_uid);
                   const hasVideo = hasLocalCamera || remoteVideo;
+                  // Check if user is on stage but camera is off
+                  const isOnStageWithCameraOff = isLocalUser && !isCameraOn;
                   
                   return (
                     <div key={seat.seat_number} className="flex flex-col items-center">
@@ -2490,7 +2492,15 @@ const YallaLiveRoom = ({ user }) => {
                           ) : remoteVideo ? (
                             <RemoteVideoCircle remoteUser={remoteVideo} />
                           ) : (
-                            <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
+                            <div className="relative w-full h-full">
+                              <img src={seat.user.avatar} alt="" className="w-full h-full object-cover" />
+                              {/* Camera Off Overlay for users on stage without camera */}
+                              {isOnStageWithCameraOff && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                  <VideoOff className="w-6 h-6 text-red-400" />
+                                </div>
+                              )}
+                            </div>
                           )}
                         </button>
                         {seat.user.is_muted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"><MicOff className="w-3 h-3 text-white" /></div>}
