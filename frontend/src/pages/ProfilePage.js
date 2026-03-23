@@ -455,17 +455,18 @@ const ProfilePage = ({ user: initialUser }) => {
     </div>
   );
 
-  // Edit Profile Modal - Fixed layout like RoomPage for smooth keyboard
+  // Edit Profile Modal - Simplified layout to prevent keyboard scroll
   const EditProfileModal = () => {
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black z-50 flex flex-col"
+        className="fixed inset-0 bg-black z-50"
+        style={{ touchAction: 'none' }}
       >
-        {/* Header - Fixed */}
-        <div className="flex-shrink-0 bg-black border-b border-slate-800 px-4 py-3">
+        {/* Header */}
+        <div className="bg-black border-b border-slate-800 px-4 py-3">
           <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
             <button onClick={() => setIsEditingProfile(false)} className="text-white font-almarai">{txt.cancel}</button>
             <h1 className="text-lg font-cairo font-bold text-white">{txt.editProfile}</h1>
@@ -475,66 +476,66 @@ const ProfilePage = ({ user: initialUser }) => {
           </div>
         </div>
 
-        {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="p-6 pb-40">
-            <div className="flex flex-col items-center mb-8">
-              <div className="relative mb-4">
-                <img src={editAvatar || user.avatar} alt="" className="w-24 h-24 rounded-full border-2 border-slate-700" />
-                <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-[#fe2c55] rounded-full flex items-center justify-center border-2 border-black">
-                  <Camera className="w-4 h-4 text-white" />
-                </button>
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-              <div className="flex gap-3">
-                <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-slate-800 rounded-lg text-white text-sm font-almarai flex items-center gap-2">
-                  <Image className="w-4 h-4" /> {txt.album}
-                </button>
-                <button onClick={generateRandomAvatar} className="px-4 py-2 bg-slate-800 rounded-lg text-white text-sm font-almarai flex items-center gap-2">
-                  <Shuffle className="w-4 h-4" /> {txt.random}
-                </button>
-              </div>
+        {/* Content - No scroll, compact layout */}
+        <div className="p-4">
+          {/* Avatar - Smaller */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative">
+              <img src={editAvatar || user.avatar} alt="" className="w-16 h-16 rounded-full border-2 border-slate-700" />
+              <button onClick={() => fileInputRef.current?.click()} className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#fe2c55] rounded-full flex items-center justify-center border-2 border-black">
+                <Camera className="w-3 h-3 text-white" />
+              </button>
             </div>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+            <div className="flex gap-2">
+              <button onClick={() => fileInputRef.current?.click()} className="px-3 py-1.5 bg-slate-800 rounded-lg text-white text-xs font-almarai flex items-center gap-1">
+                <Image className="w-3 h-3" /> {txt.album}
+              </button>
+              <button onClick={generateRandomAvatar} className="px-3 py-1.5 bg-slate-800 rounded-lg text-white text-xs font-almarai flex items-center gap-1">
+                <Shuffle className="w-3 h-3" /> {txt.random}
+              </button>
+            </div>
+          </div>
 
-            <div className="space-y-6">
-              <div>
-                <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.name}</label>
+          {/* Form Fields - Compact */}
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-slate-400 text-xs mb-1 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.name}</label>
+              <input 
+                type="text" 
+                value={editName} 
+                onChange={(e) => setEditName(e.target.value)} 
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-almarai ${isRTL ? 'text-right' : 'text-left'}`} 
+                maxLength={30}
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+            <div>
+              <label className={`block text-slate-400 text-xs mb-1 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.username}</label>
+              <div className="relative">
+                <span className={`absolute top-1/2 -translate-y-1/2 text-slate-500 ${isRTL ? 'right-4' : 'left-4'}`}>@</span>
                 <input 
                   type="text" 
-                  value={editName} 
-                  onChange={(e) => setEditName(e.target.value)} 
-                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai ${isRTL ? 'text-right' : 'text-left'}`} 
-                  maxLength={30}
+                  value={editUsername} 
+                  onChange={(e) => setEditUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))} 
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 text-white font-almarai ${isRTL ? 'text-right pr-10' : 'text-left pl-10'}`} 
+                  maxLength={20} 
+                  dir="ltr"
                   style={{ fontSize: '16px' }}
                 />
               </div>
-              <div>
-                <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.username}</label>
-                <div className="relative">
-                  <span className={`absolute top-1/2 -translate-y-1/2 text-slate-500 ${isRTL ? 'right-4' : 'left-4'}`}>@</span>
-                  <input 
-                    type="text" 
-                    value={editUsername} 
-                    onChange={(e) => setEditUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))} 
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-xl py-3 text-white font-almarai ${isRTL ? 'text-right pr-10' : 'text-left pl-10'}`} 
-                    maxLength={20} 
-                    dir="ltr"
-                    style={{ fontSize: '16px' }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.bio}</label>
-                <textarea 
-                  value={editBio} 
-                  onChange={(e) => setEditBio(e.target.value)} 
-                  placeholder={txt.bioPlaceholder} 
-                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai resize-none h-24 ${isRTL ? 'text-right' : 'text-left'}`} 
-                  maxLength={80}
-                  style={{ fontSize: '16px' }}
-                />
-                <p className={`text-slate-500 text-xs mt-1 ${isRTL ? 'text-left' : 'text-right'}`}>{editBio.length}/80</p>
-              </div>
+            </div>
+            <div>
+              <label className={`block text-slate-400 text-xs mb-1 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.bio}</label>
+              <textarea 
+                value={editBio} 
+                onChange={(e) => setEditBio(e.target.value)} 
+                placeholder={txt.bioPlaceholder} 
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-almarai resize-none h-20 ${isRTL ? 'text-right' : 'text-left'}`} 
+                maxLength={80}
+                style={{ fontSize: '16px' }}
+              />
+              <p className={`text-slate-500 text-xs mt-1 ${isRTL ? 'text-left' : 'text-right'}`}>{editBio.length}/80</p>
             </div>
           </div>
         </div>
