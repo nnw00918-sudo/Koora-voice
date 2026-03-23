@@ -5,9 +5,9 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { 
-  Home, Trophy, Settings, MessageSquare, User, ArrowRight, ArrowLeft,
+  Home, Settings, MessageSquare, User, ArrowRight, ArrowLeft,
   Shield, Share2, Grid3X3, Bookmark, Heart, Camera, MoreHorizontal,
-  Image, Shuffle, X, Repeat2, Trash2, Bell
+  Image, Shuffle, X, Repeat2, Trash2, Bell, Mail
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -69,7 +69,7 @@ const ProfilePage = ({ user: initialUser }) => {
       random: 'صورة عشوائية',
       home: 'الرئيسية',
       threads: 'ثريد',
-      matches: 'المباريات',
+      matches: 'الرسائل',
       settings: 'الإعدادات',
       delete: 'حذف',
       deleted: 'تم الحذف',
@@ -102,7 +102,7 @@ const ProfilePage = ({ user: initialUser }) => {
       random: 'Random',
       home: 'Home',
       threads: 'Threads',
-      matches: 'Matches',
+      matches: 'Messages',
       settings: 'Settings',
       delete: 'Delete',
       deleted: 'Deleted',
@@ -461,7 +461,7 @@ const ProfilePage = ({ user: initialUser }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black z-50"
+      className="fixed inset-0 bg-black z-50 overflow-y-auto"
     >
       <div className="sticky top-0 bg-black border-b border-slate-800 px-4 py-3 z-10">
         <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -473,7 +473,7 @@ const ProfilePage = ({ user: initialUser }) => {
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 pb-[350px]">
         <div className="flex flex-col items-center mb-8">
           <div className="relative mb-4">
             <img src={editAvatar || user.avatar} alt="" className="w-24 h-24 rounded-full border-2 border-slate-700" />
@@ -495,18 +495,40 @@ const ProfilePage = ({ user: initialUser }) => {
         <div className="space-y-6">
           <div>
             <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.name}</label>
-            <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai ${isRTL ? 'text-right' : 'text-left'}`} maxLength={30} />
+            <input 
+              type="text" 
+              value={editName} 
+              onChange={(e) => setEditName(e.target.value)} 
+              onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+              className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai ${isRTL ? 'text-right' : 'text-left'}`} 
+              maxLength={30} 
+            />
           </div>
           <div>
             <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.username}</label>
             <div className="relative">
               <span className={`absolute top-1/2 -translate-y-1/2 text-slate-500 ${isRTL ? 'right-4' : 'left-4'}`}>@</span>
-              <input type="text" value={editUsername} onChange={(e) => setEditUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))} className={`w-full bg-slate-900 border border-slate-700 rounded-xl py-3 text-white font-almarai ${isRTL ? 'text-right pr-10' : 'text-left pl-10'}`} maxLength={20} dir="ltr" />
+              <input 
+                type="text" 
+                value={editUsername} 
+                onChange={(e) => setEditUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))} 
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl py-3 text-white font-almarai ${isRTL ? 'text-right pr-10' : 'text-left pl-10'}`} 
+                maxLength={20} 
+                dir="ltr" 
+              />
             </div>
           </div>
           <div>
             <label className={`block text-slate-400 text-sm mb-2 font-almarai ${isRTL ? 'text-right' : 'text-left'}`}>{txt.bio}</label>
-            <textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} placeholder={txt.bioPlaceholder} className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai resize-none h-24 ${isRTL ? 'text-right' : 'text-left'}`} maxLength={80} />
+            <textarea 
+              value={editBio} 
+              onChange={(e) => setEditBio(e.target.value)} 
+              onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+              placeholder={txt.bioPlaceholder} 
+              className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai resize-none h-24 ${isRTL ? 'text-right' : 'text-left'}`} 
+              maxLength={80} 
+            />
             <p className={`text-slate-500 text-xs mt-1 ${isRTL ? 'text-left' : 'text-right'}`}>{editBio.length}/80</p>
           </div>
         </div>
@@ -680,8 +702,8 @@ const ProfilePage = ({ user: initialUser }) => {
             <MessageSquare className="w-6 h-6" strokeWidth={1.5} />
             <span className="text-xs font-almarai">{txt.threads}</span>
           </button>
-          <button onClick={() => navigate('/matches')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors">
-            <Trophy className="w-6 h-6" strokeWidth={1.5} />
+          <button onClick={() => navigate('/messages')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors">
+            <Mail className="w-6 h-6" strokeWidth={1.5} />
             <span className="text-xs font-almarai">{txt.matches}</span>
           </button>
           <button className="flex flex-col items-center gap-1 text-white">

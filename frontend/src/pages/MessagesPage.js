@@ -536,7 +536,7 @@ const MessagesPage = ({ user }) => {
               </div>
             </div>
           ))
-        )}}
+        )}
         {isTyping && (
           <div className={`flex ${isRTL ? 'justify-end' : 'justify-start'}`}>
             <div className="bg-slate-800 rounded-2xl px-4 py-2">
@@ -548,14 +548,17 @@ const MessagesPage = ({ user }) => {
       </div>
 
       {/* Input */}
-      <div className="border-t border-slate-800 p-4 bg-black">
+      <div className="border-t border-slate-800 p-4 bg-black" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}>
         <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            onFocus={handleTyping}
+            onFocus={(e) => {
+              handleTyping();
+              setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+            }}
             placeholder={txt.typeMessage}
             className={`flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-3 text-white font-almarai outline-none focus:border-sky-500 ${isRTL ? 'text-right' : 'text-left'}`}
             inputMode="text"
