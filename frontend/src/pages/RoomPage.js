@@ -145,8 +145,10 @@ const YallaLiveRoom = ({ user }) => {
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   
   // Volume states with localStorage persistence
+  // micVolume = سماع المتحدثين (صوت الآخرين)
+  // streamVolume = صوت البث (الفيديو)
   const [micVolume, setMicVolumeState] = useState(() => {
-    const saved = localStorage.getItem('koora_mic_volume');
+    const saved = localStorage.getItem('koora_speakers_volume');
     return saved ? Number(saved) : 100;
   });
   const [streamVolume, setStreamVolumeState] = useState(() => {
@@ -157,7 +159,7 @@ const YallaLiveRoom = ({ user }) => {
   // Wrapper functions to save to localStorage
   const setMicVolume = (value) => {
     setMicVolumeState(value);
-    localStorage.setItem('koora_mic_volume', value.toString());
+    localStorage.setItem('koora_speakers_volume', value.toString());
   };
   const setStreamVolume = (value) => {
     setStreamVolumeState(value);
@@ -277,21 +279,20 @@ const YallaLiveRoom = ({ user }) => {
     scrollToBottom();
   }, [messages]);
 
-  // Mic volume control
-  useEffect(() => {
-    if (localAudioTrack) {
-      localAudioTrack.setVolume(micVolume);
-    }
-  }, [micVolume, localAudioTrack]);
-
-  // Stream volume control - affects remote users audio
+  // Speakers volume control - affects how loud you hear other speakers
   useEffect(() => {
     remoteUsers.forEach(remoteUser => {
       if (remoteUser.audioTrack) {
-        remoteUser.audioTrack.setVolume(streamVolume);
+        remoteUser.audioTrack.setVolume(micVolume);
       }
     });
-  }, [streamVolume, remoteUsers]);
+  }, [micVolume, remoteUsers]);
+
+  // Stream volume control - for video/broadcast audio
+  useEffect(() => {
+    // This controls video/stream volume (if any video player is used)
+    // The streamVolume state is available for video players
+  }, [streamVolume]);
 
   // Playback features polling (Reactions, Polls, Watch Party)
   useEffect(() => {
@@ -3428,14 +3429,14 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
 
                 <div className="space-y-6">
-                  {/* Mic Volume */}
+                  {/* Speakers/Mics Volume - Control how loud you hear other speakers */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-cairo text-sm flex items-center gap-2">
                         <div className="w-10 h-10 rounded-xl bg-lime-500/20 flex items-center justify-center">
-                          <Mic className="w-5 h-5 text-lime-400" />
+                          <Users className="w-5 h-5 text-lime-400" />
                         </div>
-                        صوت المايك
+                        سماع المتحدثين
                       </span>
                       <span className="text-lime-400 text-xl font-bold">{micVolume}%</span>
                     </div>
@@ -3444,6 +3445,7 @@ const YallaLiveRoom = ({ user }) => {
                       onChange={setMicVolume}
                       color="#84cc16"
                     />
+                    <p className="text-slate-500 text-xs mt-1">تحكم في صوت المتحدثين الآخرين</p>
                   </div>
                   
                   {/* Stream Volume */}
@@ -3462,6 +3464,7 @@ const YallaLiveRoom = ({ user }) => {
                       onChange={setStreamVolume}
                       color="#0ea5e9"
                     />
+                    <p className="text-slate-500 text-xs mt-1">تحكم في صوت الفيديو والبث المباشر</p>
                   </div>
                   
                   {/* Quick Volume Buttons */}
