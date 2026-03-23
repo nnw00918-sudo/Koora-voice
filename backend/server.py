@@ -818,6 +818,17 @@ async def update_room_chat_background(room_id: str, data: dict, current_user: Us
         {"$set": {"chat_background": background_url}}
     )
     
+    # Broadcast background change to all users in room via WebSocket
+    participants = room.get("participants", [])
+    participant_ids = [p.get("user_id") for p in participants if p.get("user_id")]
+    
+    if participant_ids:
+        await ws_manager.broadcast_to_users({
+            "type": "chat_background_update",
+            "room_id": room_id,
+            "background_url": background_url
+        }, participant_ids)
+    
     return {"message": "تم تحديث خلفية الدردشة", "chat_background": background_url}
 
 

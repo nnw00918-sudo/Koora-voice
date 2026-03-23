@@ -479,6 +479,16 @@ const YallaLiveRoom = ({ user }) => {
         
         setRoom(roomData);
         
+        // Update chat background if changed
+        if (roomData.chat_background !== undefined) {
+          setChatBackground(prev => {
+            if (prev !== roomData.chat_background) {
+              return roomData.chat_background || '';
+            }
+            return prev;
+          });
+        }
+        
         // Update seats - only if changed
         const newSeats = seatsRes.data.seats;
         setSeats(prev => {
@@ -2408,16 +2418,18 @@ const YallaLiveRoom = ({ user }) => {
             </div>
             
             {/* Chat Header */}
-            <div className="flex items-center justify-between px-3 py-1.5 relative z-10 border-b border-slate-700/50">
+            <div className="flex items-center justify-between px-3 py-2 relative z-10 border-b border-slate-700/50">
               <span className="text-slate-400 text-xs font-cairo">💬 الدردشة</span>
               <div className="flex items-center gap-2">
                 <span className="text-slate-500 text-[10px]">{messages.length} رسالة</span>
                 {room?.owner_id === user.id && (
                   <button
                     onClick={() => setShowBackgroundPicker(true)}
-                    className="p-1 rounded bg-white/10 hover:bg-white/20"
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 border border-lime-500/30 transition-colors"
+                    title="تغيير خلفية الدردشة"
                   >
-                    <ImageIcon className="w-3 h-3 text-lime-400" />
+                    <ImageIcon className="w-3.5 h-3.5 text-lime-400" />
+                    <span className="text-lime-400 text-[10px] font-cairo">خلفية</span>
                   </button>
                 )}
               </div>
