@@ -455,32 +455,17 @@ const ProfilePage = ({ user: initialUser }) => {
     </div>
   );
 
-  // Edit Profile Modal
+  // Edit Profile Modal - Fixed layout like RoomPage for smooth keyboard
   const EditProfileModal = () => {
-    // Handle iOS keyboard
-    const handleInputFocus = (e) => {
-      // Prevent iOS viewport resize
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      setTimeout(() => {
-        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    };
-
-    const handleInputBlur = () => {
-      document.body.style.position = '';
-      document.body.style.width = '';
-    };
-
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black z-50 flex flex-col"
-        style={{ height: '100%', maxHeight: '100vh' }}
       >
-        <div className="flex-shrink-0 bg-black border-b border-slate-800 px-4 py-3 z-10">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 bg-black border-b border-slate-800 px-4 py-3">
           <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
             <button onClick={() => setIsEditingProfile(false)} className="text-white font-almarai">{txt.cancel}</button>
             <h1 className="text-lg font-cairo font-bold text-white">{txt.editProfile}</h1>
@@ -490,8 +475,9 @@ const ProfilePage = ({ user: initialUser }) => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="p-6 pb-96">
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="p-6 pb-40">
             <div className="flex flex-col items-center mb-8">
               <div className="relative mb-4">
                 <img src={editAvatar || user.avatar} alt="" className="w-24 h-24 rounded-full border-2 border-slate-700" />
@@ -517,9 +503,7 @@ const ProfilePage = ({ user: initialUser }) => {
                   type="text" 
                   value={editName} 
                   onChange={(e) => setEditName(e.target.value)} 
-                  onFocus={handleInputFocus}
-                  onBlur={handleInputBlur}
-                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai text-base ${isRTL ? 'text-right' : 'text-left'}`} 
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai ${isRTL ? 'text-right' : 'text-left'}`} 
                   maxLength={30}
                   style={{ fontSize: '16px' }}
                 />
@@ -532,9 +516,7 @@ const ProfilePage = ({ user: initialUser }) => {
                     type="text" 
                     value={editUsername} 
                     onChange={(e) => setEditUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))} 
-                    onFocus={handleInputFocus}
-                    onBlur={handleInputBlur}
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-xl py-3 text-white font-almarai text-base ${isRTL ? 'text-right pr-10' : 'text-left pl-10'}`} 
+                    className={`w-full bg-slate-900 border border-slate-700 rounded-xl py-3 text-white font-almarai ${isRTL ? 'text-right pr-10' : 'text-left pl-10'}`} 
                     maxLength={20} 
                     dir="ltr"
                     style={{ fontSize: '16px' }}
@@ -546,10 +528,8 @@ const ProfilePage = ({ user: initialUser }) => {
                 <textarea 
                   value={editBio} 
                   onChange={(e) => setEditBio(e.target.value)} 
-                  onFocus={handleInputFocus}
-                  onBlur={handleInputBlur}
                   placeholder={txt.bioPlaceholder} 
-                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai resize-none h-24 text-base ${isRTL ? 'text-right' : 'text-left'}`} 
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-almarai resize-none h-24 ${isRTL ? 'text-right' : 'text-left'}`} 
                   maxLength={80}
                   style={{ fontSize: '16px' }}
                 />

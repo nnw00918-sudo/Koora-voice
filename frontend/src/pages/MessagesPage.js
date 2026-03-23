@@ -471,11 +471,11 @@ const MessagesPage = ({ user }) => {
     </div>
   );
 
-  // Chat View
+  // Chat View - Fixed layout like RoomPage for smooth keyboard
   const ChatView = () => (
-    <div className="min-h-screen bg-black flex flex-col">
-      {/* Header */}
-      <div className="sticky top-0 bg-black/95 backdrop-blur-xl border-b border-slate-800 z-10">
+    <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Header - Fixed at top */}
+      <div className="flex-shrink-0 bg-black/95 backdrop-blur-xl border-b border-slate-800 z-10">
         <div className={`flex items-center gap-3 p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button 
             onClick={() => {
@@ -511,8 +511,8 @@ const MessagesPage = ({ user }) => {
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {/* Messages - Scrollable middle area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ WebkitOverflowScrolling: 'touch' }}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <p className="text-slate-500 font-almarai">{txt.noMessages}</p>
@@ -547,24 +547,22 @@ const MessagesPage = ({ user }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t border-slate-800 p-4 bg-black" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}>
+      {/* Input - Fixed at bottom */}
+      <div className="flex-shrink-0 border-t border-slate-800 p-4 bg-black" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>
         <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            onFocus={(e) => {
-              handleTyping();
-              setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
-            }}
+            onFocus={handleTyping}
             placeholder={txt.typeMessage}
-            className={`flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-3 text-white font-almarai outline-none focus:border-sky-500 ${isRTL ? 'text-right' : 'text-left'}`}
+            className={`flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-3 text-white font-almarai outline-none focus:border-sky-500 text-base ${isRTL ? 'text-right' : 'text-left'}`}
             inputMode="text"
             enterKeyHint="send"
             autoComplete="off"
             autoCorrect="off"
+            style={{ fontSize: '16px' }}
           />
           <button
             onClick={sendMessage}
