@@ -1,9 +1,7 @@
 .App {
-  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: #020617;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
 }
 
 .gradient-overlay {
