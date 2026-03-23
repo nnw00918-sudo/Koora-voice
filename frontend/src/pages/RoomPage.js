@@ -1557,10 +1557,6 @@ const YallaLiveRoom = ({ user }) => {
 
   // Toggle Camera - Uses phone camera directly
   const toggleCamera = async () => {
-    if (!onStage) {
-      toast.error('يجب أن تكون على المنصة لتشغيل الكاميرا');
-      return;
-    }
     try {
       if (!isCameraOn) {
         toast.info('جاري طلب إذن الكاميرا...');
@@ -2451,75 +2447,6 @@ const YallaLiveRoom = ({ user }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          {/* Active Video Streams - Visible to all in room */}
-          {(remoteVideoUsers.length > 0 || (isCameraOn && localCameraStream.current)) && (
-            <div className="mb-3 bg-slate-900/80 rounded-xl p-3 border border-purple-500/30">
-              <div className="flex items-center gap-2 mb-2">
-                <Video className="w-4 h-4 text-purple-400" />
-                <span className="text-purple-400 text-xs font-cairo font-bold">بث مباشر</span>
-              </div>
-              <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-                {/* Local Camera Stream */}
-                {isCameraOn && localCameraStream.current && (
-                  <button
-                    onClick={() => setExpandedVideo({ 
-                      isLocal: true, 
-                      remoteUser: null,
-                      username: user.username,
-                      avatar: user.avatar
-                    })}
-                    className="flex-shrink-0 relative"
-                  >
-                    <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                      <video
-                        ref={(el) => {
-                          if (el && localCameraStream.current) {
-                            el.srcObject = localCameraStream.current;
-                          }
-                        }}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="w-full h-full object-cover"
-                        style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
-                      />
-                    </div>
-                    <div className="absolute -bottom-1 left-0 right-0 text-center">
-                      <span className="bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded-full font-cairo">أنت</span>
-                    </div>
-                  </button>
-                )}
-                {/* Remote Video Streams from other users */}
-                {remoteVideoUsers.map((remoteUser) => {
-                  // Find the speaker info for this remote user
-                  const speakerInfo = speakers.find(s => s.user.agora_uid === remoteUser.uid);
-                  const displayName = speakerInfo?.user?.username || speakerInfo?.user?.name || 'مستخدم';
-                  const displayAvatar = speakerInfo?.user?.avatar;
-                  
-                  return (
-                    <button
-                      key={remoteUser.uid}
-                      onClick={() => setExpandedVideo({ 
-                        isLocal: false, 
-                        remoteUser: remoteUser,
-                        username: displayName,
-                        avatar: displayAvatar
-                      })}
-                      className="flex-shrink-0 relative"
-                    >
-                      <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-lime-500 shadow-[0_0_15px_rgba(132,204,22,0.5)]">
-                        <RemoteVideoCircle remoteUser={remoteUser} />
-                      </div>
-                      <div className="absolute -bottom-1 left-0 right-0 text-center">
-                        <span className="bg-lime-500 text-slate-900 text-[10px] px-2 py-0.5 rounded-full font-cairo truncate max-w-[80px] inline-block">{displayName}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           <div 
             className="rounded-xl h-full flex flex-col relative overflow-hidden border border-lime-500/30 shadow-[0_0_20px_rgba(132,204,22,0.1)]"
             style={{
@@ -2719,6 +2646,17 @@ const YallaLiveRoom = ({ user }) => {
               <Headphones className="w-4 h-4 text-white" />
             </motion.button>
 
+            {/* Camera Button - Available for everyone */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleCamera}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                isCameraOn ? 'bg-purple-500' : 'bg-slate-800 border border-slate-700'
+              }`}
+            >
+              {isCameraOn ? <Video className="w-4 h-4 text-white" /> : <VideoOff className="w-4 h-4 text-slate-300" />}
+            </motion.button>
+
             {/* Mic/Stage Controls */}
             {onStage ? (
               <>
@@ -2730,15 +2668,6 @@ const YallaLiveRoom = ({ user }) => {
                   }`}
                 >
                   {isMicOn ? <Mic className="w-4 h-4 text-slate-900" /> : <MicOff className="w-4 h-4 text-slate-300" />}
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={toggleCamera}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    isCameraOn ? 'bg-lime-500' : 'bg-slate-800 border border-slate-700'
-                  }`}
-                >
-                  {isCameraOn ? <Video className="w-4 h-4 text-slate-900" /> : <VideoOff className="w-4 h-4 text-slate-300" />}
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
