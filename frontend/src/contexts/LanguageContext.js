@@ -7,13 +7,12 @@ export const translations = {
     // Navigation
     home: 'الرئيسية',
     threads: 'ثريد',
-    matches: 'المباريات',
+    profile: 'الملف الشخصي',
     settings: 'الإعدادات',
     
     // Settings Page
     settingsTitle: 'الإعدادات',
     account: 'الحساب',
-    profile: 'الملف الشخصي',
     changePassword: 'تغيير كلمة المرور',
     preferences: 'التفضيلات',
     notifications: 'الإشعارات',
@@ -30,18 +29,6 @@ export const translations = {
     mod: 'مود',
     arabic: 'العربية',
     english: 'English',
-    
-    // Matches Page
-    matchesTitle: 'المباريات',
-    today: 'اليوم',
-    tomorrow: 'غداً',
-    live: 'مباشر',
-    finished: 'انتهت',
-    upcoming: 'قادمة',
-    premierLeague: 'الدوري الإنجليزي',
-    laLiga: 'الدوري الإسباني',
-    saudiLeague: 'الدوري السعودي',
-    championsLeague: 'دوري أبطال أوروبا',
     
     // Dashboard
     liveRooms: 'الغرف المباشرة',
@@ -91,13 +78,12 @@ export const translations = {
     // Navigation
     home: 'Home',
     threads: 'Threads',
-    matches: 'Matches',
+    profile: 'Profile',
     settings: 'Settings',
     
     // Settings Page
     settingsTitle: 'Settings',
     account: 'Account',
-    profile: 'Profile',
     changePassword: 'Change Password',
     preferences: 'Preferences',
     notifications: 'Notifications',
@@ -114,18 +100,6 @@ export const translations = {
     mod: 'Mod',
     arabic: 'العربية',
     english: 'English',
-    
-    // Matches Page
-    matchesTitle: 'Matches',
-    today: 'Today',
-    tomorrow: 'Tomorrow',
-    live: 'Live',
-    finished: 'Finished',
-    upcoming: 'Upcoming',
-    premierLeague: 'Premier League',
-    laLiga: 'La Liga',
-    saudiLeague: 'Saudi League',
-    championsLeague: 'Champions League',
     
     // Dashboard
     liveRooms: 'Live Rooms',

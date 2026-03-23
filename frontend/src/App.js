@@ -9,9 +9,6 @@ import ProfilePage from './pages/ProfilePage';
 import UsersPage from './pages/UsersPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CreateRoomPage from './pages/CreateRoomPage';
-import MatchesPage from './pages/MatchesPage';
-import LeagueDetailPage from './pages/LeagueDetailPage';
-import MatchDetailPage from './pages/MatchDetailPage';
 import ThreadsPage from './pages/ThreadsPage';
 import SettingsPage from './pages/SettingsPage';
 import MessagesPage from './pages/MessagesPage';
@@ -85,9 +82,6 @@ function App() {
               <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
               <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
               <Route path="/admin" element={user?.role === 'owner' ? <AdminDashboard user={user} /> : <Navigate to="/dashboard" />} />
-              <Route path="/matches" element={user ? <MatchesPage user={user} /> : <Navigate to="/" />} />
-              <Route path="/match/:matchId" element={user ? <MatchDetailPage /> : <Navigate to="/" />} />
-              <Route path="/league/:leagueId" element={user ? <LeagueDetailPage user={user} /> : <Navigate to="/" />} />
               <Route path="/threads" element={user ? <ThreadsPage user={user} /> : <Navigate to="/" />} />
               <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
               <Route path="/messages" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />

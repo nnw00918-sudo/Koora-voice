@@ -1,30 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Mic, MessageCircle, Users, Trophy, Play, Radio, Tv, 
+  Mic, MessageCircle, Users, Play, Radio, Tv, 
   Flame, ChevronLeft, Volume2, Zap, Star, TrendingUp,
   Headphones, Wifi, Crown, Target
 } from 'lucide-react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [currentMatch, setCurrentMatch] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(true);
-
-  // Simulated live matches
-  const liveMatches = [
-    { home: 'الهلال', away: 'النصر', homeScore: 2, awayScore: 1, minute: 78, league: 'الدوري السعودي' },
-    { home: 'ريال مدريد', away: 'برشلونة', homeScore: 3, awayScore: 2, minute: 65, league: 'الدوري الإسباني' },
-    { home: 'ليفربول', away: 'مانشستر سيتي', homeScore: 1, awayScore: 1, minute: 45, league: 'الدوري الإنجليزي' },
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMatch((prev) => (prev + 1) % liveMatches.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [liveMatches.length]);
+  const [showAuth, setShowAuth] = useState(false);
 
   const features = [
     { 
@@ -43,9 +28,9 @@ const LandingPage = () => {
       delay: 0.2
     },
     { 
-      icon: Trophy, 
-      title: 'نتائج حية',
-      desc: 'تابع كل النتائج لحظة بلحظة',
+      icon: Crown, 
+      title: 'ملفك الشخصي',
+      desc: 'خصص حسابك وتميز عن الجميع',
       gradient: 'from-[#FFD700] to-[#FFA500]',
       delay: 0.3
     },
@@ -144,7 +129,7 @@ const LandingPage = () => {
         {/* Logo Section */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: isLoaded ? 1 : 0, scale: isLoaded ? 1 : 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", duration: 1, delay: 0.2 }}
           className="text-center mb-10"
         >
@@ -231,66 +216,38 @@ const LandingPage = () => {
           </motion.p>
         </motion.div>
 
-        {/* Live Match Ticker */}
+        {/* Welcome Card - Replacing Match Ticker */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9 }}
           className="mb-8"
         >
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0A0A0A] to-[#121212] border border-[#CCFF00]/20 p-4">
-            {/* Live Indicator */}
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#FF3B30]/20 px-2 py-0.5 rounded-full">
-              <motion.div
-                animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
-                className="w-1.5 h-1.5 bg-[#FF3B30] rounded-full"
-              />
-              <span className="text-[#FF3B30] text-[10px] font-bold">مباشر</span>
-            </div>
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0A0A0A] to-[#121212] border border-[#CCFF00]/20 p-6">
+            {/* Decorative Glow */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#CCFF00]/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#00FF66]/10 rounded-full blur-2xl" />
             
-            <AnimatePresence mode="wait">
+            <div className="relative flex flex-col items-center text-center">
               <motion.div
-                key={currentMatch}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.3 }}
-                className="flex items-center justify-between pt-4"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-16 h-16 bg-gradient-to-br from-[#CCFF00] to-[#00FF66] rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(204,255,0,0.4)]"
               >
-                {/* Home Team */}
-                <div className="text-center flex-1">
-                  <p className="text-white font-cairo font-bold text-base sm:text-lg truncate">{liveMatches[currentMatch].home}</p>
-                  <p className="text-4xl sm:text-5xl font-black text-[#CCFF00] mt-1">{liveMatches[currentMatch].homeScore}</p>
-                </div>
-                
-                {/* VS / Time */}
-                <div className="flex flex-col items-center px-4">
-                  <motion.div
-                    animate={{ opacity: [1, 0.5, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                    className="w-3 h-3 bg-[#FF3B30] rounded-full mb-2"
-                  />
-                  <span className="text-white/60 text-lg font-bold">{liveMatches[currentMatch].minute}'</span>
-                  <span className="text-white/30 text-[10px] mt-1">{liveMatches[currentMatch].league}</span>
-                </div>
-                
-                {/* Away Team */}
-                <div className="text-center flex-1">
-                  <p className="text-white font-cairo font-bold text-base sm:text-lg truncate">{liveMatches[currentMatch].away}</p>
-                  <p className="text-4xl sm:text-5xl font-black text-white mt-1">{liveMatches[currentMatch].awayScore}</p>
-                </div>
+                <Users className="w-8 h-8 text-black" />
               </motion.div>
-            </AnimatePresence>
-            
-            {/* Match Indicator Dots */}
-            <div className="flex justify-center gap-1.5 mt-4">
-              {liveMatches.map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`w-1.5 h-1.5 rounded-full transition-colors ${i === currentMatch ? 'bg-[#CCFF00]' : 'bg-white/20'}`}
+              
+              <h3 className="text-white font-cairo font-bold text-xl mb-2">انضم للمجتمع الآن!</h3>
+              <p className="text-white/50 text-sm mb-4">آلاف المشجعين ينتظرونك في الغرف الصوتية</p>
+              
+              <div className="flex items-center gap-2">
+                <motion.div
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                  className="w-2 h-2 bg-[#00FF66] rounded-full"
                 />
-              ))}
+                <span className="text-[#CCFF00] text-sm font-bold">متصل الآن: 1.2K+</span>
+              </div>
             </div>
           </div>
         </motion.div>
