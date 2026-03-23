@@ -3,42 +3,42 @@ import ReactDOM from "react-dom/client";
 import "@/index.css";
 import App from "@/App";
 
-// iOS/Android Keyboard Fix - Prevent automatic scrolling
+// iOS Keyboard Fix - Prevent ALL automatic scrolling
 if (typeof window !== 'undefined') {
-  // Use VisualViewport API for better keyboard handling
-  if (window.visualViewport) {
-    let pendingUpdate = false;
-    
-    const viewportHandler = () => {
-      if (pendingUpdate) return;
-      pendingUpdate = true;
-      
-      requestAnimationFrame(() => {
-        pendingUpdate = false;
-        // Keep the page from scrolling when keyboard appears
-        const activeEl = document.activeElement;
-        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-          // The visual viewport has changed (keyboard appeared/disappeared)
-          // Don't scroll the page
-          document.documentElement.style.setProperty('--keyboard-height', 
-            `${window.innerHeight - window.visualViewport.height}px`);
-        }
-      });
-    };
-    
-    window.visualViewport.addEventListener('resize', viewportHandler);
-    window.visualViewport.addEventListener('scroll', viewportHandler);
-  }
+  let lastScrollTop = 0;
+  let isInputFocused = false;
   
-  // Fallback for older browsers - prevent scroll on focus
+  // When input is focused, lock the scroll position
   document.addEventListener('focusin', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-      // Prevent default scroll behavior
-      e.target.addEventListener('focus', (evt) => {
-        evt.preventDefault();
-      }, { once: true, passive: false });
+      isInputFocused = true;
+      lastScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+      
+      // Lock body position
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${lastScrollTop}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
     }
-  }, { capture: true });
+  });
+  
+  // When input loses focus, restore scroll
+  document.addEventListener('focusout', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      isInputFocused = false;
+      
+      // Unlock body position
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      
+      // Restore scroll position
+      window.scrollTo(0, lastScrollTop);
+    }
+  });
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
