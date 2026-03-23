@@ -1374,7 +1374,150 @@ async def quick_promote_user(room_id: str, user_id: str, promote_data: QuickProm
     
     return {"message": "لم يتم التغيير - الصلاحية نفسها"}
 
-@api_router.post("/rooms/{room_id}/seat/invite/{user_id}")
+
+# ==================== ROOM-SPECIFIC ROLES ====================
+# رتب خاصة بكل غرفة (owner, admin, mod, member)
+
+class RoomRoleUpdate(BaseModel):
+    role: str  # admin, mod, member
+
+@api_router.get("/rooms/{room_id}/user-role/{user_id}")
+async def get_user_room_role(room_id: str, user_id: str):
+    """Get user's role in a specific room"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check if user is owner
+    if room.get("owner_id") == user_id:
+        return {"role": "owner", "can_join_stage_direct": True}
+    
+    # Check room_roles collection
+    room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    
+    if room_role:
+        role = room_role.get("role", "member")
+        can_join_direct = role in ["admin", "mod"]
+        return {"role": role, "can_join_stage_direct": can_join_direct}
+    
+    return {"role": "member", "can_join_stage_direct": False}
+
+@api_router.put("/rooms/{room_id}/user-role/{user_id}")
+async def update_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate, current_user: User = Depends(get_current_user)):
+    """Update user's role in a room (Owner/Admin only)"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check permissions - only room owner or admin can change roles
+    is_room_owner = room.get("owner_id") == current_user.id
+    
+    # Get current user's room role
+    current_user_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    
+    is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
+    
+    if not is_room_owner and not is_room_admin and current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="فقط مالك الغرفة أو الأدمن يمكنه تغيير الرتب")
+    
+    # Validate role
+    if data.role not in ["admin", "mod", "member"]:
+        raise HTTPException(status_code=400, detail="رتبة غير صحيحة. الخيارات: admin, mod, member")
+    
+    # Admin can only promote to mod (not admin)
+    if is_room_admin and not is_room_owner and data.role == "admin":
+        raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه ترقية لأدمن")
+    
+    # Cannot change owner's role
+    if room.get("owner_id") == user_id:
+        raise HTTPException(status_code=403, detail="لا يمكن تغيير رتبة مالك الغرفة")
+    
+    # Upsert room role
+    await db.room_roles.update_one(
+        {"room_id": room_id, "user_id": user_id},
+        {"$set": {
+            "room_id": room_id,
+            "user_id": user_id,
+            "role": data.role,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user.id
+        }},
+        upsert=True
+    )
+    
+    role_names = {"admin": "أدمن", "mod": "مود", "member": "عضو"}
+    
+    # Get target user info
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "username": 1})
+    username = target_user.get("username", user_id) if target_user else user_id
+    
+    return {
+        "message": f"تم تغيير رتبة {username} إلى {role_names.get(data.role, data.role)}",
+        "role": data.role
+    }
+
+@api_router.delete("/rooms/{room_id}/user-role/{user_id}")
+async def remove_user_room_role(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Remove user's special role in room (demote to member)"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    is_room_owner = room.get("owner_id") == current_user.id
+    if not is_room_owner and current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه إزالة الرتب")
+    
+    await db.room_roles.delete_one({
+        "room_id": room_id,
+        "user_id": user_id
+    })
+    
+    return {"message": "تم إزالة الرتبة"}
+
+@api_router.get("/rooms/{room_id}/roles")
+async def get_all_room_roles(room_id: str):
+    """Get all users with special roles in a room"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    roles = await db.room_roles.find({"room_id": room_id}, {"_id": 0}).to_list(100)
+    
+    # Add owner info
+    owner_info = {
+        "user_id": room.get("owner_id"),
+        "role": "owner",
+        "is_owner": True
+    }
+    
+    # Get user details for each role
+    for role_entry in roles:
+        user = await db.users.find_one({"id": role_entry.get("user_id")}, {"_id": 0, "username": 1, "avatar": 1, "name": 1})
+        if user:
+            role_entry["username"] = user.get("username")
+            role_entry["avatar"] = user.get("avatar")
+            role_entry["name"] = user.get("name")
+    
+    # Get owner details
+    owner = await db.users.find_one({"id": room.get("owner_id")}, {"_id": 0, "username": 1, "avatar": 1, "name": 1})
+    if owner:
+        owner_info["username"] = owner.get("username")
+        owner_info["avatar"] = owner.get("avatar")
+        owner_info["name"] = owner.get("name")
+    
+    return {
+        "owner": owner_info,
+        "roles": roles
+    }
+
+
+
 async def invite_to_seat(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
     if not can_kick_mute(current_user.role):
         raise HTTPException(status_code=403, detail="صلاحيات Owner/Admin مطلوبة")
@@ -1693,6 +1836,24 @@ async def get_room_participants(room_id: str):
     })
     
     participants = await db.room_participants.find({"room_id": room_id}, {"_id": 0}).to_list(100)
+    
+    # Get room owner
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0, "owner_id": 1})
+    owner_id = room.get("owner_id") if room else None
+    
+    # Add room_role to each participant
+    for p in participants:
+        user_id = p.get("user_id")
+        if user_id == owner_id:
+            p["room_role"] = "owner"
+        else:
+            # Check room_roles collection
+            room_role = await db.room_roles.find_one({
+                "room_id": room_id,
+                "user_id": user_id
+            }, {"_id": 0, "role": 1})
+            p["room_role"] = room_role.get("role", "member") if room_role else "member"
+    
     return [RoomParticipant(**p) for p in participants]
 
 @api_router.post("/rooms/{room_id}/messages", response_model=Message)

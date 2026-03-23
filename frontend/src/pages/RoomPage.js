@@ -126,6 +126,7 @@ const YallaLiveRoom = ({ user }) => {
   const [seatRequests, setSeatRequests] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [roomRole, setRoomRole] = useState('member'); // Room-specific role: owner, admin, mod, member
   const [roleLoading, setRoleLoading] = useState(true);
   
   // Check if current user is room owner based on room data
@@ -134,11 +135,14 @@ const YallaLiveRoom = ({ user }) => {
   const isSystemOwner = currentUserRole === 'owner';
   // Room owner or system owner has full control
   const isOwner = isRoomOwner || isSystemOwner;
-  const isAdmin = currentUserRole === 'admin' || isOwner;
-  const isMod = currentUserRole === 'mod' || isOwner;
-  const canManageStage = isOwner || ['admin', 'mod'].includes(currentUserRole);
-  const canKickMute = isOwner || currentUserRole === 'admin';
-  const canJoinStageDirect = isOwner || ['admin', 'mod'].includes(currentUserRole);
+  
+  // Room-specific permissions
+  const isRoomAdmin = roomRole === 'admin' || isOwner;
+  const isRoomMod = roomRole === 'mod' || isRoomAdmin;
+  const canManageStage = isOwner || isRoomAdmin;
+  const canKickMute = isOwner || isRoomAdmin;
+  const canChangeRoles = isOwner || isRoomAdmin; // Admin can change roles to mod only
+  const canJoinStageDirect = isOwner || roomRole === 'admin' || roomRole === 'mod'; // Admin & Mod can join stage directly
   
   const [myInvites, setMyInvites] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -591,6 +595,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const fetchCurrentUserRole = async () => {
     try {
+      // Fetch global role
       const response = await axios.get(`${API}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -600,9 +605,16 @@ const YallaLiveRoom = ({ user }) => {
         storedUser.role = response.data.role;
         localStorage.setItem('user', JSON.stringify(storedUser));
       }
+      
+      // Fetch room-specific role
+      const roomRoleRes = await axios.get(`${API}/rooms/${roomId}/user-role/${user.id}`);
+      if (roomRoleRes.data) {
+        setRoomRole(roomRoleRes.data.role || 'member');
+      }
     } catch (error) {
       console.error('Failed to fetch user role:', error);
       setCurrentUserRole(user.role || 'user');
+      setRoomRole('member');
     } finally {
       setRoleLoading(false);
     }
@@ -854,6 +866,31 @@ const YallaLiveRoom = ({ user }) => {
       fetchParticipants();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل الطرد');
+    }
+  };
+
+  // Change user's room-specific role
+  const handleChangeRoomRole = async (userId, newRole, username) => {
+    try {
+      const response = await axios.put(
+        `${API}/rooms/${roomId}/user-role/${userId}`,
+        { role: newRole },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message || `تم تغيير رتبة ${username}`);
+      fetchParticipants();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل تغيير الرتبة');
+    }
+  };
+
+  // Get user's room role for display
+  const getUserRoomRole = async (userId) => {
+    try {
+      const response = await axios.get(`${API}/rooms/${roomId}/user-role/${userId}`);
+      return response.data.role || 'member';
+    } catch {
+      return 'member';
     }
   };
 
@@ -2104,9 +2141,12 @@ const YallaLiveRoom = ({ user }) => {
                   const speakerData = speakers.find(s => s.user_id === odId);
                   const isMuted = speakerData?.user?.is_muted || false;
                   const isCurrentUser = odId === user.id;
-                  const isOwner = room?.owner_id === odId;
-                  const canManage = (room?.owner_id === user.id) || currentUserRole === 'admin' || currentUserRole === 'owner';
-                  const canPromote = room?.owner_id === user.id;
+                  const isOwnerOfRoom = room?.owner_id === odId;
+                  const canManage = isRoomOwner || isRoomAdmin;
+                  const canPromote = isRoomOwner;
+                  const userRoomRole = p.room_role || 'member'; // Get from participant data
+                  const isUserAdmin = userRoomRole === 'admin';
+                  const isUserMod = userRoomRole === 'mod';
                   
                   return (
                     <div 
@@ -2126,16 +2166,31 @@ const YallaLiveRoom = ({ user }) => {
                           <img 
                             src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`}
                             alt=""
-                            className={`w-14 h-14 rounded-full ring-2 ${isOwner ? 'ring-amber-500' : isSpeaker ? 'ring-lime-500' : 'ring-slate-700'}`}
+                            className={`w-14 h-14 rounded-full ring-2 ${
+                              isOwnerOfRoom ? 'ring-amber-500' : 
+                              isUserAdmin ? 'ring-purple-500' :
+                              isUserMod ? 'ring-blue-500' :
+                              isSpeaker ? 'ring-lime-500' : 'ring-slate-700'
+                            }`}
                           />
                           {isSpeaker && (
                             <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ring-2 ring-slate-900 ${isMuted ? 'bg-red-500' : 'bg-lime-500'}`}>
                               {isMuted ? <MicOff className="w-3 h-3 text-white" /> : <Mic className="w-3 h-3 text-white" />}
                             </div>
                           )}
-                          {isOwner && (
+                          {isOwnerOfRoom && (
                             <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center ring-2 ring-slate-900">
                               <Crown className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          {isUserAdmin && !isOwnerOfRoom && (
+                            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center ring-2 ring-slate-900">
+                              <Shield className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          {isUserMod && !isOwnerOfRoom && !isUserAdmin && (
+                            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-slate-900">
+                              <Star className="w-3 h-3 text-white" />
                             </div>
                           )}
                         </div>
@@ -2152,21 +2207,63 @@ const YallaLiveRoom = ({ user }) => {
                           {/* Role Badge */}
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              isOwner 
+                              isOwnerOfRoom 
                                 ? 'text-amber-400 bg-amber-500/20' 
-                                : isSpeaker 
-                                  ? 'text-lime-400 bg-lime-500/20' 
-                                  : 'text-slate-400 bg-slate-700/50'
+                                : isUserAdmin
+                                  ? 'text-purple-400 bg-purple-500/20'
+                                  : isUserMod
+                                    ? 'text-blue-400 bg-blue-500/20'
+                                    : isSpeaker 
+                                      ? 'text-lime-400 bg-lime-500/20' 
+                                      : 'text-slate-400 bg-slate-700/50'
                             }`}>
-                              {isOwner ? 'مالك الغرفة' : isSpeaker ? 'متحدث' : 'مستمع'}
+                              {isOwnerOfRoom ? 'مالك الغرفة' : isUserAdmin ? 'أدمن' : isUserMod ? 'مود' : isSpeaker ? 'متحدث' : 'عضو'}
                             </span>
                           </div>
                         </div>
                       </div>
                       
                       {/* Action Buttons - Only for non-current users and if has permission */}
-                      {!isCurrentUser && !isOwner && canManage && (
+                      {!isCurrentUser && !isOwnerOfRoom && canManage && (
                         <div className="px-4 pb-4 flex flex-wrap gap-2">
+                          {/* Role Change Buttons - Only for owner/admin */}
+                          {canChangeRoles && (
+                            <>
+                              {/* Make Admin - Only owner can do this */}
+                              {isRoomOwner && !isUserAdmin && (
+                                <button
+                                  onClick={() => handleChangeRoomRole(odId, 'admin', p.username)}
+                                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm font-cairo transition-colors"
+                                >
+                                  <Shield className="w-4 h-4" />
+                                  أدمن
+                                </button>
+                              )}
+                              
+                              {/* Make Mod - Owner or Admin can do this */}
+                              {!isUserMod && !isUserAdmin && (
+                                <button
+                                  onClick={() => handleChangeRoomRole(odId, 'mod', p.username)}
+                                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm font-cairo transition-colors"
+                                >
+                                  <Star className="w-4 h-4" />
+                                  مود
+                                </button>
+                              )}
+                              
+                              {/* Remove Role */}
+                              {(isUserAdmin || isUserMod) && isRoomOwner && (
+                                <button
+                                  onClick={() => handleChangeRoomRole(odId, 'member', p.username)}
+                                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-500/20 hover:bg-slate-500/30 text-slate-400 text-sm font-cairo transition-colors"
+                                >
+                                  <ArrowDown className="w-4 h-4" />
+                                  إزالة الرتبة
+                                </button>
+                              )}
+                            </>
+                          )}
+                          
                           {/* Promote to Speaker / Demote to Listener */}
                           {canPromote && (
                             isSpeaker ? (
@@ -2556,7 +2653,7 @@ const YallaLiveRoom = ({ user }) => {
               </>
             ) : (
               <>
-                {(room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') ? (
+                {canJoinStageDirect ? (
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={handleJoinStageDirect}
@@ -2578,7 +2675,7 @@ const YallaLiveRoom = ({ user }) => {
                       className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 font-cairo font-bold text-sm bg-lime-500 text-slate-900"
                     >
                       <Hand className="w-4 h-4" />
-                      <span>صعود للمنصة</span>
+                      <span>طلب مايك</span>
                     </motion.button>
                   )
                 )}
