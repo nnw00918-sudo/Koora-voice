@@ -213,7 +213,8 @@
 - [x] `football_router` يعمل بشكل مستقل
 - [x] **نقل Notifications** إلى `/routes/notifications.py` (~79 سطر)
 - [x] **نقل Stories** إلى `/routes/stories.py` (~379 سطر)
-- [x] **server.py تقلص من 4532 إلى 4129 سطر** (-403 سطر / -9%)
+- [x] **نقل Conversations** إلى `/routes/conversations.py` (~220 سطر)
+- [x] **server.py تقلص من 4596 إلى 3927 سطر** (-669 سطر / -14%)
 
 ---
 
@@ -221,8 +222,12 @@
 - [x] ~~اختبار صلاحيات الأدمن~~ - تم 29 ديسمبر 2025
 - [x] ~~Refactoring: Notifications~~ - تم 29 ديسمبر 2025
 - [x] ~~Refactoring: Stories~~ - تم 29 ديسمبر 2025
+- [x] ~~Refactoring: Conversations~~ - تم 29 ديسمبر 2025
 
 ### P1 (أولوية عالية) - Refactoring المتبقي
+- [ ] نقل Users routes (معقد - يعتمد على create_notification)
+- [ ] نقل Admin routes (معقد - يعتمد على get_admin_user)
+- [ ] تقسيم RoomPage.js (3739 سطر) - معقد بسبب Agora state
 - [ ] إكمال تقسيم server.py:
   - [ ] فصل Stories routes إلى `/routes/stories.py`
   - [ ] فصل Conversations routes إلى `/routes/conversations.py`
