@@ -2628,6 +2628,62 @@ const YallaLiveRoom = ({ user }) => {
               </div>
             </div>
             
+            {/* Participants/Listeners Section */}
+            {participants.length > 0 && (
+              <div className="relative z-10 border-b border-lime-500/20 px-3 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-slate-400 text-xs font-cairo flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" />
+                    المتصلون ({participants.length})
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto hide-scrollbar">
+                  {[...new Map(participants.map(p => [p.user_id || p.id, p])).values()].map((p) => {
+                    const odId = p.user_id || p.id;
+                    const isOwnerOfRoom = room?.owner_id === odId;
+                    const userRoomRole = p.room_role || 'member';
+                    const isUserAdmin = userRoomRole === 'admin';
+                    const isUserMod = userRoomRole === 'mod';
+                    const isSpeaker = seats.some(s => s.occupied && s.user?.user_id === odId);
+                    
+                    return (
+                      <button
+                        key={odId}
+                        onClick={() => navigate(`/user/${odId}`)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-cairo transition-all hover:scale-105 ${
+                          isOwnerOfRoom 
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                            : isUserAdmin
+                              ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                              : isUserMod
+                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                : isSpeaker
+                                  ? 'bg-lime-500/20 text-lime-400 border border-lime-500/30'
+                                  : 'bg-slate-700/50 text-slate-300 border border-slate-600/30'
+                        }`}
+                      >
+                        <img 
+                          src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`}
+                          alt=""
+                          className={`w-5 h-5 rounded-full ring-1 ${
+                            isOwnerOfRoom ? 'ring-amber-500' : 
+                            isUserAdmin ? 'ring-purple-500' :
+                            isUserMod ? 'ring-blue-500' :
+                            isSpeaker ? 'ring-lime-500' : 'ring-slate-600'
+                          }`}
+                        />
+                        <span className="max-w-[60px] truncate">{p.user?.name || p.username}</span>
+                        {isOwnerOfRoom && <Crown className="w-3 h-3 text-amber-400" />}
+                        {isUserAdmin && !isOwnerOfRoom && <Shield className="w-3 h-3 text-purple-400" />}
+                        {isUserMod && !isOwnerOfRoom && !isUserAdmin && <Star className="w-3 h-3 text-blue-400" />}
+                        {isSpeaker && !isOwnerOfRoom && !isUserAdmin && !isUserMod && <Mic className="w-3 h-3 text-lime-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
             {/* Chat Header */}
             <div className="flex items-center justify-between px-3 py-2 relative z-10 border-b border-slate-700/50">
               <span className="text-slate-400 text-xs font-cairo">💬 الدردشة</span>
