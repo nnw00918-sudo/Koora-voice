@@ -214,7 +214,9 @@ const ThreadsPage = ({ user }) => {
   };
 
   const handlePostThread = async () => {
-    if (!newThread.trim() && !selectedMedia && !twitterUrl) return;
+    // Read directly from input ref
+    const content = textareaRef.current?.value || '';
+    if (!content.trim() && !selectedMedia && !twitterUrl) return;
     setPosting(true);
     
     try {
@@ -237,7 +239,7 @@ const ThreadsPage = ({ user }) => {
       }
       
       await axios.post(`${API}/threads`, {
-        content: newThread,
+        content: content,
         media_url: mediaUrl,
         media_type: mediaType,
         twitter_url: twitterUrl || null
@@ -245,9 +247,9 @@ const ThreadsPage = ({ user }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Clear the contentEditable div
+      // Clear the input
       if (textareaRef.current) {
-        textareaRef.current.textContent = '';
+        textareaRef.current.value = '';
       }
       setNewThread('');
       clearMedia();
@@ -272,6 +274,32 @@ const ThreadsPage = ({ user }) => {
       toast.success(txt.deleted);
     } catch (error) {
       toast.error(isRTL ? 'فشل الحذف' : 'Failed to delete');
+    }
+  };
+
+  // Direct reply without React state - for RTL fix
+  const handleReplyDirect = async (threadId, content) => {
+    if (!content.trim()) return;
+    try {
+      await axios.post(`${API}/threads/${threadId}/reply`, {
+        content: content
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Clear the input
+      if (replyInputRef.current) {
+        replyInputRef.current.value = '';
+      }
+      setReplyingTo(null);
+      // Refresh replies
+      fetchReplies(threadId);
+      // Update thread replies count
+      setThreads(prev => prev.map(t => 
+        t.id === threadId ? { ...t, replies_count: (t.replies_count || 0) + 1 } : t
+      ));
+      toast.success(isRTL ? 'تم الرد' : 'Reply sent');
+    } catch (error) {
+      toast.error(isRTL ? 'فشل الرد' : 'Failed to reply');
     }
   };
 
@@ -525,41 +553,32 @@ const ThreadsPage = ({ user }) => {
                 <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
                   <div className="flex-1">
-                    <div
+                    <input
                       ref={replyInputRef}
-                      contentEditable
-                      dir="rtl"
-                      lang="ar"
-                      data-placeholder={txt.writeReply}
-                      onInput={(e) => {
-                        const text = e.currentTarget.textContent || '';
-                        if (text.length <= 280) {
-                          setReplyContent(text);
-                        } else {
-                          e.currentTarget.textContent = text.slice(0, 280);
-                          setReplyContent(text.slice(0, 280));
-                        }
-                      }}
+                      type="text"
+                      placeholder={txt.writeReply}
+                      dir="auto"
+                      maxLength={280}
+                      autoComplete="off"
+                      autoFocus
                       onFocus={(e) => {
                         setTimeout(() => {
                           e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }, 300);
                       }}
-                      className="w-full bg-slate-800/50 text-white font-almarai outline-none text-base p-3 rounded-xl border border-slate-700 focus:border-sky-500 transition-colors min-h-[80px] text-right empty:before:content-[attr(data-placeholder)] empty:before:text-slate-500"
-                      style={{
-                        direction: 'rtl',
-                        textAlign: 'right',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word'
-                      }}
+                      className="w-full bg-slate-800/50 text-white font-almarai outline-none text-base p-3 rounded-xl border border-slate-700 focus:border-sky-500 transition-colors"
                       data-testid="reply-textarea"
                     />
                     <div className={`flex items-center justify-between mt-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <span className="text-slate-500 text-xs">{replyContent.length}/280</span>
+                      <span className="text-slate-500 text-xs">0/280</span>
                       <button
-                        onClick={() => handleReply(thread.id)}
-                        disabled={!replyContent.trim()}
-                        className="px-5 py-2 bg-sky-500 text-white text-sm font-cairo font-bold rounded-full disabled:opacity-50 active:scale-95 transition-transform"
+                        onClick={() => {
+                          const text = replyInputRef.current?.value || '';
+                          if (text.trim()) {
+                            handleReplyDirect(thread.id, text);
+                          }
+                        }}
+                        className="px-5 py-2 bg-sky-500 text-white text-sm font-cairo font-bold rounded-full active:scale-95 transition-transform"
                         data-testid="send-reply-btn"
                       >
                         {txt.sendReply}
@@ -760,28 +779,15 @@ const ThreadsPage = ({ user }) => {
                   <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
                   <div className="flex-1">
                     {/* Textarea */}
-                    <div
+                    <input
                       ref={textareaRef}
-                      contentEditable
-                      dir="rtl"
-                      lang="ar"
-                      data-placeholder={txt.whatsNew}
-                      onInput={(e) => {
-                        const text = e.currentTarget.textContent || '';
-                        if (text.length <= 500) {
-                          setNewThread(text);
-                        } else {
-                          e.currentTarget.textContent = text.slice(0, 500);
-                          setNewThread(text.slice(0, 500));
-                        }
-                      }}
-                      className="w-full bg-transparent text-white text-xl font-almarai outline-none min-h-[120px] text-right empty:before:content-[attr(data-placeholder)] empty:before:text-slate-500"
-                      style={{
-                        direction: 'rtl',
-                        textAlign: 'right',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word'
-                      }}
+                      type="text"
+                      placeholder={txt.whatsNew}
+                      dir="auto"
+                      maxLength={500}
+                      autoComplete="off"
+                      autoFocus
+                      className="w-full bg-transparent text-white text-xl font-almarai outline-none py-4"
                     />
                     
                     {/* Media Preview */}
