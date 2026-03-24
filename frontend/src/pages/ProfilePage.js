@@ -109,15 +109,6 @@ const GlowingAvatar = ({ src, size = "large", level = 1, frameColor = "lime" }) 
           className="w-full h-full rounded-full object-cover bg-slate-800"
         />
       </div>
-      {/* Level badge */}
-      <motion.div
-        className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-lg"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.3, type: "spring" }}
-      >
-        <span className="text-xs font-bold text-slate-900">{level}</span>
-      </motion.div>
     </div>
   );
 };
@@ -492,10 +483,6 @@ const ProfilePage = ({ user, onLogout }) => {
                   )}
                 </div>
                 <p className="text-slate-400 text-sm mb-1" dir="ltr">@{userData?.username}</p>
-                <div className="flex items-center justify-center gap-1 text-xs">
-                  <Zap className="w-3 h-3 text-amber-400" />
-                  <span className="text-amber-400 font-bold">المستوى {userLevel}</span>
-                </div>
                 {userData?.bio && (
                   <p className="text-slate-300 text-sm text-center mt-3 max-w-[280px] leading-relaxed">{userData?.bio}</p>
                 )}
@@ -554,50 +541,28 @@ const ProfilePage = ({ user, onLogout }) => {
             )}
           </motion.div>
 
-          {/* Stats Section */}
+          {/* Stats Section - Only Followers/Following */}
           {!isEditing && (
             <motion.div 
-              className="grid grid-cols-4 gap-2 mb-6"
+              className="flex justify-center gap-8 mb-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <StatCard 
-                icon={Users} 
-                value={userData?.followers_count || 0} 
-                label="متابع" 
-                color="text-lime-400" 
+              <button 
                 onClick={() => navigate(`/follows/${userData?.id}?tab=followers`)}
-              />
-              <StatCard 
-                icon={Heart} 
-                value={userData?.following_count || 0} 
-                label="متابَع" 
-                color="text-rose-400" 
+                className="flex flex-col items-center bg-slate-800/50 backdrop-blur-sm rounded-xl px-6 py-3 border border-slate-700/50 hover:border-lime-500/50 transition-colors"
+              >
+                <span className="text-2xl font-bold text-lime-400">{userData?.followers_count || 0}</span>
+                <span className="text-slate-400 text-sm">متابع</span>
+              </button>
+              <button 
                 onClick={() => navigate(`/follows/${userData?.id}?tab=following`)}
-              />
-              <StatCard icon={Star} value={userData?.coins || 0} label="عملة" color="text-amber-400" />
-              <StatCard icon={Headphones} value={userData?.rooms_joined || 0} label="غرفة" color="text-cyan-400" />
-            </motion.div>
-          )}
-
-          {/* Badges Section */}
-          {!isEditing && (
-            <motion.div 
-              className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-800/50 mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <Trophy className="w-5 h-5 text-amber-400" />
-                <h3 className="text-white font-cairo font-bold">الشارات والإنجازات</h3>
-              </div>
-              <div className="grid grid-cols-6 gap-3">
-                {badges.map((badge, idx) => (
-                  <Badge key={idx} {...badge} />
-                ))}
-              </div>
+                className="flex flex-col items-center bg-slate-800/50 backdrop-blur-sm rounded-xl px-6 py-3 border border-slate-700/50 hover:border-rose-500/50 transition-colors"
+              >
+                <span className="text-2xl font-bold text-rose-400">{userData?.following_count || 0}</span>
+                <span className="text-slate-400 text-sm">يتابع</span>
+              </button>
             </motion.div>
           )}
 
