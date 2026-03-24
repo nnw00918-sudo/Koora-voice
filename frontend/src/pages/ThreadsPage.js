@@ -434,15 +434,25 @@ const ThreadsPage = ({ user }) => {
           <img 
             src={thread.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${thread.author?.username}`} 
             alt="" 
-            className="w-10 h-10 rounded-full flex-shrink-0"
+            className="w-10 h-10 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate(`/user/${thread.author?.id}`)}
           />
           
           <div className="flex-1 min-w-0">
             <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <span className="font-cairo font-bold text-white truncate">
+              <span 
+                className="font-cairo font-bold text-white truncate cursor-pointer hover:text-lime-400 transition-colors"
+                onClick={() => navigate(`/user/${thread.author?.id}`)}
+              >
                 {thread.author?.name || thread.author?.username}
               </span>
-              <span className="text-slate-500 text-sm" dir="ltr">@{thread.author?.username}</span>
+              <span 
+                className="text-slate-500 text-sm cursor-pointer hover:text-lime-400 transition-colors" 
+                dir="ltr"
+                onClick={() => navigate(`/user/${thread.author?.id}`)}
+              >
+                @{thread.author?.username}
+              </span>
               <span className="text-slate-600">·</span>
               <span className="text-slate-500 text-sm">{formatTime(thread.created_at)}</span>
               
@@ -612,12 +622,24 @@ const ThreadsPage = ({ user }) => {
                       <img 
                         src={reply.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.author?.username}`} 
                         alt="" 
-                        className="w-8 h-8 rounded-full flex-shrink-0"
+                        className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => navigate(`/user/${reply.author?.id}`)}
                       />
                       <div className="flex-1 min-w-0">
                         <div className={`flex items-center gap-2 mb-1 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <span className="font-cairo font-bold text-white text-sm">{reply.author?.name || reply.author?.username}</span>
-                          <span className="text-slate-500 text-xs" dir="ltr">@{reply.author?.username}</span>
+                          <span 
+                            className="font-cairo font-bold text-white text-sm cursor-pointer hover:text-lime-400 transition-colors"
+                            onClick={() => navigate(`/user/${reply.author?.id}`)}
+                          >
+                            {reply.author?.name || reply.author?.username}
+                          </span>
+                          <span 
+                            className="text-slate-500 text-xs cursor-pointer hover:text-lime-400 transition-colors" 
+                            dir="ltr"
+                            onClick={() => navigate(`/user/${reply.author?.id}`)}
+                          >
+                            @{reply.author?.username}
+                          </span>
                           <span className="text-slate-600 text-xs">·</span>
                           <span className="text-slate-500 text-xs">{formatTime(reply.created_at)}</span>
                         </div>

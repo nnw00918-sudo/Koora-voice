@@ -648,13 +648,19 @@ const ProfilePage = ({ user, onLogout }) => {
                               className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 cursor-pointer hover:border-rose-500/50 transition-colors active:scale-[0.98]"
                               onClick={() => navigate(`/threads/${post.id}`)}
                             >
-                              <div className="flex items-center gap-2 mb-2">
+                              <div 
+                                className="flex items-center gap-2 mb-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/user/${post.author?.id}`);
+                                }}
+                              >
                                 <img 
                                   src={post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.username}`} 
                                   alt="" 
-                                  className="w-6 h-6 rounded-full"
+                                  className="w-6 h-6 rounded-full hover:opacity-80 transition-opacity"
                                 />
-                                <span className="text-lime-400 text-xs font-bold">@{post.author?.username}</span>
+                                <span className="text-lime-400 text-xs font-bold hover:text-lime-300 transition-colors">@{post.author?.username}</span>
                               </div>
                               <p className="text-white text-sm text-right leading-relaxed line-clamp-2">{post.content}</p>
                             </div>
