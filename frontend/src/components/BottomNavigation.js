@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { 
   Home, 
   MessageSquare, 
-  User, 
   Mail, 
   Settings 
 } from 'lucide-react';
@@ -16,7 +15,6 @@ const BottomNavigation = ({ isRTL = true }) => {
   const navItems = [
     { id: 'home', icon: Home, label: 'الرئيسية', labelEn: 'Home', path: '/dashboard' },
     { id: 'threads', icon: MessageSquare, label: 'المنشورات', labelEn: 'Threads', path: '/threads' },
-    { id: 'profile', icon: User, label: 'الملف الشخصي', labelEn: 'Profile', path: '/profile' },
     { id: 'messages', icon: Mail, label: 'الرسائل', labelEn: 'Messages', path: '/messages' },
     { id: 'settings', icon: Settings, label: 'الإعدادات', labelEn: 'Settings', path: '/settings' },
   ];
