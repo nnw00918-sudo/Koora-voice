@@ -44,7 +44,14 @@ import {
   Shield,
   Users,
   Check,
-  Square
+  Square,
+  Trash2,
+  Lock,
+  Unlock,
+  Circle,
+  StopCircle,
+  Youtube,
+  BarChart3
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
