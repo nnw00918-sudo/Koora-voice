@@ -36,12 +36,18 @@
 - ✅ قصص مع ردود وتفاعلات
 - ✅ Feed اجتماعي (Threads)
 
-### 5. إشعارات Push (PWA) - **محدّث 29 ديسمبر 2025**
+### 5. إشعارات Push (PWA) - **محدّث 24 مارس 2026**
 - ✅ Service Worker (`/public/sw-push.js`)
 - ✅ VAPID Keys للـ Web Push
 - ✅ Backend routes (`/routes/push.py`)
 - ✅ Frontend Hook (`/hooks/usePushNotifications.js`)
 - ✅ تكامل مع صفحة الإعدادات
+- ✅ **Push Notifications مُفعّلة للأحداث التالية**:
+  - 💬 الردود على المنشورات
+  - 📢 @Mentions (الإشارات)
+  - ❤️ الإعجابات
+  - 👤 المتابعين الجدد
+  - ✉️ الرسائل الخاصة
 
 ---
 

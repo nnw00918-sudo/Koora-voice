@@ -3002,6 +3002,21 @@ async def create_thread(
         {"$inc": {"xp": 5}}
     )
     
+    # Check for @mentions and create notifications
+    if thread_data.content:
+        import re
+        mentions = re.findall(r'@(\w+)', thread_data.content)
+        for username in set(mentions):  # Use set to avoid duplicate notifications
+            mentioned_user = await db.users.find_one({"username": username})
+            if mentioned_user and mentioned_user["id"] != user_id:
+                await create_notification(
+                    user_id=mentioned_user["id"],
+                    notif_type="mention",
+                    from_user_id=user_id,
+                    thread_id=thread_id,
+                    message=thread_data.content.strip()[:50]
+                )
+    
     return {"message": "Thread created", "thread_id": thread_id}
 
 @api_router.post("/threads/{thread_id}/like")
@@ -3113,6 +3128,21 @@ async def reply_to_thread(
             thread_id=thread_id,
             message=reply_data.content.strip()[:50]
         )
+    
+    # Check for @mentions in reply and create notifications
+    import re
+    mentions = re.findall(r'@(\w+)', reply_data.content)
+    for username in set(mentions):
+        mentioned_user = await db.users.find_one({"username": username})
+        # Don't notify if mentioning yourself or the thread author (already notified)
+        if mentioned_user and mentioned_user["id"] != user_id and mentioned_user["id"] != thread["author_id"]:
+            await create_notification(
+                user_id=mentioned_user["id"],
+                notif_type="mention",
+                from_user_id=user_id,
+                thread_id=thread_id,
+                message=reply_data.content.strip()[:50]
+            )
     
     return {"message": "Reply added", "reply_id": reply_id}
 
@@ -3765,7 +3795,7 @@ async def mark_messages_read(
 
 # Helper function to create notification
 async def create_notification(user_id: str, notif_type: str, from_user_id: str, thread_id: str = None, message: str = None):
-    """Create a notification and send via WebSocket if user is online"""
+    """Create a notification and send via WebSocket + Push if user is online"""
     from_user = await db.users.find_one({"id": from_user_id})
     if not from_user:
         return
@@ -3801,6 +3831,45 @@ async def create_notification(user_id: str, notif_type: str, from_user_id: str, 
             "created_at": notification["created_at"]
         }
     }, user_id)
+    
+    # Send Push Notification
+    try:
+        from routes.push import send_push_notification
+        
+        from_name = from_user.get("name", from_user["username"])
+        
+        # Build notification title and body based on type
+        if notif_type == "reply":
+            title = f"💬 رد جديد من {from_name}"
+            body = message[:80] if message else "رد على منشورك"
+            url = f"/threads/{thread_id}" if thread_id else "/"
+        elif notif_type == "mention":
+            title = f"📢 {from_name} أشار إليك"
+            body = message[:80] if message else "تمت الإشارة إليك في منشور"
+            url = f"/threads/{thread_id}" if thread_id else "/"
+        elif notif_type == "like":
+            title = f"❤️ {from_name} أعجب بمنشورك"
+            body = message[:80] if message else "أعجب بمنشورك"
+            url = f"/threads/{thread_id}" if thread_id else "/"
+        elif notif_type == "follow":
+            title = f"👤 متابع جديد"
+            body = f"{from_name} بدأ متابعتك"
+            url = f"/profile/{from_user['id']}"
+        elif notif_type == "message":
+            title = f"✉️ رسالة من {from_name}"
+            body = message[:80] if message else "رسالة جديدة"
+            url = "/messages"
+        else:
+            title = "🔔 إشعار جديد"
+            body = message[:80] if message else "لديك إشعار جديد"
+            url = "/"
+        
+        # Fire and forget - don't await to avoid blocking
+        import asyncio
+        asyncio.create_task(send_push_notification(user_id, title, body, url))
+        
+    except Exception as e:
+        print(f"Push notification trigger error: {e}")
 
 # Mount static files for avatars
 app.mount("/api/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
