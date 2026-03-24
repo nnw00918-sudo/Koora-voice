@@ -480,6 +480,36 @@ async def update_profile(profile_data: ProfileUpdate, current_user: User = Depen
     
     return {"message": "تم تحديث الملف الشخصي", "user": updated_user}
 
+# Password change model
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+@api_router.put("/auth/password")
+async def change_password(password_data: PasswordChange, current_user: User = Depends(get_current_user)):
+    """Change user password"""
+    # Get user with password
+    user = await db.users.find_one({"id": current_user.id})
+    if not user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    # Verify current password
+    if not verify_password(password_data.current_password, user["password"]):
+        raise HTTPException(status_code=400, detail="كلمة المرور الحالية غير صحيحة")
+    
+    # Validate new password
+    if len(password_data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل")
+    
+    # Hash and save new password
+    new_hashed_password = get_password_hash(password_data.new_password)
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": {"password": new_hashed_password}}
+    )
+    
+    return {"message": "تم تغيير كلمة المرور بنجاح"}
+
 # ==================== FOLLOW SYSTEM ====================
 
 @api_router.post("/users/{user_id}/follow")
