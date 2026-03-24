@@ -1230,8 +1230,36 @@ async def approve_seat_request(room_id: str, user_id: str, current_user: User = 
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    if not can_manage_stage(current_user.role, current_user.id, room.get("owner_id")):
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Get current user's room role
+    current_user_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
+    is_room_mod = current_user_room_role and current_user_room_role.get("role") == "mod"
+    
+    if not is_room_owner and not is_room_admin and not is_room_mod and not is_system_owner:
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
+    
+    # Get target user's room role
+    target_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    target_role = target_room_role.get("role", "member") if target_room_role else "member"
+    
+    # Admin can only approve members (not other admins or mods)
+    if is_room_admin and not is_room_owner and not is_system_owner:
+        if target_role in ["admin", "mod"]:
+            raise HTTPException(status_code=403, detail="الأدمن يمكنه فقط إصعاد الأعضاء العاديين للمنصة")
+    
+    # Mod can only approve members
+    if is_room_mod and not is_room_owner and not is_system_owner:
+        if target_role != "member":
+            raise HTTPException(status_code=403, detail="المود يمكنه فقط إصعاد الأعضاء العاديين للمنصة")
     
     request = await db.seat_requests.find_one({
         "room_id": room_id,
@@ -1298,8 +1326,34 @@ async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user:
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    if not can_kick_mute(current_user.role, current_user.id, room.get("owner_id")):
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Get current user's room role
+    current_user_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
+    
+    if not is_room_owner and not is_room_admin and not is_system_owner:
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
+    
+    # Get target user's room role
+    target_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    target_role = target_room_role.get("role", "member") if target_room_role else "member"
+    
+    # Check if target is owner
+    if room.get("owner_id") == user_id:
+        raise HTTPException(status_code=403, detail="لا يمكن طرد مالك الغرفة")
+    
+    # Admin cannot kick another admin - only owner can
+    if is_room_admin and not is_room_owner and not is_system_owner:
+        if target_role == "admin":
+            raise HTTPException(status_code=403, detail="الأدمن لا يمكنه طرد أدمن آخر")
     
     result = await db.room_participants.delete_one({
         "room_id": room_id,
@@ -1363,8 +1417,34 @@ async def remove_from_stage(room_id: str, user_id: str, current_user: User = Dep
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    if not can_kick_mute(current_user.role, current_user.id, room.get("owner_id")):
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Get current user's room role
+    current_user_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
+    
+    if not is_room_owner and not is_room_admin and not is_system_owner:
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
+    
+    # Get target user's room role
+    target_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    target_role = target_room_role.get("role", "member") if target_room_role else "member"
+    
+    # Check if target is owner
+    if room.get("owner_id") == user_id:
+        raise HTTPException(status_code=403, detail="لا يمكن إنزال مالك الغرفة من المنصة")
+    
+    # Admin cannot remove another admin from stage - only owner can
+    if is_room_admin and not is_room_owner and not is_system_owner:
+        if target_role == "admin":
+            raise HTTPException(status_code=403, detail="الأدمن لا يمكنه إنزال أدمن آخر من المنصة")
     
     participant = await db.room_participants.find_one({
         "room_id": room_id,
@@ -1465,6 +1545,7 @@ async def update_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate
     
     # Check permissions - only room owner or admin can change roles
     is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
     
     # Get current user's room role
     current_user_room_role = await db.room_roles.find_one({
@@ -1474,20 +1555,36 @@ async def update_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate
     
     is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
     
-    if not is_room_owner and not is_room_admin and current_user.role != "owner":
+    if not is_room_owner and not is_room_admin and not is_system_owner:
         raise HTTPException(status_code=403, detail="فقط مالك الغرفة أو الأدمن يمكنه تغيير الرتب")
     
     # Validate role
     if data.role not in ["admin", "mod", "member"]:
         raise HTTPException(status_code=400, detail="رتبة غير صحيحة. الخيارات: admin, mod, member")
     
-    # Admin can only promote to mod (not admin)
-    if is_room_admin and not is_room_owner and data.role == "admin":
-        raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه ترقية لأدمن")
-    
     # Cannot change owner's role
     if room.get("owner_id") == user_id:
         raise HTTPException(status_code=403, detail="لا يمكن تغيير رتبة مالك الغرفة")
+    
+    # Get target user's current role
+    target_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    target_current_role = target_room_role.get("role", "member") if target_room_role else "member"
+    
+    # Admin restrictions (if not owner)
+    if is_room_admin and not is_room_owner and not is_system_owner:
+        # Admin cannot promote to admin - only owner can
+        if data.role == "admin":
+            raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه ترقية لأدمن")
+        
+        # Admin cannot change another admin's role
+        if target_current_role == "admin":
+            raise HTTPException(status_code=403, detail="الأدمن لا يمكنه تغيير رتبة أدمن آخر")
+        
+        # Admin can only promote members (not mods) - mods can only be demoted by owner
+        # Actually, let admin promote member to mod and demote mod to member
     
     # Upsert room role
     await db.room_roles.update_one(
