@@ -584,3 +584,23 @@ input[type="range"].volume-slider::-moz-range-thumb {
 input[type="range"].volume-slider.stream-volume::-moz-range-thumb {
   background: #0ea5e9;
 }
+
+/* Fix mobile keyboard issues */
+html, body, #root {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* Prevent iOS bounce scroll */
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Input font size 16px prevents iOS zoom */
+input, textarea {
+  font-size: 16px !important;
+}

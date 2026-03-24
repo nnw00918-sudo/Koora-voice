@@ -364,7 +364,14 @@ export default function MessagesPage() {
 
   // ============ CHAT VIEW ============
   const ChatView = () => (
-    <div className="flex flex-col h-full bg-[#0e1621]">
+    <div 
+      className="flex flex-col bg-[#0e1621]"
+      style={{ 
+        height: '100%',
+        height: '100dvh',
+        maxHeight: '-webkit-fill-available'
+      }}
+    >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-[#17212b] border-b border-[#232e3c]">
         <button
@@ -402,8 +409,12 @@ export default function MessagesPage() {
       {/* Messages */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-2"
-        style={{ overscrollBehavior: 'contain' }}
+        className="flex-1 overflow-y-auto px-4 py-2 relative"
+        style={{ 
+          overscrollBehavior: 'none',
+          WebkitOverflowScrolling: 'touch',
+          minHeight: 0
+        }}
       >
         <ChatBackground />
         
@@ -452,9 +463,16 @@ export default function MessagesPage() {
       </div>
 
       {/* Input Area - Telegram Style */}
-      <div className="bg-[#17212b] border-t border-[#232e3c] px-3 py-2">
+      <div 
+        className="bg-[#17212b] border-t border-[#232e3c] px-3 py-2 safe-area-bottom"
+        style={{ 
+          position: 'sticky',
+          bottom: 0,
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
+        }}
+      >
         <div className="flex items-center gap-2">
-          <button className="p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors">
+          <button className="p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0">
             <Smile className="w-6 h-6" />
           </button>
           
@@ -470,24 +488,29 @@ export default function MessagesPage() {
               }
             }}
             placeholder={txt.typeMessage}
-            className="flex-1 bg-transparent text-white text-[16px] py-2 outline-none text-right placeholder-[#6c7883]"
+            className="flex-1 bg-transparent text-white py-2 outline-none text-right placeholder-[#6c7883]"
+            style={{ fontSize: '16px', minHeight: '24px' }}
             dir="rtl"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
           />
           
           {newMessage.trim() ? (
             <button
               onClick={sendMessage}
               disabled={sending}
-              className="p-2 text-[#6ab2f2] hover:bg-[#232e3c] rounded-full transition-colors disabled:opacity-50"
+              className="p-2 text-[#6ab2f2] hover:bg-[#232e3c] rounded-full transition-colors disabled:opacity-50 flex-shrink-0"
             >
               <Send className="w-6 h-6" />
             </button>
           ) : (
             <>
-              <button className="p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors">
+              <button className="p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0">
                 <Image className="w-6 h-6" />
               </button>
-              <button className="p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors">
+              <button className="p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0">
                 <Mic className="w-6 h-6" />
               </button>
             </>
