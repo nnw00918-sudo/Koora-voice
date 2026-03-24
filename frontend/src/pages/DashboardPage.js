@@ -44,7 +44,7 @@ const DashboardPage = ({ user, onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('main');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [membershipStatus, setMembershipStatus] = useState({});
@@ -118,8 +118,10 @@ const DashboardPage = ({ user, onLogout }) => {
     // Filter by room type
     if (statusFilter === 'diwaniya') {
       result = result.filter(room => room.room_type === 'diwaniya');
+    } else if (statusFilter === 'main') {
+      // 'main' shows only non-diwaniya rooms
+      result = result.filter(room => room.room_type !== 'diwaniya');
     }
-    // 'all' shows everything - no filter needed
     
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
@@ -436,16 +438,18 @@ const DashboardPage = ({ user, onLogout }) => {
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => setStatusFilter('all')}
+              onClick={() => setStatusFilter('main')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
-                statusFilter === 'all'
+                statusFilter === 'main'
                   ? 'bg-sky-500/90 text-white shadow-[0_0_15px_rgba(14,165,233,0.4)]'
                   : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 border border-slate-700/50'
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              {isRTL ? 'الكل' : 'All'}
-              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{rooms.length}</span>
+              {isRTL ? 'الأساسي' : 'Main'}
+              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                {rooms.filter(r => r.room_type !== 'diwaniya').length}
+              </span>
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.03 }}
@@ -486,7 +490,7 @@ const DashboardPage = ({ user, onLogout }) => {
               <p className="text-slate-500 font-almarai text-lg mb-2">
                 {statusFilter === 'diwaniya' 
                   ? (isRTL ? 'لا توجد دوانيه الآن' : 'No diwaniya rooms right now')
-                  : (isRTL ? 'لا توجد غرف متاحة' : 'No rooms available')
+                  : (isRTL ? 'لا توجد غرف أساسية' : 'No main rooms available')
                 }
               </p>
               <p className="text-slate-600 font-almarai text-sm mb-6">
