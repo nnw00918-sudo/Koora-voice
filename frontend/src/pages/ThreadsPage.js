@@ -245,6 +245,10 @@ const ThreadsPage = ({ user }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      // Clear the contentEditable div
+      if (textareaRef.current) {
+        textareaRef.current.textContent = '';
+      }
       setNewThread('');
       clearMedia();
       setShowComposer(false);
@@ -279,6 +283,10 @@ const ThreadsPage = ({ user }) => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      // Clear the contentEditable div
+      if (replyInputRef.current) {
+        replyInputRef.current.textContent = '';
+      }
       setReplyContent('');
       setReplyingTo(null);
       // Refresh replies
@@ -517,28 +525,32 @@ const ThreadsPage = ({ user }) => {
                 <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
                   <div className="flex-1">
-                    <textarea
+                    <div
                       ref={replyInputRef}
-                      value={replyContent}
-                      onChange={(e) => setReplyContent(e.target.value)}
-                      placeholder={txt.writeReply}
+                      contentEditable
                       dir="rtl"
                       lang="ar"
-                      style={{
-                        direction: 'rtl',
-                        unicodeBidi: 'plaintext',
-                        textAlign: 'right',
-                        writingMode: 'horizontal-tb'
+                      data-placeholder={txt.writeReply}
+                      onInput={(e) => {
+                        const text = e.currentTarget.textContent || '';
+                        if (text.length <= 280) {
+                          setReplyContent(text);
+                        } else {
+                          e.currentTarget.textContent = text.slice(0, 280);
+                          setReplyContent(text.slice(0, 280));
+                        }
                       }}
-                      className="w-full bg-slate-800/50 text-white font-almarai outline-none resize-none text-base p-3 rounded-xl border border-slate-700 focus:border-sky-500 transition-colors"
-                      rows={3}
-                      maxLength={280}
-                      autoComplete="off"
-                      autoFocus
                       onFocus={(e) => {
                         setTimeout(() => {
                           e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }, 300);
+                      }}
+                      className="w-full bg-slate-800/50 text-white font-almarai outline-none text-base p-3 rounded-xl border border-slate-700 focus:border-sky-500 transition-colors min-h-[80px] text-right empty:before:content-[attr(data-placeholder)] empty:before:text-slate-500"
+                      style={{
+                        direction: 'rtl',
+                        textAlign: 'right',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
                       }}
                       data-testid="reply-textarea"
                     />
@@ -748,22 +760,28 @@ const ThreadsPage = ({ user }) => {
                   <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
                   <div className="flex-1">
                     {/* Textarea */}
-                    <textarea
+                    <div
                       ref={textareaRef}
-                      value={newThread}
-                      onChange={(e) => setNewThread(e.target.value)}
-                      placeholder={txt.whatsNew}
+                      contentEditable
                       dir="rtl"
                       lang="ar"
+                      data-placeholder={txt.whatsNew}
+                      onInput={(e) => {
+                        const text = e.currentTarget.textContent || '';
+                        if (text.length <= 500) {
+                          setNewThread(text);
+                        } else {
+                          e.currentTarget.textContent = text.slice(0, 500);
+                          setNewThread(text.slice(0, 500));
+                        }
+                      }}
+                      className="w-full bg-transparent text-white text-xl font-almarai outline-none min-h-[120px] text-right empty:before:content-[attr(data-placeholder)] empty:before:text-slate-500"
                       style={{
                         direction: 'rtl',
-                        unicodeBidi: 'plaintext',
                         textAlign: 'right',
-                        writingMode: 'horizontal-tb'
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
                       }}
-                      className="w-full bg-transparent text-white text-xl font-almarai outline-none resize-none min-h-[120px] placeholder-slate-600 touch-action-auto"
-                      autoFocus
-                      autoComplete="off"
                     />
                     
                     {/* Media Preview */}
