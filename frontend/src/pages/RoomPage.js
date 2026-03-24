@@ -107,9 +107,7 @@ const YallaLiveRoom = ({ user }) => {
   const { 
     minimizePlayer, 
     disconnectFromRoom: globalDisconnect,
-    setCurrentRoom,
-    currentRoom,
-    isMinimized
+    setCurrentRoom
   } = useRoomAudio();
   
   const [room, setRoom] = useState(null);
@@ -245,23 +243,13 @@ const YallaLiveRoom = ({ user }) => {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    const initRoom = async () => {
-      // If there's a minimized room that's different from current room, disconnect it first
-      if (isMinimized && currentRoom && currentRoom.id !== roomId) {
-        console.log('Disconnecting from minimized room:', currentRoom.id);
-        await globalDisconnect();
-      }
-      
-      fetchCurrentUserRole();
-      initializeAgora();
-      joinRoom();
-      fetchRoomData();
-      startPolling();
-      startHeartbeat();
-      fetchStreamStatus();
-    };
-    
-    initRoom();
+    fetchCurrentUserRole();
+    initializeAgora();
+    joinRoom();
+    fetchRoomData();
+    startPolling();
+    startHeartbeat();
+    fetchStreamStatus();
 
     // Poll stream status every 10 seconds
     const streamPoll = setInterval(fetchStreamStatus, 10000);
@@ -398,6 +386,16 @@ const YallaLiveRoom = ({ user }) => {
 
   const initializeAgora = async () => {
     try {
+      // Clean up any existing connection first
+      if (agoraClient.current) {
+        try {
+          await agoraClient.current.leave();
+        } catch (e) {
+          // Ignore leave errors
+        }
+        agoraClient.current = null;
+      }
+      
       agoraClient.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       
       agoraClient.current.on('user-published', async (remoteUser, mediaType) => {
