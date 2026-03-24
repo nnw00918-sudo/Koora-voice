@@ -30,7 +30,8 @@ import {
   Crown,
   Play,
   Zap,
-  Mail
+  Mail,
+  Star
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
