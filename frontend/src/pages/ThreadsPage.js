@@ -428,13 +428,13 @@ const ThreadsPage = ({ user }) => {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border-b border-slate-800 p-4 relative"
+        className="border-b border-[#1A1A1A] p-4 relative hover:bg-[#0F0F0F] transition-colors"
       >
         <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <img 
             src={thread.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${thread.author?.username}`} 
             alt="" 
-            className="w-10 h-10 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+            className="w-11 h-11 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ring-2 ring-transparent hover:ring-[#CCFF00]/30"
             onClick={() => navigate(`/user/${thread.author?.id}`)}
           />
           
@@ -507,7 +507,7 @@ const ThreadsPage = ({ user }) => {
               <TwitterEmbed url={thread.twitter_url} />
             )}
             
-            <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className={`flex items-center gap-6 mt-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <button 
                 onClick={() => {
                   const newReplyingTo = replyingTo === thread.id ? null : thread.id;
@@ -525,24 +525,24 @@ const ThreadsPage = ({ user }) => {
                     }, 100);
                   }
                 }}
-                className={`flex items-center gap-1 transition-colors ${replyingTo === thread.id ? 'text-sky-400' : 'text-slate-500 hover:text-sky-400'}`}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-full transition-all active:scale-95 ${replyingTo === thread.id ? 'text-[#007AFF] bg-[#007AFF]/10' : 'text-[#A3A3A3] hover:text-[#007AFF] hover:bg-[#007AFF]/10'}`}
               >
                 <MessageCircle className="w-4 h-4" />
-                <span className="text-xs">{thread.replies_count || 0}</span>
+                <span className="text-xs font-medium">{thread.replies_count || 0}</span>
               </button>
               <button 
                 onClick={() => handleRepost(thread.id)}
-                className={`flex items-center gap-1 transition-colors ${thread.reposted ? 'text-green-500' : 'text-slate-500 hover:text-green-400'}`}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-full transition-all active:scale-95 ${thread.reposted ? 'text-[#CCFF00] bg-[#CCFF00]/10' : 'text-[#A3A3A3] hover:text-[#CCFF00] hover:bg-[#CCFF00]/10'}`}
               >
                 <Repeat2 className="w-4 h-4" />
-                <span className="text-xs">{thread.reposts_count || 0}</span>
+                <span className="text-xs font-medium">{thread.reposts_count || 0}</span>
               </button>
               <button 
                 onClick={() => handleLike(thread.id)}
-                className={`flex items-center gap-1 transition-colors ${thread.liked ? 'text-red-500' : 'text-slate-500 hover:text-red-400'}`}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-full transition-all active:scale-95 ${thread.liked ? 'text-[#FF3B30] bg-[#FF3B30]/10' : 'text-[#A3A3A3] hover:text-[#FF3B30] hover:bg-[#FF3B30]/10'}`}
               >
                 <Heart className={`w-4 h-4 ${thread.liked ? 'fill-current' : ''}`} />
-                <span className="text-xs">{thread.likes_count || 0}</span>
+                <span className="text-xs font-medium">{thread.likes_count || 0}</span>
               </button>
               <button className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors">
                 <Share2 className="w-4 h-4" />
@@ -694,27 +694,27 @@ const ThreadsPage = ({ user }) => {
         <Stories user={user} />
           
         {/* Tabs */}
-        <div className="flex border-b border-slate-800">
+        <div className="flex border-b border-[#1A1A1A]">
           <button
             onClick={() => setActiveTab('forYou')}
             className={`flex-1 py-3 text-center font-cairo font-medium transition-colors relative ${
-              activeTab === 'forYou' ? 'text-white' : 'text-slate-500'
+              activeTab === 'forYou' ? 'text-white' : 'text-[#A3A3A3]'
             }`}
           >
             {txt.forYou}
             {activeTab === 'forYou' && (
-              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-sky-500 rounded-full" />
+              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#CCFF00] rounded-full shadow-[0_0_10px_rgba(204,255,0,0.5)]" />
             )}
           </button>
           <button
             onClick={() => setActiveTab('following')}
             className={`flex-1 py-3 text-center font-cairo font-medium transition-colors relative ${
-              activeTab === 'following' ? 'text-white' : 'text-slate-500'
+              activeTab === 'following' ? 'text-white' : 'text-[#A3A3A3]'
             }`}
           >
             {txt.following}
             {activeTab === 'following' && (
-              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-sky-500 rounded-full" />
+              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#CCFF00] rounded-full shadow-[0_0_10px_rgba(204,255,0,0.5)]" />
             )}
           </button>
         </div>
@@ -722,21 +722,21 @@ const ThreadsPage = ({ user }) => {
         {/* Composer Button */}
         <button
           onClick={() => setShowComposer(true)}
-          className={`w-full p-4 border-b border-slate-800 flex items-center gap-3 hover:bg-slate-900/50 transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+          className={`w-full p-4 border-b border-[#1A1A1A] flex items-center gap-3 hover:bg-[#141414] transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
         >
-          <img src={user.avatar} alt="" className="w-10 h-10 rounded-full" />
-          <span className="text-slate-500 font-almarai">{txt.startThread}</span>
+          <img src={user.avatar} alt="" className="w-11 h-11 rounded-full ring-2 ring-[#262626]" />
+          <span className="text-[#A3A3A3] font-almarai">{txt.startThread}</span>
         </button>
 
         {/* Threads List */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#CCFF00] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : threads.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4">
-            <div className="w-20 h-20 rounded-full bg-slate-900 flex items-center justify-center mb-4">
-              <MessageSquare className="w-10 h-10 text-slate-700" />
+            <div className="w-20 h-20 rounded-full bg-[#141414] flex items-center justify-center mb-4">
+              <MessageSquare className="w-10 h-10 text-[#262626]" />
             </div>
             <h3 className="text-white font-cairo font-bold text-lg mb-2">{txt.noThreads}</h3>
             <p className="text-slate-500 font-almarai text-center">{txt.beFirst}</p>
