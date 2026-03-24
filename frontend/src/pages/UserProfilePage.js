@@ -399,7 +399,7 @@ const UserProfilePage = ({ currentUser }) => {
                     <div 
                       key={thread.id} 
                       className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
-                      onClick={() => navigate(`/threads/${thread.id}`)}
+                      onClick={() => navigate('/threads')}
                     >
                       <p className={`text-white font-almarai text-sm leading-relaxed line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                         {thread.content}
@@ -434,7 +434,7 @@ const UserProfilePage = ({ currentUser }) => {
                     <div 
                       key={thread.id} 
                       className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
-                      onClick={() => navigate(`/threads/${thread.id}`)}
+                      onClick={() => navigate('/threads')}
                     >
                       <div 
                         className={`flex items-center gap-2 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}
@@ -472,7 +472,7 @@ const UserProfilePage = ({ currentUser }) => {
                     <div 
                       key={thread.id} 
                       className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
-                      onClick={() => navigate(`/threads/${thread.id}`)}
+                      onClick={() => navigate('/threads')}
                     >
                       <div className={`flex items-center gap-2 mb-2 text-emerald-400 text-xs ${isRTL ? 'flex-row-reverse' : ''}`}>
                         <Repeat2 className="w-3 h-3" />
@@ -500,7 +500,7 @@ const UserProfilePage = ({ currentUser }) => {
                     <div 
                       key={reply.id} 
                       className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
-                      onClick={() => navigate(`/threads/${reply.parent_thread_id}`)}
+                      onClick={() => navigate('/threads')}
                     >
                       <div className={`flex items-center gap-2 mb-2 text-cyan-400 text-xs ${isRTL ? 'flex-row-reverse' : ''}`}>
                         <MessageCircle className="w-3 h-3" />
