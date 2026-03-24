@@ -1,118 +1,109 @@
 {
-  "theme": "dark",
-  "direction": "rtl",
-  "colors": {
-    "background": "#0A0A0A",
-    "surface": "#141414",
-    "primary": "#CCFF00",
-    "primary_foreground": "#000000",
-    "secondary": "#1A1A1A",
-    "secondary_foreground": "#FFFFFF",
-    "muted": "#262626",
-    "muted_foreground": "#A3A3A3",
-    "border": "#262626",
-    "accent_red": "#FF3B30",
-    "accent_blue": "#007AFF"
-  },
+  "theme": "PERFORMANCE PRO (Football Edition)",
   "typography": {
-    "fonts": "Cairo (Headings), Almarai (Body)",
-    "import_url": "https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Cairo:wght@400;600;700;900&display=swap",
-    "headings": {
-      "family": "'Cairo', sans-serif",
-      "weight": "900",
-      "style": "tracking-tight"
-    },
-    "body": {
-      "family": "'Almarai', sans-serif",
-      "weight": "400",
-      "style": "leading-relaxed"
-    }
+    "headings": "Cairo, sans-serif",
+    "body": "Almarai, sans-serif",
+    "strategy": "High-contrast geometric sans for Arabic, prioritizing legibility and sporty tension. Numbers in stats use heavy weights (800/900) with tight tracking."
+  },
+  "colors": {
+    "archetype": "PERFORMANCE PRO",
+    "primary": "var(--theme-primary)",
+    "background": "var(--theme-background)",
+    "surface": "var(--theme-surface)",
+    "muted": "var(--theme-muted-foreground)",
+    "strategy": "Deep dark background (#0A0A0A) punctuated by electric lime/emerald accents to evoke the energy of a floodlit football pitch at night. Light mode uses clean white with deep emerald."
   },
   "visual_enhancers": {
-    "glassmorphism": "bg-black/70 backdrop-blur-xl border-t border-white/10",
-    "borders": "Use 1px solid border-border/50 for dividers. Avoid heavy card borders.",
-    "shadows": "Replace soft drop shadows with 'Tactical Minimalism' - 1px solid strokes or selective inner glow shadow-[0_0_15px_rgba(204,255,0,0.15)] for active states.",
-    "radii": "rounded-2xl for main containers, rounded-full for avatars and primary buttons."
+    "glowing_avatar": "A vibrant, pulsating ring using framer-motion around the avatar. The ring's color is customizable by the user (simulating team colors). It uses a heavy blur for an outer glow and a crisp 2px inner solid border.",
+    "glassmorphism": "Used for floating action buttons or sticky tab headers. Heavy backdrop blur (backdrop-blur-xl) with a delicate 1px border (border-white/10).",
+    "neumorphism": "Not used to avoid muddiness; strictly sharp, high-contrast borders and glows.",
+    "animated_background": "The cover photo area has a subtle, slow pan/zoom animation using Framer Motion to keep the page feeling alive, overlaid with a subtle dark gradient."
   },
-  "layouts": {
-    "mobile_first": true,
-    "navigation": "Fixed Bottom Navigation Bar using glassmorphism. Top header should be minimal.",
-    "feed": "Cardless list layout with border-b dividers, gap-4.",
-    "dashboard_grid": "High Density Bento Grid (gap-4). Full width for hero rooms, half width for smaller blocks.",
-    "stories": "Horizontal scrolling row at the top. Avatar circles with 2px solid primary border and 2px offset (ring-offset-background)."
-  },
-  "components": {
-    "voice_room_card": "Dark surface card. Avatar stack for listeners. Active speaker indicator: Lime green pulse ring.",
-    "thread_post": "RTL aligned: Avatar on the right, content on the left. Minimalist action icons (Like, Retweet, Reply) at the bottom.",
-    "avatar": "Circular images. If active story or speaking, wrap in border-primary.",
-    "bottom_nav": "5 evenly spaced icons (Home, Rooms, Add Post, Messages, Profile). Active icon gets primary color.",
-    "messages_list": "List item with avatar (right), name and last message snippet. Unread indicator: Lime green dot (w-3 h-3 rounded-full).",
-    "notifications": "Icon/Avatar (right), notification text (left). Highlight new notifications with a subtle surface background tint."
+  "grids_and_layouts": {
+    "strategy": "Mobile-first responsive. RTL aligned (dir='rtl'). High density Bento grid for stats to mimic a tactical dashboard.",
+    "stats_bento": "grid grid-cols-2 md:grid-cols-4 gap-3 or gap-4. Items are strictly rectangular with minimal border radius (rounded-xl) for a 'sports stat card' feel.",
+    "profile_header": "Stacked layout. Cover image full width (h-48 to h-64). Avatar positioned absolute (-bottom-12 right-6 for RTL). Name and bio below with sufficient padding-top to clear the avatar."
   },
   "motion": {
-    "active_speaker": "animate-pulse with glowing drop-shadow for active voice participants.",
-    "interactions": "Hover and active states must trigger subtle scale (active:scale-95) and background tint changes.",
-    "page_transitions": "Slide in from left/right depending on navigation direction (if using framer-motion)."
+    "avatar_glow": "Pulse and slow rotation of a conical gradient border or box-shadow to simulate an energetic glow.",
+    "tabs": "Framer motion shared layout animation for the active tab indicator (a bold primary colored underline or pill).",
+    "content_list": "Staggered fade up (y: 20, opacity: 0 -> 1) for feed items to make scrolling feel energetic."
   },
   "accessibility": {
-    "contrast": "Black text on Lime Green primary elements guarantees WCAG AAA. White text on dark surfaces.",
-    "rtl_alignment": "Text must align right. Use flex-row-reverse or dir='rtl' wrapper. Ensure icons point the correct way (e.g., back arrow points right).",
-    "testing_attributes": "All interactive elements MUST include data-testid in kebab-case."
+    "contrast": "Ensure muted text against background meets 4.5:1. Primary text on primary bg must be dark (black) for legibility.",
+    "rtl": "Always use logical CSS properties where possible (ps, pe, ms, me, text-start) and ensure Framer motion animations account for RTL (e.g., flip x-axis translations or rely on y-axis/opacity).",
+    "aria": "Include data-testid on all interactive elements. Use aria-selected for tabs."
+  },
+  "components": {
+    "ProfilePage": {
+      "path": "/app/frontend/src/pages/ProfilePage.js",
+      "description": "Main page container, handling edit mode state, fetching user data, and managing layout."
+    },
+    "ProfileHeader": {
+      "path": "/app/frontend/src/components/profile/ProfileHeader.js",
+      "description": "Contains the animated cover background, glowing avatar, user info (name, handle, bio), and action buttons (Edit Profile, Settings)."
+    },
+    "GlowingAvatar": {
+      "path": "/app/frontend/src/components/profile/GlowingAvatar.js",
+      "description": "Avatar with a customizable, animated glowing border using Framer Motion."
+    },
+    "StatCard": {
+      "path": "/app/frontend/src/components/profile/StatCard.js",
+      "description": "A bento-style card for displaying a single stat (Followers, Following, Coins, Hours). Uses high-contrast typography."
+    },
+    "ProfileTabs": {
+      "path": "/app/frontend/src/components/profile/ProfileTabs.js",
+      "description": "Custom tab navigation for Posts, Likes, Reposts, Replies with Framer Motion active indicator."
+    },
+    "BadgesList": {
+      "path": "/app/frontend/src/components/profile/BadgesList.js",
+      "description": "Horizontal scrolling list of user badges."
+    }
   },
   "media": {
-    "strategy": "High contrast, energetic sports imagery. Dark overlays on cover photos to ensure text readability.",
-    "images": [
+    "image_urls": [
       {
-        "url": "https://images.pexels.com/photos/35898730/pexels-photo-35898730.jpeg",
-        "description": "Aerial view of a night football match in Budapest. Illuminated stadium.",
-        "category": "cover_photo_placeholder"
+        "url": "https://images.unsplash.com/photo-1591050898137-996dcd1184d6?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwzfHxhcmFiJTIwZm9vdGJhbGwlMjBmYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzQzNjc2MDZ8MA&ixlib=rb-4.1.0&q=85",
+        "category": "avatar",
+        "description": "Default user avatar for the profile"
       },
       {
-        "url": "https://images.pexels.com/photos/5789418/pexels-photo-5789418.jpeg",
-        "description": "Joyous man celebrating a football victory with fans in a stadium.",
-        "category": "avatar_placeholder_1"
-      },
-      {
-        "url": "https://images.pexels.com/photos/1884574/pexels-photo-1884574.jpeg",
-        "description": "Fans cheer as players take the field at a vibrant football stadium.",
-        "category": "room_background_placeholder"
-      },
-      {
-        "url": "https://images.unsplash.com/photo-1679391029864-d46f366a456b",
-        "description": "a soccer stadium filled with lots of people",
-        "category": "feed_image_placeholder"
+        "url": "https://images.pexels.com/photos/7560868/pexels-photo-7560868.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "cover_photo",
+        "description": "Soccer pitch abstract background for the profile cover"
       }
     ]
   },
+  "libraries": {
+    "icons": "lucide-react",
+    "animation": "framer-motion",
+    "ui": "shadcn/ui (customized for sports theme)"
+  },
   "instructions_to_main_agent": [
-    "You are building an RTL (Arabic) mobile-first web app named 'صوت الكورة'.",
-    "Ensure HTML document has `<html dir='rtl' lang='ar'>`.",
-    "Include Google Fonts import in index.css for Cairo and Almarai.",
-    "Apply Cairo to headings and Almarai to body paragraphs.",
-    "Adopt the 'THE PERFORMANCE PRO' archetype: dark obsidian background (#0A0A0A), stark contrast, and 'Tactical Minimalism'.",
-    "The primary brand color is Lime Green (#CCFF00). Use it for primary CTAs, active states, and highlighting key data. Do not overuse it; let it act as an electric highlight.",
-    "For the Feed (ThreadsPage), do not use heavy boxed cards. Use a 'cardless' approach with structural 1px bottom borders separating posts.",
-    "For the Voice Rooms, create a vibrant interface. Active speakers need a glowing Neon/Lime Green border.",
-    "Include a global mobile Bottom Navigation bar with glassmorphism (bg-black/70 backdrop-blur-xl). It should look premium.",
-    "Implement Shadcn/UI components but heavily customize their styling (e.g., remove default Vercel look, make them darker and sharper).",
-    "Ensure flex layouts respect RTL (e.g., Avatars on the right, text to their left).",
-    "Never use transparent backgrounds without a blur on overlays/headers.",
-    "All components should be fully responsive but prioritize the mobile layout view (max-w-md mx-auto for desktop container to simulate mobile app if needed, or proper responsive scaling)."
+    "Implement the Profile Page as a cohesive, mobile-first, RTL-supported experience for an Arab football social app.",
+    "Use framer-motion for the GlowingAvatar border to create a dynamic pulse/glow effect. Allow border color to be passed as a prop.",
+    "The layout MUST be strictly RTL. Ensure avatar is on the right, text aligns right. Use 'dir=\"rtl\"' on the main container or rely on logical classes (e.g., right-6 in LTR becomes start-6).",
+    "For the StatCards, use a dense bento grid (grid-cols-2 md:grid-cols-4). Make the numbers huge and bold (font-black text-2xl or 3xl, font-cairo).",
+    "Do not use generic gray boxes. Tint the backgrounds slightly with the primary color (e.g., bg-primary/5) or keep them deep background color with sharp 1px borders (border-border/40).",
+    "For the cover photo (AnimatedBackground), implement a slow, continuous zoom-in and out effect using Framer Motion to simulate a 'live' feeling.",
+    "Provide an 'Edit Mode' toggle state that transforms the avatar into an upload/generate zone and allows picking the glow color from a predefined list of sports team colors.",
+    "Include 'data-testid' attributes on all interactive elements (buttons, tabs, inputs).",
+    "Maintain the existing CSS variables for theming as defined in index.css."
   ],
   "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
-    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
     "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
-    "Create depth through layered design elements with z-index hierarchy.",
-    "Use glass-morphism effects with backdrop filters (12-24px blur).",
-    "You MUST NOT apply universal transition. Eg: `transition: all`. This results in breaking transforms.",
-    "You MUST NOT center align the app container, ie do not add `.App { text-align: center; }` in the css file. This disrupts the human natural reading flow of text.",
-    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
-    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons.",
-    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. Always add transitions for specific interactive elements excluding transforms",
+    "You MUST NOT center align the app container. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations.",
     "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
     "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
-    "Prioritize using pre-existing components from src/components/ui when applicable.",
-    "Use `sonner` for toasts."
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Components MUST use named exports, Pages MUST use default exports",
+    "Use sonner for toasts, located in /app/frontend/src/components/ui/sonner.js or similar."
   ]
 }
