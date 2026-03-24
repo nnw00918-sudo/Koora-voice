@@ -62,18 +62,29 @@
 │   │   ├── notifications.py ✅ (79 سطر)
 │   │   ├── stories.py ✅ (379 سطر)
 │   │   ├── conversations.py ✅ (220 سطر)
-│   │   ├── push.py ✅ (217 سطر) - جديد
+│   │   ├── push.py ✅ (217 سطر)
 │   │   └── ... (قيد التطوير)
 │   └── models/
 ├── frontend/
 │   ├── src/
 │   │   ├── pages/
 │   │   │   ├── LandingPage.js ✅ (معاد تصميمه)
-│   │   │   └── RoomPage.js (~3333 سطر)
+│   │   │   ├── ThreadDetailPage.js ✅ (صفحة المنشور الفردي)
+│   │   │   └── RoomPage.js (~3556 سطر - تقلص من 3620)
 │   │   └── components/
 │   │       └── room/
 │   │           ├── Reactions.jsx
-│   │           └── WatchParty.jsx
+│   │           ├── WatchParty.jsx
+│   │           ├── ConnectedUsersList.jsx ✅ (جديد)
+│   │           ├── RoomSettingsModal.jsx ✅ (جديد)
+│   │           ├── GiftModal.jsx ✅ (جديد)
+│   │           ├── SeatRequestsModal.jsx ✅ (جديد)
+│   │           ├── InviteReceivedModal.jsx ✅ (جديد)
+│   │           ├── StreamModal.jsx ✅ (جديد)
+│   │           ├── PromoteModal.jsx ✅ (جديد)
+│   │           ├── BackgroundPickerModal.jsx ✅ (جديد)
+│   │           ├── ExpandedVideoModal.jsx ✅ (جديد)
+│   │           └── index.js (تصدير المكونات)
 ```
 
 ---
@@ -298,13 +309,26 @@
 ### P1 (أولوية عالية) - Refactoring المتبقي
 - [ ] نقل Users routes (معقد - يعتمد على create_notification)
 - [ ] نقل Admin routes (معقد - يعتمد على get_admin_user)
-- [ ] تقسيم RoomPage.js (3739 سطر) - معقد بسبب Agora state
+- [x] **تقسيم RoomPage.js Modals** - تم 24 مارس 2026:
+  - تم استخراج المكونات التالية إلى `/app/frontend/src/components/room/`:
+    - `ConnectedUsersList.jsx` (297 سطر)
+    - `RoomSettingsModal.jsx` (279 سطر)
+    - `GiftModal.jsx` (58 سطر)
+    - `SeatRequestsModal.jsx` (79 سطر)
+    - `InviteReceivedModal.jsx` (51 سطر)
+    - `StreamModal.jsx` (136 سطر)
+    - `PromoteModal.jsx` (59 سطر)
+    - `BackgroundPickerModal.jsx` (83 سطر)
+    - `ExpandedVideoModal.jsx` (104 سطر)
+  - المكونات مستخرجة ومصدّرة من `index.js`
+  - تم تحديث imports في `RoomPage.js`
+  - GiftModal تم استبداله بالمكون المستخرج
+- [ ] إكمال استخدام باقي المكونات المستخرجة في RoomPage.js
 - [ ] إكمال تقسيم server.py:
   - [ ] فصل Stories routes إلى `/routes/stories.py`
   - [ ] فصل Conversations routes إلى `/routes/conversations.py`
   - [ ] فصل Notifications routes إلى `/routes/notifications.py`
   - [ ] فصل Rooms routes إلى `/routes/rooms.py`
-- [ ] تقسيم RoomPage.js إلى components أصغر
 
 ### P1 (أولوية عالية)
 - [ ] التحقق من WebRTC video broadcasting والـ Camera Modals
