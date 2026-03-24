@@ -211,13 +211,18 @@
 - [x] تحليل server.py للتقسيم المستقبلي
 - [x] البنية موجودة في `/app/backend/routes/` و `/app/backend/models/`
 - [x] `football_router` يعمل بشكل مستقل
+- [x] **نقل Notifications** إلى `/routes/notifications.py` (~79 سطر)
+- [x] **نقل Stories** إلى `/routes/stories.py` (~379 سطر)
+- [x] **server.py تقلص من 4532 إلى 4129 سطر** (-403 سطر / -9%)
 
 ---
 
 ### P0 (أولوية قصوى)
 - [x] ~~اختبار صلاحيات الأدمن~~ - تم 29 ديسمبر 2025
+- [x] ~~Refactoring: Notifications~~ - تم 29 ديسمبر 2025
+- [x] ~~Refactoring: Stories~~ - تم 29 ديسمبر 2025
 
-### P1 (أولوية عالية) - Refactoring
+### P1 (أولوية عالية) - Refactoring المتبقي
 - [ ] إكمال تقسيم server.py:
   - [ ] فصل Stories routes إلى `/routes/stories.py`
   - [ ] فصل Conversations routes إلى `/routes/conversations.py`
