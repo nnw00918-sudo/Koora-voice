@@ -122,6 +122,14 @@
 - [x] **Framer Motion animations**: تأثيرات حركية على كل العناصر
 - [x] اختبار شامل - 100% نجاح (14 اختبار)
 
+### ميزة تخصيص لون الإطار - 24 مارس 2026
+- [x] **FrameColorSelector**: 6 ألوان للاختيار (lime, cyan, purple, amber, rose, rainbow)
+- [x] **Backend support**: حقل frame_color في User model
+- [x] **API endpoint**: PUT /api/auth/profile يدعم frame_color
+- [x] **Validation**: Backend يتحقق من صحة اللون قبل الحفظ
+- [x] **Arabic labels**: أخضر، سماوي، بنفسجي، ذهبي، وردي، قوس قزح
+- [x] اختبار شامل - 100% نجاح (Backend 4/4, Frontend 10/10)
+
 ---
 
 ## المهام القادمة
