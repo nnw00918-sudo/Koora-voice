@@ -691,8 +691,17 @@ const ProfilePage = ({ user, onLogout }) => {
                               <div className="flex items-center gap-2 mb-2 text-cyan-400 text-xs">
                                 <MessageCircle className="w-3 h-3" />
                                 <span>رد على منشور</span>
+                                {reply.thread_author && (
+                                  <span className="text-lime-400 font-bold">@{reply.thread_author?.username || reply.thread_author_username}</span>
+                                )}
                               </div>
-                              <p className="text-white text-sm text-right leading-relaxed line-clamp-2">{reply.content}</p>
+                              {/* Original post preview */}
+                              {reply.thread_content && (
+                                <div className="mb-2 p-2 bg-slate-900/50 rounded-lg border-r-2 border-slate-600">
+                                  <p className="text-slate-400 text-xs text-right line-clamp-1">{reply.thread_content}</p>
+                                </div>
+                              )}
+                              <p className="text-white text-sm text-right leading-relaxed">{reply.content}</p>
                             </div>
                           ))}
                         </div>
