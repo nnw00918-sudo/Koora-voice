@@ -96,7 +96,6 @@ const RemoteVideoCircle = ({ remoteUser }) => {
       autoPlay 
       playsInline 
       className="w-full h-full object-cover"
-      style={{ transform: 'scaleX(-1)' }}
     />
   );
 };
@@ -1649,8 +1648,18 @@ const YallaLiveRoom = ({ user }) => {
         // Also publish to Agora for others to see
         const videoTrack = await AgoraRTC.createCameraVideoTrack({
           encoderConfig: '720p_2',
-          facingMode: cameraFacing
+          facingMode: cameraFacing,
+          // Disable mirror for front camera so viewers see correct orientation
+          optimizationMode: 'detail'
         });
+        
+        // Disable mirror mode on the track so it's not mirrored for remote viewers
+        if (cameraFacing === 'user') {
+          videoTrack.setEncoderConfiguration({
+            mirror: false
+          });
+        }
+        
         setLocalVideoTrack(videoTrack);
         await agoraClient.current.publish([videoTrack]);
         
@@ -1715,8 +1724,17 @@ const YallaLiveRoom = ({ user }) => {
       
       const videoTrack = await AgoraRTC.createCameraVideoTrack({
         encoderConfig: '720p_2',
-        facingMode: newFacing
+        facingMode: newFacing,
+        optimizationMode: 'detail'
       });
+      
+      // Disable mirror mode for front camera
+      if (newFacing === 'user') {
+        videoTrack.setEncoderConfiguration({
+          mirror: false
+        });
+      }
+      
       setLocalVideoTrack(videoTrack);
       await agoraClient.current.publish([videoTrack]);
       
