@@ -381,8 +381,34 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     followers_count = await db.follows.count_documents({"following_id": current_user.id})
     following_count = await db.follows.count_documents({"follower_id": current_user.id})
     
+    # Get rooms joined count (rooms where user participated)
+    rooms_joined = await db.room_participants.count_documents({"user_id": current_user.id})
+    
+    # Get rooms created count
+    rooms_created = await db.rooms.count_documents({"owner_id": current_user.id})
+    
     # Get user with bio and name
     user_doc = await db.users.find_one({"id": current_user.id}, {"_id": 0, "password": 0})
+    
+    # Calculate badges earned
+    badges_earned = []
+    # متحدث - always earned
+    badges_earned.append("speaker")
+    # مالك غرفة - if user created at least one room
+    if rooms_created > 0:
+        badges_earned.append("room_owner")
+    # محبوب - if user has 10+ followers
+    if followers_count >= 10:
+        badges_earned.append("popular")
+    # نجم - if user has 100+ coins
+    if current_user.coins >= 100:
+        badges_earned.append("star")
+    # موثق - if user has 50+ followers and 5+ rooms joined
+    if followers_count >= 50 and rooms_joined >= 5:
+        badges_earned.append("verified")
+    # أسطورة - if user has 100+ followers, 1000+ coins, and 20+ rooms
+    if followers_count >= 100 and current_user.coins >= 1000 and rooms_joined >= 20:
+        badges_earned.append("legend")
     
     return {
         "id": current_user.id,
@@ -397,7 +423,10 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         "level": current_user.level,
         "xp": current_user.xp,
         "followers_count": followers_count,
-        "following_count": following_count
+        "following_count": following_count,
+        "rooms_joined": rooms_joined,
+        "rooms_created": rooms_created,
+        "badges_earned": badges_earned
     }
 
 class ProfileUpdate(BaseModel):

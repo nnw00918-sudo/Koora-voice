@@ -236,14 +236,15 @@ const ProfilePage = ({ user, onLogout }) => {
   // Calculate user level based on activity
   const userLevel = Math.min(5, Math.floor((userData?.coins || 0) / 100) + 1);
 
-  // Badges data
+  // Badges data - using badges_earned from API
+  const badgesEarned = userData?.badges_earned || [];
   const badges = [
-    { icon: Mic, label: "متحدث", color: "from-lime-500 to-emerald-500", earned: true },
-    { icon: Crown, label: "مالك غرفة", color: "from-amber-500 to-yellow-500", earned: userData?.role === 'owner' },
-    { icon: Heart, label: "محبوب", color: "from-rose-500 to-pink-500", earned: (userData?.followers_count || 0) >= 10 },
-    { icon: Star, label: "نجم", color: "from-purple-500 to-indigo-500", earned: (userData?.coins || 0) >= 100 },
-    { icon: Shield, label: "موثق", color: "from-cyan-500 to-blue-500", earned: false },
-    { icon: Award, label: "أسطورة", color: "from-orange-500 to-red-500", earned: false },
+    { icon: Mic, label: "متحدث", color: "from-lime-500 to-emerald-500", key: "speaker", earned: badgesEarned.includes("speaker") },
+    { icon: Crown, label: "مالك غرفة", color: "from-amber-500 to-yellow-500", key: "room_owner", earned: badgesEarned.includes("room_owner") },
+    { icon: Heart, label: "محبوب", color: "from-rose-500 to-pink-500", key: "popular", earned: badgesEarned.includes("popular") },
+    { icon: Star, label: "نجم", color: "from-purple-500 to-indigo-500", key: "star", earned: badgesEarned.includes("star") },
+    { icon: Shield, label: "موثق", color: "from-cyan-500 to-blue-500", key: "verified", earned: badgesEarned.includes("verified") },
+    { icon: Award, label: "أسطورة", color: "from-orange-500 to-red-500", key: "legend", earned: badgesEarned.includes("legend") },
   ];
 
   // Generate random avatar
