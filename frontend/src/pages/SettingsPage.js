@@ -495,6 +495,16 @@ const SettingsPage = ({ user, onLogout }) => {
   // Main Settings View
   const MainView = () => (
     <div className="space-y-3">
+      {/* Admin Dashboard Link - Only for owner/admin */}
+      {['owner', 'admin'].includes(user?.role) && (
+        <SettingItem 
+          icon={Shield} 
+          title={isRTL ? 'لوحة التحكم' : 'Admin Dashboard'} 
+          description={isRTL ? 'إدارة المستخدمين والغرف' : 'Manage users and rooms'}
+          onClick={() => navigate('/admin')} 
+        />
+      )}
+      
       <SettingItem 
         icon={Lock} 
         title={txt.account} 

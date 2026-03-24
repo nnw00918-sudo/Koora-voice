@@ -89,7 +89,7 @@ function App() {
               <Route path="/create-room" element={user?.role === 'owner' ? <CreateRoomPage user={user} /> : <Navigate to="/dashboard" />} />
               <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
               <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
-              <Route path="/admin" element={user?.role === 'owner' ? <AdminDashboard user={user} /> : <Navigate to="/dashboard" />} />
+              <Route path="/admin" element={user && ['owner', 'admin'].includes(user.role) ? <AdminDashboard user={user} /> : <Navigate to="/dashboard" />} />
               <Route path="/threads" element={user ? <ThreadsPage user={user} /> : <Navigate to="/" />} />
               <Route path="/threads/:threadId" element={user ? <ThreadDetailPage user={user} /> : <Navigate to="/" />} />
               <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
