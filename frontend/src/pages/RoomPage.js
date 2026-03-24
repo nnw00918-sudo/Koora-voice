@@ -2640,68 +2640,71 @@ const YallaLiveRoom = ({ user }) => {
               </div>
             </div>
             
-            {/* Chat Header */}
-            <div className="flex items-center justify-between px-3 py-2 relative z-10 border-b border-slate-700/50">
-              <span className="text-slate-400 text-xs font-cairo">💬 الدردشة</span>
+            {/* Chat Header - Telegram Style */}
+            <div className="flex items-center justify-between px-3 py-2 relative z-10 bg-[#17212b] border-b border-[#232e3c]">
+              <span className="text-white text-sm font-bold">{room?.title || 'الدردشة'}</span>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500 text-[10px]">{messages.length} رسالة</span>
-                {room?.owner_id === user.id && (
-                  <button
-                    onClick={() => setShowBackgroundPicker(true)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 border border-lime-500/30 transition-colors"
-                    title="تغيير خلفية الدردشة"
-                  >
-                    <ImageIcon className="w-3.5 h-3.5 text-lime-400" />
-                    <span className="text-lime-400 text-[10px] font-cairo">خلفية</span>
-                  </button>
-                )}
+                <span className="text-[#6c7883] text-xs">{participants.length} عضو</span>
               </div>
             </div>
             
-            {/* Messages - Scrollable area */}
-            <div className="flex-1 overflow-y-auto space-y-2 hide-scrollbar relative z-10 p-2">
+            {/* Messages - Scrollable area - Telegram Style */}
+            <div className="flex-1 overflow-y-auto space-y-1 hide-scrollbar relative z-10 p-3">
               {messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm font-cairo">
-                  لا توجد رسائل - ابدأ المحادثة!
+                <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                  <MessageCircle className="w-12 h-12 mb-2 opacity-50" />
+                  <p className="text-sm font-cairo">ابدأ المحادثة!</p>
                 </div>
               ) : (
-                messages.slice(-20).map((message, index) => {
+                messages.slice(-50).map((message, index) => {
               const isOwnMessage = message.user_id === user.id;
+              const showAvatar = index === 0 || messages.slice(-50)[index - 1]?.user_id !== message.user_id;
               
               return (
-                <motion.div 
+                <div 
                   key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-3"
+                  className={`flex items-end gap-2 ${isOwnMessage ? 'flex-row' : 'flex-row-reverse'}`}
                 >
-                  {/* Avatar */}
-                  <img 
-                    src={message.avatar} 
-                    alt="" 
-                    className="w-10 h-10 rounded-full flex-shrink-0 border-2 border-lime-500/30"
-                  />
+                  {/* Avatar - only show for first message in group */}
+                  {showAvatar && !isOwnMessage ? (
+                    <img 
+                      src={message.avatar} 
+                      alt="" 
+                      className="w-8 h-8 rounded-full flex-shrink-0"
+                    />
+                  ) : !isOwnMessage ? (
+                    <div className="w-8 flex-shrink-0" />
+                  ) : null}
                   
-                  {/* Message Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
+                  {/* Message Bubble */}
+                  <div 
+                    className={`max-w-[75%] px-3 py-2 ${
+                      isOwnMessage 
+                        ? 'bg-[#2b5278] rounded-2xl rounded-bl-md' 
+                        : 'bg-[#182533] rounded-2xl rounded-br-md'
+                    }`}
+                  >
+                    {/* Username for others */}
+                    {showAvatar && !isOwnMessage && (
                       <button 
-                        onClick={() => {
-                          if (message.user_id !== user.id) {
-                            setNewMessage(prev => prev + `@${message.username} `);
-                          }
-                        }}
-                        className="text-white font-cairo font-bold text-sm hover:text-lime-400 transition-colors"
+                        onClick={() => setNewMessage(prev => prev + `@${message.username} `)}
+                        className="text-[#6ab2f2] font-bold text-xs mb-1 block"
                       >
                         {message.username}
                       </button>
-                      <span className="text-slate-500 text-xs">الآن</span>
-                    </div>
-                    <p className="text-slate-300 font-cairo text-sm leading-relaxed">
+                    )}
+                    
+                    <p className="text-white text-sm leading-relaxed text-right">
                       {renderMessageContent(message.content)}
                     </p>
+                    
+                    <div className={`flex items-center gap-1 mt-1 ${isOwnMessage ? 'justify-start' : 'justify-end'}`}>
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(message.created_at || Date.now()).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })
               )}
@@ -2813,7 +2816,7 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Reaction Bar - Playback Feature - REMOVED */}
 
-          {/* Message Input - Compact */}
+          {/* Message Input - Telegram Style */}
           <div className="relative mt-2">
             {/* Mention List Popup */}
             <AnimatePresence>
@@ -2822,42 +2825,45 @@ const YallaLiveRoom = ({ user }) => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute bottom-full mb-2 left-0 right-0 bg-slate-800 border border-lime-500/30 rounded-xl overflow-hidden z-50 max-h-40 overflow-y-auto"
+                  className="absolute bottom-full mb-2 left-0 right-0 bg-[#17212b] border border-[#232e3c] rounded-xl overflow-hidden z-50 max-h-40 overflow-y-auto"
                 >
                   {filteredMentionUsers.slice(0, 5).map((p) => (
                     <button
                       key={p.user_id}
                       type="button"
                       onClick={() => insertMention(p.username)}
-                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-700 transition-colors text-right"
+                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-[#232e3c] transition-colors text-right"
                     >
                       <img src={p.avatar} alt={p.username} className="w-8 h-8 rounded-full" />
-                      <span className="text-white font-almarai">@{p.username}</span>
+                      <span className="text-white">@{p.username}</span>
                     </button>
                   ))}
                 </motion.div>
               )}
             </AnimatePresence>
             
-            <form onSubmit={handleSendMessage} className="flex gap-2" style={{ position: 'relative', zIndex: 10 }}>
-              <input
-                type="text"
+            <form onSubmit={handleSendMessage} className="flex gap-2 items-end" style={{ position: 'relative', zIndex: 10 }}>
+              <textarea
                 value={newMessage}
                 onChange={handleMessageChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(e);
+                  }
+                }}
                 placeholder="اكتب رسالة..."
-                className="flex-1 bg-slate-800 border border-slate-700 focus:border-lime-500 rounded-lg text-white placeholder:text-slate-500 h-9 px-3 text-sm outline-none"
+                className="flex-1 bg-[#242f3d] border-none text-white placeholder:text-slate-500 px-4 py-2.5 rounded-2xl text-sm outline-none resize-none"
+                style={{ fontSize: '16px', minHeight: '40px', maxHeight: '100px' }}
                 dir="rtl"
-                inputMode="text"
-                enterKeyHint="send"
-                autoComplete="off"
-                autoCorrect="off"
+                rows={1}
               />
               <Button
                 type="submit"
                 disabled={!newMessage.trim()}
-                className="bg-lime-500 hover:bg-lime-400 text-slate-900 rounded-lg w-9 h-9 p-0"
+                className="bg-[#6ab2f2] hover:bg-[#5a9fe0] text-white rounded-full w-10 h-10 p-0 flex-shrink-0"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-5 h-5" />
               </Button>
             </form>
           </div>
