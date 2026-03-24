@@ -2542,8 +2542,7 @@ const YallaLiveRoom = ({ user }) => {
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundColor: chatBackground ? 'transparent' : 'rgba(15, 23, 42, 0.6)',
-              minHeight: '380px',
-              maxHeight: 'calc(100vh - 280px)'
+              minHeight: '550px'
             }}
           >
             {/* Dark overlay for readability */}
