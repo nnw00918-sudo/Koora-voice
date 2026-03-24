@@ -2139,32 +2139,25 @@ const YallaLiveRoom = ({ user }) => {
               <Settings className="w-5 h-5 text-slate-900" />
             </motion.button>
             
-            {/* Invite Friends Button */}
+            {/* Room Members Button - Shows member count */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={() => setShowInviteFriendsModal(true)}
-              className="w-11 h-11 rounded-xl bg-[#CCFF00]/20 hover:bg-[#CCFF00]/30 flex items-center justify-center border border-[#CCFF00]/30 transition-colors"
-              title="دعوة أصدقاء"
+              onClick={() => setShowConnectedList(!showConnectedList)}
+              className="h-11 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 flex items-center gap-2 border border-slate-700 transition-colors"
+              title="أعضاء الغرفة"
             >
-              <Share2 className="w-5 h-5 text-[#CCFF00]" />
+              <Users className="w-4 h-4 text-lime-400" />
+              <span className="text-lime-400 font-bold text-sm">{roomMembers.length || participants.length}</span>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-lime-500 animate-pulse"></span>
+                <span className="text-slate-400 text-xs">{participants.length}</span>
+              </div>
             </motion.button>
           </div>
 
           {/* Room Info - Center */}
           <div className="flex-1 mx-3 text-center">
             <h1 className="text-white font-cairo font-bold text-xl">{room?.title || 'الغرفة'}</h1>
-            <motion.button
-              onClick={() => setShowConnectedList(!showConnectedList)}
-              className="flex items-center justify-center gap-2 mx-auto mt-1"
-            >
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full">
-                <span className="text-lime-400 font-bold text-sm">{participants.length}</span>
-                <span className="text-slate-400 text-xs">متصل</span>
-                {(remoteVideoUsers.length > 0 || isCameraOn) && (
-                  <Video className="w-3 h-3 text-lime-400" />
-                )}
-              </div>
-            </motion.button>
             {/* Recording Indicator */}
             {isRecording && (
               <div className="flex items-center justify-center gap-1 bg-red-500/20 px-2 py-0.5 rounded-full border border-red-500/50 mt-1">
@@ -2224,13 +2217,17 @@ const YallaLiveRoom = ({ user }) => {
                     <Users className="w-5 h-5 text-lime-400" />
                   </div>
                   <div>
-                    <h3 className="text-white font-cairo font-bold">المتصلون</h3>
+                    <h3 className="text-white font-cairo font-bold">أعضاء الغرفة</h3>
                     <p className="text-slate-400 text-xs">اضغط على العضو للخيارات</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="bg-lime-500/30 text-lime-300 px-3 py-1 rounded-full text-sm font-bold">
-                    {[...new Map(participants.map(p => [p.user_id || p.id, p])).values()].length}
+                  <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-lg">
+                    <span className="w-2 h-2 rounded-full bg-lime-500 animate-pulse"></span>
+                    <span className="text-lime-400 text-xs font-bold">{participants.length}</span>
+                  </div>
+                  <span className="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm font-bold">
+                    {roomMembers.length || participants.length}
                   </span>
                   <button
                     onClick={() => setShowConnectedList(false)}
@@ -2241,25 +2238,27 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               </div>
               
-              {/* Participants List */}
+              {/* Members List - All members with online status */}
               <div className="max-h-96 overflow-y-auto">
-                {[...new Map(participants.map(p => [p.user_id || p.id, p])).values()].map((p) => {
-                  const odId = p.user_id || p.id;
+                {(roomMembers.length > 0 ? roomMembers : participants).map((member) => {
+                  const odId = member.user_id || member.id;
+                  const isOnline = participants.some(p => (p.user_id || p.id) === odId);
+                  const onlineParticipant = participants.find(p => (p.user_id || p.id) === odId);
                   const isSpeaker = speakers.some(s => s.user_id === odId);
                   const speakerData = speakers.find(s => s.user_id === odId);
                   const isMuted = speakerData?.user?.is_muted || false;
                   const isCurrentUser = odId === user.id;
-                  const isOwnerOfRoom = room?.owner_id === odId;
+                  const isOwnerOfRoom = member.role === 'owner' || room?.owner_id === odId;
                   const canManage = isRoomOwner || isRoomAdmin;
                   const canPromote = isRoomOwner;
-                  const userRoomRole = p.room_role || 'member'; // Get from participant data
+                  const userRoomRole = member.role || onlineParticipant?.room_role || 'member';
                   const isUserAdmin = userRoomRole === 'admin';
                   const isUserMod = userRoomRole === 'mod';
                   
                   return (
                     <div 
                       key={odId} 
-                      className="border-b border-slate-800 last:border-0"
+                      className={`border-b border-slate-800 last:border-0 ${!isOnline ? 'opacity-60' : ''}`}
                     >
                       {/* User Row */}
                       <div className="flex items-center gap-3 p-4 hover:bg-slate-800/50 transition-colors">
@@ -2272,7 +2271,7 @@ const YallaLiveRoom = ({ user }) => {
                           }}
                         >
                           <img 
-                            src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`}
+                            src={member.avatar || member.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.username}`}
                             alt=""
                             className={`w-14 h-14 rounded-full ring-2 ${
                               isOwnerOfRoom ? 'ring-amber-500' : 
@@ -2281,7 +2280,11 @@ const YallaLiveRoom = ({ user }) => {
                               isSpeaker ? 'ring-lime-500' : 'ring-slate-700'
                             }`}
                           />
-                          {isSpeaker && (
+                          {/* Online/Offline indicator */}
+                          <div className={`absolute -bottom-1 -left-1 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-slate-900 ${isOnline ? 'bg-lime-500' : 'bg-slate-600'}`}>
+                            {isOnline ? <span className="w-2 h-2 rounded-full bg-white"></span> : null}
+                          </div>
+                          {isSpeaker && isOnline && (
                             <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ring-2 ring-slate-900 ${isMuted ? 'bg-red-500' : 'bg-lime-500'}`}>
                               {isMuted ? <MicOff className="w-3 h-3 text-white" /> : <Mic className="w-3 h-3 text-white" />}
                             </div>
@@ -2306,12 +2309,15 @@ const YallaLiveRoom = ({ user }) => {
                         {/* User Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-white font-cairo font-bold truncate">{p.user?.name || p.username}</p>
+                            <p className="text-white font-cairo font-bold truncate">{member.username}</p>
                             {isCurrentUser && (
                               <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">أنت</span>
                             )}
+                            {!isOnline && (
+                              <span className="text-xs bg-slate-700 text-slate-500 px-2 py-0.5 rounded">غير متصل</span>
+                            )}
                           </div>
-                          <p className="text-slate-400 text-sm truncate">@{p.username}</p>
+                          <p className="text-slate-400 text-sm truncate">@{member.username}</p>
                           {/* Role Badge */}
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -2321,18 +2327,18 @@ const YallaLiveRoom = ({ user }) => {
                                   ? 'text-purple-400 bg-purple-500/20'
                                   : isUserMod
                                     ? 'text-blue-400 bg-blue-500/20'
-                                    : isSpeaker 
+                                    : isSpeaker && isOnline
                                       ? 'text-lime-400 bg-lime-500/20' 
                                       : 'text-slate-400 bg-slate-700/50'
                             }`}>
-                              {isOwnerOfRoom ? 'مالك الغرفة' : isUserAdmin ? 'أدمن' : isUserMod ? 'مود' : isSpeaker ? 'متحدث' : 'عضو'}
+                              {isOwnerOfRoom ? 'مالك الغرفة' : isUserAdmin ? 'أدمن' : isUserMod ? 'مود' : isSpeaker && isOnline ? 'متحدث' : 'عضو'}
                             </span>
                           </div>
                         </div>
                       </div>
                       
-                      {/* Action Buttons - Only for non-current users and if has permission */}
-                      {!isCurrentUser && !isOwnerOfRoom && canManage && (
+                      {/* Action Buttons - Only for non-current users and if has permission and is online */}
+                      {!isCurrentUser && !isOwnerOfRoom && canManage && isOnline && (
                         <div className="px-4 pb-4 flex flex-wrap gap-2">
                           {/* Role Change Buttons - Only for owner/admin */}
                           {canChangeRoles && (
@@ -2448,10 +2454,10 @@ const YallaLiveRoom = ({ user }) => {
                   );
                 })}
                 
-                {participants.length === 0 && (
+                {(roomMembers.length === 0 && participants.length === 0) && (
                   <div className="p-8 text-center text-slate-400">
                     <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p className="font-cairo">لا يوجد متصلون حالياً</p>
+                    <p className="font-cairo">لا يوجد أعضاء في الغرفة</p>
                   </div>
                 )}
               </div>
@@ -2796,6 +2802,16 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Main Controls - Compact */}
           <div className="flex items-center gap-2">
+            {/* Invite Friends Button */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowInviteFriendsModal(true)}
+              className="w-10 h-10 rounded-xl bg-[#CCFF00]/20 hover:bg-[#CCFF00]/30 flex items-center justify-center border border-[#CCFF00]/30 transition-colors"
+              title="دعوة أصدقاء"
+            >
+              <Share2 className="w-4 h-4 text-[#CCFF00]" />
+            </motion.button>
+
             {/* Audio Mute Button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
