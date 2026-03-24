@@ -105,6 +105,7 @@ class User(BaseModel):
     name: Optional[str] = None  # Display name
     avatar: Optional[str] = None
     bio: Optional[str] = None
+    frame_color: Optional[str] = "lime"  # Profile frame color
     created_at: str
     role: str = "user"
     is_banned: bool = False
@@ -390,6 +391,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         "name": user_doc.get("name", ""),
         "avatar": current_user.avatar,
         "bio": user_doc.get("bio", ""),
+        "frame_color": user_doc.get("frame_color", "lime"),
         "role": current_user.role,
         "coins": current_user.coins,
         "level": current_user.level,
@@ -403,6 +405,7 @@ class ProfileUpdate(BaseModel):
     username: Optional[str] = None  # Handle/account
     bio: Optional[str] = None
     avatar: Optional[str] = None
+    frame_color: Optional[str] = None  # Profile frame color
 
 @api_router.put("/auth/profile")
 async def update_profile(profile_data: ProfileUpdate, current_user: User = Depends(get_current_user)):
@@ -431,6 +434,11 @@ async def update_profile(profile_data: ProfileUpdate, current_user: User = Depen
     
     if profile_data.avatar and profile_data.avatar.strip():
         update_doc["avatar"] = profile_data.avatar.strip()
+    
+    # Validate and update frame color
+    valid_colors = ["lime", "cyan", "purple", "amber", "rose", "rainbow"]
+    if profile_data.frame_color and profile_data.frame_color in valid_colors:
+        update_doc["frame_color"] = profile_data.frame_color
     
     if update_doc:
         await db.users.update_one(

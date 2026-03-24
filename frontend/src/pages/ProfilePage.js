@@ -46,27 +46,55 @@ const AnimatedBackground = () => (
   </div>
 );
 
+// Frame color options
+const FRAME_COLORS = {
+  lime: { 
+    gradient: "from-lime-400 via-emerald-400 to-lime-400", 
+    label: "أخضر",
+    preview: "bg-gradient-to-r from-lime-400 to-emerald-400"
+  },
+  cyan: { 
+    gradient: "from-cyan-400 via-blue-400 to-cyan-400", 
+    label: "سماوي",
+    preview: "bg-gradient-to-r from-cyan-400 to-blue-400"
+  },
+  purple: { 
+    gradient: "from-purple-400 via-pink-400 to-purple-400", 
+    label: "بنفسجي",
+    preview: "bg-gradient-to-r from-purple-400 to-pink-400"
+  },
+  amber: { 
+    gradient: "from-amber-400 via-yellow-400 to-amber-400", 
+    label: "ذهبي",
+    preview: "bg-gradient-to-r from-amber-400 to-yellow-400"
+  },
+  rose: { 
+    gradient: "from-rose-400 via-red-400 to-rose-400", 
+    label: "وردي",
+    preview: "bg-gradient-to-r from-rose-400 to-red-400"
+  },
+  rainbow: { 
+    gradient: "from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500", 
+    label: "قوس قزح",
+    preview: "bg-gradient-to-r from-red-500 via-green-500 to-blue-500"
+  },
+};
+
 // Glowing avatar frame
-const GlowingAvatar = ({ src, size = "large", level = 1 }) => {
+const GlowingAvatar = ({ src, size = "large", level = 1, frameColor = "lime" }) => {
   const sizeClasses = {
     small: "w-16 h-16",
     medium: "w-20 h-20", 
     large: "w-28 h-28"
   };
   
-  const glowColors = {
-    1: "from-lime-400 via-emerald-400 to-lime-400",
-    2: "from-cyan-400 via-blue-400 to-cyan-400",
-    3: "from-purple-400 via-pink-400 to-purple-400",
-    4: "from-amber-400 via-yellow-400 to-amber-400",
-    5: "from-rose-400 via-red-400 to-rose-400"
-  };
+  const glowGradient = FRAME_COLORS[frameColor]?.gradient || FRAME_COLORS.lime.gradient;
 
   return (
     <div className="relative">
       {/* Animated glow ring */}
       <motion.div
-        className={`absolute inset-0 ${sizeClasses[size]} rounded-full bg-gradient-to-r ${glowColors[level]} blur-md opacity-60`}
+        className={`absolute inset-0 ${sizeClasses[size]} rounded-full bg-gradient-to-r ${glowGradient} blur-md opacity-60`}
         animate={{ 
           scale: [1, 1.1, 1],
           opacity: [0.4, 0.7, 0.4]
@@ -74,7 +102,7 @@ const GlowingAvatar = ({ src, size = "large", level = 1 }) => {
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       />
       {/* Border ring */}
-      <div className={`relative ${sizeClasses[size]} rounded-full p-1 bg-gradient-to-r ${glowColors[level]}`}>
+      <div className={`relative ${sizeClasses[size]} rounded-full p-1 bg-gradient-to-r ${glowGradient}`}>
         <img 
           src={src} 
           alt="" 
@@ -93,6 +121,40 @@ const GlowingAvatar = ({ src, size = "large", level = 1 }) => {
     </div>
   );
 };
+
+// Frame color selector component
+const FrameColorSelector = ({ selectedColor, onSelect }) => (
+  <div className="mt-4">
+    <label className="block text-slate-400 text-xs mb-2 text-right">لون الإطار</label>
+    <div className="flex flex-wrap gap-2 justify-center">
+      {Object.entries(FRAME_COLORS).map(([key, { label, preview }]) => (
+        <motion.button
+          key={key}
+          onClick={() => onSelect(key)}
+          className={`relative w-10 h-10 rounded-full ${preview} ${
+            selectedColor === key ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900' : ''
+          }`}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          title={label}
+        >
+          {selectedColor === key && (
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+            >
+              <Check className="w-5 h-5 text-white drop-shadow-lg" />
+            </motion.div>
+          )}
+        </motion.button>
+      ))}
+    </div>
+    <p className="text-center text-slate-500 text-xs mt-2">
+      {FRAME_COLORS[selectedColor]?.label || 'اختر لون'}
+    </p>
+  </div>
+);
 
 // Badge component
 const Badge = ({ icon: Icon, label, color, earned = true }) => (
@@ -131,12 +193,13 @@ const ProfilePage = ({ user, onLogout }) => {
   // States
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedFrame, setSelectedFrame] = useState(1);
+  const [selectedFrame, setSelectedFrame] = useState(user?.frame_color || 'lime');
   const [editData, setEditData] = useState({
     name: user?.name || '',
     username: user?.username || '',
     bio: user?.bio || '',
-    avatar: user?.avatar || ''
+    avatar: user?.avatar || '',
+    frame_color: user?.frame_color || 'lime'
   });
 
   // Calculate user level based on activity
@@ -185,7 +248,7 @@ const ProfilePage = ({ user, onLogout }) => {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API}/api/users/me`, editData, {
+      await axios.put(`${API}/api/auth/profile`, editData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('تم حفظ التغييرات');
@@ -230,6 +293,7 @@ const ProfilePage = ({ user, onLogout }) => {
               <GlowingAvatar 
                 src={isEditing ? editData.avatar : user?.avatar} 
                 level={userLevel}
+                frameColor={isEditing ? editData.frame_color : (user?.frame_color || 'lime')}
               />
               {isEditing && (
                 <motion.button 
@@ -338,6 +402,12 @@ const ProfilePage = ({ user, onLogout }) => {
                   />
                   <p className="text-slate-500 text-xs text-left mt-1">{editData.bio.length}/80</p>
                 </div>
+                
+                {/* Frame Color Selector */}
+                <FrameColorSelector 
+                  selectedColor={editData.frame_color}
+                  onSelect={(color) => setEditData(prev => ({ ...prev, frame_color: color }))}
+                />
               </motion.div>
             )}
           </motion.div>
@@ -391,7 +461,8 @@ const ProfilePage = ({ user, onLogout }) => {
                     name: user?.name || '',
                     username: user?.username || '',
                     bio: user?.bio || '',
-                    avatar: user?.avatar || ''
+                    avatar: user?.avatar || '',
+                    frame_color: user?.frame_color || 'lime'
                   });
                   setIsEditing(true);
                 }}
