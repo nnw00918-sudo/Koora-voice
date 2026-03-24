@@ -1,22 +1,167 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { 
-  Home, Trophy, Settings, MessageSquare, User, ArrowRight, ArrowLeft,
-  Shield, Share2, Grid3X3, Heart, MoreHorizontal, MessageCircle,
-  UserPlus, UserMinus, Repeat2, FileText, Ban, Flag
+  ArrowRight, ArrowLeft, UserPlus, UserMinus, 
+  MessageSquare, MoreHorizontal, Heart, MessageCircle,
+  Repeat2, FileText, Ban, Flag, Users, Clock, Coins,
+  Crown, Shield, Star, Award, Mic, Share2, X
 } from 'lucide-react';
+import { GlowingAvatar, StatCard, ProfileTabs, BadgesList } from '../components/profile';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Animated cover background
+const AnimatedCover = () => (
+  <div className="absolute inset-0 overflow-hidden">
+    <motion.div
+      className="absolute inset-0 bg-gradient-to-br from-slate-950 via-cyan-950/30 to-slate-950"
+      animate={{ 
+        backgroundPosition: ['0% 0%', '100% 100%', '0% 0%']
+      }}
+      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+    />
+    <motion.div
+      className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px]"
+      animate={{
+        scale: [1, 1.3, 1],
+        x: [0, -50, 0],
+        y: [0, 50, 0],
+      }}
+      transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+    />
+    <motion.div
+      className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-[80px]"
+      animate={{
+        scale: [1, 1.2, 1],
+        x: [0, 30, 0],
+        y: [0, -30, 0],
+      }}
+      transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+    />
+  </div>
+);
+
+// Thread Card Component
+const ThreadCard = ({ thread, onLike, onNavigate, isRTL }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="p-4 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-colors cursor-pointer"
+    onClick={() => onNavigate(thread.id)}
+  >
+    <p className="text-white font-almarai text-sm leading-relaxed mb-3 line-clamp-3">
+      {thread.content}
+    </p>
+    
+    {thread.image && (
+      <img src={thread.image} alt="" className="w-full h-40 object-cover rounded-xl mb-3" />
+    )}
+    
+    <div className="flex items-center justify-between text-slate-400 text-xs">
+      <div className="flex items-center gap-4">
+        <button
+          onClick={(e) => { e.stopPropagation(); onLike(thread.id); }}
+          className={`flex items-center gap-1 transition-colors ${thread.liked ? 'text-rose-400' : 'hover:text-rose-400'}`}
+        >
+          <Heart className={`w-4 h-4 ${thread.liked ? 'fill-current' : ''}`} />
+          <span>{thread.likes_count || 0}</span>
+        </button>
+        <span className="flex items-center gap-1">
+          <MessageCircle className="w-4 h-4" />
+          {thread.replies_count || 0}
+        </span>
+        <span className="flex items-center gap-1">
+          <Repeat2 className="w-4 h-4" />
+          {thread.reposts_count || 0}
+        </span>
+      </div>
+      <span className="text-slate-500">
+        {new Date(thread.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
+      </span>
+    </div>
+  </motion.div>
+);
+
+// Reply Card Component
+const ReplyCard = ({ reply, onNavigate, isRTL }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="p-4 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800/50 cursor-pointer hover:border-purple-500/30 transition-colors"
+    onClick={() => onNavigate(reply.thread_id)}
+  >
+    {reply.thread_author && (
+      <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-800/50">
+        <span className="text-xs text-slate-500">{isRTL ? 'رداً على' : 'Reply to'}</span>
+        <span className="text-xs text-cyan-400 font-cairo">@{reply.thread_author}</span>
+      </div>
+    )}
+    <p className="text-white font-almarai text-sm leading-relaxed line-clamp-2">
+      {reply.content}
+    </p>
+    <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
+      <span>{new Date(reply.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}</span>
+    </div>
+  </motion.div>
+);
+
+// Menu Modal
+const MenuModal = ({ show, onClose, onBlock, onReport, isRTL }) => {
+  if (!show) return null;
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end justify-center"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        exit={{ y: 100 }}
+        className="w-full max-w-md bg-slate-900 rounded-t-3xl p-6 border-t border-slate-700"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-12 h-1 bg-slate-700 rounded-full mx-auto mb-6" />
+        
+        <button
+          onClick={onBlock}
+          className="w-full flex items-center gap-3 p-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 mb-3 transition-colors"
+        >
+          <Ban className="w-5 h-5 text-red-400" />
+          <span className="text-red-400 font-cairo">{isRTL ? 'حظر المستخدم' : 'Block User'}</span>
+        </button>
+        
+        <button
+          onClick={onReport}
+          className="w-full flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 mb-3 transition-colors"
+        >
+          <Flag className="w-5 h-5 text-amber-400" />
+          <span className="text-amber-400 font-cairo">{isRTL ? 'إبلاغ' : 'Report'}</span>
+        </button>
+        
+        <button
+          onClick={onClose}
+          className="w-full p-4 rounded-xl bg-slate-800 text-slate-400 font-cairo mt-2"
+        >
+          {isRTL ? 'إلغاء' : 'Cancel'}
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const UserProfilePage = ({ currentUser }) => {
   const navigate = useNavigate();
   const { userId } = useParams();
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('posts');
@@ -35,22 +180,23 @@ const UserProfilePage = ({ currentUser }) => {
 
   const txt = {
     ar: {
-      followers: 'المتابعون',
-      following: 'يتابع',
+      followers: 'متابع',
+      following: 'متابَع',
       posts: 'المنشورات',
       likes: 'الإعجابات',
       reposts: 'إعادة النشر',
       replies: 'الردود',
       follow: 'متابعة',
-      unfollow: 'إلغاء المتابعة',
+      unfollow: 'إلغاء',
       message: 'رسالة',
       noPosts: 'لا توجد منشورات',
       noLikes: 'لا توجد إعجابات',
       noReposts: 'لا توجد إعادة نشر',
       noReplies: 'لا توجد ردود',
       userNotFound: 'المستخدم غير موجود',
-      block: 'حظر',
-      report: 'إبلاغ',
+      coins: 'عملة',
+      hours: 'ساعة',
+      badges: 'الشارات',
     },
     en: {
       followers: 'Followers',
@@ -67,8 +213,9 @@ const UserProfilePage = ({ currentUser }) => {
       noReposts: 'No reposts yet',
       noReplies: 'No replies yet',
       userNotFound: 'User not found',
-      block: 'Block',
-      report: 'Report',
+      coins: 'Coins',
+      hours: 'Hours',
+      badges: 'Badges',
     }
   }[language];
 
@@ -86,7 +233,6 @@ const UserProfilePage = ({ currentUser }) => {
       const res = await axios.get(`${API}/users/${userId}/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Handle both API response formats
       const userData = res.data.user || res.data;
       setUser(userData);
       setIsFollowing(userData.is_following);
@@ -181,384 +327,321 @@ const UserProfilePage = ({ currentUser }) => {
       await axios.post(`${API}/threads/${threadId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUserPosts(prev => prev.map(t => 
+      const updateList = (list) => list.map(t => 
         t.id === threadId 
           ? { ...t, liked: !t.liked, likes_count: t.liked ? t.likes_count - 1 : t.likes_count + 1 }
           : t
-      ));
+      );
+      if (activeTab === 'posts') setUserPosts(updateList);
+      else if (activeTab === 'likes') setUserLikes(updateList);
+      else if (activeTab === 'reposts') setUserReposts(updateList);
     } catch (error) {
       console.error('Like failed');
     }
   };
 
-  const formatTime = (timestamp) => {
-    if (!timestamp) return isRTL ? 'الآن' : 'now';
-    const diff = Date.now() - new Date(timestamp).getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-    
-    if (minutes < 1) return isRTL ? 'الآن' : 'now';
-    if (minutes < 60) return `${minutes}${isRTL ? 'د' : 'm'}`;
-    if (hours < 24) return `${hours}${isRTL ? 'س' : 'h'}`;
-    return `${days}${isRTL ? 'ي' : 'd'}`;
+  const handleNavigateToThread = (threadId) => {
+    if (threadId) {
+      navigate(`/threads/${threadId}`);
+    }
+  };
+
+  const handleBlock = async () => {
+    try {
+      await axios.post(`${API}/users/${userId}/block`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(isRTL ? 'تم حظر المستخدم' : 'User blocked');
+      setShowMenu(false);
+      navigate(-1);
+    } catch (error) {
+      toast.error(isRTL ? 'فشل الحظر' : 'Block failed');
+    }
+  };
+
+  const handleReport = () => {
+    toast.success(isRTL ? 'تم إرسال البلاغ' : 'Report submitted');
+    setShowMenu(false);
+  };
+
+  // Badges
+  const badgesEarned = user?.badges_earned || [];
+  const badges = [
+    { icon: Mic, label: isRTL ? "متحدث" : "Speaker", color: "from-lime-500 to-emerald-500", key: "speaker", earned: badgesEarned.includes("speaker") },
+    { icon: Crown, label: isRTL ? "مالك غرفة" : "Room Owner", color: "from-amber-500 to-yellow-500", key: "room_owner", earned: badgesEarned.includes("room_owner") },
+    { icon: Heart, label: isRTL ? "محبوب" : "Popular", color: "from-rose-500 to-pink-500", key: "popular", earned: badgesEarned.includes("popular") },
+    { icon: Star, label: isRTL ? "نجم" : "Star", color: "from-purple-500 to-indigo-500", key: "star", earned: badgesEarned.includes("star") },
+    { icon: Shield, label: isRTL ? "موثق" : "Verified", color: "from-cyan-500 to-blue-500", key: "verified", earned: badgesEarned.includes("verified") },
+    { icon: Award, label: isRTL ? "أسطورة" : "Legend", color: "from-orange-500 to-red-500", key: "legend", earned: badgesEarned.includes("legend") },
+  ];
+
+  // Tabs
+  const tabs = [
+    { id: 'posts', label: txt.posts, icon: FileText, count: userPosts.length },
+    { id: 'likes', label: txt.likes, icon: Heart, count: userLikes.length },
+    { id: 'reposts', label: txt.reposts, icon: Repeat2, count: userReposts.length },
+    { id: 'replies', label: txt.replies, icon: MessageCircle, count: userReplies.length },
+  ];
+
+  const getCurrentContent = () => {
+    switch (activeTab) {
+      case 'posts': return userPosts;
+      case 'likes': return userLikes;
+      case 'reposts': return userReposts;
+      case 'replies': return userReplies;
+      default: return [];
+    }
+  };
+
+  const getEmptyMessage = () => {
+    switch (activeTab) {
+      case 'posts': return txt.noPosts;
+      case 'likes': return txt.noLikes;
+      case 'reposts': return txt.noReposts;
+      case 'replies': return txt.noReplies;
+      default: return '';
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full"
+        />
       </div>
     );
   }
 
-  if (!user) return null;
-
-  // Redirect to own profile if viewing self
-  if (user.id === currentUser.id) {
-    navigate('/profile');
-    return null;
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <p className="text-slate-400 font-cairo">{txt.userNotFound}</p>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-black pb-24">
-      {/* Header */}
-      <div className="sticky top-0 bg-black/90 backdrop-blur-xl z-10 px-4 py-3">
-        <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center">
-            <BackIcon className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-slate-950 pb-8" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Header with cover */}
+      <div className="relative h-56">
+        <AnimatedCover />
+        
+        {/* Top navigation */}
+        <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+            data-testid="back-btn"
+          >
+            <BackIcon className="w-5 h-5 text-white" />
           </button>
-          <h1 className="text-lg font-cairo font-bold text-white" dir="ltr">@{user.username}</h1>
-          <div className="relative">
-            <button 
-              onClick={() => setShowMenu(!showMenu)}
-              className="w-10 h-10 flex items-center justify-center"
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: user.name,
+                    url: window.location.href
+                  });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                  toast.success(isRTL ? 'تم نسخ الرابط' : 'Link copied');
+                }
+              }}
+              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
             >
-              <MoreHorizontal className="w-6 h-6 text-white" />
+              <Share2 className="w-5 h-5 text-white" />
             </button>
-            
-            {/* Dropdown Menu */}
-            {showMenu && (
-              <div className="absolute top-12 left-0 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden min-w-[150px]">
-                <button
-                  onClick={() => {
-                    toast.success(isRTL ? 'تم الحظر' : 'User blocked');
-                    setShowMenu(false);
-                  }}
-                  className={`w-full px-4 py-3 text-red-500 hover:bg-slate-800 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
-                >
-                  <Ban className="w-4 h-4" />
-                  <span className="font-medium">{txt.block}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    toast.success(isRTL ? 'تم الإبلاغ' : 'User reported');
-                    setShowMenu(false);
-                  }}
-                  className={`w-full px-4 py-3 text-amber-500 hover:bg-slate-800 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
-                >
-                  <Flag className="w-4 h-4" />
-                  <span className="font-medium">{txt.report}</span>
-                </button>
-              </div>
-            )}
+            <button
+              onClick={() => setShowMenu(true)}
+              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+              data-testid="menu-btn"
+            >
+              <MoreHorizontal className="w-5 h-5 text-white" />
+            </button>
           </div>
+        </div>
+
+        {/* Avatar */}
+        <div className={`absolute -bottom-14 ${isRTL ? 'right-6' : 'left-6'} z-20`}>
+          <GlowingAvatar
+            src={user.avatar}
+            size="xlarge"
+            frameColor={user.frame_color || 'cyan'}
+          />
         </div>
       </div>
 
-      {/* Profile Content */}
-      <div className="px-4 pt-4 pb-6">
-        {/* Avatar */}
-        <div className="flex justify-center mb-4">
-          <div className="relative">
-            <img src={user.avatar} alt="" className="w-24 h-24 rounded-full border-2 border-slate-800" />
-            {user.role && user.role !== 'user' && (
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#fe2c55] flex items-center justify-center border-2 border-black">
-                <Shield className="w-4 h-4 text-white" />
-              </div>
-            )}
+      {/* Profile content */}
+      <div className="px-4 pt-20">
+        {/* User info & action buttons */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h1 className="text-2xl font-black font-cairo text-white mb-1">
+              {user.name}
+            </h1>
+            <p className="text-sm text-cyan-400 font-almarai">@{user.username}</p>
           </div>
-        </div>
-
-        {/* Name */}
-        <h2 className="text-center text-xl font-cairo font-bold text-white mb-1" dir="ltr">@{user.username}</h2>
-        {user.name && user.name !== user.username && (
-          <p className="text-center text-slate-400 font-almarai text-sm mb-4">{user.name}</p>
-        )}
-
-        {/* Stats - Only Followers/Following */}
-        <div className="flex justify-center gap-8 py-4">
-          <button 
-            onClick={() => navigate(`/follows/${userId}?tab=followers`)}
-            className="text-center hover:opacity-80 transition-opacity"
-          >
-            <p className="text-xl font-chivo font-bold text-white">{user.followers_count || 0}</p>
-            <p className="text-slate-500 text-xs font-almarai">{txt.followers}</p>
-          </button>
-          <button 
-            onClick={() => navigate(`/follows/${userId}?tab=following`)}
-            className="text-center hover:opacity-80 transition-opacity"
-          >
-            <p className="text-xl font-chivo font-bold text-white">{user.following_count || 0}</p>
-            <p className="text-slate-500 text-xs font-almarai">{txt.following}</p>
-          </button>
-        </div>
-
-        {/* Action Buttons */}
-        <div className={`flex justify-center gap-2 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <button 
-            onClick={handleFollow}
-            disabled={followLoading}
-            className={`flex-1 max-w-[140px] py-2.5 rounded-md font-cairo font-semibold text-sm flex items-center justify-center gap-2 ${
-              isFollowing 
-                ? 'bg-slate-800 text-white border border-slate-600' 
-                : 'bg-[#fe2c55] text-white'
-            }`}
-          >
-            {followLoading ? '...' : (
-              <>
-                {isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                {isFollowing ? txt.unfollow : txt.follow}
-              </>
-            )}
-          </button>
-          <button 
-            onClick={startConversation}
-            className="flex-1 max-w-[140px] py-2.5 rounded-md bg-slate-800 text-white font-cairo font-semibold text-sm flex items-center justify-center gap-2"
-          >
-            <MessageCircle className="w-4 h-4" />
-            {txt.message}
-          </button>
-          <button className="w-11 h-11 rounded-md bg-slate-800 flex items-center justify-center">
-            <Share2 className="w-5 h-5 text-white" />
-          </button>
+          
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={startConversation}
+              className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center hover:bg-slate-700 transition-colors"
+              data-testid="message-btn"
+            >
+              <MessageSquare className="w-5 h-5 text-slate-300" />
+            </button>
+            <button
+              onClick={handleFollow}
+              disabled={followLoading}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-cairo text-sm transition-all ${
+                isFollowing
+                  ? 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-400'
+                  : 'bg-cyan-500 text-slate-900 hover:bg-cyan-400'
+              }`}
+              data-testid="follow-btn"
+            >
+              {followLoading ? (
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }} className="w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+              ) : isFollowing ? (
+                <>
+                  <UserMinus className="w-4 h-4" />
+                  <span>{txt.unfollow}</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  <span>{txt.follow}</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Bio */}
         {user.bio && (
-          <p className="text-center text-white font-almarai text-sm mb-4 px-8">{user.bio}</p>
+          <p className="text-sm text-slate-400 font-almarai leading-relaxed mb-6">
+            {user.bio}
+          </p>
         )}
-      </div>
 
-      {/* Tabs */}
-      <div className="border-b border-slate-800">
-        <div className="flex justify-center">
-          <button 
-            onClick={() => setActiveTab('posts')} 
-            className={`flex-1 max-w-[80px] py-3 text-center font-almarai text-xs transition-colors relative ${activeTab === 'posts' ? 'text-white font-bold' : 'text-slate-500'}`}
-          >
-            <FileText className="w-4 h-4 mx-auto mb-1" />
-            {txt.posts}
-            {activeTab === 'posts' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-sky-500 rounded-full" />}
-          </button>
-          <button 
-            onClick={() => setActiveTab('likes')} 
-            className={`flex-1 max-w-[80px] py-3 text-center font-almarai text-xs transition-colors relative ${activeTab === 'likes' ? 'text-white font-bold' : 'text-slate-500'}`}
-          >
-            <Heart className="w-4 h-4 mx-auto mb-1" />
-            {txt.likes}
-            {activeTab === 'likes' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-rose-500 rounded-full" />}
-          </button>
-          <button 
-            onClick={() => setActiveTab('reposts')} 
-            className={`flex-1 max-w-[80px] py-3 text-center font-almarai text-xs transition-colors relative ${activeTab === 'reposts' ? 'text-white font-bold' : 'text-slate-500'}`}
-          >
-            <Repeat2 className="w-4 h-4 mx-auto mb-1" />
-            {txt.reposts}
-            {activeTab === 'reposts' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-emerald-500 rounded-full" />}
-          </button>
-          <button 
-            onClick={() => setActiveTab('replies')} 
-            className={`flex-1 max-w-[80px] py-3 text-center font-almarai text-xs transition-colors relative ${activeTab === 'replies' ? 'text-white font-bold' : 'text-slate-500'}`}
-          >
-            <MessageCircle className="w-4 h-4 mx-auto mb-1" />
-            {txt.replies}
-            {activeTab === 'replies' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-cyan-500 rounded-full" />}
-          </button>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-4 gap-3 mb-6">
+          <StatCard
+            icon={Users}
+            value={user.followers_count || 0}
+            label={txt.followers}
+            color="cyan"
+            delay={0}
+          />
+          <StatCard
+            icon={Users}
+            value={user.following_count || 0}
+            label={txt.following}
+            color="purple"
+            delay={0.1}
+          />
+          <StatCard
+            icon={Coins}
+            value={user.coins || 0}
+            label={txt.coins}
+            color="amber"
+            delay={0.2}
+          />
+          <StatCard
+            icon={Clock}
+            value={user.listening_hours || 0}
+            label={txt.hours}
+            color="lime"
+            delay={0.3}
+          />
+        </div>
+
+        {/* Badges */}
+        <div className="mb-6">
+          <h3 className="text-sm font-cairo text-slate-400 mb-3">{txt.badges}</h3>
+          <BadgesList badges={badges} />
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-4">
+          <ProfileTabs
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        </div>
+
+        {/* Content */}
+        <div className="space-y-3 min-h-[200px]">
+          {loadingContent ? (
+            <div className="flex items-center justify-center py-12">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-8 h-8 border-3 border-cyan-500 border-t-transparent rounded-full"
+              />
+            </div>
+          ) : getCurrentContent().length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800/50 flex items-center justify-center">
+                {activeTab === 'posts' && <FileText className="w-8 h-8 text-slate-600" />}
+                {activeTab === 'likes' && <Heart className="w-8 h-8 text-slate-600" />}
+                {activeTab === 'reposts' && <Repeat2 className="w-8 h-8 text-slate-600" />}
+                {activeTab === 'replies' && <MessageCircle className="w-8 h-8 text-slate-600" />}
+              </div>
+              <p className="text-slate-500 font-almarai">{getEmptyMessage()}</p>
+            </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-3"
+              >
+                {activeTab === 'replies' ? (
+                  userReplies.map((reply, index) => (
+                    <ReplyCard
+                      key={reply.id || index}
+                      reply={reply}
+                      onNavigate={handleNavigateToThread}
+                      isRTL={isRTL}
+                    />
+                  ))
+                ) : (
+                  getCurrentContent().map((thread, index) => (
+                    <ThreadCard
+                      key={thread.id || index}
+                      thread={thread}
+                      onLike={handleLike}
+                      onNavigate={handleNavigateToThread}
+                      isRTL={isRTL}
+                    />
+                  ))
+                )}
+              </motion.div>
+            </AnimatePresence>
+          )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="min-h-[200px]">
-        {loadingContent ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <>
-            {/* Posts Tab */}
-            {activeTab === 'posts' && (
-              userPosts.length === 0 ? (
-                <div className="py-16 text-center">
-                  <FileText className="w-10 h-10 mx-auto mb-2 text-slate-600" />
-                  <p className="text-slate-500 font-almarai">{txt.noPosts}</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-800">
-                  {userPosts.map(thread => (
-                    <div 
-                      key={thread.id} 
-                      className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
-                      onClick={() => navigate(`/threads/${thread.id}`)}
-                    >
-                      <p className={`text-white font-almarai text-sm leading-relaxed line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-                        {thread.content}
-                      </p>
-                      <div className={`flex items-center gap-4 mt-2 text-xs text-slate-500 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <span className="flex items-center gap-1">
-                          <Heart className="w-3 h-3" /> {thread.likes_count || 0}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Repeat2 className="w-3 h-3" /> {thread.reposts_count || 0}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="w-3 h-3" /> {thread.replies_count || 0}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
-
-            {/* Likes Tab */}
-            {activeTab === 'likes' && (
-              userLikes.length === 0 ? (
-                <div className="py-16 text-center">
-                  <Heart className="w-10 h-10 mx-auto mb-2 text-slate-600" />
-                  <p className="text-slate-500 font-almarai">{txt.noLikes}</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-800">
-                  {userLikes.map(thread => (
-                    <div 
-                      key={thread.id} 
-                      className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
-                      onClick={() => navigate(`/threads/${thread.id}`)}
-                    >
-                      <div 
-                        className={`flex items-center gap-2 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/user/${thread.author?.id}`);
-                        }}
-                      >
-                        <img 
-                          src={thread.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${thread.author?.username}`} 
-                          alt="" 
-                          className="w-6 h-6 rounded-full hover:opacity-80"
-                        />
-                        <span className="text-lime-400 text-xs font-bold hover:text-lime-300">@{thread.author?.username}</span>
-                      </div>
-                      <p className={`text-white font-almarai text-sm leading-relaxed line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-                        {thread.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
-
-            {/* Reposts Tab */}
-            {activeTab === 'reposts' && (
-              userReposts.length === 0 ? (
-                <div className="py-16 text-center">
-                  <Repeat2 className="w-10 h-10 mx-auto mb-2 text-slate-600" />
-                  <p className="text-slate-500 font-almarai">{txt.noReposts}</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-800">
-                  {userReposts.map(thread => (
-                    <div 
-                      key={thread.id} 
-                      className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
-                      onClick={() => navigate(`/threads/${thread.id}`)}
-                    >
-                      <div className={`flex items-center gap-2 mb-2 text-emerald-400 text-xs ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <Repeat2 className="w-3 h-3" />
-                        <span>أعاد نشر</span>
-                      </div>
-                      <p className={`text-white font-almarai text-sm leading-relaxed line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-                        {thread.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
-
-            {/* Replies Tab */}
-            {activeTab === 'replies' && (
-              userReplies.length === 0 ? (
-                <div className="py-16 text-center">
-                  <MessageCircle className="w-10 h-10 mx-auto mb-2 text-slate-600" />
-                  <p className="text-slate-500 font-almarai">{txt.noReplies}</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-800">
-                  {userReplies.map(reply => (
-                    <div 
-                      key={reply.id} 
-                      className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
-                      onClick={() => navigate(`/threads/${reply.parent_thread_id}`)}
-                    >
-                      <div className={`flex items-center gap-2 mb-2 text-cyan-400 text-xs ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <MessageCircle className="w-3 h-3" />
-                        <span>رد على منشور</span>
-                        {reply.thread_author && (
-                          <span 
-                            className="text-lime-400 font-bold hover:text-lime-300"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/user/${reply.thread_author?.id}`);
-                            }}
-                          >
-                            @{reply.thread_author?.username}
-                          </span>
-                        )}
-                      </div>
-                      {reply.thread_content && (
-                        <div className="mb-2 p-2 bg-slate-900/50 rounded-lg border-r-2 border-slate-600">
-                          <p className="text-slate-400 text-xs text-right line-clamp-1">{reply.thread_content}</p>
-                        </div>
-                      )}
-                      <p className={`text-white font-almarai text-sm leading-relaxed ${isRTL ? 'text-right' : 'text-left'}`}>
-                        {reply.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl border-t border-slate-800 z-40">
-        <div className={`max-w-[600px] mx-auto flex justify-around p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <button onClick={() => navigate('/dashboard')} className="flex flex-col items-center gap-1 text-slate-400">
-            <Home className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('home')}</span>
-          </button>
-          <button onClick={() => navigate('/threads')} className="flex flex-col items-center gap-1 text-slate-400">
-            <MessageSquare className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('threads')}</span>
-          </button>
-          <button onClick={() => navigate('/messages')} className="flex flex-col items-center gap-1 text-slate-400">
-            <MessageCircle className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{isRTL ? 'الرسائل' : 'Messages'}</span>
-          </button>
-          <button onClick={() => navigate('/profile')} className="flex flex-col items-center gap-1 text-slate-400">
-            <User className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('profile')}</span>
-          </button>
-          <button onClick={() => navigate('/settings')} className="flex flex-col items-center gap-1 text-slate-400">
-            <Settings className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-xs font-almarai">{t('settings')}</span>
-          </button>
-        </div>
-      </div>
+      {/* Menu Modal */}
+      <AnimatePresence>
+        <MenuModal
+          show={showMenu}
+          onClose={() => setShowMenu(false)}
+          onBlock={handleBlock}
+          onReport={handleReport}
+          isRTL={isRTL}
+        />
+      </AnimatePresence>
     </div>
   );
 };
