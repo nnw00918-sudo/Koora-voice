@@ -89,6 +89,30 @@
 - [x] إحصائيات (50K+ مستخدم، 200+ غرفة، LIVE)
 - [x] زر CTA أخضر متوهج
 
+### تحديث التصميم الشامل - 24 ديسمبر 2025
+- [x] **تطبيق design_guidelines.json** على كل الواجهات
+- [x] **ThreadsPage.js**:
+  - Header مع glassmorphism (bg-black/80 backdrop-blur-xl)
+  - تبويبات مع مؤشر ليموني متوهج (#CCFF00)
+  - أزرار التفاعل (إعجاب أحمر، إعادة نشر أخضر، رد أزرق)
+  - Composer modal بتصميم جديد
+- [x] **MessagesPage.js**:
+  - خلفية متحركة مع orbs (lime/emerald)
+  - Header مع glassmorphism
+  - فقاعات دردشة: المرسل (gradient أخضر)، المستلم (خلفية داكنة)
+  - مؤشر "متصل" أخضر متحرك
+- [x] **ProfilePage.js**: 
+  - إطار صورة متوهج (6 ألوان)
+  - بطاقات إحصائيات مع backdrop-blur
+- [x] **BottomNavigation.js**:
+  - Glassmorphism مع gradient
+  - شريط توهج علوي أخضر
+  - أيقونات نشطة مع glow effect
+- [x] **index.css**: 
+  - استيراد خطوط Cairo و Almarai من Google Fonts
+  - متغيرات CSS للألوان الجديدة
+- [x] اختبار شامل - 100% نجاح (iteration_20.json)
+
 ### التقسيم والـ Refactoring
 - [x] فصل Football routes إلى `/routes/football.py`
 - [x] تقليص server.py من 5268 إلى 4277 سطر (~1000 سطر)
