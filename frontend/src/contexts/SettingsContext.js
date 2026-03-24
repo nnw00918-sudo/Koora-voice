@@ -1,23 +1,35 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 
 const SettingsContext = createContext();
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const defaultSettings = {
   // Privacy
   privateAccount: false,
-  showOnline: true,
+  showOnlineStatus: true,
+  showLastSeen: true,
+  allowMessages: 'everyone', // everyone, followers, nobody
+  allowMentions: true,
+  hideFromSearch: false,
   
   // Notifications
-  notifications: true,
+  pushEnabled: true,
+  emailEnabled: false,
   messageNotif: true,
   likesNotif: true,
+  commentsNotif: true,
   followNotif: true,
+  mentionsNotif: true,
   roomNotif: true,
   
   // Display
   darkMode: true,
   sounds: true,
   vibration: true,
+  autoPlayVideos: true,
+  dataSaver: false,
+  fontSize: 'medium', // small, medium, large
 };
 
 // Theme colors for light and dark modes
@@ -65,7 +77,17 @@ export const SettingsProvider = ({ children }) => {
     const saved = localStorage.getItem('appSettings');
     return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Load settings from server on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      loadSettingsFromServer(token);
+    }
+  }, []);
+
+  // Save to localStorage whenever settings change
   useEffect(() => {
     localStorage.setItem('appSettings', JSON.stringify(settings));
     
@@ -96,11 +118,71 @@ export const SettingsProvider = ({ children }) => {
     root.style.setProperty('--theme-input-bg', theme.inputBg);
     root.style.setProperty('--theme-glass-bg', theme.glassBg);
     
+    // Apply font size
+    const fontSizes = { small: '14px', medium: '16px', large: '18px' };
+    root.style.setProperty('--base-font-size', fontSizes[settings.fontSize] || '16px');
+    
     document.body.style.backgroundColor = theme.background;
     document.body.style.color = theme.text;
   }, [settings]);
 
-  const updateSetting = (key, value) => {
+  const loadSettingsFromServer = async (token) => {
+    try {
+      const response = await axios.get(`${API}/users/settings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data) {
+        const serverSettings = {
+          // Privacy
+          privateAccount: response.data.privacy?.privateAccount ?? defaultSettings.privateAccount,
+          showOnlineStatus: response.data.privacy?.showOnlineStatus ?? defaultSettings.showOnlineStatus,
+          showLastSeen: response.data.privacy?.showLastSeen ?? defaultSettings.showLastSeen,
+          allowMessages: response.data.privacy?.allowMessages ?? defaultSettings.allowMessages,
+          allowMentions: response.data.privacy?.allowMentions ?? defaultSettings.allowMentions,
+          hideFromSearch: response.data.privacy?.hideFromSearch ?? defaultSettings.hideFromSearch,
+          // Notifications
+          pushEnabled: response.data.notifications?.pushEnabled ?? defaultSettings.pushEnabled,
+          emailEnabled: response.data.notifications?.emailEnabled ?? defaultSettings.emailEnabled,
+          messageNotif: response.data.notifications?.messages ?? defaultSettings.messageNotif,
+          likesNotif: response.data.notifications?.likes ?? defaultSettings.likesNotif,
+          commentsNotif: response.data.notifications?.comments ?? defaultSettings.commentsNotif,
+          followNotif: response.data.notifications?.follows ?? defaultSettings.followNotif,
+          mentionsNotif: response.data.notifications?.mentions ?? defaultSettings.mentionsNotif,
+          roomNotif: response.data.notifications?.roomInvites ?? defaultSettings.roomNotif,
+          // Display
+          darkMode: response.data.display?.darkMode ?? defaultSettings.darkMode,
+          sounds: response.data.notifications?.soundEnabled ?? defaultSettings.sounds,
+          vibration: response.data.notifications?.vibrationEnabled ?? defaultSettings.vibration,
+          autoPlayVideos: response.data.display?.autoPlayVideos ?? defaultSettings.autoPlayVideos,
+          dataSaver: response.data.display?.dataServerMode ?? defaultSettings.dataSaver,
+          fontSize: response.data.display?.fontSize ?? defaultSettings.fontSize,
+        };
+        setSettings(prev => ({ ...prev, ...serverSettings }));
+      }
+    } catch (error) {
+      console.log('Using local settings');
+    }
+  };
+
+  const saveSettingsToServer = useCallback(async (category, data) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    setIsLoading(true);
+    try {
+      await axios.put(`${API}/users/settings`, {
+        [category]: data
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Failed to save settings to server');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const updateSetting = useCallback((key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     
     // Play sound feedback if sounds enabled
@@ -112,11 +194,50 @@ export const SettingsProvider = ({ children }) => {
     if (settings.vibration && key !== 'vibration' && navigator.vibrate) {
       navigator.vibrate(50);
     }
-  };
+
+    // Sync to server based on category
+    const privacyKeys = ['privateAccount', 'showOnlineStatus', 'showLastSeen', 'allowMessages', 'allowMentions', 'hideFromSearch'];
+    const notificationKeys = ['pushEnabled', 'emailEnabled', 'messageNotif', 'likesNotif', 'commentsNotif', 'followNotif', 'mentionsNotif', 'roomNotif', 'sounds', 'vibration'];
+    const displayKeys = ['darkMode', 'autoPlayVideos', 'dataSaver', 'fontSize'];
+
+    if (privacyKeys.includes(key)) {
+      const privacyData = { ...settings, [key]: value };
+      saveSettingsToServer('privacy', {
+        privateAccount: privacyData.privateAccount,
+        showOnlineStatus: privacyData.showOnlineStatus,
+        showLastSeen: privacyData.showLastSeen,
+        allowMessages: privacyData.allowMessages,
+        allowMentions: privacyData.allowMentions,
+        hideFromSearch: privacyData.hideFromSearch,
+      });
+    } else if (notificationKeys.includes(key)) {
+      const notifData = { ...settings, [key]: value };
+      saveSettingsToServer('notifications', {
+        pushEnabled: notifData.pushEnabled,
+        emailEnabled: notifData.emailEnabled,
+        messages: notifData.messageNotif,
+        likes: notifData.likesNotif,
+        comments: notifData.commentsNotif,
+        follows: notifData.followNotif,
+        mentions: notifData.mentionsNotif,
+        roomInvites: notifData.roomNotif,
+        soundEnabled: notifData.sounds,
+        vibrationEnabled: notifData.vibration,
+      });
+    } else if (displayKeys.includes(key)) {
+      const displayData = { ...settings, [key]: value };
+      saveSettingsToServer('display', {
+        darkMode: displayData.darkMode,
+        autoPlayVideos: displayData.autoPlayVideos,
+        dataServerMode: displayData.dataSaver,
+        fontSize: displayData.fontSize,
+      });
+    }
+  }, [settings, saveSettingsToServer]);
   
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     updateSetting('darkMode', !settings.darkMode);
-  };
+  }, [settings.darkMode, updateSetting]);
   
   const currentTheme = settings.darkMode ? themeColors.dark : themeColors.light;
 
@@ -177,8 +298,26 @@ export const SettingsProvider = ({ children }) => {
       toggleTheme,
       currentTheme,
       isDarkMode: settings.darkMode,
+      isLoading,
       playNotificationSound,
-      vibrate 
+      vibrate,
+      // Shortcut getters for common checks
+      canReceiveMessages: (senderId, isFollower) => {
+        if (settings.allowMessages === 'everyone') return true;
+        if (settings.allowMessages === 'followers') return isFollower;
+        return false;
+      },
+      shouldShowNotification: (type) => {
+        const map = {
+          message: settings.messageNotif,
+          like: settings.likesNotif,
+          comment: settings.commentsNotif,
+          follow: settings.followNotif,
+          mention: settings.mentionsNotif,
+          room: settings.roomNotif,
+        };
+        return map[type] ?? true;
+      },
     }}>
       {children}
     </SettingsContext.Provider>

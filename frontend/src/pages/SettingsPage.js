@@ -25,7 +25,7 @@ const API = `${BACKEND_URL}/api`;
 const SettingsPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
-  const { settings, updateSetting, toggleTheme, isDarkMode } = useSettings();
+  const { settings, updateSetting, toggleTheme, isDarkMode, isLoading: settingsLoading } = useSettings();
   const [currentView, setCurrentView] = useState('main');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -36,52 +36,6 @@ const SettingsPage = ({ user, onLogout }) => {
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [loadingBlocked, setLoadingBlocked] = useState(false);
-  
-  // Privacy Settings State
-  const [privacySettings, setPrivacySettings] = useState({
-    privateAccount: false,
-    showOnlineStatus: true,
-    showLastSeen: true,
-    allowMessages: 'everyone', // everyone, followers, nobody
-    allowComments: 'everyone',
-    allowMentions: true,
-    showActivityStatus: true,
-    hideFromSearch: false,
-    allowTagging: true,
-  });
-
-  // Security Settings State
-  const [securitySettings, setSecuritySettings] = useState({
-    twoFactorEnabled: false,
-    loginAlerts: true,
-    trustedDevices: [],
-    activeSessions: [],
-  });
-
-  // Notification Settings State
-  const [notificationSettings, setNotificationSettings] = useState({
-    pushEnabled: true,
-    emailEnabled: true,
-    messages: true,
-    likes: true,
-    comments: true,
-    follows: true,
-    mentions: true,
-    roomInvites: true,
-    liveNotifications: true,
-    matchReminders: true,
-    soundEnabled: true,
-    vibrationEnabled: true,
-  });
-
-  // Display Settings State
-  const [displaySettings, setDisplaySettings] = useState({
-    darkMode: true,
-    autoPlayVideos: true,
-    dataServerMode: false,
-    fontSize: 'medium',
-    language: 'ar',
-  });
 
   const [profileData, setProfileData] = useState({
     name: user.name || user.username || '',
@@ -93,7 +47,6 @@ const SettingsPage = ({ user, onLogout }) => {
   const [userStats, setUserStats] = useState({ followers_count: 0, following_count: 0 });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [savingSettings, setSavingSettings] = useState(false);
   const fileInputRef = useRef(null);
 
   const isRTL = language === 'ar';
@@ -114,40 +67,7 @@ const SettingsPage = ({ user, onLogout }) => {
 
   useEffect(() => { 
     fetchUserStats(); 
-    loadSettings();
   }, []);
-
-  const loadSettings = async () => {
-    try {
-      const response = await axios.get(`${API}/users/settings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.data) {
-        setPrivacySettings(prev => ({ ...prev, ...response.data.privacy }));
-        setSecuritySettings(prev => ({ ...prev, ...response.data.security }));
-        setNotificationSettings(prev => ({ ...prev, ...response.data.notifications }));
-        setDisplaySettings(prev => ({ ...prev, ...response.data.display }));
-      }
-    } catch (error) {
-      console.log('Using default settings');
-    }
-  };
-
-  const saveSettings = async (type, data) => {
-    setSavingSettings(true);
-    try {
-      await axios.put(`${API}/users/settings`, {
-        [type]: data
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success(isRTL ? 'تم حفظ الإعدادات' : 'Settings saved');
-    } catch (error) {
-      toast.error(isRTL ? 'فشل الحفظ' : 'Failed to save');
-    } finally {
-      setSavingSettings(false);
-    }
-  };
 
   const fetchUserStats = async () => {
     try {
@@ -196,15 +116,14 @@ const SettingsPage = ({ user, onLogout }) => {
         const success = await unsubscribePush();
         if (success) {
           toast.success(isRTL ? 'تم إيقاف الإشعارات' : 'Notifications disabled');
-          setNotificationSettings(prev => ({ ...prev, pushEnabled: false }));
+          updateSetting('pushEnabled', false);
         }
       } else {
         // Subscribe
         const success = await subscribePush();
         if (success) {
           toast.success(isRTL ? 'تم تفعيل الإشعارات بنجاح!' : 'Notifications enabled!');
-          setNotificationSettings(prev => ({ ...prev, pushEnabled: true }));
-          saveSettings('notifications', { ...notificationSettings, pushEnabled: true });
+          updateSetting('pushEnabled', true);
           
           // Send test notification
           setTimeout(() => sendTestPush(), 1000);
@@ -649,11 +568,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={privacySettings.privateAccount}
-            onChange={(val) => {
-              setPrivacySettings(prev => ({ ...prev, privateAccount: val }));
-              saveSettings('privacy', { ...privacySettings, privateAccount: val });
-            }}
+            enabled={settings.privateAccount}
+            onChange={(val) => updateSetting('privateAccount', val)}
           />
         </div>
 
@@ -668,11 +584,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={privacySettings.showOnlineStatus}
-            onChange={(val) => {
-              setPrivacySettings(prev => ({ ...prev, showOnlineStatus: val }));
-              saveSettings('privacy', { ...privacySettings, showOnlineStatus: val });
-            }}
+            enabled={settings.showOnlineStatus}
+            onChange={(val) => updateSetting('showOnlineStatus', val)}
           />
         </div>
 
@@ -687,11 +600,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={privacySettings.showLastSeen}
-            onChange={(val) => {
-              setPrivacySettings(prev => ({ ...prev, showLastSeen: val }));
-              saveSettings('privacy', { ...privacySettings, showLastSeen: val });
-            }}
+            enabled={settings.showLastSeen}
+            onChange={(val) => updateSetting('showLastSeen', val)}
           />
         </div>
       </div>
@@ -709,12 +619,9 @@ const SettingsPage = ({ user, onLogout }) => {
             {['everyone', 'followers', 'nobody'].map(option => (
               <button
                 key={option}
-                onClick={() => {
-                  setPrivacySettings(prev => ({ ...prev, allowMessages: option }));
-                  saveSettings('privacy', { ...privacySettings, allowMessages: option });
-                }}
+                onClick={() => updateSetting('allowMessages', option)}
                 className={`py-3 rounded-xl font-cairo text-sm transition-all ${
-                  privacySettings.allowMessages === option
+                  settings.allowMessages === option
                     ? 'bg-lime-500 text-slate-900 font-bold'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                 }`}
@@ -736,11 +643,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={privacySettings.allowMentions}
-            onChange={(val) => {
-              setPrivacySettings(prev => ({ ...prev, allowMentions: val }));
-              saveSettings('privacy', { ...privacySettings, allowMentions: val });
-            }}
+            enabled={settings.allowMentions}
+            onChange={(val) => updateSetting('allowMentions', val)}
           />
         </div>
 
@@ -755,11 +659,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={privacySettings.hideFromSearch}
-            onChange={(val) => {
-              setPrivacySettings(prev => ({ ...prev, hideFromSearch: val }));
-              saveSettings('privacy', { ...privacySettings, hideFromSearch: val });
-            }}
+            enabled={settings.hideFromSearch}
+            onChange={(val) => updateSetting('hideFromSearch', val)}
           />
         </div>
       </div>
@@ -922,11 +823,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={notificationSettings.emailEnabled}
-            onChange={(val) => {
-              setNotificationSettings(prev => ({ ...prev, emailEnabled: val }));
-              saveSettings('notifications', { ...notificationSettings, emailEnabled: val });
-            }}
+            enabled={settings.emailEnabled}
+            onChange={(val) => updateSetting('emailEnabled', val)}
           />
         </div>
       </div>
@@ -934,10 +832,10 @@ const SettingsPage = ({ user, onLogout }) => {
       <SectionHeader title={isRTL ? 'الأنشطة' : 'Activities'} icon={Heart} />
       <div className="space-y-3">
         {[
-          { key: 'messages', icon: MessageSquare, title: txt.messageNotif, desc: txt.messageNotifDesc },
+          { key: 'message', icon: MessageSquare, title: txt.messageNotif, desc: txt.messageNotifDesc },
           { key: 'likes', icon: Heart, title: txt.likesNotif, desc: txt.likesNotifDesc },
           { key: 'comments', icon: MessageSquare, title: txt.commentsNotif, desc: txt.commentsNotifDesc },
-          { key: 'follows', icon: UserPlus, title: txt.followNotif, desc: txt.followNotifDesc },
+          { key: 'follow', icon: UserPlus, title: txt.followNotif, desc: txt.followNotifDesc },
           { key: 'mentions', icon: AtSign, title: txt.mentionsNotif, desc: txt.mentionsNotifDesc },
         ].map(item => (
           <div key={item.key} className={`flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -951,11 +849,8 @@ const SettingsPage = ({ user, onLogout }) => {
               </div>
             </div>
             <ToggleSwitch 
-              enabled={notificationSettings[item.key]}
-              onChange={(val) => {
-                setNotificationSettings(prev => ({ ...prev, [item.key]: val }));
-                saveSettings('notifications', { ...notificationSettings, [item.key]: val });
-              }}
+              enabled={settings[item.key + 'Notif']}
+              onChange={(val) => updateSetting(item.key + 'Notif', val)}
             />
           </div>
         ))}
@@ -964,9 +859,7 @@ const SettingsPage = ({ user, onLogout }) => {
       <SectionHeader title={isRTL ? 'كورة فويس' : 'Koora Voice'} icon={Trophy} />
       <div className="space-y-3">
         {[
-          { key: 'roomInvites', icon: Users, title: txt.roomNotif, desc: txt.roomNotifDesc },
-          { key: 'liveNotifications', icon: Zap, title: txt.liveNotif, desc: txt.liveNotifDesc },
-          { key: 'matchReminders', icon: Trophy, title: txt.matchNotif, desc: txt.matchNotifDesc },
+          { key: 'room', icon: Users, title: txt.roomNotif, desc: txt.roomNotifDesc },
         ].map(item => (
           <div key={item.key} className={`flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -979,11 +872,8 @@ const SettingsPage = ({ user, onLogout }) => {
               </div>
             </div>
             <ToggleSwitch 
-              enabled={notificationSettings[item.key]}
-              onChange={(val) => {
-                setNotificationSettings(prev => ({ ...prev, [item.key]: val }));
-                saveSettings('notifications', { ...notificationSettings, [item.key]: val });
-              }}
+              enabled={settings[item.key + 'Notif']}
+              onChange={(val) => updateSetting(item.key + 'Notif', val)}
             />
           </div>
         ))}
@@ -1026,12 +916,9 @@ const SettingsPage = ({ user, onLogout }) => {
             {['small', 'medium', 'large'].map(size => (
               <button
                 key={size}
-                onClick={() => {
-                  setDisplaySettings(prev => ({ ...prev, fontSize: size }));
-                  saveSettings('display', { ...displaySettings, fontSize: size });
-                }}
+                onClick={() => updateSetting('fontSize', size)}
                 className={`py-3 rounded-xl font-cairo transition-all ${
-                  displaySettings.fontSize === size
+                  settings.fontSize === size
                     ? 'bg-lime-500 text-slate-900 font-bold'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                 }`}
@@ -1056,11 +943,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={notificationSettings.soundEnabled}
-            onChange={(val) => {
-              setNotificationSettings(prev => ({ ...prev, soundEnabled: val }));
-              saveSettings('notifications', { ...notificationSettings, soundEnabled: val });
-            }}
+            enabled={settings.sounds}
+            onChange={(val) => updateSetting('sounds', val)}
           />
         </div>
 
@@ -1075,11 +959,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={notificationSettings.vibrationEnabled}
-            onChange={(val) => {
-              setNotificationSettings(prev => ({ ...prev, vibrationEnabled: val }));
-              saveSettings('notifications', { ...notificationSettings, vibrationEnabled: val });
-            }}
+            enabled={settings.vibration}
+            onChange={(val) => updateSetting('vibration', val)}
           />
         </div>
       </div>
@@ -1097,11 +978,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={displaySettings.autoPlayVideos}
-            onChange={(val) => {
-              setDisplaySettings(prev => ({ ...prev, autoPlayVideos: val }));
-              saveSettings('display', { ...displaySettings, autoPlayVideos: val });
-            }}
+            enabled={settings.autoPlayVideos}
+            onChange={(val) => updateSetting('autoPlayVideos', val)}
           />
         </div>
 
@@ -1116,11 +994,8 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={displaySettings.dataServerMode}
-            onChange={(val) => {
-              setDisplaySettings(prev => ({ ...prev, dataServerMode: val }));
-              saveSettings('display', { ...displaySettings, dataServerMode: val });
-            }}
+            enabled={settings.dataSaver}
+            onChange={(val) => updateSetting('dataSaver', val)}
           />
         </div>
       </div>
