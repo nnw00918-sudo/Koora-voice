@@ -2739,17 +2739,6 @@ const YallaLiveRoom = ({ user }) => {
               {isAudioMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-slate-300" />}
             </motion.button>
 
-            {/* Headphones */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowVolumeControls(!showVolumeControls)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                showVolumeControls ? 'bg-sky-500' : 'bg-slate-800 border border-slate-700'
-              }`}
-            >
-              <Headphones className="w-4 h-4 text-white" />
-            </motion.button>
-
             {/* Camera Button - Available for everyone */}
             <motion.button
               whileTap={{ scale: 0.9 }}
@@ -3621,118 +3610,6 @@ const YallaLiveRoom = ({ user }) => {
           roomId={roomId}
           roomTitle={room?.title || 'غرفة صوت الكورة'}
         />
-
-        {/* Volume Controls Modal - Fixed Position */}
-        <AnimatePresence>
-          {showVolumeControls && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 z-[200]"
-                onClick={() => setShowVolumeControls(false)}
-              />
-              
-              {/* Volume Panel */}
-              <motion.div
-                initial={{ opacity: 0, y: 100 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 100 }}
-                transition={{ type: "spring", damping: 25 }}
-                className="fixed bottom-0 left-0 right-0 bg-slate-900 rounded-t-3xl p-6 pb-10 border-t border-lime-500/30 z-[201]"
-                style={{ 
-                  paddingBottom: 'max(40px, calc(env(safe-area-inset-bottom) + 24px))',
-                  maxHeight: '70vh'
-                }}
-                dir="rtl"
-              >
-                {/* Handle Bar */}
-                <div className="flex justify-center mb-4">
-                  <div className="w-12 h-1 bg-slate-700 rounded-full" />
-                </div>
-                
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-white font-cairo font-bold text-lg flex items-center gap-2">
-                    <Headphones className="w-5 h-5 text-lime-400" />
-                    التحكم بالصوت
-                  </h3>
-                  <button
-                    onClick={() => setShowVolumeControls(false)}
-                    className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center"
-                  >
-                    <X className="w-4 h-4 text-slate-400" />
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  {/* Speakers/Mics Volume - Control how loud you hear other speakers */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-white font-cairo text-sm flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-lime-500/20 flex items-center justify-center">
-                          <Users className="w-5 h-5 text-lime-400" />
-                        </div>
-                        سماع المتحدثين
-                      </span>
-                      <span className="text-lime-400 text-xl font-bold">{micVolume}%</span>
-                    </div>
-                    <VolumeSlider
-                      value={micVolume}
-                      onChange={setMicVolume}
-                      color="#84cc16"
-                    />
-                    <p className="text-slate-500 text-xs mt-1">تحكم في صوت المتحدثين الآخرين</p>
-                  </div>
-                  
-                  {/* Stream Volume */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-white font-cairo text-sm flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center">
-                          <Volume2 className="w-5 h-5 text-sky-400" />
-                        </div>
-                        صوت البث
-                      </span>
-                      <span className="text-sky-400 text-xl font-bold">{streamVolume}%</span>
-                    </div>
-                    <VolumeSlider
-                      value={streamVolume}
-                      onChange={setStreamVolume}
-                      color="#0ea5e9"
-                    />
-                    <p className="text-slate-500 text-xs mt-1">تحكم في صوت الفيديو والبث المباشر</p>
-                  </div>
-                  
-                  {/* Quick Volume Buttons */}
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
-                    <span className="text-slate-400 text-sm">سريع:</span>
-                    <div className="flex gap-2">
-                      {[0, 25, 50, 75, 100].map((vol) => (
-                        <button
-                          key={vol}
-                          onClick={() => {
-                            setMicVolume(vol);
-                            setStreamVolume(vol);
-                          }}
-                          className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-                            micVolume === vol && streamVolume === vol
-                              ? 'bg-lime-500 text-slate-900'
-                              : 'bg-slate-800 text-slate-400 active:bg-slate-600'
-                          }`}
-                        >
-                          {vol}%
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );
