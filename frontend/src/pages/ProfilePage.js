@@ -554,7 +554,7 @@ const ProfilePage = ({ user, onLogout }) => {
                 className="flex flex-col items-center bg-slate-800/50 backdrop-blur-sm rounded-xl px-6 py-3 border border-slate-700/50 hover:border-lime-500/50 transition-colors"
               >
                 <span className="text-2xl font-bold text-lime-400">{userData?.followers_count || 0}</span>
-                <span className="text-slate-400 text-sm">متابع</span>
+                <span className="text-slate-400 text-sm">المتابعون</span>
               </button>
               <button 
                 onClick={() => navigate(`/follows/${userData?.id}?tab=following`)}

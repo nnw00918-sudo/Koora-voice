@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { 
   Home, Trophy, Settings, MessageSquare, User, ArrowRight, ArrowLeft,
   Shield, Share2, Grid3X3, Heart, MoreHorizontal, MessageCircle,
-  UserPlus, UserMinus, Repeat2, FileText
+  UserPlus, UserMinus, Repeat2, FileText, Ban, Flag
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -27,6 +27,7 @@ const UserProfilePage = ({ currentUser }) => {
   const [loadingContent, setLoadingContent] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
@@ -34,8 +35,8 @@ const UserProfilePage = ({ currentUser }) => {
 
   const txt = {
     ar: {
-      followers: 'متابِعون',
-      following: 'متابَعون',
+      followers: 'المتابعون',
+      following: 'يتابع',
       posts: 'المنشورات',
       likes: 'الإعجابات',
       reposts: 'إعادة النشر',
@@ -48,6 +49,8 @@ const UserProfilePage = ({ currentUser }) => {
       noReposts: 'لا توجد إعادة نشر',
       noReplies: 'لا توجد ردود',
       userNotFound: 'المستخدم غير موجود',
+      block: 'حظر',
+      report: 'إبلاغ',
     },
     en: {
       followers: 'Followers',
@@ -64,6 +67,8 @@ const UserProfilePage = ({ currentUser }) => {
       noReposts: 'No reposts yet',
       noReplies: 'No replies yet',
       userNotFound: 'User not found',
+      block: 'Block',
+      report: 'Report',
     }
   }[language];
 
@@ -224,9 +229,40 @@ const UserProfilePage = ({ currentUser }) => {
             <BackIcon className="w-6 h-6 text-white" />
           </button>
           <h1 className="text-lg font-cairo font-bold text-white" dir="ltr">@{user.username}</h1>
-          <button className="w-10 h-10 flex items-center justify-center">
-            <MoreHorizontal className="w-6 h-6 text-white" />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowMenu(!showMenu)}
+              className="w-10 h-10 flex items-center justify-center"
+            >
+              <MoreHorizontal className="w-6 h-6 text-white" />
+            </button>
+            
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div className={`absolute top-12 ${isRTL ? 'left-0' : 'right-0'} bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden min-w-[150px]`}>
+                <button
+                  onClick={() => {
+                    toast.success(isRTL ? 'تم الحظر' : 'User blocked');
+                    setShowMenu(false);
+                  }}
+                  className={`w-full px-4 py-3 text-red-500 hover:bg-slate-800 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                >
+                  <Ban className="w-4 h-4" />
+                  <span className="font-medium">{txt.block}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    toast.success(isRTL ? 'تم الإبلاغ' : 'User reported');
+                    setShowMenu(false);
+                  }}
+                  className={`w-full px-4 py-3 text-amber-500 hover:bg-slate-800 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                >
+                  <Flag className="w-4 h-4" />
+                  <span className="font-medium">{txt.report}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -253,18 +289,18 @@ const UserProfilePage = ({ currentUser }) => {
         {/* Stats - Only Followers/Following */}
         <div className="flex justify-center gap-8 py-4">
           <button 
-            onClick={() => navigate(`/follows/${userId}?tab=following`)}
-            className="text-center hover:opacity-80 transition-opacity"
-          >
-            <p className="text-xl font-chivo font-bold text-white">{user.following_count || 0}</p>
-            <p className="text-slate-500 text-xs font-almarai">{txt.following}</p>
-          </button>
-          <button 
             onClick={() => navigate(`/follows/${userId}?tab=followers`)}
             className="text-center hover:opacity-80 transition-opacity"
           >
             <p className="text-xl font-chivo font-bold text-white">{user.followers_count || 0}</p>
             <p className="text-slate-500 text-xs font-almarai">{txt.followers}</p>
+          </button>
+          <button 
+            onClick={() => navigate(`/follows/${userId}?tab=following`)}
+            className="text-center hover:opacity-80 transition-opacity"
+          >
+            <p className="text-xl font-chivo font-bold text-white">{user.following_count || 0}</p>
+            <p className="text-slate-500 text-xs font-almarai">{txt.following}</p>
           </button>
         </div>
 
