@@ -465,25 +465,32 @@ export default function MessagesPage() {
       {/* Input Area - Simple */}
       <div className="bg-[#17212b] border-t border-[#232e3c] px-3 py-3">
         <div className="flex items-center gap-3">
-          <input
-            type="text"
+          <textarea
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              // Auto resize
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+            }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
               }
             }}
             placeholder={txt.typeMessage}
-            className="flex-1 bg-[#242f3d] text-white px-4 py-3 rounded-full outline-none text-right"
-            style={{ fontSize: '16px' }}
+            className="flex-1 bg-[#242f3d] text-white px-4 py-3 rounded-2xl outline-none text-right resize-none touch-action-auto"
+            style={{ fontSize: '16px', minHeight: '44px', maxHeight: '120px' }}
             dir="rtl"
+            rows={1}
+            autoComplete="off"
+            inputMode="text"
           />
           
           <button
             onClick={sendMessage}
-            className="p-3 bg-[#6ab2f2] text-white rounded-full"
+            className="p-3 bg-[#6ab2f2] text-white rounded-full flex-shrink-0"
           >
             <Send className="w-5 h-5" />
           </button>
