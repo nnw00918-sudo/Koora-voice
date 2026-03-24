@@ -93,7 +93,7 @@ const ReplyCard = ({ reply, onNavigate, isRTL }) => (
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     className="p-4 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800/50 cursor-pointer hover:border-purple-500/30 transition-colors"
-    onClick={() => onNavigate(reply.thread_id)}
+    onClick={() => onNavigate(reply.parent_thread_id || reply.thread_id)}
   >
     {reply.thread_author && (
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-800/50">

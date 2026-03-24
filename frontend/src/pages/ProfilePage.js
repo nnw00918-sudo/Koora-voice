@@ -97,7 +97,7 @@ const ReplyCard = ({ reply, onNavigate }) => (
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     className="p-4 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800/50 cursor-pointer hover:border-cyan-500/30 transition-colors"
-    onClick={() => onNavigate(reply.thread_id)}
+    onClick={() => onNavigate(reply.parent_thread_id || reply.thread_id)}
   >
     {/* Original thread reference */}
     {reply.thread_author && (
