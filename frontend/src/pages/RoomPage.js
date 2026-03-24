@@ -107,7 +107,11 @@ const YallaLiveRoom = ({ user }) => {
   const { 
     minimizePlayer, 
     disconnectFromRoom: globalDisconnect,
-    setCurrentRoom
+    setCurrentRoom,
+    currentRoom,
+    isMinimized,
+    maximizePlayer,
+    agoraClient: contextAgoraClient
   } = useRoomAudio();
   
   const [room, setRoom] = useState(null);
@@ -239,17 +243,34 @@ const YallaLiveRoom = ({ user }) => {
   const heartbeatInterval = useRef(null);
   const agoraClient = useRef(null);
   const agoraUid = useRef(null);
+  const isMinimizingRef = useRef(false); // Track if we're minimizing
 
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    fetchCurrentUserRole();
-    initializeAgora();
-    joinRoom();
-    fetchRoomData();
-    startPolling();
-    startHeartbeat();
-    fetchStreamStatus();
+    // Reset minimizing flag
+    isMinimizingRef.current = false;
+    
+    // Check if returning from minimized state with same room
+    if (isMinimized && currentRoom && currentRoom.id === roomId && contextAgoraClient) {
+      // Returning to same room - use existing connection
+      console.log('Returning to minimized room, reusing connection');
+      agoraClient.current = contextAgoraClient;
+      maximizePlayer();
+      fetchRoomData();
+      startPolling();
+      startHeartbeat();
+      fetchStreamStatus();
+    } else {
+      // New room or no minimized room - initialize fresh
+      fetchCurrentUserRole();
+      initializeAgora();
+      joinRoom();
+      fetchRoomData();
+      startPolling();
+      startHeartbeat();
+      fetchStreamStatus();
+    }
 
     // Poll stream status every 10 seconds
     const streamPoll = setInterval(fetchStreamStatus, 10000);
@@ -260,8 +281,13 @@ const YallaLiveRoom = ({ user }) => {
       leaveRoom();
       stopPolling();
       stopHeartbeat();
-      cleanupAgora();
       clearInterval(streamPoll);
+      
+      // Only cleanup Agora if we're NOT minimizing (keep audio for minimized player)
+      if (!isMinimizingRef.current) {
+        cleanupAgora();
+      }
+      
       // Stop recording if active
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         stopRecording();
@@ -825,7 +851,10 @@ const YallaLiveRoom = ({ user }) => {
   // Minimize - keep audio playing in background
   const handleMinimize = async () => {
     if (room && agoraClient.current) {
-      // Store room info in global context
+      // Mark that we're minimizing so cleanup doesn't disconnect audio
+      isMinimizingRef.current = true;
+      
+      // Store room info in global context with agora client
       setCurrentRoom({ 
         id: roomId, 
         title: room.title,
