@@ -3373,6 +3373,20 @@ async def get_user_replies(
     for reply in replies:
         author = await db.users.find_one({"id": reply["author_id"]})
         if author:
+            # Get the original thread to show who the reply was to
+            parent_thread = await db.threads.find_one({"id": reply.get("parent_thread_id")})
+            thread_author = None
+            thread_content = None
+            if parent_thread:
+                thread_content = parent_thread.get("content", "")[:100]  # First 100 chars
+                thread_author_data = await db.users.find_one({"id": parent_thread.get("author_id")})
+                if thread_author_data:
+                    thread_author = {
+                        "id": thread_author_data["id"],
+                        "username": thread_author_data["username"],
+                        "name": thread_author_data.get("name", thread_author_data["username"])
+                    }
+            
             result.append({
                 "id": reply.get("id", str(reply.get("_id", ""))),
                 "content": reply.get("content", ""),
@@ -3383,6 +3397,8 @@ async def get_user_replies(
                     "name": author.get("name", author["username"]),
                     "avatar": author.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={author['username']}")
                 },
+                "thread_author": thread_author,
+                "thread_content": thread_content,
                 "likes_count": reply.get("likes_count", 0),
                 "created_at": reply.get("created_at", "")
             })

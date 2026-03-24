@@ -234,6 +234,9 @@
 - [x] ~~Refactoring: Notifications~~ - تم 29 ديسمبر 2025
 - [x] ~~Refactoring: Stories~~ - تم 29 ديسمبر 2025
 - [x] ~~Refactoring: Conversations~~ - تم 29 ديسمبر 2025
+- [x] ~~إصلاح تبويب الردود في الملف الشخصي~~ - تم 24 مارس 2026:
+  - تحديث Backend `/users/{user_id}/replies` لإرجاع `thread_author` و `thread_content`
+  - الواجهة الأمامية تعرض الآن اسم صاحب المنشور الأصلي باللون الأخضر
 
 ### P1 (أولوية عالية) - Refactoring المتبقي
 - [ ] نقل Users routes (معقد - يعتمد على create_notification)
