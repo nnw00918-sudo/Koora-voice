@@ -176,11 +176,11 @@ const StatCard = ({ icon: Icon, value, label, color }) => (
     className="flex-1 bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50"
     whileHover={{ scale: 1.02, borderColor: 'rgba(163, 230, 53, 0.3)' }}
   >
-    <div className="flex items-center gap-2 mb-1">
-      <Icon className={`w-4 h-4 ${color}`} />
-      <span className={`text-lg font-bold ${color}`}>{value}</span>
+    <div className="flex flex-col items-center text-center">
+      <Icon className={`w-5 h-5 ${color} mb-1`} />
+      <span className={`text-2xl font-bold ${color}`}>{value}</span>
+      <span className="text-xs text-slate-400 mt-1">{label}</span>
     </div>
-    <span className="text-[10px] text-slate-500">{label}</span>
   </motion.div>
 );
 
@@ -194,6 +194,8 @@ const ProfilePage = ({ user, onLogout }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedFrame, setSelectedFrame] = useState(user?.frame_color || 'lime');
+  const [profileData, setProfileData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [editData, setEditData] = useState({
     name: user?.name || '',
     username: user?.username || '',
@@ -202,15 +204,44 @@ const ProfilePage = ({ user, onLogout }) => {
     frame_color: user?.frame_color || 'lime'
   });
 
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setProfileData(res.data);
+        setSelectedFrame(res.data.frame_color || 'lime');
+        setEditData({
+          name: res.data.name || '',
+          username: res.data.username || '',
+          bio: res.data.bio || '',
+          avatar: res.data.avatar || '',
+          frame_color: res.data.frame_color || 'lime'
+        });
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  // Use profileData if available, otherwise fall back to user prop
+  const userData = profileData || user;
+
   // Calculate user level based on activity
-  const userLevel = Math.min(5, Math.floor((user?.coins || 0) / 100) + 1);
+  const userLevel = Math.min(5, Math.floor((userData?.coins || 0) / 100) + 1);
 
   // Badges data
   const badges = [
     { icon: Mic, label: "متحدث", color: "from-lime-500 to-emerald-500", earned: true },
-    { icon: Crown, label: "مالك غرفة", color: "from-amber-500 to-yellow-500", earned: user?.role === 'owner' },
-    { icon: Heart, label: "محبوب", color: "from-rose-500 to-pink-500", earned: (user?.followers_count || 0) >= 10 },
-    { icon: Star, label: "نجم", color: "from-purple-500 to-indigo-500", earned: (user?.coins || 0) >= 100 },
+    { icon: Crown, label: "مالك غرفة", color: "from-amber-500 to-yellow-500", earned: userData?.role === 'owner' },
+    { icon: Heart, label: "محبوب", color: "from-rose-500 to-pink-500", earned: (userData?.followers_count || 0) >= 10 },
+    { icon: Star, label: "نجم", color: "from-purple-500 to-indigo-500", earned: (userData?.coins || 0) >= 100 },
     { icon: Shield, label: "موثق", color: "from-cyan-500 to-blue-500", earned: false },
     { icon: Award, label: "أسطورة", color: "from-orange-500 to-red-500", earned: false },
   ];
@@ -280,7 +311,15 @@ const ProfilePage = ({ user, onLogout }) => {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-2 border-lime-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+
         {/* Profile Content */}
+        {!loading && (
         <div className="px-4 py-6">
           {/* Avatar Section */}
           <motion.div 
@@ -291,9 +330,9 @@ const ProfilePage = ({ user, onLogout }) => {
           >
             <div className="relative mb-4">
               <GlowingAvatar 
-                src={isEditing ? editData.avatar : user?.avatar} 
+                src={isEditing ? editData.avatar : userData?.avatar} 
                 level={userLevel}
-                frameColor={isEditing ? editData.frame_color : (user?.frame_color || 'lime')}
+                frameColor={isEditing ? editData.frame_color : (userData?.frame_color || 'lime')}
               />
               {isEditing && (
                 <motion.button 
@@ -344,18 +383,18 @@ const ProfilePage = ({ user, onLogout }) => {
                 transition={{ delay: 0.2 }}
               >
                 <div className="flex items-center justify-center gap-2 mb-1">
-                  <h2 className="text-2xl font-cairo font-bold text-white">{user?.name}</h2>
-                  {user?.role === 'owner' && (
+                  <h2 className="text-2xl font-cairo font-bold text-white">{userData?.name}</h2>
+                  {userData?.role === 'owner' && (
                     <Crown className="w-5 h-5 text-amber-400" />
                   )}
                 </div>
-                <p className="text-slate-400 text-sm mb-1" dir="ltr">@{user?.username}</p>
+                <p className="text-slate-400 text-sm mb-1" dir="ltr">@{userData?.username}</p>
                 <div className="flex items-center justify-center gap-1 text-xs">
                   <Zap className="w-3 h-3 text-amber-400" />
                   <span className="text-amber-400 font-bold">المستوى {userLevel}</span>
                 </div>
-                {user?.bio && (
-                  <p className="text-slate-300 text-sm text-center mt-3 max-w-[280px] leading-relaxed">{user?.bio}</p>
+                {userData?.bio && (
+                  <p className="text-slate-300 text-sm text-center mt-3 max-w-[280px] leading-relaxed">{userData?.bio}</p>
                 )}
               </motion.div>
             ) : (
@@ -420,10 +459,10 @@ const ProfilePage = ({ user, onLogout }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <StatCard icon={Users} value={user?.followers_count || 0} label="متابع" color="text-lime-400" />
-              <StatCard icon={Heart} value={user?.following_count || 0} label="متابَع" color="text-rose-400" />
-              <StatCard icon={Star} value={user?.coins || 0} label="عملة" color="text-amber-400" />
-              <StatCard icon={Headphones} value={user?.rooms_joined || 0} label="غرفة" color="text-cyan-400" />
+              <StatCard icon={Users} value={userData?.followers_count || 0} label="متابع" color="text-lime-400" />
+              <StatCard icon={Heart} value={userData?.following_count || 0} label="متابَع" color="text-rose-400" />
+              <StatCard icon={Star} value={userData?.coins || 0} label="عملة" color="text-amber-400" />
+              <StatCard icon={Headphones} value={userData?.rooms_joined || 0} label="غرفة" color="text-cyan-400" />
             </motion.div>
           )}
 
@@ -458,11 +497,11 @@ const ProfilePage = ({ user, onLogout }) => {
               <motion.button
                 onClick={() => {
                   setEditData({
-                    name: user?.name || '',
-                    username: user?.username || '',
-                    bio: user?.bio || '',
-                    avatar: user?.avatar || '',
-                    frame_color: user?.frame_color || 'lime'
+                    name: userData?.name || '',
+                    username: userData?.username || '',
+                    bio: userData?.bio || '',
+                    avatar: userData?.avatar || '',
+                    frame_color: userData?.frame_color || 'lime'
                   });
                   setIsEditing(true);
                 }}
@@ -511,6 +550,7 @@ const ProfilePage = ({ user, onLogout }) => {
             )}
           </motion.div>
         </div>
+        )}
       </div>
 
       <BottomNavigation isRTL={isRTL} />
