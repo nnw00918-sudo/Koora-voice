@@ -462,67 +462,30 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* Input Area - Telegram Style */}
-      <div 
-        className="bg-[#17212b] border-t border-[#232e3c] px-3 py-2 safe-area-bottom"
-        style={{ 
-          position: 'sticky',
-          bottom: 0,
-          paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <button className="p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0">
-            <Smile className="w-6 h-6" />
-          </button>
-          
+      {/* Input Area - Simple */}
+      <div className="bg-[#17212b] border-t border-[#232e3c] px-3 py-3">
+        <div className="flex items-center gap-3">
           <input
-            ref={inputRef}
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (e.key === 'Enter') {
                 e.preventDefault();
                 sendMessage();
               }
             }}
             placeholder={txt.typeMessage}
-            className="flex-1 bg-transparent text-white py-2 outline-none text-right placeholder-[#6c7883]"
-            style={{ fontSize: '16px', minHeight: '24px' }}
+            className="flex-1 bg-[#242f3d] text-white px-4 py-3 rounded-full outline-none text-right"
+            style={{ fontSize: '16px' }}
             dir="rtl"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
           />
           
-          {/* Always render all buttons, just hide/show with CSS */}
           <button
             onClick={sendMessage}
-            disabled={sending || !newMessage.trim()}
-            className={`p-2 rounded-full transition-all flex-shrink-0 ${
-              newMessage.trim() 
-                ? 'text-[#6ab2f2] hover:bg-[#232e3c]' 
-                : 'hidden'
-            }`}
+            className="p-3 bg-[#6ab2f2] text-white rounded-full"
           >
-            <Send className="w-6 h-6" />
-          </button>
-          
-          <button 
-            className={`p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0 ${
-              newMessage.trim() ? 'hidden' : ''
-            }`}
-          >
-            <Image className="w-6 h-6" />
-          </button>
-          <button 
-            className={`p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0 ${
-              newMessage.trim() ? 'hidden' : ''
-            }`}
-          >
-            <Mic className="w-6 h-6" />
+            <Send className="w-5 h-5" />
           </button>
         </div>
       </div>
