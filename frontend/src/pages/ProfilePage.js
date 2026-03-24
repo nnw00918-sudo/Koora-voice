@@ -239,6 +239,9 @@ const ProfilePage = ({ user, onLogout }) => {
     fetchProfile();
   }, []);
 
+  // Use profileData if available, otherwise fall back to user prop
+  const userData = profileData || user;
+
   // Fetch content based on active tab
   useEffect(() => {
     const fetchContent = async () => {
@@ -275,13 +278,10 @@ const ProfilePage = ({ user, onLogout }) => {
       }
     };
     
-    if (!isEditing) {
+    if (!isEditing && userData?.id) {
       fetchContent();
     }
   }, [activeTab, userData?.id, isEditing]);
-
-  // Use profileData if available, otherwise fall back to user prop
-  const userData = profileData || user;
 
   // Calculate user level based on activity
   const userLevel = Math.min(5, Math.floor((userData?.coins || 0) / 100) + 1);
