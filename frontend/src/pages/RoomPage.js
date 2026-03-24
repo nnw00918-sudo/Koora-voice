@@ -1645,12 +1645,17 @@ const YallaLiveRoom = ({ user }) => {
         
         localCameraStream.current = stream;
         
-        // Also publish to Agora for others to see
+        // Also publish to Agora for others to see - 4K Quality
         const videoTrack = await AgoraRTC.createCameraVideoTrack({
-          encoderConfig: '720p_2',
+          encoderConfig: {
+            width: { ideal: 3840, max: 3840 },
+            height: { ideal: 2160, max: 2160 },
+            frameRate: { ideal: 30, max: 60 },
+            bitrateMin: 8000,
+            bitrateMax: 18000
+          },
           facingMode: cameraFacing,
-          // Disable mirror for front camera so viewers see correct orientation
-          optimizationMode: 'detail'
+          optimizationMode: 'detail' // Prioritize clarity over smoothness
         });
         
         // Disable mirror mode on the track so it's not mirrored for remote viewers
@@ -1723,9 +1728,15 @@ const YallaLiveRoom = ({ user }) => {
       }
       
       const videoTrack = await AgoraRTC.createCameraVideoTrack({
-        encoderConfig: '720p_2',
+        encoderConfig: {
+          width: { ideal: 3840, max: 3840 },
+          height: { ideal: 2160, max: 2160 },
+          frameRate: { ideal: 30, max: 60 },
+          bitrateMin: 8000,
+          bitrateMax: 18000
+        },
         facingMode: newFacing,
-        optimizationMode: 'detail'
+        optimizationMode: 'detail' // Prioritize clarity over smoothness
       });
       
       // Disable mirror mode for front camera
