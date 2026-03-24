@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { 
   Home, Trophy, Settings, MessageSquare, User, ArrowRight, ArrowLeft,
   Shield, Share2, Grid3X3, Heart, MoreHorizontal, MessageCircle,
-  UserPlus, UserMinus, Repeat2
+  UserPlus, UserMinus, Repeat2, FileText
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -21,7 +21,10 @@ const UserProfilePage = ({ currentUser }) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('posts');
   const [userPosts, setUserPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [userLikes, setUserLikes] = useState([]);
+  const [userReposts, setUserReposts] = useState([]);
+  const [userReplies, setUserReplies] = useState([]);
+  const [loadingContent, setLoadingContent] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   
@@ -33,23 +36,33 @@ const UserProfilePage = ({ currentUser }) => {
     ar: {
       followers: 'متابِعون',
       following: 'متابَعون',
-      likes: 'إعجاب',
-      posts: 'منشوراتي',
+      posts: 'المنشورات',
+      likes: 'الإعجابات',
+      reposts: 'إعادة النشر',
+      replies: 'الردود',
       follow: 'متابعة',
       unfollow: 'إلغاء المتابعة',
       message: 'رسالة',
       noPosts: 'لا توجد منشورات',
+      noLikes: 'لا توجد إعجابات',
+      noReposts: 'لا توجد إعادة نشر',
+      noReplies: 'لا توجد ردود',
       userNotFound: 'المستخدم غير موجود',
     },
     en: {
       followers: 'Followers',
       following: 'Following',
-      likes: 'Likes',
       posts: 'Posts',
+      likes: 'Likes',
+      reposts: 'Reposts',
+      replies: 'Replies',
       follow: 'Follow',
       unfollow: 'Unfollow',
       message: 'Message',
       noPosts: 'No posts yet',
+      noLikes: 'No likes yet',
+      noReposts: 'No reposts yet',
+      noReplies: 'No replies yet',
       userNotFound: 'User not found',
     }
   }[language];
@@ -59,7 +72,7 @@ const UserProfilePage = ({ currentUser }) => {
   }, [userId]);
 
   useEffect(() => {
-    if (user) fetchUserPosts();
+    if (user) fetchTabContent();
   }, [user, activeTab]);
 
   const fetchUserProfile = async () => {
@@ -80,17 +93,51 @@ const UserProfilePage = ({ currentUser }) => {
     }
   };
 
-  const fetchUserPosts = async () => {
-    setLoadingPosts(true);
+  const fetchTabContent = async () => {
+    setLoadingContent(true);
     try {
-      const res = await axios.get(`${API}/users/${userId}/threads`, {
+      let endpoint = '';
+      switch (activeTab) {
+        case 'posts':
+          endpoint = `${API}/users/${userId}/threads`;
+          break;
+        case 'likes':
+          endpoint = `${API}/users/${userId}/liked-threads`;
+          break;
+        case 'reposts':
+          endpoint = `${API}/users/${userId}/reposts`;
+          break;
+        case 'replies':
+          endpoint = `${API}/users/${userId}/replies`;
+          break;
+        default:
+          endpoint = `${API}/users/${userId}/threads`;
+      }
+      
+      const res = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUserPosts(res.data.threads || []);
+      
+      switch (activeTab) {
+        case 'posts':
+          setUserPosts(res.data.threads || []);
+          break;
+        case 'likes':
+          setUserLikes(res.data.threads || []);
+          break;
+        case 'reposts':
+          setUserReposts(res.data.threads || []);
+          break;
+        case 'replies':
+          setUserReplies(res.data.replies || []);
+          break;
+        default:
+          setUserPosts(res.data.threads || []);
+      }
     } catch (error) {
-      console.error('Error fetching posts');
+      console.error('Error fetching content');
     } finally {
-      setLoadingPosts(false);
+      setLoadingContent(false);
     }
   };
 
@@ -262,98 +309,192 @@ const UserProfilePage = ({ currentUser }) => {
         <div className="flex justify-center">
           <button 
             onClick={() => setActiveTab('posts')} 
-            className={`flex-1 max-w-[120px] py-3 text-center font-almarai text-sm transition-colors relative ${activeTab === 'posts' ? 'text-white font-bold' : 'text-slate-500'}`}
+            className={`flex-1 max-w-[80px] py-3 text-center font-almarai text-xs transition-colors relative ${activeTab === 'posts' ? 'text-white font-bold' : 'text-slate-500'}`}
           >
+            <FileText className="w-4 h-4 mx-auto mb-1" />
             {txt.posts}
-            {activeTab === 'posts' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-sky-500 rounded-full" />}
+            {activeTab === 'posts' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-sky-500 rounded-full" />}
+          </button>
+          <button 
+            onClick={() => setActiveTab('likes')} 
+            className={`flex-1 max-w-[80px] py-3 text-center font-almarai text-xs transition-colors relative ${activeTab === 'likes' ? 'text-white font-bold' : 'text-slate-500'}`}
+          >
+            <Heart className="w-4 h-4 mx-auto mb-1" />
+            {txt.likes}
+            {activeTab === 'likes' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-rose-500 rounded-full" />}
+          </button>
+          <button 
+            onClick={() => setActiveTab('reposts')} 
+            className={`flex-1 max-w-[80px] py-3 text-center font-almarai text-xs transition-colors relative ${activeTab === 'reposts' ? 'text-white font-bold' : 'text-slate-500'}`}
+          >
+            <Repeat2 className="w-4 h-4 mx-auto mb-1" />
+            {txt.reposts}
+            {activeTab === 'reposts' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-emerald-500 rounded-full" />}
+          </button>
+          <button 
+            onClick={() => setActiveTab('replies')} 
+            className={`flex-1 max-w-[80px] py-3 text-center font-almarai text-xs transition-colors relative ${activeTab === 'replies' ? 'text-white font-bold' : 'text-slate-500'}`}
+          >
+            <MessageCircle className="w-4 h-4 mx-auto mb-1" />
+            {txt.replies}
+            {activeTab === 'replies' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-cyan-500 rounded-full" />}
           </button>
         </div>
       </div>
 
-      {/* Posts */}
+      {/* Content */}
       <div className="min-h-[200px]">
-        {loadingPosts ? (
+        {loadingContent ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : userPosts.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center mx-auto mb-4">
-              <Grid3X3 className="w-8 h-8 text-slate-600" />
-            </div>
-            <p className="text-slate-500 font-almarai">{txt.noPosts}</p>
-          </div>
         ) : (
-          <div className="divide-y divide-slate-800">
-            {userPosts.map(thread => (
-              <div 
-                key={thread.id} 
-                className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
-                onClick={() => navigate(`/threads/${thread.id}`)}
-              >
-                <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <img 
-                    src={thread.author?.avatar} 
-                    alt="" 
-                    className="w-10 h-10 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/user/${thread.author?.id}`);
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <span 
-                        className="font-cairo font-bold text-white truncate cursor-pointer hover:text-lime-400"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/user/${thread.author?.id}`);
-                        }}
-                      >
-                        {thread.author?.name}
-                      </span>
-                      <span 
-                        className="text-slate-500 text-sm cursor-pointer hover:text-lime-400" 
-                        dir="ltr"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/user/${thread.author?.id}`);
-                        }}
-                      >
-                        @{thread.author?.username}
-                      </span>
-                      <span className="text-slate-600">·</span>
-                      <span className="text-slate-500 text-sm">{formatTime(thread.created_at)}</span>
-                    </div>
-                    {thread.content && (
-                      <p className={`text-white font-almarai leading-relaxed mb-3 whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`}>
+          <>
+            {/* Posts Tab */}
+            {activeTab === 'posts' && (
+              userPosts.length === 0 ? (
+                <div className="py-16 text-center">
+                  <FileText className="w-10 h-10 mx-auto mb-2 text-slate-600" />
+                  <p className="text-slate-500 font-almarai">{txt.noPosts}</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {userPosts.map(thread => (
+                    <div 
+                      key={thread.id} 
+                      className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
+                      onClick={() => navigate(`/threads/${thread.id}`)}
+                    >
+                      <p className={`text-white font-almarai text-sm leading-relaxed line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                         {thread.content}
                       </p>
-                    )}
-                    {thread.media_url && thread.media_type === 'image' && (
-                      <div className="rounded-xl overflow-hidden mb-3">
-                        <img src={thread.media_url} alt="" className="w-full max-h-[300px] object-cover" />
+                      <div className={`flex items-center gap-4 mt-2 text-xs text-slate-500 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <span className="flex items-center gap-1">
+                          <Heart className="w-3 h-3" /> {thread.likes_count || 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Repeat2 className="w-3 h-3" /> {thread.reposts_count || 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MessageCircle className="w-3 h-3" /> {thread.replies_count || 0}
+                        </span>
                       </div>
-                    )}
-                    <div className={`flex items-center gap-6 text-slate-500 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <span className="flex items-center gap-1">
-                        <MessageCircle className="w-4 h-4" />
-                        <span className="text-xs">{thread.replies_count || 0}</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Repeat2 className="w-4 h-4" />
-                        <span className="text-xs">{thread.reposts_count || 0}</span>
-                      </span>
-                      <span className={`flex items-center gap-1 ${thread.liked ? 'text-red-500' : ''}`}>
-                        <Heart className={`w-4 h-4 ${thread.liked ? 'fill-current' : ''}`} />
-                        <span className="text-xs">{thread.likes_count || 0}</span>
-                      </span>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            ))}
-          </div>
+              )
+            )}
+
+            {/* Likes Tab */}
+            {activeTab === 'likes' && (
+              userLikes.length === 0 ? (
+                <div className="py-16 text-center">
+                  <Heart className="w-10 h-10 mx-auto mb-2 text-slate-600" />
+                  <p className="text-slate-500 font-almarai">{txt.noLikes}</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {userLikes.map(thread => (
+                    <div 
+                      key={thread.id} 
+                      className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
+                      onClick={() => navigate(`/threads/${thread.id}`)}
+                    >
+                      <div 
+                        className={`flex items-center gap-2 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/user/${thread.author?.id}`);
+                        }}
+                      >
+                        <img 
+                          src={thread.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${thread.author?.username}`} 
+                          alt="" 
+                          className="w-6 h-6 rounded-full hover:opacity-80"
+                        />
+                        <span className="text-lime-400 text-xs font-bold hover:text-lime-300">@{thread.author?.username}</span>
+                      </div>
+                      <p className={`text-white font-almarai text-sm leading-relaxed line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+                        {thread.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* Reposts Tab */}
+            {activeTab === 'reposts' && (
+              userReposts.length === 0 ? (
+                <div className="py-16 text-center">
+                  <Repeat2 className="w-10 h-10 mx-auto mb-2 text-slate-600" />
+                  <p className="text-slate-500 font-almarai">{txt.noReposts}</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {userReposts.map(thread => (
+                    <div 
+                      key={thread.id} 
+                      className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
+                      onClick={() => navigate(`/threads/${thread.id}`)}
+                    >
+                      <div className={`flex items-center gap-2 mb-2 text-emerald-400 text-xs ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <Repeat2 className="w-3 h-3" />
+                        <span>أعاد نشر</span>
+                      </div>
+                      <p className={`text-white font-almarai text-sm leading-relaxed line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+                        {thread.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* Replies Tab */}
+            {activeTab === 'replies' && (
+              userReplies.length === 0 ? (
+                <div className="py-16 text-center">
+                  <MessageCircle className="w-10 h-10 mx-auto mb-2 text-slate-600" />
+                  <p className="text-slate-500 font-almarai">{txt.noReplies}</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {userReplies.map(reply => (
+                    <div 
+                      key={reply.id} 
+                      className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
+                      onClick={() => navigate(`/threads/${reply.parent_thread_id}`)}
+                    >
+                      <div className={`flex items-center gap-2 mb-2 text-cyan-400 text-xs ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <MessageCircle className="w-3 h-3" />
+                        <span>رد على منشور</span>
+                        {reply.thread_author && (
+                          <span 
+                            className="text-lime-400 font-bold hover:text-lime-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/user/${reply.thread_author?.id}`);
+                            }}
+                          >
+                            @{reply.thread_author?.username}
+                          </span>
+                        )}
+                      </div>
+                      {reply.thread_content && (
+                        <div className="mb-2 p-2 bg-slate-900/50 rounded-lg border-r-2 border-slate-600">
+                          <p className="text-slate-400 text-xs text-right line-clamp-1">{reply.thread_content}</p>
+                        </div>
+                      )}
+                      <p className={`text-white font-almarai text-sm leading-relaxed ${isRTL ? 'text-right' : 'text-left'}`}>
+                        {reply.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+          </>
         )}
       </div>
 
