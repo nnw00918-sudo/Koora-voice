@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -6,47 +6,185 @@ import { useLanguage } from '../contexts/LanguageContext';
 import BottomNavigation from '../components/BottomNavigation';
 import { 
   ArrowRight, Search, Send, Check, CheckCheck, X, MessageCircle,
-  Image, Mic, Smile, MoreVertical, Phone, Video, Trash2, UserPlus
+  Trash2, UserPlus
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-// Simple Chat Background
-const ChatBackground = () => (
-  <div className="absolute inset-0 bg-[#0e1621]">
-    <div 
-      className="absolute inset-0 opacity-5"
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0' fill='%2384cc16' fill-opacity='0.4'/%3E%3C/svg%3E")`,
-      }}
-    />
-  </div>
-);
+// ============ CHAT VIEW COMPONENT (Separate to prevent re-renders) ============
+const ChatView = memo(function ChatView({ 
+  conversation, 
+  messages, 
+  onBack, 
+  onDelete, 
+  onSend,
+  txt 
+}) {
+  const [inputValue, setInputValue] = useState('');
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
+
+  const handleSend = async () => {
+    if (!inputValue.trim() || sending) return;
+    
+    const text = inputValue.trim();
+    setInputValue('');
+    setSending(true);
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '44px';
+    }
+    
+    try {
+      await onSend(text);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleChange = (e) => {
+    setInputValue(e.target.value);
+    // Auto resize
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  };
+
+  const formatTime = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-[#0e1621]" style={{ height: '100dvh' }}>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-[#17212b] border-b border-[#232e3c] flex-shrink-0">
+        <button onClick={onBack} className="text-[#6ab2f2]">
+          <ArrowRight className="w-6 h-6" />
+        </button>
+        
+        <img
+          src={conversation?.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation?.user?.username}`}
+          alt=""
+          className="w-10 h-10 rounded-full bg-[#232e3c]"
+        />
+        
+        <div className="flex-1 text-right">
+          <p className="text-white font-medium">
+            {conversation?.user?.name || conversation?.user?.username}
+          </p>
+          <p className="text-[#6c7883] text-xs">{txt.online}</p>
+        </div>
+
+        <button
+          onClick={onDelete}
+          className="p-2 text-[#6c7883] hover:text-red-400 rounded-full"
+        >
+          <Trash2 className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-2">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-[#6c7883]">
+            <MessageCircle className="w-12 h-12 mb-3 opacity-50" />
+            <p>{txt.startConversation}</p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.is_mine ? 'justify-start' : 'justify-end'}`}
+              >
+                <div
+                  className={`max-w-[75%] px-3 py-2 rounded-lg ${
+                    msg.is_mine 
+                      ? 'bg-[#2b5278] rounded-bl-none' 
+                      : 'bg-[#182533] rounded-br-none'
+                  } ${msg.sending ? 'opacity-70' : ''}`}
+                >
+                  <p className="text-white text-[15px] text-right whitespace-pre-wrap break-words">
+                    {msg.content}
+                  </p>
+                  <div className={`flex items-center gap-1 mt-1 ${msg.is_mine ? 'justify-start' : 'justify-end'}`}>
+                    <span className="text-[11px] text-[#6c7883]">
+                      {formatTime(msg.created_at)}
+                    </span>
+                    {msg.is_mine && !msg.sending && (
+                      msg.read 
+                        ? <CheckCheck className="w-4 h-4 text-[#6ab2f2]" />
+                        : <Check className="w-4 h-4 text-[#6c7883]" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <div className="bg-[#17212b] border-t border-[#232e3c] px-3 py-3 flex-shrink-0">
+        <div className="flex items-end gap-3">
+          <textarea
+            ref={textareaRef}
+            value={inputValue}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={txt.typeMessage}
+            className="flex-1 bg-[#242f3d] text-white px-4 py-3 rounded-2xl outline-none text-right resize-none"
+            style={{ fontSize: '16px', minHeight: '44px', maxHeight: '120px' }}
+            dir="rtl"
+            rows={1}
+          />
+          
+          <button
+            onClick={handleSend}
+            disabled={!inputValue.trim() || sending}
+            className="p-3 bg-[#6ab2f2] text-white rounded-full flex-shrink-0 disabled:opacity-50"
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ============ MAIN COMPONENT ============
 export default function MessagesPage() {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const { conversationId } = useParams();
   
-  // States
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState(conversationId ? 'chat' : 'list');
   const [currentConversation, setCurrentConversation] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   
-  // Refs
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-  const messagesContainerRef = useRef(null);
-  
-  const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
 
   const txt = {
@@ -56,16 +194,11 @@ export default function MessagesPage() {
     startChat: 'ابدأ محادثة جديدة',
     typeMessage: 'اكتب رسالة...',
     online: 'متصل',
-    offline: 'غير متصل',
     you: 'أنت',
-    newChat: 'محادثة جديدة',
-    search: 'بحث',
     noResults: 'لا توجد نتائج',
-    deleteChat: 'حذف المحادثة',
     startConversation: 'ابدأ المحادثة'
   };
 
-  // Fetch conversations
   const fetchConversations = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -81,7 +214,6 @@ export default function MessagesPage() {
     }
   }, [token]);
 
-  // Load conversation messages
   const loadConversation = useCallback(async (convoId) => {
     if (!token) return;
     try {
@@ -89,16 +221,11 @@ export default function MessagesPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(res.data.messages || []);
-      // Scroll to bottom after loading
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 100);
     } catch (error) {
       console.error('Error loading messages');
     }
   }, [token]);
 
-  // Search users
   const searchUsers = useCallback(async (query) => {
     if (!query.trim() || !token) {
       setSearchResults([]);
@@ -117,7 +244,6 @@ export default function MessagesPage() {
     }
   }, [token]);
 
-  // Start new conversation
   const startConversation = useCallback(async (userId, user) => {
     if (!token) return;
     try {
@@ -136,51 +262,35 @@ export default function MessagesPage() {
     }
   }, [token, navigate]);
 
-  // Send message
-  const sendMessage = useCallback(async () => {
-    if (!newMessage.trim() || !currentConversation || sending) return;
+  const sendMessage = useCallback(async (content) => {
+    if (!currentConversation) return;
     
-    const messageText = newMessage.trim();
-    setNewMessage('');
-    setSending(true);
-    
-    // Optimistic update
     const tempMessage = {
       id: Date.now().toString(),
-      content: messageText,
+      content,
       is_mine: true,
       created_at: new Date().toISOString(),
       sending: true
     };
-    setMessages(prev => [...prev, tempMessage]);
     
-    // Scroll to bottom
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 50);
+    setMessages(prev => [...prev, tempMessage]);
 
     try {
       await axios.post(
         `${API}/conversations/${currentConversation.id}/messages`,
-        { content: messageText },
+        { content },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      // Update message as sent
       setMessages(prev => prev.map(m => 
         m.id === tempMessage.id ? { ...m, sending: false } : m
       ));
     } catch (error) {
       toast.error('فشل إرسال الرسالة');
-      // Remove failed message
       setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
-      setNewMessage(messageText);
-    } finally {
-      setSending(false);
+      throw error;
     }
-  }, [newMessage, currentConversation, sending, token]);
+  }, [currentConversation, token]);
 
-  // Delete conversation
   const deleteConversation = useCallback(async () => {
     if (!currentConversation) return;
     try {
@@ -198,7 +308,6 @@ export default function MessagesPage() {
     }
   }, [currentConversation, token, navigate, fetchConversations]);
 
-  // Open conversation
   const openConversation = useCallback((convo) => {
     setCurrentConversation(convo);
     setCurrentView('chat');
@@ -206,7 +315,12 @@ export default function MessagesPage() {
     navigate(`/messages/${convo.id}`);
   }, [loadConversation, navigate]);
 
-  // Effects
+  const handleBack = useCallback(() => {
+    setCurrentView('list');
+    setCurrentConversation(null);
+    navigate('/messages');
+  }, [navigate]);
+
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
@@ -223,34 +337,45 @@ export default function MessagesPage() {
   }, [conversationId, conversations, loadConversation]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      searchUsers(searchQuery);
-    }, 300);
+    const timer = setTimeout(() => searchUsers(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery, searchUsers]);
 
-  // Format time
   const formatTime = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // ============ CONVERSATION LIST ============
-  const ConversationList = () => (
-    <div className="flex flex-col h-full bg-[#17212b]">
+  // ============ RENDER ============
+  if (currentView === 'chat' && currentConversation) {
+    return (
+      <ChatView
+        conversation={currentConversation}
+        messages={messages}
+        onBack={handleBack}
+        onDelete={deleteConversation}
+        onSend={sendMessage}
+        txt={txt}
+      />
+    );
+  }
+
+  // Conversation List
+  return (
+    <div className="flex flex-col h-screen bg-[#17212b]" style={{ height: '100dvh' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#17212b] border-b border-[#232e3c]">
         <h1 className="text-xl font-bold text-white">{txt.messages}</h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowSearch(true)}
-            className="p-2 text-[#6ab2f2] hover:bg-[#232e3c] rounded-full transition-colors"
+            className="p-2 text-[#6ab2f2] hover:bg-[#232e3c] rounded-full"
           >
             <Search className="w-5 h-5" />
           </button>
           <button
             onClick={() => setShowSearch(true)}
-            className="p-2 text-[#6ab2f2] hover:bg-[#232e3c] rounded-full transition-colors"
+            className="p-2 text-[#6ab2f2] hover:bg-[#232e3c] rounded-full"
           >
             <UserPlus className="w-5 h-5" />
           </button>
@@ -260,7 +385,7 @@ export default function MessagesPage() {
       {/* Search Modal */}
       {showSearch && (
         <div className="absolute inset-0 bg-[#17212b] z-50 flex flex-col">
-          <div className="flex items-center gap-3 px-4 py-3 bg-[#17212b] border-b border-[#232e3c]">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-[#232e3c]">
             <button onClick={() => { setShowSearch(false); setSearchQuery(''); }} className="text-[#6ab2f2]">
               <X className="w-6 h-6" />
             </button>
@@ -270,6 +395,7 @@ export default function MessagesPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={txt.searchUsers}
               className="flex-1 bg-[#242f3d] text-white px-4 py-2 rounded-full outline-none text-right"
+              style={{ fontSize: '16px' }}
               autoFocus
             />
           </div>
@@ -283,7 +409,7 @@ export default function MessagesPage() {
                 <button
                   key={user.id}
                   onClick={() => startConversation(user.id, user)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#202b36] transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#202b36]"
                 >
                   <img
                     src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`}
@@ -325,15 +451,13 @@ export default function MessagesPage() {
             <button
               key={convo.id}
               onClick={() => openConversation(convo)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#202b36] transition-colors border-b border-[#232e3c]/50"
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#202b36] border-b border-[#232e3c]/50"
             >
-              <div className="relative">
-                <img
-                  src={convo.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${convo.user?.username}`}
-                  alt={convo.user?.username}
-                  className="w-14 h-14 rounded-full bg-[#232e3c]"
-                />
-              </div>
+              <img
+                src={convo.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${convo.user?.username}`}
+                alt={convo.user?.username}
+                className="w-14 h-14 rounded-full bg-[#232e3c]"
+              />
               <div className="flex-1 text-right min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#6c7883]">
@@ -359,149 +483,6 @@ export default function MessagesPage() {
       </div>
 
       <BottomNavigation />
-    </div>
-  );
-
-  // ============ CHAT VIEW ============
-  const ChatView = () => (
-    <div 
-      className="flex flex-col bg-[#0e1621]"
-      style={{ 
-        height: '100%',
-        height: '100dvh',
-        maxHeight: '-webkit-fill-available'
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-[#17212b] border-b border-[#232e3c]">
-        <button
-          onClick={() => {
-            setCurrentView('list');
-            setCurrentConversation(null);
-            navigate('/messages');
-          }}
-          className="text-[#6ab2f2]"
-        >
-          <ArrowRight className="w-6 h-6" />
-        </button>
-        
-        <img
-          src={currentConversation?.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentConversation?.user?.username}`}
-          alt=""
-          className="w-10 h-10 rounded-full bg-[#232e3c]"
-        />
-        
-        <div className="flex-1 text-right">
-          <p className="text-white font-medium">
-            {currentConversation?.user?.name || currentConversation?.user?.username}
-          </p>
-          <p className="text-[#6c7883] text-xs">{txt.online}</p>
-        </div>
-
-        <button
-          onClick={deleteConversation}
-          className="p-2 text-[#6c7883] hover:text-red-400 hover:bg-[#232e3c] rounded-full transition-colors"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Messages */}
-      <div 
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-2 relative"
-        style={{ 
-          overscrollBehavior: 'none',
-          WebkitOverflowScrolling: 'touch',
-          minHeight: 0
-        }}
-      >
-        <ChatBackground />
-        
-        <div className="relative z-10 space-y-1">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-[#6c7883]">
-              <MessageCircle className="w-12 h-12 mb-3 opacity-50" />
-              <p>{txt.startConversation}</p>
-            </div>
-          ) : (
-            messages.map((msg, idx) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.is_mine ? 'justify-start' : 'justify-end'}`}
-              >
-                <div
-                  className={`max-w-[75%] px-3 py-2 rounded-lg ${
-                    msg.is_mine 
-                      ? 'bg-[#2b5278] text-white rounded-bl-none' 
-                      : 'bg-[#182533] text-white rounded-br-none'
-                  } ${msg.sending ? 'opacity-70' : ''}`}
-                >
-                  <p className="text-[15px] leading-relaxed text-right whitespace-pre-wrap break-words">
-                    {msg.content}
-                  </p>
-                  <div className={`flex items-center gap-1 mt-1 ${msg.is_mine ? 'justify-start' : 'justify-end'}`}>
-                    <span className="text-[11px] text-[#6c7883]">
-                      {formatTime(msg.created_at)}
-                    </span>
-                    {msg.is_mine && (
-                      msg.sending ? (
-                        <div className="w-3 h-3 border border-[#6c7883] border-t-transparent rounded-full animate-spin" />
-                      ) : msg.read ? (
-                        <CheckCheck className="w-4 h-4 text-[#6ab2f2]" />
-                      ) : (
-                        <Check className="w-4 h-4 text-[#6c7883]" />
-                      )
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Input Area - Simple */}
-      <div className="bg-[#17212b] border-t border-[#232e3c] px-3 py-3">
-        <div className="flex items-center gap-3">
-          <textarea
-            value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
-              // Auto resize
-              e.target.style.height = 'auto';
-              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder={txt.typeMessage}
-            className="flex-1 bg-[#242f3d] text-white px-4 py-3 rounded-2xl outline-none text-right resize-none touch-action-auto"
-            style={{ fontSize: '16px', minHeight: '44px', maxHeight: '120px' }}
-            dir="rtl"
-            rows={1}
-            autoComplete="off"
-            inputMode="text"
-          />
-          
-          <button
-            onClick={sendMessage}
-            className="p-3 bg-[#6ab2f2] text-white rounded-full flex-shrink-0"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="h-screen h-[100dvh] overflow-hidden">
-      {currentView === 'chat' && currentConversation ? <ChatView /> : <ConversationList />}
     </div>
   );
 }
