@@ -313,21 +313,19 @@
   - تم استخراج المكونات التالية إلى `/app/frontend/src/components/room/`:
     - `ConnectedUsersList.jsx` (297 سطر)
     - `RoomSettingsModal.jsx` (279 سطر)
-    - `GiftModal.jsx` (58 سطر)
+    - `GiftModal.jsx` (58 سطر) - ✅ مُستخدم
     - `SeatRequestsModal.jsx` (79 سطر)
-    - `InviteReceivedModal.jsx` (51 سطر)
+    - `InviteReceivedModal.jsx` (51 سطر) - ✅ مُستخدم
     - `StreamModal.jsx` (136 سطر)
     - `PromoteModal.jsx` (59 سطر)
-    - `BackgroundPickerModal.jsx` (83 سطر)
+    - `BackgroundPickerModal.jsx` (83 سطر) - ✅ مُستخدم
     - `ExpandedVideoModal.jsx` (104 سطر)
   - المكونات مستخرجة ومصدّرة من `index.js`
   - تم تحديث imports في `RoomPage.js`
-  - GiftModal تم استبداله بالمكون المستخرج
-- [ ] إكمال استخدام باقي المكونات المستخرجة في RoomPage.js
+  - **RoomPage.js تقلص من 3620 إلى 3476 سطر** (-144 سطر)
+  - 3 modals تم استبدالها: GiftModal, InviteReceivedModal, BackgroundPickerModal
+- [ ] إكمال استخدام باقي المكونات المستخرجة في RoomPage.js (6 متبقية)
 - [ ] إكمال تقسيم server.py:
-  - [ ] فصل Stories routes إلى `/routes/stories.py`
-  - [ ] فصل Conversations routes إلى `/routes/conversations.py`
-  - [ ] فصل Notifications routes إلى `/routes/notifications.py`
   - [ ] فصل Rooms routes إلى `/routes/rooms.py`
 
 ### P1 (أولوية عالية)
