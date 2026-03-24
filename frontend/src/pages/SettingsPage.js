@@ -752,8 +752,31 @@ const SettingsPage = ({ user, onLogout }) => {
   // Notifications View
   const NotificationsView = () => (
     <div className="space-y-6">
-      {/* Enable Push Notifications Button */}
-      {pushPermission !== 'granted' && (
+      {/* Browser Not Supported Warning - Show only once */}
+      {!pushSupported && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-amber-500/20 rounded-2xl border border-amber-500/30"
+        >
+          <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="w-12 h-12 rounded-xl bg-amber-500/30 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-amber-400" />
+            </div>
+            <div className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+              <p className="text-amber-400 font-cairo font-bold">
+                {isRTL ? 'الإشعارات الفورية غير مدعومة' : 'Push Notifications Not Supported'}
+              </p>
+              <p className="text-slate-400 text-sm font-almarai">
+                {isRTL ? 'متصفحك أو جهازك لا يدعم الإشعارات الفورية. جرب استخدام Chrome أو Firefox.' : 'Your browser or device does not support push notifications. Try using Chrome or Firefox.'}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Enable Push Notifications Button - Only show if supported */}
+      {pushSupported && pushPermission !== 'granted' && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -796,22 +819,24 @@ const SettingsPage = ({ user, onLogout }) => {
       <div className="space-y-3">
         <div className={`flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-11 h-11 rounded-xl bg-lime-500/20 flex items-center justify-center">
-              <BellRing className="w-5 h-5 text-lime-400" />
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${pushSupported ? 'bg-lime-500/20' : 'bg-slate-700/50'}`}>
+              <BellRing className={`w-5 h-5 ${pushSupported ? 'text-lime-400' : 'text-slate-500'}`} />
             </div>
             <div className={isRTL ? 'text-right' : 'text-left'}>
-              <p className="text-white font-cairo font-bold">{txt.pushNotifications}</p>
+              <p className={`font-cairo font-bold ${pushSupported ? 'text-white' : 'text-slate-500'}`}>{txt.pushNotifications}</p>
               <p className="text-slate-500 text-sm font-almarai">
-                {pushSubscribed 
-                  ? (isRTL ? 'الإشعارات مفعّلة' : 'Notifications enabled') 
-                  : txt.pushDesc}
+                {!pushSupported 
+                  ? (isRTL ? 'غير مدعوم في هذا المتصفح' : 'Not supported in this browser')
+                  : pushSubscribed 
+                    ? (isRTL ? 'الإشعارات مفعّلة' : 'Notifications enabled') 
+                    : txt.pushDesc}
               </p>
             </div>
           </div>
           <ToggleSwitch 
             enabled={pushSubscribed}
             onChange={requestPushPermission}
-            disabled={pushLoading}
+            disabled={pushLoading || !pushSupported}
           />
         </div>
 
