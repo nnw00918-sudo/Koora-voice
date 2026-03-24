@@ -2473,34 +2473,36 @@ const YallaLiveRoom = ({ user }) => {
           animate={{ opacity: 1, scale: 1 }}
           className="px-4 py-3"
         >
-          {/* View Mode Tabs */}
-          <div className="flex justify-center gap-2 mb-4">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setViewMode('mics')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
-                viewMode === 'mics' 
-                  ? 'bg-lime-500 text-slate-900 shadow-lg shadow-lime-500/30' 
-                  : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 border border-slate-700'
-              }`}
-            >
-              <Mic className="w-4 h-4" />
-              المايكات
-            </motion.button>
-            {streamActive && streamUrl && (
+          {/* View Mode Tabs - Connected Style */}
+          <div className="flex justify-center mb-4">
+            <div className="flex bg-slate-800/50 rounded-lg p-0.5 border border-slate-700">
               <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setViewMode('stream')}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
-                  viewMode === 'stream' 
-                    ? 'bg-lime-500 text-slate-900 shadow-lg shadow-lime-500/30' 
-                    : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 border border-slate-700'
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setViewMode('mics')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-cairo font-bold text-xs transition-all ${
+                  viewMode === 'mics' 
+                    ? 'bg-lime-500 text-slate-900' 
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Tv className="w-4 h-4" />
-                المباشر
+                <Mic className="w-3.5 h-3.5" />
+                المايكات
               </motion.button>
-            )}
+              {streamActive && streamUrl && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setViewMode('stream')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-cairo font-bold text-xs transition-all ${
+                    viewMode === 'stream' 
+                      ? 'bg-lime-500 text-slate-900' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Tv className="w-3.5 h-3.5" />
+                  المباشر
+                </motion.button>
+              )}
+            </div>
           </div>
 
           {/* Watch Party Section - Only show in stream view */}
