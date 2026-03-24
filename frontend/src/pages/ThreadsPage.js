@@ -508,7 +508,7 @@ const ThreadsPage = ({ user }) => {
             
             {/* Reply Input */}
             {replyingTo === thread.id && (
-              <div className={`mt-4 pt-4 border-t border-slate-800 ${isRTL ? 'text-right' : 'text-left'}`} data-testid="reply-container">
+              <div className={`mt-4 pt-4 border-t border-slate-800`} data-testid="reply-container">
                 {/* Replying to indicator */}
                 <div className={`flex items-center gap-1 mb-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <span className="text-slate-500 text-sm">{txt.replyingTo}</span>
@@ -522,16 +522,20 @@ const ThreadsPage = ({ user }) => {
                       value={replyContent}
                       onChange={(e) => setReplyContent(e.target.value)}
                       placeholder={txt.writeReply}
-                      dir="auto"
-                      style={{ direction: 'rtl', textAlign: 'right', unicodeBidi: 'plaintext' }}
+                      dir="rtl"
+                      lang="ar"
+                      style={{
+                        direction: 'rtl',
+                        unicodeBidi: 'plaintext',
+                        textAlign: 'right',
+                        writingMode: 'horizontal-tb'
+                      }}
                       className="w-full bg-slate-800/50 text-white font-almarai outline-none resize-none text-base p-3 rounded-xl border border-slate-700 focus:border-sky-500 transition-colors"
                       rows={3}
                       maxLength={280}
-                      inputMode="text"
                       autoComplete="off"
                       autoFocus
                       onFocus={(e) => {
-                        // Scroll into view when focused (keyboard appears)
                         setTimeout(() => {
                           e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }, 300);
@@ -749,11 +753,16 @@ const ThreadsPage = ({ user }) => {
                       value={newThread}
                       onChange={(e) => setNewThread(e.target.value)}
                       placeholder={txt.whatsNew}
-                      dir="auto"
-                      style={{ direction: 'rtl', textAlign: 'right', unicodeBidi: 'plaintext' }}
+                      dir="rtl"
+                      lang="ar"
+                      style={{
+                        direction: 'rtl',
+                        unicodeBidi: 'plaintext',
+                        textAlign: 'right',
+                        writingMode: 'horizontal-tb'
+                      }}
                       className="w-full bg-transparent text-white text-xl font-almarai outline-none resize-none min-h-[120px] placeholder-slate-600 touch-action-auto"
                       autoFocus
-                      inputMode="text"
                       autoComplete="off"
                     />
                     
