@@ -295,14 +295,26 @@ const NotificationsPage = ({ user }) => {
                   <img 
                     src={notif.from_user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${notif.from_user.username}`}
                     alt=""
-                    className="w-10 h-10 rounded-full flex-shrink-0"
+                    className="w-10 h-10 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/user/${notif.from_user.id}`);
+                    }}
                   />
                 )}
                 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-almarai text-sm">
-                    <span className="font-bold">{notif.from_user?.name || notif.from_user?.username}</span>
+                    <span 
+                      className="font-bold cursor-pointer hover:text-lime-400"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/user/${notif.from_user?.id}`);
+                      }}
+                    >
+                      {notif.from_user?.name || notif.from_user?.username}
+                    </span>
                     {' '}
                     <span className="text-slate-400">{getNotificationText(notif.type)}</span>
                   </p>

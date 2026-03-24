@@ -292,11 +292,36 @@ const UserProfilePage = ({ currentUser }) => {
                 onClick={() => navigate(`/threads/${thread.id}`)}
               >
                 <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <img src={thread.author?.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
+                  <img 
+                    src={thread.author?.avatar} 
+                    alt="" 
+                    className="w-10 h-10 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/user/${thread.author?.id}`);
+                    }}
+                  />
                   <div className="flex-1 min-w-0">
                     <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <span className="font-cairo font-bold text-white truncate">{thread.author?.name}</span>
-                      <span className="text-slate-500 text-sm" dir="ltr">@{thread.author?.username}</span>
+                      <span 
+                        className="font-cairo font-bold text-white truncate cursor-pointer hover:text-lime-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/user/${thread.author?.id}`);
+                        }}
+                      >
+                        {thread.author?.name}
+                      </span>
+                      <span 
+                        className="text-slate-500 text-sm cursor-pointer hover:text-lime-400" 
+                        dir="ltr"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/user/${thread.author?.id}`);
+                        }}
+                      >
+                        @{thread.author?.username}
+                      </span>
                       <span className="text-slate-600">·</span>
                       <span className="text-slate-500 text-sm">{formatTime(thread.created_at)}</span>
                     </div>

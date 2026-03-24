@@ -81,11 +81,15 @@ const ChatView = memo(function ChatView({
         <img
           src={conversation?.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation?.user?.username}`}
           alt=""
-          className="w-10 h-10 rounded-full bg-[#232e3c]"
+          className="w-10 h-10 rounded-full bg-[#232e3c] cursor-pointer hover:opacity-80"
+          onClick={() => window.location.href = `/user/${conversation?.user?.id}`}
         />
         
         <div className="flex-1 text-right">
-          <p className="text-white font-medium">
+          <p 
+            className="text-white font-medium cursor-pointer hover:text-lime-400"
+            onClick={() => window.location.href = `/user/${conversation?.user?.id}`}
+          >
             {conversation?.user?.name || conversation?.user?.username}
           </p>
           <p className="text-[#6c7883] text-xs">{txt.online}</p>
@@ -414,10 +418,22 @@ export default function MessagesPage() {
                   <img
                     src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`}
                     alt={user.username}
-                    className="w-12 h-12 rounded-full bg-[#232e3c]"
+                    className="w-12 h-12 rounded-full bg-[#232e3c] hover:opacity-80"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = `/user/${user.id}`;
+                    }}
                   />
                   <div className="flex-1 text-right">
-                    <p className="text-white font-medium">{user.name || user.username}</p>
+                    <p 
+                      className="text-white font-medium hover:text-lime-400"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/user/${user.id}`;
+                      }}
+                    >
+                      {user.name || user.username}
+                    </p>
                     <p className="text-[#6c7883] text-sm">@{user.username}</p>
                   </div>
                 </button>
@@ -456,14 +472,24 @@ export default function MessagesPage() {
               <img
                 src={convo.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${convo.user?.username}`}
                 alt={convo.user?.username}
-                className="w-14 h-14 rounded-full bg-[#232e3c]"
+                className="w-14 h-14 rounded-full bg-[#232e3c] hover:opacity-80"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.location.href = `/user/${convo.user?.id}`;
+                }}
               />
               <div className="flex-1 text-right min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#6c7883]">
                     {convo.last_message?.created_at && formatTime(convo.last_message.created_at)}
                   </span>
-                  <span className="text-white font-medium truncate">
+                  <span 
+                    className="text-white font-medium truncate hover:text-lime-400"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = `/user/${convo.user?.id}`;
+                    }}
+                  >
                     {convo.user?.name || convo.user?.username}
                   </span>
                 </div>
