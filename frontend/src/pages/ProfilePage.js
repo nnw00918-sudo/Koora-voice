@@ -609,39 +609,23 @@ const ProfilePage = ({ user, onLogout }) => {
                     {activeTab === 'posts' && (
                       myPosts.length > 0 ? (
                         <div className="space-y-3">
-                          {myPosts.slice(0, 5).map((post) => (
+                          {myPosts.slice(0, 10).map((post) => (
                             <div 
                               key={post.id} 
-                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 cursor-pointer hover:border-lime-500/50 transition-colors active:scale-[0.98]"
+                              onClick={() => navigate(`/threads/${post.id}`)}
                             >
-                              <p 
-                                className="text-white text-sm text-right leading-relaxed line-clamp-2 cursor-pointer"
-                                onClick={() => navigate(`/threads/${post.id}`)}
-                              >
-                                {post.content}
-                              </p>
-                              <div className="flex items-center justify-end gap-4 mt-3 text-xs">
-                                <button 
-                                  onClick={(e) => handleLike(post.id, e)}
-                                  className={`flex items-center gap-1 transition-colors ${post.liked ? 'text-red-500' : 'text-slate-500 hover:text-red-400'}`}
-                                >
-                                  <Heart className={`w-4 h-4 ${post.liked ? 'fill-current' : ''}`} />
-                                  <span>{post.likes_count || 0}</span>
-                                </button>
-                                <button 
-                                  onClick={(e) => handleRepost(post.id, e)}
-                                  className={`flex items-center gap-1 transition-colors ${post.reposted ? 'text-green-500' : 'text-slate-500 hover:text-green-400'}`}
-                                >
-                                  <Repeat2 className="w-4 h-4" />
-                                  <span>{post.reposts_count || 0}</span>
-                                </button>
-                                <button 
-                                  onClick={() => navigate(`/threads/${post.id}`)}
-                                  className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors"
-                                >
-                                  <MessageCircle className="w-4 h-4" />
-                                  <span>{post.replies_count || 0}</span>
-                                </button>
+                              <p className="text-white text-sm text-right leading-relaxed line-clamp-2">{post.content}</p>
+                              <div className="flex items-center justify-end gap-4 mt-2 text-xs text-slate-500">
+                                <span className="flex items-center gap-1">
+                                  <Heart className="w-3 h-3" /> {post.likes_count || 0}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Repeat2 className="w-3 h-3" /> {post.reposts_count || 0}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MessageCircle className="w-3 h-3" /> {post.replies_count || 0}
+                                </span>
                               </div>
                             </div>
                           ))}
@@ -658,10 +642,11 @@ const ProfilePage = ({ user, onLogout }) => {
                     {activeTab === 'likes' && (
                       myLikes.length > 0 ? (
                         <div className="space-y-3">
-                          {myLikes.slice(0, 5).map((post) => (
+                          {myLikes.slice(0, 10).map((post) => (
                             <div 
                               key={post.id} 
-                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 cursor-pointer hover:border-rose-500/50 transition-colors active:scale-[0.98]"
+                              onClick={() => navigate(`/threads/${post.id}`)}
                             >
                               <div className="flex items-center gap-2 mb-2">
                                 <img 
@@ -671,35 +656,7 @@ const ProfilePage = ({ user, onLogout }) => {
                                 />
                                 <span className="text-lime-400 text-xs font-bold">@{post.author?.username}</span>
                               </div>
-                              <p 
-                                className="text-white text-sm text-right leading-relaxed line-clamp-2 cursor-pointer"
-                                onClick={() => navigate(`/threads/${post.id}`)}
-                              >
-                                {post.content}
-                              </p>
-                              <div className="flex items-center justify-end gap-4 mt-3 text-xs">
-                                <button 
-                                  onClick={(e) => handleLike(post.id, e)}
-                                  className={`flex items-center gap-1 transition-colors ${post.liked ? 'text-red-500' : 'text-slate-500 hover:text-red-400'}`}
-                                >
-                                  <Heart className={`w-4 h-4 ${post.liked ? 'fill-current' : ''}`} />
-                                  <span>{post.likes_count || 0}</span>
-                                </button>
-                                <button 
-                                  onClick={(e) => handleRepost(post.id, e)}
-                                  className={`flex items-center gap-1 transition-colors ${post.reposted ? 'text-green-500' : 'text-slate-500 hover:text-green-400'}`}
-                                >
-                                  <Repeat2 className="w-4 h-4" />
-                                  <span>{post.reposts_count || 0}</span>
-                                </button>
-                                <button 
-                                  onClick={() => navigate(`/threads/${post.id}`)}
-                                  className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors"
-                                >
-                                  <MessageCircle className="w-4 h-4" />
-                                  <span>{post.replies_count || 0}</span>
-                                </button>
-                              </div>
+                              <p className="text-white text-sm text-right leading-relaxed line-clamp-2">{post.content}</p>
                             </div>
                           ))}
                         </div>
@@ -715,44 +672,17 @@ const ProfilePage = ({ user, onLogout }) => {
                     {activeTab === 'reposts' && (
                       myReposts.length > 0 ? (
                         <div className="space-y-3">
-                          {myReposts.slice(0, 5).map((post) => (
+                          {myReposts.slice(0, 10).map((post) => (
                             <div 
                               key={post.id} 
-                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 cursor-pointer hover:border-emerald-500/50 transition-colors active:scale-[0.98]"
+                              onClick={() => navigate(`/threads/${post.id}`)}
                             >
                               <div className="flex items-center gap-2 mb-2 text-emerald-400 text-xs">
                                 <Repeat2 className="w-3 h-3" />
                                 <span>أعدت نشر</span>
                               </div>
-                              <p 
-                                className="text-white text-sm text-right leading-relaxed line-clamp-2 cursor-pointer"
-                                onClick={() => navigate(`/threads/${post.id}`)}
-                              >
-                                {post.content}
-                              </p>
-                              <div className="flex items-center justify-end gap-4 mt-3 text-xs">
-                                <button 
-                                  onClick={(e) => handleLike(post.id, e)}
-                                  className={`flex items-center gap-1 transition-colors ${post.liked ? 'text-red-500' : 'text-slate-500 hover:text-red-400'}`}
-                                >
-                                  <Heart className={`w-4 h-4 ${post.liked ? 'fill-current' : ''}`} />
-                                  <span>{post.likes_count || 0}</span>
-                                </button>
-                                <button 
-                                  onClick={(e) => handleRepost(post.id, e)}
-                                  className={`flex items-center gap-1 transition-colors ${post.reposted ? 'text-green-500' : 'text-slate-500 hover:text-green-400'}`}
-                                >
-                                  <Repeat2 className="w-4 h-4" />
-                                  <span>{post.reposts_count || 0}</span>
-                                </button>
-                                <button 
-                                  onClick={() => navigate(`/threads/${post.id}`)}
-                                  className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors"
-                                >
-                                  <MessageCircle className="w-4 h-4" />
-                                  <span>{post.replies_count || 0}</span>
-                                </button>
-                              </div>
+                              <p className="text-white text-sm text-right leading-relaxed line-clamp-2">{post.content}</p>
                             </div>
                           ))}
                         </div>
@@ -768,10 +698,11 @@ const ProfilePage = ({ user, onLogout }) => {
                     {activeTab === 'replies' && (
                       myReplies.length > 0 ? (
                         <div className="space-y-3">
-                          {myReplies.slice(0, 5).map((reply) => (
+                          {myReplies.slice(0, 10).map((reply) => (
                             <div 
                               key={reply.id} 
-                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 cursor-pointer hover:border-cyan-500/50 transition-colors active:scale-[0.98]"
+                              onClick={() => navigate(`/threads/${reply.parent_thread_id}`)}
                             >
                               <div className="flex items-center gap-2 mb-2 text-cyan-400 text-xs">
                                 <MessageCircle className="w-3 h-3" />
