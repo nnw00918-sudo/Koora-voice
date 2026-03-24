@@ -52,6 +52,7 @@ const DashboardPage = ({ user, onLogout }) => {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [selectedRoomForPin, setSelectedRoomForPin] = useState(null);
+  const [favoriteLoading, setFavoriteLoading] = useState({});
   const [sportsNews, setSportsNews] = useState([
     { type: 'result', icon: '⚽', text: 'جاري تحميل الأخبار...' }
   ]);
@@ -121,6 +122,9 @@ const DashboardPage = ({ user, onLogout }) => {
     } else if (statusFilter === 'main') {
       // 'main' shows only non-diwaniya rooms
       result = result.filter(room => room.room_type !== 'diwaniya');
+    } else if (statusFilter === 'favorites') {
+      // 'favorites' shows only favorited rooms
+      result = result.filter(room => room.is_favorite);
     }
     
     if (searchQuery.trim()) {
@@ -192,6 +196,30 @@ const DashboardPage = ({ user, onLogout }) => {
       toast.error(error.response?.data?.detail || (isRTL ? 'فشل الانضمام' : 'Failed to join'));
     } finally {
       setJoiningRoom(null);
+    }
+  };
+
+  // Toggle favorite room
+  const toggleFavorite = async (roomId, e) => {
+    e.stopPropagation();
+    setFavoriteLoading(prev => ({ ...prev, [roomId]: true }));
+    try {
+      const res = await axios.post(`${API}/rooms/${roomId}/favorite`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update local state
+      setRooms(prev => prev.map(room => 
+        room.id === roomId 
+          ? { ...room, is_favorite: res.data.is_favorite }
+          : room
+      ));
+      
+      toast.success(res.data.message);
+    } catch (error) {
+      toast.error(isRTL ? 'فشل في تحديث المفضلة' : 'Failed to update favorite');
+    } finally {
+      setFavoriteLoading(prev => ({ ...prev, [roomId]: false }));
     }
   };
 
@@ -467,6 +495,22 @@ const DashboardPage = ({ user, onLogout }) => {
                 {rooms.filter(r => r.room_type === 'diwaniya').length}
               </span>
             </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setStatusFilter('favorites')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
+                statusFilter === 'favorites'
+                  ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-[0_0_15px_rgba(234,179,8,0.4)]'
+                  : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 border border-slate-700/50'
+              }`}
+            >
+              <Star className="w-4 h-4" />
+              {isRTL ? 'المفضلة' : 'Favorites'}
+              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                {rooms.filter(r => r.is_favorite).length}
+              </span>
+            </motion.button>
           </div>
         </div>
 
@@ -485,18 +529,23 @@ const DashboardPage = ({ user, onLogout }) => {
               className="text-center py-16"
             >
               <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-lime-500/20 to-emerald-500/20 flex items-center justify-center border border-lime-500/20">
-                <Mic className="w-12 h-12 text-lime-400/50" />
+                {statusFilter === 'favorites' ? <Star className="w-12 h-12 text-yellow-400/50" /> : <Mic className="w-12 h-12 text-lime-400/50" />}
               </div>
               <p className="text-slate-500 font-almarai text-lg mb-2">
                 {statusFilter === 'diwaniya' 
                   ? (isRTL ? 'لا توجد دوانيه الآن' : 'No diwaniya rooms right now')
+                  : statusFilter === 'favorites'
+                  ? (isRTL ? 'لا توجد غرف مفضلة' : 'No favorite rooms')
                   : (isRTL ? 'لا توجد غرف أساسية' : 'No main rooms available')
                 }
               </p>
               <p className="text-slate-600 font-almarai text-sm mb-6">
-                {isRTL ? 'كن أول من يبدأ البث!' : 'Be the first to start streaming!'}
+                {statusFilter === 'favorites' 
+                  ? (isRTL ? 'اضغط على النجمة لإضافة غرفة للمفضلة' : 'Click the star to add a room to favorites')
+                  : (isRTL ? 'كن أول من يبدأ البث!' : 'Be the first to start streaming!')
+                }
               </p>
-              {user?.role === 'owner' && (
+              {user?.role === 'owner' && statusFilter !== 'favorites' && (
                 <Button
                   onClick={() => navigate('/create-room')}
                   className="bg-gradient-to-r from-lime-400 to-emerald-500 hover:from-lime-300 hover:to-emerald-400 text-slate-950 font-cairo font-bold px-8 py-3 rounded-2xl shadow-[0_0_30px_rgba(163,230,53,0.3)]"
@@ -553,6 +602,24 @@ const DashboardPage = ({ user, onLogout }) => {
                       <Users className="w-4 h-4 text-lime-400" strokeWidth={2} />
                       <span className="text-white font-chivo font-bold text-sm">{room.participant_count || 0}</span>
                     </div>
+                    
+                    {/* Favorite Button */}
+                    <button
+                      onClick={(e) => toggleFavorite(room.id, e)}
+                      disabled={favoriteLoading[room.id]}
+                      className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'} w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
+                        room.is_favorite 
+                          ? 'bg-yellow-500/80 text-white' 
+                          : 'bg-black/60 text-slate-400 hover:text-yellow-400 border border-white/10'
+                      }`}
+                      data-testid={`favorite-btn-${room.id}`}
+                    >
+                      {favoriteLoading[room.id] ? (
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Star className={`w-5 h-5 ${room.is_favorite ? 'fill-current' : ''}`} />
+                      )}
+                    </button>
                     
                     {/* Member Count Badge */}
                     <div className={`absolute bottom-3 ${isRTL ? 'right-3' : 'left-3'} flex items-center gap-2 bg-violet-500/80 backdrop-blur-md px-3 py-2 rounded-full`}>

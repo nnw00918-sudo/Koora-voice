@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, File, Form, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, File, Form, UploadFile, WebSocket, WebSocketDisconnect, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -338,6 +338,7 @@ async def register(user_data: UserRegister):
         "role": user_role,
         "is_banned": False,
         "banned_rooms": [],
+        "favorite_rooms": [],  # User's favorite rooms
         "coins": 1000,
         "level": 1,
         "xp": 0,
@@ -757,8 +758,8 @@ async def upload_thread_media(
     
     return {"url": media_url, "type": type}
 
-@api_router.get("/rooms", response_model=List[RoomFull])
-async def get_rooms(category: Optional[str] = None):
+@api_router.get("/rooms")
+async def get_rooms(category: Optional[str] = None, authorization: Optional[str] = Header(None)):
     query = {}
     if category and category != "الكل":
         query["category"] = category
@@ -767,6 +768,20 @@ async def get_rooms(category: Optional[str] = None):
     
     if not rooms:
         return []
+    
+    # Get current user's favorite rooms if authenticated
+    user_favorites = []
+    if authorization and authorization.startswith("Bearer "):
+        try:
+            token = authorization.split(" ")[1]
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_id = payload.get("sub")
+            if user_id:
+                user = await db.users.find_one({"id": user_id})
+                if user:
+                    user_favorites = user.get("favorite_rooms", [])
+        except:
+            pass
     
     # Get all room IDs
     room_ids = [r["id"] for r in rooms]
@@ -789,12 +804,65 @@ async def get_rooms(category: Optional[str] = None):
     member_counts_list = await member_counts_cursor.to_list(100)
     member_counts_map = {c["_id"]: c["count"] for c in member_counts_list}
     
-    # Add counts to each room
+    # Add counts and favorite status to each room
+    result = []
     for room in rooms:
         room["participant_count"] = counts_map.get(room["id"], 0)
-        # Member count includes the owner (+1)
         room["member_count"] = member_counts_map.get(room["id"], 0) + 1
-        # Ensure room_type exists
+        if "room_type" not in room:
+            room["room_type"] = "all"
+        
+        room_data = RoomFull(**room).model_dump()
+        room_data["is_favorite"] = room["id"] in user_favorites
+        result.append(room_data)
+    
+    return result
+
+# ==================== ROOM FAVORITES ====================
+@api_router.post("/rooms/{room_id}/favorite")
+async def toggle_favorite_room(room_id: str, current_user: User = Depends(get_current_user)):
+    """Toggle favorite status for a room"""
+    user = await db.users.find_one({"id": current_user.id})
+    if not user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    favorite_rooms = user.get("favorite_rooms", [])
+    
+    if room_id in favorite_rooms:
+        # Remove from favorites
+        await db.users.update_one(
+            {"id": current_user.id},
+            {"$pull": {"favorite_rooms": room_id}}
+        )
+        return {"message": "تمت إزالة الغرفة من المفضلة", "is_favorite": False}
+    else:
+        # Add to favorites
+        await db.users.update_one(
+            {"id": current_user.id},
+            {"$addToSet": {"favorite_rooms": room_id}}
+        )
+        return {"message": "تمت إضافة الغرفة للمفضلة", "is_favorite": True}
+
+@api_router.get("/rooms/favorites")
+async def get_favorite_rooms(current_user: User = Depends(get_current_user)):
+    """Get user's favorite rooms"""
+    user = await db.users.find_one({"id": current_user.id})
+    if not user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    favorite_room_ids = user.get("favorite_rooms", [])
+    
+    if not favorite_room_ids:
+        return []
+    
+    # Fetch rooms
+    rooms = await db.rooms.find({"id": {"$in": favorite_room_ids}}, {"_id": 0}).to_list(100)
+    
+    # Add participant counts
+    for room in rooms:
+        count = await db.room_participants.count_documents({"room_id": room["id"]})
+        room["participant_count"] = count
+        room["member_count"] = 1
         if "room_type" not in room:
             room["room_type"] = "all"
     
