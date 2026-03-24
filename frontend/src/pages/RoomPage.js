@@ -251,30 +251,36 @@ const YallaLiveRoom = ({ user }) => {
     // Reset minimizing flag
     isMinimizingRef.current = false;
     
-    console.log('RoomPage useEffect - checking state:', {
-      isMinimized,
-      currentRoom: currentRoom?.id,
-      roomId,
-      hasContextAgoraClient: !!contextAgoraClient,
-      hasLocalAgoraClient: !!agoraClient.current
-    });
-    
-    // Check if returning from minimized state with same room
-    if (isMinimized && currentRoom && currentRoom.id === roomId) {
-      // Returning to same room - use existing connection
-      console.log('Returning to minimized room, reusing connection');
-      if (contextAgoraClient) {
+    const initRoom = async () => {
+      console.log('RoomPage useEffect - checking state:', {
+        isMinimized,
+        currentRoom: currentRoom?.id,
+        roomId,
+        hasContextAgoraClient: !!contextAgoraClient,
+        hasLocalAgoraClient: !!agoraClient.current
+      });
+      
+      // If returning from minimized state for SAME room, just maximize
+      if (isMinimized && currentRoom && currentRoom.id === roomId && contextAgoraClient) {
+        console.log('Returning to SAME minimized room - just maximize');
         agoraClient.current = contextAgoraClient;
+        maximizePlayer();
+        fetchRoomData();
+        startPolling();
+        startHeartbeat();
+        fetchStreamStatus();
+        fetchCurrentUserRole();
+        return;
       }
-      maximizePlayer();
-      fetchRoomData();
-      startPolling();
-      startHeartbeat();
-      fetchStreamStatus();
-      fetchCurrentUserRole();
-    } else {
-      // New room or no minimized room - initialize fresh
-      console.log('New room or no minimized room - initializing fresh');
+      
+      // If there's a minimized room for DIFFERENT room, disconnect it first
+      if (isMinimized && currentRoom && currentRoom.id !== roomId) {
+        console.log('Different room - disconnecting from minimized room first');
+        await globalDisconnect();
+      }
+      
+      // Initialize fresh connection
+      console.log('Initializing fresh connection');
       fetchCurrentUserRole();
       initializeAgora();
       joinRoom();
@@ -282,7 +288,9 @@ const YallaLiveRoom = ({ user }) => {
       startPolling();
       startHeartbeat();
       fetchStreamStatus();
-    }
+    };
+    
+    initRoom();
 
     // Poll stream status every 10 seconds
     const streamPoll = setInterval(fetchStreamStatus, 10000);
@@ -428,29 +436,15 @@ const YallaLiveRoom = ({ user }) => {
 
   const initializeAgora = async () => {
     try {
-      // If returning from minimized state for same room, don't reinitialize
-      if (isMinimized && currentRoom && currentRoom.id === roomId && contextAgoraClient) {
-        console.log('Skipping Agora init - reusing minimized connection');
-        agoraClient.current = contextAgoraClient;
-        maximizePlayer();
-        return;
-      }
-      
-      // Clean up any existing connection first
+      // Clean up any existing local connection first
       if (agoraClient.current) {
-        console.log('Cleaning up existing Agora client');
+        console.log('Cleaning up existing local Agora client');
         try {
           await agoraClient.current.leave();
         } catch (e) {
           // Ignore leave errors
         }
         agoraClient.current = null;
-      }
-      
-      // Also disconnect from context if different room
-      if (contextAgoraClient && currentRoom && currentRoom.id !== roomId) {
-        console.log('Disconnecting from different room in context');
-        await globalDisconnect();
       }
       
       console.log('Creating new Agora client');
