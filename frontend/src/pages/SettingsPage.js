@@ -573,12 +573,6 @@ const SettingsPage = ({ user, onLogout }) => {
   const MainView = () => (
     <div className="space-y-3">
       <SettingItem 
-        icon={User} 
-        title={txt.profile} 
-        description={txt.profileDesc}
-        onClick={() => setCurrentView('profile')} 
-      />
-      <SettingItem 
         icon={Lock} 
         title={txt.account} 
         description={txt.accountDesc}
