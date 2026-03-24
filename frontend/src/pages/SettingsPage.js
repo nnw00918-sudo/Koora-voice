@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import BottomNavigation from '../components/BottomNavigation';
@@ -100,6 +101,17 @@ const SettingsPage = ({ user, onLogout }) => {
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
   const token = localStorage.getItem('token');
 
+  // Push Notifications Hook
+  const {
+    isSupported: pushSupported,
+    isSubscribed: pushSubscribed,
+    isLoading: pushLoading,
+    permission: pushPermission,
+    subscribe: subscribePush,
+    unsubscribe: unsubscribePush,
+    sendTest: sendTestPush
+  } = usePushNotifications(token);
+
   useEffect(() => { 
     fetchUserStats(); 
     loadSettings();
@@ -171,44 +183,32 @@ const SettingsPage = ({ user, onLogout }) => {
     }
   };
 
-  // Push Notification Functions
-  const [pushPermission, setPushPermission] = useState('default');
-  
-  useEffect(() => {
-    if ('Notification' in window) {
-      setPushPermission(Notification.permission);
-    }
-  }, []);
-
+  // Push Notification Functions (using hook)
   const requestPushPermission = async () => {
-    if (!('Notification' in window)) {
+    if (!pushSupported) {
       toast.error(isRTL ? 'متصفحك لا يدعم الإشعارات' : 'Your browser does not support notifications');
       return;
     }
 
     try {
-      const permission = await Notification.requestPermission();
-      setPushPermission(permission);
-      
-      if (permission === 'granted') {
-        // Register service worker push subscription
-        const registration = await navigator.serviceWorker.ready;
-        
-        // In production, use your VAPID public key
-        // For now, we'll just show a success message
-        toast.success(isRTL ? 'تم تفعيل الإشعارات بنجاح!' : 'Notifications enabled!');
-        
-        setNotificationSettings(prev => ({ ...prev, pushEnabled: true }));
-        saveSettings('notifications', { ...notificationSettings, pushEnabled: true });
-        
-        // Show test notification
-        new Notification(isRTL ? 'صوت الكورة' : 'Koora Voice', {
-          body: isRTL ? 'تم تفعيل الإشعارات بنجاح!' : 'Notifications have been enabled!',
-          icon: '/logo192.png',
-          badge: '/logo192.png'
-        });
-      } else if (permission === 'denied') {
-        toast.error(isRTL ? 'تم رفض إذن الإشعارات' : 'Notification permission denied');
+      if (pushSubscribed) {
+        // Unsubscribe
+        const success = await unsubscribePush();
+        if (success) {
+          toast.success(isRTL ? 'تم إيقاف الإشعارات' : 'Notifications disabled');
+          setNotificationSettings(prev => ({ ...prev, pushEnabled: false }));
+        }
+      } else {
+        // Subscribe
+        const success = await subscribePush();
+        if (success) {
+          toast.success(isRTL ? 'تم تفعيل الإشعارات بنجاح!' : 'Notifications enabled!');
+          setNotificationSettings(prev => ({ ...prev, pushEnabled: true }));
+          saveSettings('notifications', { ...notificationSettings, pushEnabled: true });
+          
+          // Send test notification
+          setTimeout(() => sendTestPush(), 1000);
+        }
       }
     } catch (error) {
       console.error('Push permission error:', error);
@@ -897,15 +897,17 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
             <div className={isRTL ? 'text-right' : 'text-left'}>
               <p className="text-white font-cairo font-bold">{txt.pushNotifications}</p>
-              <p className="text-slate-500 text-sm font-almarai">{txt.pushDesc}</p>
+              <p className="text-slate-500 text-sm font-almarai">
+                {pushSubscribed 
+                  ? (isRTL ? 'الإشعارات مفعّلة' : 'Notifications enabled') 
+                  : txt.pushDesc}
+              </p>
             </div>
           </div>
           <ToggleSwitch 
-            enabled={notificationSettings.pushEnabled}
-            onChange={(val) => {
-              setNotificationSettings(prev => ({ ...prev, pushEnabled: val }));
-              saveSettings('notifications', { ...notificationSettings, pushEnabled: val });
-            }}
+            enabled={pushSubscribed}
+            onChange={requestPushPermission}
+            disabled={pushLoading}
           />
         </div>
 

@@ -3916,11 +3916,13 @@ from routes.football import router as football_router
 from routes.notifications import router as notifications_router
 from routes.stories import router as stories_router
 from routes.conversations import router as conversations_router
+from routes.push import router as push_router
 
 api_router.include_router(football_router)
 api_router.include_router(notifications_router)
 api_router.include_router(stories_router)
 api_router.include_router(conversations_router)
+api_router.include_router(push_router)
 
 # Include the API router - must be at the end after all routes are defined
 app.include_router(api_router)
