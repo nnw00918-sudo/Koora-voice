@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSettings } from '../contexts/SettingsContext';
 import Stories from '../components/Stories';
 import BottomNavigation from '../components/BottomNavigation';
 import { 
@@ -18,6 +19,7 @@ const API = `${BACKEND_URL}/api`;
 const ThreadsPage = ({ user }) => {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
+  const { isDarkMode, currentTheme } = useSettings();
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showComposer, setShowComposer] = useState(false);
@@ -718,13 +720,30 @@ const ThreadsPage = ({ user }) => {
   const isOverLimit = charCount > maxChars;
   const remainingChars = maxChars - charCount;
 
+  // Theme-aware colors
+  const themeClasses = {
+    bg: isDarkMode ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F5]',
+    headerBg: isDarkMode ? 'bg-black/80' : 'bg-white/90',
+    headerBorder: isDarkMode ? 'border-white/5' : 'border-black/5',
+    textPrimary: isDarkMode ? 'text-white' : 'text-[#171717]',
+    textSecondary: isDarkMode ? 'text-[#A3A3A3]' : 'text-[#525252]',
+    border: isDarkMode ? 'border-[#1A1A1A]' : 'border-[#E5E5E5]',
+    cardBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
+    cardHover: isDarkMode ? 'hover:bg-[#0F0F0F]' : 'hover:bg-[#F9F9F9]',
+    inputBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
+    inputBorder: isDarkMode ? 'border-[#262626]' : 'border-[#E5E5E5]',
+    primary: isDarkMode ? '#CCFF00' : '#84CC16',
+    modalBg: isDarkMode ? 'bg-[#0A0A0A]' : 'bg-white',
+    modalOverlay: isDarkMode ? 'bg-black/90' : 'bg-black/50',
+  };
+
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className={`min-h-screen ${themeClasses.bg}`}>
       <div className="max-w-[600px] mx-auto min-h-screen pb-24">
         {/* Header - Glassmorphism */}
-        <div className="sticky top-0 bg-black/80 backdrop-blur-xl border-b border-white/5 z-10">
+        <div className={`sticky top-0 ${themeClasses.headerBg} backdrop-blur-xl border-b ${themeClasses.headerBorder} z-10`}>
           <div className="p-4">
-            <h1 className={`text-xl font-cairo font-bold text-white ${isRTL ? 'text-right' : 'text-left'}`}>
+            <h1 className={`text-xl font-cairo font-bold ${themeClasses.textPrimary} ${isRTL ? 'text-right' : 'text-left'}`}>
               {txt.threads}
             </h1>
           </div>
@@ -734,27 +753,27 @@ const ThreadsPage = ({ user }) => {
         <Stories user={user} />
           
         {/* Tabs */}
-        <div className="flex border-b border-[#1A1A1A]">
+        <div className={`flex border-b ${themeClasses.border}`}>
           <button
             onClick={() => setActiveTab('forYou')}
             className={`flex-1 py-3.5 text-center font-cairo font-medium transition-colors relative ${
-              activeTab === 'forYou' ? 'text-white' : 'text-[#A3A3A3]'
+              activeTab === 'forYou' ? themeClasses.textPrimary : themeClasses.textSecondary
             }`}
           >
             {txt.forYou}
             {activeTab === 'forYou' && (
-              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#CCFF00] rounded-full shadow-[0_0_15px_rgba(204,255,0,0.5)]" />
+              <motion.div layoutId="tab-indicator" className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 rounded-full shadow-[0_0_15px_rgba(204,255,0,0.5)]`} style={{ backgroundColor: themeClasses.primary }} />
             )}
           </button>
           <button
             onClick={() => setActiveTab('following')}
             className={`flex-1 py-3.5 text-center font-cairo font-medium transition-colors relative ${
-              activeTab === 'following' ? 'text-white' : 'text-[#A3A3A3]'
+              activeTab === 'following' ? themeClasses.textPrimary : themeClasses.textSecondary
             }`}
           >
             {txt.following}
             {activeTab === 'following' && (
-              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#CCFF00] rounded-full shadow-[0_0_15px_rgba(204,255,0,0.5)]" />
+              <motion.div layoutId="tab-indicator" className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 rounded-full shadow-[0_0_15px_rgba(204,255,0,0.5)]`} style={{ backgroundColor: themeClasses.primary }} />
             )}
           </button>
         </div>
@@ -788,7 +807,7 @@ const ThreadsPage = ({ user }) => {
               <ThreadCard key={thread.id} thread={thread} />
             ))}
           </div>
-        )}}
+        )}
       </div>
 
       {/* Hidden File Inputs */}

@@ -29,6 +29,7 @@ input, textarea, select {
 
 @layer base {
   :root {
+    /* Dark Mode (Default) */
     --background: 0 0% 4%;
     --foreground: 0 0% 98%;
     --card: 0 0% 8%;
@@ -59,6 +60,58 @@ input, textarea, select {
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
     --safe-area-inset-left: env(safe-area-inset-left, 0px);
     --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    
+    /* Theme Variables - Dark */
+    --theme-background: #0A0A0A;
+    --theme-surface: #141414;
+    --theme-primary: #CCFF00;
+    --theme-primary-foreground: #000000;
+    --theme-secondary: #1A1A1A;
+    --theme-muted: #262626;
+    --theme-muted-foreground: #A3A3A3;
+    --theme-border: #262626;
+    --theme-text: #FFFFFF;
+    --theme-text-secondary: #A3A3A3;
+    --theme-card-bg: #141414;
+    --theme-input-bg: #141414;
+    --theme-glass-bg: rgba(0, 0, 0, 0.7);
+  }
+  
+  /* Light Mode Variables */
+  .light {
+    --background: 0 0% 96%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 84 81% 44%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 90%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 83%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 90%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 84 81% 44%;
+    
+    --theme-background: #F5F5F5;
+    --theme-surface: #FFFFFF;
+    --theme-primary: #84CC16;
+    --theme-primary-foreground: #FFFFFF;
+    --theme-secondary: #E5E5E5;
+    --theme-muted: #D4D4D4;
+    --theme-muted-foreground: #737373;
+    --theme-border: #E5E5E5;
+    --theme-text: #171717;
+    --theme-text-secondary: #525252;
+    --theme-card-bg: #FFFFFF;
+    --theme-input-bg: #FFFFFF;
+    --theme-glass-bg: rgba(255, 255, 255, 0.8);
   }
 }
 
@@ -75,7 +128,9 @@ input, textarea, select {
   }
   
   body {
-    @apply bg-[#0A0A0A] text-foreground font-almarai;
+    background-color: var(--theme-background);
+    color: var(--theme-text);
+    @apply font-almarai;
     margin: 0;
     padding: 0;
     overflow-x: hidden;

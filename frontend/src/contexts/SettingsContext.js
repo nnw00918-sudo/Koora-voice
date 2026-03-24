@@ -20,6 +20,46 @@ const defaultSettings = {
   vibration: true,
 };
 
+// Theme colors for light and dark modes
+export const themeColors = {
+  dark: {
+    background: '#0A0A0A',
+    surface: '#141414',
+    primary: '#CCFF00',
+    primaryForeground: '#000000',
+    secondary: '#1A1A1A',
+    muted: '#262626',
+    mutedForeground: '#A3A3A3',
+    border: '#262626',
+    text: '#FFFFFF',
+    textSecondary: '#A3A3A3',
+    accentRed: '#FF3B30',
+    accentBlue: '#007AFF',
+    cardBg: '#141414',
+    inputBg: '#141414',
+    glassBg: 'rgba(0, 0, 0, 0.7)',
+    glassBackdrop: 'blur(12px)',
+  },
+  light: {
+    background: '#F5F5F5',
+    surface: '#FFFFFF',
+    primary: '#84CC16',
+    primaryForeground: '#FFFFFF',
+    secondary: '#E5E5E5',
+    muted: '#D4D4D4',
+    mutedForeground: '#737373',
+    border: '#E5E5E5',
+    text: '#171717',
+    textSecondary: '#525252',
+    accentRed: '#DC2626',
+    accentBlue: '#2563EB',
+    cardBg: '#FFFFFF',
+    inputBg: '#FFFFFF',
+    glassBg: 'rgba(255, 255, 255, 0.8)',
+    glassBackdrop: 'blur(12px)',
+  }
+};
+
 export const SettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('appSettings');
@@ -29,14 +69,35 @@ export const SettingsProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('appSettings', JSON.stringify(settings));
     
-    // Apply dark mode
+    // Apply theme
+    const root = document.documentElement;
+    const theme = settings.darkMode ? themeColors.dark : themeColors.light;
+    
     if (settings.darkMode) {
-      document.documentElement.classList.add('dark');
-      document.body.style.backgroundColor = '#0f172a';
+      root.classList.add('dark');
+      root.classList.remove('light');
     } else {
-      document.documentElement.classList.remove('dark');
-      document.body.style.backgroundColor = '#f8fafc';
+      root.classList.remove('dark');
+      root.classList.add('light');
     }
+    
+    // Set CSS variables for theme
+    root.style.setProperty('--theme-background', theme.background);
+    root.style.setProperty('--theme-surface', theme.surface);
+    root.style.setProperty('--theme-primary', theme.primary);
+    root.style.setProperty('--theme-primary-foreground', theme.primaryForeground);
+    root.style.setProperty('--theme-secondary', theme.secondary);
+    root.style.setProperty('--theme-muted', theme.muted);
+    root.style.setProperty('--theme-muted-foreground', theme.mutedForeground);
+    root.style.setProperty('--theme-border', theme.border);
+    root.style.setProperty('--theme-text', theme.text);
+    root.style.setProperty('--theme-text-secondary', theme.textSecondary);
+    root.style.setProperty('--theme-card-bg', theme.cardBg);
+    root.style.setProperty('--theme-input-bg', theme.inputBg);
+    root.style.setProperty('--theme-glass-bg', theme.glassBg);
+    
+    document.body.style.backgroundColor = theme.background;
+    document.body.style.color = theme.text;
   }, [settings]);
 
   const updateSetting = (key, value) => {
@@ -52,6 +113,12 @@ export const SettingsProvider = ({ children }) => {
       navigator.vibrate(50);
     }
   };
+  
+  const toggleTheme = () => {
+    updateSetting('darkMode', !settings.darkMode);
+  };
+  
+  const currentTheme = settings.darkMode ? themeColors.dark : themeColors.light;
 
   const playClickSound = () => {
     try {
@@ -106,7 +173,10 @@ export const SettingsProvider = ({ children }) => {
   return (
     <SettingsContext.Provider value={{ 
       settings, 
-      updateSetting, 
+      updateSetting,
+      toggleTheme,
+      currentTheme,
+      isDarkMode: settings.darkMode,
       playNotificationSound,
       vibrate 
     }}>

@@ -20,7 +20,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import MiniAudioPlayer from './components/MiniAudioPlayer';
 import { LanguageProvider } from './contexts/LanguageContext';
-import { SettingsProvider } from './contexts/SettingsContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { RoomAudioProvider } from './contexts/RoomAudioContext';
 import { Toaster } from 'sonner';
 
@@ -36,6 +36,12 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
+// Toaster wrapper that responds to theme
+const ThemedToaster = () => {
+  const { isDarkMode } = useSettings();
+  return <Toaster position="top-center" theme={isDarkMode ? "dark" : "light"} richColors />;
+};
 
 function App() {
   const [user, setUser] = useState(null);
@@ -97,7 +103,7 @@ function App() {
             <MiniAudioPlayer />
             <PWAInstallPrompt />
           </BrowserRouter>
-          <Toaster position="top-center" theme="dark" richColors />
+          <ThemedToaster />
         </RoomAudioProvider>
       </SettingsProvider>
     </LanguageProvider>

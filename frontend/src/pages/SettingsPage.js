@@ -16,7 +16,7 @@ import {
   Heart, UserPlus, Megaphone, Check, X, Camera, AtSign, Image, Users, Edit3,
   Share2, MoreHorizontal, Grid3X3, Bookmark, Link2, Fingerprint, ShieldCheck,
   UserX, Ban, AlertTriangle, Trash2, Download, FileText, Key, Verified,
-  Clock, MapPin, Wifi, WifiOff, Vibrate, Volume1, Zap, Sparkles
+  Clock, MapPin, Wifi, WifiOff, Vibrate, Volume1, Zap, Sparkles, SunMoon
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -25,7 +25,7 @@ const API = `${BACKEND_URL}/api`;
 const SettingsPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
-  const { settings, updateSetting } = useSettings();
+  const { settings, updateSetting, toggleTheme, isDarkMode } = useSettings();
   const [currentView, setCurrentView] = useState('main');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -998,8 +998,8 @@ const SettingsPage = ({ user, onLogout }) => {
       <div className="space-y-3">
         <div className={`flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-11 h-11 rounded-xl bg-lime-500/20 flex items-center justify-center">
-              <Moon className="w-5 h-5 text-lime-400" />
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-lime-500/20' : 'bg-lime-600/20'}`}>
+              {isDarkMode ? <Moon className="w-5 h-5 text-lime-400" /> : <Sun className="w-5 h-5 text-lime-600" />}
             </div>
             <div className={isRTL ? 'text-right' : 'text-left'}>
               <p className="text-white font-cairo font-bold">{txt.darkMode}</p>
@@ -1007,10 +1007,10 @@ const SettingsPage = ({ user, onLogout }) => {
             </div>
           </div>
           <ToggleSwitch 
-            enabled={displaySettings.darkMode}
-            onChange={(val) => {
-              setDisplaySettings(prev => ({ ...prev, darkMode: val }));
-              saveSettings('display', { ...displaySettings, darkMode: val });
+            enabled={isDarkMode}
+            onChange={() => {
+              toggleTheme();
+              toast.success(isDarkMode ? 'تم تفعيل الوضع النهاري' : 'تم تفعيل الوضع الداكن');
             }}
           />
         </div>

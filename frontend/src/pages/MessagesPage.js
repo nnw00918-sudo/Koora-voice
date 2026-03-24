@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
 import { 
   ArrowRight, Search, Send, Check, CheckCheck, X, MessageCircle,
@@ -13,11 +14,11 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Animated background orbs for messages
-const ChatBackground = () => (
+const ChatBackground = ({ isDarkMode }) => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute inset-0 bg-[#0A0A0A]" />
+    <div className={`absolute inset-0 ${isDarkMode ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F5]'}`} />
     <motion.div
-      className="absolute top-1/4 right-1/4 w-64 h-64 bg-lime-500/5 rounded-full blur-3xl"
+      className={`absolute top-1/4 right-1/4 w-64 h-64 ${isDarkMode ? 'bg-lime-500/5' : 'bg-lime-500/10'} rounded-full blur-3xl`}
       animate={{ 
         x: [0, 30, 0], 
         y: [0, -20, 0],
@@ -26,7 +27,7 @@ const ChatBackground = () => (
       transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
     />
     <motion.div
-      className="absolute bottom-1/3 left-1/4 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl"
+      className={`absolute bottom-1/3 left-1/4 w-48 h-48 ${isDarkMode ? 'bg-emerald-500/5' : 'bg-emerald-500/10'} rounded-full blur-3xl`}
       animate={{ 
         x: [0, -20, 0], 
         y: [0, 30, 0],
@@ -44,12 +45,28 @@ const ChatView = memo(function ChatView({
   onBack, 
   onDelete, 
   onSend,
-  txt 
+  txt,
+  isDarkMode
 }) {
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  
+  // Theme classes
+  const theme = {
+    bg: isDarkMode ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F5]',
+    headerBg: isDarkMode ? 'bg-black/70' : 'bg-white/90',
+    headerBorder: isDarkMode ? 'border-white/10' : 'border-black/5',
+    textPrimary: isDarkMode ? 'text-white' : 'text-[#171717]',
+    textSecondary: isDarkMode ? 'text-[#A3A3A3]' : 'text-[#525252]',
+    inputBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
+    inputBorder: isDarkMode ? 'border-[#262626]' : 'border-[#E5E5E5]',
+    cardBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
+    primary: isDarkMode ? '#CCFF00' : '#84CC16',
+    myBubbleBg: isDarkMode ? 'from-[#CCFF00] to-emerald-500' : 'from-[#84CC16] to-emerald-500',
+    otherBubbleBg: isDarkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E5E5E5]',
+  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -97,14 +114,15 @@ const ChatView = memo(function ChatView({
   };
 
   return (
-    <div className="relative flex flex-col h-screen bg-[#0A0A0A]" style={{ height: '100dvh' }}>
-      <ChatBackground />
+    <div className={`relative flex flex-col h-screen ${theme.bg}`} style={{ height: '100dvh' }}>
+      <ChatBackground isDarkMode={isDarkMode} />
       
       {/* Header - Glassmorphism */}
-      <div className="relative flex items-center gap-3 px-4 py-3 bg-black/70 backdrop-blur-xl border-b border-white/10 flex-shrink-0 z-10">
+      <div className={`relative flex items-center gap-3 px-4 py-3 ${theme.headerBg} backdrop-blur-xl border-b ${theme.headerBorder} flex-shrink-0 z-10`}>
         <motion.button 
           onClick={onBack} 
-          className="text-[#CCFF00] p-2 rounded-full hover:bg-[#CCFF00]/10"
+          className="p-2 rounded-full hover:opacity-80"
+          style={{ color: theme.primary }}
           whileTap={{ scale: 0.9 }}
         >
           <ArrowRight className="w-5 h-5" />
@@ -114,12 +132,14 @@ const ChatView = memo(function ChatView({
           <img
             src={conversation?.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation?.user?.username}`}
             alt=""
-            className="w-11 h-11 rounded-full bg-[#141414] cursor-pointer hover:opacity-80 ring-2 ring-[#CCFF00]/30"
+            className={`w-11 h-11 rounded-full cursor-pointer hover:opacity-80 ring-2 ${theme.cardBg}`}
+            style={{ ringColor: `${theme.primary}30` }}
             onClick={() => window.location.href = `/user/${conversation?.user?.id}`}
           />
           {/* Online indicator */}
           <motion.div 
-            className="absolute bottom-0 right-0 w-3 h-3 bg-[#CCFF00] rounded-full ring-2 ring-[#0A0A0A]"
+            className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ring-2 ${isDarkMode ? 'ring-[#0A0A0A]' : 'ring-[#F5F5F5]'}`}
+            style={{ backgroundColor: theme.primary }}
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
@@ -127,17 +147,17 @@ const ChatView = memo(function ChatView({
         
         <div className="flex-1 text-right">
           <p 
-            className="text-white font-cairo font-bold cursor-pointer hover:text-[#CCFF00] transition-colors"
+            className={`font-cairo font-bold cursor-pointer hover:opacity-80 transition-colors ${theme.textPrimary}`}
             onClick={() => window.location.href = `/user/${conversation?.user?.id}`}
           >
             {conversation?.user?.name || conversation?.user?.username}
           </p>
-          <p className="text-[#CCFF00] text-xs font-almarai">{txt.online}</p>
+          <p className="text-xs font-almarai" style={{ color: theme.primary }}>{txt.online}</p>
         </div>
 
         <motion.button
           onClick={onDelete}
-          className="p-2 text-[#A3A3A3] hover:text-[#FF3B30] hover:bg-[#FF3B30]/10 rounded-full transition-colors"
+          className={`p-2 ${theme.textSecondary} hover:text-[#FF3B30] hover:bg-[#FF3B30]/10 rounded-full transition-colors`}
           whileTap={{ scale: 0.9 }}
         >
           <Trash2 className="w-5 h-5" />
@@ -147,13 +167,13 @@ const ChatView = memo(function ChatView({
       {/* Messages */}
       <div className="relative flex-1 overflow-y-auto px-4 py-4 z-10">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-[#A3A3A3]">
+          <div className={`flex flex-col items-center justify-center h-full ${theme.textSecondary}`}>
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-20 h-20 rounded-full bg-[#141414] flex items-center justify-center mb-4 ring-1 ring-[#262626]"
+              className={`w-20 h-20 rounded-full ${theme.cardBg} flex items-center justify-center mb-4 ring-1 ${isDarkMode ? 'ring-[#262626]' : 'ring-[#E5E5E5]'}`}
             >
-              <Sparkles className="w-10 h-10 text-[#CCFF00]/50" />
+              <Sparkles className="w-10 h-10" style={{ color: `${theme.primary}50` }} />
             </motion.div>
             <p className="font-almarai">{txt.startConversation}</p>
           </div>
@@ -170,15 +190,15 @@ const ChatView = memo(function ChatView({
                 <div
                   className={`max-w-[80%] px-4 py-3 rounded-2xl ${
                     msg.is_mine 
-                      ? 'bg-gradient-to-br from-[#CCFF00] to-emerald-500 text-black rounded-bl-md shadow-[0_0_15px_rgba(204,255,0,0.2)]' 
-                      : 'bg-[#141414] text-white rounded-br-md border border-[#262626]'
+                      ? `bg-gradient-to-br ${theme.myBubbleBg} text-black rounded-bl-md shadow-[0_0_15px_rgba(204,255,0,0.2)]` 
+                      : `${theme.otherBubbleBg} ${theme.textPrimary} rounded-br-md border`
                   } ${msg.sending ? 'opacity-70' : ''}`}
                 >
-                  <p className={`text-[15px] text-right whitespace-pre-wrap break-words font-almarai ${msg.is_mine ? 'text-black' : 'text-white'}`}>
+                  <p className={`text-[15px] text-right whitespace-pre-wrap break-words font-almarai ${msg.is_mine ? 'text-black' : ''}`}>
                     {msg.content}
                   </p>
                   <div className={`flex items-center gap-1 mt-1.5 ${msg.is_mine ? 'justify-start' : 'justify-end'}`}>
-                    <span className={`text-[11px] ${msg.is_mine ? 'text-black/60' : 'text-[#A3A3A3]'}`}>
+                    <span className={`text-[11px] ${msg.is_mine ? 'text-black/60' : theme.textSecondary}`}>
                       {formatTime(msg.created_at)}
                     </span>
                     {msg.is_mine && !msg.sending && (
@@ -196,7 +216,7 @@ const ChatView = memo(function ChatView({
       </div>
 
       {/* Input - Glassmorphism */}
-      <div className="relative bg-black/70 backdrop-blur-xl border-t border-white/10 px-4 py-3 flex-shrink-0 z-10">
+      <div className={`relative ${theme.headerBg} backdrop-blur-xl border-t ${theme.headerBorder} px-4 py-3 flex-shrink-0 z-10`}>
         <div className="flex items-end gap-3">
           <textarea
             ref={textareaRef}
@@ -204,7 +224,7 @@ const ChatView = memo(function ChatView({
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={txt.typeMessage}
-            className="flex-1 bg-[#141414] text-white px-4 py-3 rounded-2xl outline-none text-right resize-none border border-[#262626] focus:border-[#CCFF00]/50 font-almarai"
+            className={`flex-1 ${theme.inputBg} ${theme.textPrimary} px-4 py-3 rounded-2xl outline-none text-right resize-none border ${theme.inputBorder} font-almarai`}
             style={{ fontSize: '16px', minHeight: '44px', maxHeight: '120px' }}
             dir="rtl"
             rows={1}
@@ -213,7 +233,8 @@ const ChatView = memo(function ChatView({
           <motion.button
             onClick={handleSend}
             disabled={!inputValue.trim() || sending}
-            className="p-3 bg-[#CCFF00] text-black rounded-full flex-shrink-0 disabled:opacity-50 shadow-[0_0_15px_rgba(204,255,0,0.3)]"
+            className="p-3 text-black rounded-full flex-shrink-0 disabled:opacity-50 shadow-[0_0_15px_rgba(204,255,0,0.3)]"
+            style={{ backgroundColor: theme.primary }}
             whileTap={{ scale: 0.9 }}
           >
             <Send className="w-5 h-5" />
@@ -227,6 +248,7 @@ const ChatView = memo(function ChatView({
 // ============ MAIN COMPONENT ============
 export default function MessagesPage() {
   const { language } = useLanguage();
+  const { isDarkMode } = useSettings();
   const navigate = useNavigate();
   const { conversationId } = useParams();
   
@@ -241,6 +263,22 @@ export default function MessagesPage() {
   const [searchLoading, setSearchLoading] = useState(false);
   
   const token = localStorage.getItem('token');
+  
+  // Theme classes
+  const theme = {
+    bg: isDarkMode ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F5]',
+    headerBg: isDarkMode ? 'bg-black/70' : 'bg-white/90',
+    headerBorder: isDarkMode ? 'border-white/10' : 'border-black/5',
+    textPrimary: isDarkMode ? 'text-white' : 'text-[#171717]',
+    textSecondary: isDarkMode ? 'text-[#A3A3A3]' : 'text-[#525252]',
+    inputBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
+    inputBorder: isDarkMode ? 'border-[#262626]' : 'border-[#E5E5E5]',
+    cardBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
+    cardHover: isDarkMode ? 'hover:bg-[#141414]' : 'hover:bg-[#F9F9F9]',
+    border: isDarkMode ? 'border-[#1A1A1A]' : 'border-[#E5E5E5]',
+    primary: isDarkMode ? '#CCFF00' : '#84CC16',
+    ring: isDarkMode ? 'ring-[#262626]' : 'ring-[#E5E5E5]',
+  };
 
   const txt = {
     messages: 'الرسائل',
@@ -411,29 +449,32 @@ export default function MessagesPage() {
         onDelete={deleteConversation}
         onSend={sendMessage}
         txt={txt}
+        isDarkMode={isDarkMode}
       />
     );
   }
 
   // Conversation List
   return (
-    <div className="relative flex flex-col h-screen bg-[#0A0A0A]" style={{ height: '100dvh' }}>
-      <ChatBackground />
+    <div className={`relative flex flex-col h-screen ${theme.bg}`} style={{ height: '100dvh' }}>
+      <ChatBackground isDarkMode={isDarkMode} />
       
       {/* Header - Glassmorphism */}
-      <div className="relative flex items-center justify-between px-4 py-4 bg-black/70 backdrop-blur-xl border-b border-white/10 z-10">
-        <h1 className="text-xl font-cairo font-bold text-white">{txt.messages}</h1>
+      <div className={`relative flex items-center justify-between px-4 py-4 ${theme.headerBg} backdrop-blur-xl border-b ${theme.headerBorder} z-10`}>
+        <h1 className={`text-xl font-cairo font-bold ${theme.textPrimary}`}>{txt.messages}</h1>
         <div className="flex items-center gap-1">
           <motion.button
             onClick={() => setShowSearch(true)}
-            className="p-2.5 text-[#CCFF00] hover:bg-[#CCFF00]/10 rounded-full transition-colors"
+            className="p-2.5 rounded-full transition-colors hover:opacity-80"
+            style={{ color: theme.primary }}
             whileTap={{ scale: 0.9 }}
           >
             <Search className="w-5 h-5" />
           </motion.button>
           <motion.button
             onClick={() => setShowSearch(true)}
-            className="p-2.5 text-[#CCFF00] hover:bg-[#CCFF00]/10 rounded-full transition-colors"
+            className="p-2.5 rounded-full transition-colors hover:opacity-80"
+            style={{ color: theme.primary }}
             whileTap={{ scale: 0.9 }}
           >
             <UserPlus className="w-5 h-5" />

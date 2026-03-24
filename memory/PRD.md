@@ -113,6 +113,21 @@
   - متغيرات CSS للألوان الجديدة
 - [x] اختبار شامل - 100% نجاح (iteration_20.json)
 
+### وضع النهار (Light Mode) - 24 ديسمبر 2025
+- [x] **SettingsContext.js**: 
+  - إضافة `themeColors` object لـ dark و light modes
+  - إضافة `toggleTheme()` function
+  - إضافة `currentTheme` و `isDarkMode` exports
+  - CSS variables تتغير ديناميكياً حسب الوضع
+- [x] **index.css**:
+  - متغيرات CSS لـ Light Mode (.light class)
+  - ألوان: bg=#F5F5F5, primary=#84CC16, text=#171717
+- [x] **BottomNavigation.js**: دعم ديناميكي للوضعين
+- [x] **MessagesPage.js**: دعم ديناميكي للوضعين  
+- [x] **ThreadsPage.js**: دعم جزئي (themeClasses object)
+- [x] **SettingsPage.js**: Toggle switch يعمل مع `toggleTheme()`
+- [x] **App.js**: `ThemedToaster` component للإشعارات الديناميكية
+
 ### التقسيم والـ Refactoring
 - [x] فصل Football routes إلى `/routes/football.py`
 - [x] تقليص server.py من 5268 إلى 4277 سطر (~1000 سطر)
