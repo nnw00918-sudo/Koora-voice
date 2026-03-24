@@ -403,19 +403,19 @@ const ThreadsPage = ({ user }) => {
     if (!tweetId) return null;
     
     return (
-      <div className="rounded-xl border border-slate-700 overflow-hidden mb-3 bg-slate-900/50">
+      <div className="rounded-xl border border-[#262626] overflow-hidden mb-3 bg-[#141414]">
         <a 
           href={url} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="block p-3 hover:bg-slate-800/50 transition-colors"
+          className="block p-3 hover:bg-[#1A1A1A] transition-colors"
         >
           <div className={`flex items-center gap-2 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Twitter className="w-4 h-4 text-sky-400" />
-            <span className="text-sky-400 text-sm font-medium">{txt.fromTwitter}</span>
-            <ExternalLink className="w-3 h-3 text-slate-500" />
+            <span className="text-sky-400 text-sm font-cairo font-medium">{txt.fromTwitter}</span>
+            <ExternalLink className="w-3 h-3 text-[#A3A3A3]" />
           </div>
-          <p className="text-slate-400 text-sm truncate" dir="ltr">{url}</p>
+          <p className="text-[#A3A3A3] text-sm truncate font-almarai" dir="ltr">{url}</p>
         </a>
       </div>
     );
@@ -429,6 +429,7 @@ const ThreadsPage = ({ user }) => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="border-b border-[#1A1A1A] p-4 relative hover:bg-[#0F0F0F] transition-colors"
+        data-testid={`thread-card-${thread.id}`}
       >
         <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <img 
@@ -441,41 +442,47 @@ const ThreadsPage = ({ user }) => {
           <div className="flex-1 min-w-0">
             <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <span 
-                className="font-cairo font-bold text-white truncate cursor-pointer hover:text-lime-400 transition-colors"
+                className="font-cairo font-bold text-white truncate cursor-pointer hover:text-[#CCFF00] transition-colors"
                 onClick={() => navigate(`/user/${thread.author?.id}`)}
               >
                 {thread.author?.name || thread.author?.username}
               </span>
               <span 
-                className="text-slate-500 text-sm cursor-pointer hover:text-lime-400 transition-colors" 
+                className="text-[#A3A3A3] text-sm cursor-pointer hover:text-[#CCFF00] transition-colors" 
                 dir="ltr"
                 onClick={() => navigate(`/user/${thread.author?.id}`)}
               >
                 @{thread.author?.username}
               </span>
-              <span className="text-slate-600">·</span>
-              <span className="text-slate-500 text-sm">{formatTime(thread.created_at)}</span>
+              <span className="text-[#262626]">·</span>
+              <span className="text-[#A3A3A3] text-sm">{formatTime(thread.created_at)}</span>
               
               {/* More Options Button */}
               <div className={`${isRTL ? 'mr-auto' : 'ml-auto'} relative`}>
                 <button 
                   onClick={() => setShowDeleteMenu(showDeleteMenu === thread.id ? null : thread.id)}
-                  className="text-slate-500 hover:text-white p-1 rounded-full hover:bg-slate-800"
+                  className="text-[#A3A3A3] hover:text-white p-1.5 rounded-full hover:bg-[#262626] transition-colors"
+                  data-testid={`thread-menu-${thread.id}`}
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
                 
                 {/* Delete Menu */}
                 {showDeleteMenu === thread.id && isOwner && (
-                  <div className={`absolute top-8 ${isRTL ? 'left-0' : 'right-0'} bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-20 overflow-hidden min-w-[150px]`}>
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`absolute top-8 ${isRTL ? 'left-0' : 'right-0'} bg-[#141414] border border-[#262626] rounded-xl shadow-xl z-20 overflow-hidden min-w-[150px]`}
+                  >
                     <button
                       onClick={() => handleDeleteThread(thread.id)}
-                      className={`w-full px-4 py-3 text-red-500 hover:bg-slate-800 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                      className={`w-full px-4 py-3 text-[#FF3B30] hover:bg-[#262626] flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                      data-testid={`delete-thread-${thread.id}`}
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span className="font-medium">{txt.delete}</span>
+                      <span className="font-cairo font-medium">{txt.delete}</span>
                     </button>
-                  </div>
+                  </motion.div>
                 )}
               </div>
             </div>
@@ -487,13 +494,13 @@ const ThreadsPage = ({ user }) => {
             )}
             
             {thread.media_url && thread.media_type === 'image' && (
-              <div className="rounded-xl overflow-hidden mb-3">
+              <div className="rounded-xl overflow-hidden mb-3 border border-[#262626]">
                 <img src={thread.media_url} alt="" className="w-full max-h-[400px] object-cover" />
               </div>
             )}
             
             {thread.media_url && thread.media_type === 'video' && (
-              <div className="rounded-xl overflow-hidden mb-3 relative bg-black">
+              <div className="rounded-xl overflow-hidden mb-3 relative bg-black border border-[#262626]">
                 <video 
                   src={thread.media_url} 
                   controls 
@@ -507,8 +514,9 @@ const ThreadsPage = ({ user }) => {
               <TwitterEmbed url={thread.twitter_url} />
             )}
             
-            <div className={`flex items-center gap-6 mt-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <button 
+            {/* Action Buttons */}
+            <div className={`flex items-center gap-4 mt-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <motion.button 
                 onClick={() => {
                   const newReplyingTo = replyingTo === thread.id ? null : thread.id;
                   setReplyingTo(newReplyingTo);
@@ -525,43 +533,60 @@ const ThreadsPage = ({ user }) => {
                     }, 100);
                   }
                 }}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-full transition-all active:scale-95 ${replyingTo === thread.id ? 'text-[#007AFF] bg-[#007AFF]/10' : 'text-[#A3A3A3] hover:text-[#007AFF] hover:bg-[#007AFF]/10'}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all ${replyingTo === thread.id ? 'text-[#007AFF] bg-[#007AFF]/10' : 'text-[#A3A3A3] hover:text-[#007AFF] hover:bg-[#007AFF]/10'}`}
+                whileTap={{ scale: 0.95 }}
+                data-testid={`reply-btn-${thread.id}`}
               >
                 <MessageCircle className="w-4 h-4" />
                 <span className="text-xs font-medium">{thread.replies_count || 0}</span>
-              </button>
-              <button 
+              </motion.button>
+              <motion.button 
                 onClick={() => handleRepost(thread.id)}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-full transition-all active:scale-95 ${thread.reposted ? 'text-[#CCFF00] bg-[#CCFF00]/10' : 'text-[#A3A3A3] hover:text-[#CCFF00] hover:bg-[#CCFF00]/10'}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all ${thread.reposted ? 'text-[#CCFF00] bg-[#CCFF00]/10' : 'text-[#A3A3A3] hover:text-[#CCFF00] hover:bg-[#CCFF00]/10'}`}
+                whileTap={{ scale: 0.95 }}
+                data-testid={`repost-btn-${thread.id}`}
               >
                 <Repeat2 className="w-4 h-4" />
                 <span className="text-xs font-medium">{thread.reposts_count || 0}</span>
-              </button>
-              <button 
+              </motion.button>
+              <motion.button 
                 onClick={() => handleLike(thread.id)}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-full transition-all active:scale-95 ${thread.liked ? 'text-[#FF3B30] bg-[#FF3B30]/10' : 'text-[#A3A3A3] hover:text-[#FF3B30] hover:bg-[#FF3B30]/10'}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all ${thread.liked ? 'text-[#FF3B30] bg-[#FF3B30]/10' : 'text-[#A3A3A3] hover:text-[#FF3B30] hover:bg-[#FF3B30]/10'}`}
+                whileTap={{ scale: 0.95 }}
+                data-testid={`like-btn-${thread.id}`}
               >
                 <Heart className={`w-4 h-4 ${thread.liked ? 'fill-current' : ''}`} />
                 <span className="text-xs font-medium">{thread.likes_count || 0}</span>
-              </button>
-              <button className="flex items-center gap-1 text-slate-500 hover:text-sky-400 transition-colors">
+              </motion.button>
+              <motion.button 
+                className="flex items-center gap-1 text-[#A3A3A3] hover:text-sky-400 transition-colors"
+                whileTap={{ scale: 0.95 }}
+              >
                 <Share2 className="w-4 h-4" />
-              </button>
-              <button className="text-slate-500 hover:text-sky-400 transition-colors">
+              </motion.button>
+              <motion.button 
+                className="text-[#A3A3A3] hover:text-[#CCFF00] transition-colors"
+                whileTap={{ scale: 0.95 }}
+              >
                 <Bookmark className="w-4 h-4" />
-              </button>
+              </motion.button>
             </div>
             
             {/* Reply Input */}
             {replyingTo === thread.id && (
-              <div className={`mt-4 pt-4 border-t border-slate-800`} data-testid="reply-container">
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className={`mt-4 pt-4 border-t border-[#1A1A1A]`} 
+                data-testid="reply-container"
+              >
                 {/* Replying to indicator */}
                 <div className={`flex items-center gap-1 mb-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <span className="text-slate-500 text-sm">{txt.replyingTo}</span>
-                  <span className="text-sky-400 text-sm" dir="ltr">@{thread.author?.username}</span>
+                  <span className="text-[#A3A3A3] text-sm font-almarai">{txt.replyingTo}</span>
+                  <span className="text-[#CCFF00] text-sm font-almarai" dir="ltr">@{thread.author?.username}</span>
                 </div>
                 <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
+                  <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0 ring-2 ring-[#262626]" />
                   <div className="flex-1">
                     <input
                       ref={replyInputRef}
@@ -576,87 +601,102 @@ const ThreadsPage = ({ user }) => {
                           e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }, 300);
                       }}
-                      className="w-full bg-slate-800/50 text-white font-almarai outline-none text-base p-3 rounded-xl border border-slate-700 focus:border-sky-500 transition-colors"
+                      className="w-full bg-[#141414] text-white font-almarai outline-none text-base p-3 rounded-xl border border-[#262626] focus:border-[#CCFF00]/50 transition-colors"
                       data-testid="reply-textarea"
                     />
                     <div className={`flex items-center justify-between mt-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <span className="text-slate-500 text-xs">0/280</span>
-                      <button
+                      <span className="text-[#A3A3A3] text-xs">0/280</span>
+                      <motion.button
                         onClick={() => {
                           const text = replyInputRef.current?.value || '';
                           if (text.trim()) {
                             handleReplyDirect(thread.id, text);
                           }
                         }}
-                        className="px-5 py-2 bg-sky-500 text-white text-sm font-cairo font-bold rounded-full active:scale-95 transition-transform"
+                        className="px-5 py-2 bg-[#CCFF00] text-black text-sm font-cairo font-bold rounded-full shadow-[0_0_10px_rgba(204,255,0,0.2)]"
+                        whileTap={{ scale: 0.95 }}
                         data-testid="send-reply-btn"
                       >
                         {txt.sendReply}
-                      </button>
+                      </motion.button>
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
             
             {/* View Replies Button */}
             {thread.replies_count > 0 && (
               <button
                 onClick={() => toggleReplies(thread.id)}
-                className={`mt-3 text-sky-400 text-sm font-almarai ${isRTL ? 'text-right w-full' : 'text-left'}`}
+                className={`mt-3 text-[#CCFF00] text-sm font-almarai hover:underline ${isRTL ? 'text-right w-full' : 'text-left'}`}
+                data-testid={`view-replies-${thread.id}`}
               >
                 {showReplies === thread.id ? txt.hideReplies : `${txt.viewReplies} (${thread.replies_count})`}
               </button>
             )}
             
             {/* Replies List */}
-            {showReplies === thread.id && (
-              <div className="mt-3 space-y-3">
-                {loadingReplies ? (
-                  <div className="flex justify-center py-4">
-                    <div className="w-5 h-5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : (
-                  threadReplies[thread.id]?.map((reply) => (
-                    <div key={reply.id} className={`flex gap-3 p-3 bg-slate-900/50 rounded-xl ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <img 
-                        src={reply.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.author?.username}`} 
-                        alt="" 
-                        className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => navigate(`/user/${reply.author?.id}`)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className={`flex items-center gap-2 mb-1 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <span 
-                            className="font-cairo font-bold text-white text-sm cursor-pointer hover:text-lime-400 transition-colors"
-                            onClick={() => navigate(`/user/${reply.author?.id}`)}
-                          >
-                            {reply.author?.name || reply.author?.username}
-                          </span>
-                          <span 
-                            className="text-slate-500 text-xs cursor-pointer hover:text-lime-400 transition-colors" 
-                            dir="ltr"
-                            onClick={() => navigate(`/user/${reply.author?.id}`)}
-                          >
-                            @{reply.author?.username}
-                          </span>
-                          <span className="text-slate-600 text-xs">·</span>
-                          <span className="text-slate-500 text-xs">{formatTime(reply.created_at)}</span>
-                        </div>
-                        {/* Replying to indicator */}
-                        {reply.replying_to && reply.replying_to.username && (
-                          <div className={`flex items-center gap-1 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <span className="text-slate-500 text-xs">{txt.replyingTo}</span>
-                            <span className="text-sky-400 text-xs" dir="ltr">@{reply.replying_to.username}</span>
-                          </div>
-                        )}
-                        <p className={`text-white font-almarai text-sm ${isRTL ? 'text-right' : 'text-left'}`}>{reply.content}</p>
-                      </div>
+            <AnimatePresence>
+              {showReplies === thread.id && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-3 space-y-3"
+                >
+                  {loadingReplies ? (
+                    <div className="flex justify-center py-4">
+                      <div className="w-5 h-5 border-2 border-[#CCFF00] border-t-transparent rounded-full animate-spin" />
                     </div>
-                  ))
-                )}
-              </div>
-            )}
+                  ) : (
+                    threadReplies[thread.id]?.map((reply, index) => (
+                      <motion.div 
+                        key={reply.id} 
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className={`flex gap-3 p-3 bg-[#141414] rounded-xl border border-[#1A1A1A] ${isRTL ? 'flex-row-reverse' : ''}`}
+                      >
+                        <img 
+                          src={reply.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.author?.username}`} 
+                          alt="" 
+                          className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => navigate(`/user/${reply.author?.id}`)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className={`flex items-center gap-2 mb-1 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            <span 
+                              className="font-cairo font-bold text-white text-sm cursor-pointer hover:text-[#CCFF00] transition-colors"
+                              onClick={() => navigate(`/user/${reply.author?.id}`)}
+                            >
+                              {reply.author?.name || reply.author?.username}
+                            </span>
+                            <span 
+                              className="text-[#A3A3A3] text-xs cursor-pointer hover:text-[#CCFF00] transition-colors" 
+                              dir="ltr"
+                              onClick={() => navigate(`/user/${reply.author?.id}`)}
+                            >
+                              @{reply.author?.username}
+                            </span>
+                            <span className="text-[#262626] text-xs">·</span>
+                            <span className="text-[#A3A3A3] text-xs">{formatTime(reply.created_at)}</span>
+                          </div>
+                          {/* Replying to indicator */}
+                          {reply.replying_to && reply.replying_to.username && (
+                            <div className={`flex items-center gap-1 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                              <span className="text-[#A3A3A3] text-xs">{txt.replyingTo}</span>
+                              <span className="text-[#CCFF00] text-xs" dir="ltr">@{reply.replying_to.username}</span>
+                            </div>
+                          )}
+                          <p className={`text-white font-almarai text-sm ${isRTL ? 'text-right' : 'text-left'}`}>{reply.content}</p>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
         
@@ -679,10 +719,10 @@ const ThreadsPage = ({ user }) => {
   const remainingChars = maxChars - charCount;
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0A0A0A]">
       <div className="max-w-[600px] mx-auto min-h-screen pb-24">
-        {/* Header */}
-        <div className="sticky top-0 bg-black/95 backdrop-blur-xl border-b border-slate-800 z-10">
+        {/* Header - Glassmorphism */}
+        <div className="sticky top-0 bg-black/80 backdrop-blur-xl border-b border-white/5 z-10">
           <div className="p-4">
             <h1 className={`text-xl font-cairo font-bold text-white ${isRTL ? 'text-right' : 'text-left'}`}>
               {txt.threads}
@@ -697,24 +737,24 @@ const ThreadsPage = ({ user }) => {
         <div className="flex border-b border-[#1A1A1A]">
           <button
             onClick={() => setActiveTab('forYou')}
-            className={`flex-1 py-3 text-center font-cairo font-medium transition-colors relative ${
+            className={`flex-1 py-3.5 text-center font-cairo font-medium transition-colors relative ${
               activeTab === 'forYou' ? 'text-white' : 'text-[#A3A3A3]'
             }`}
           >
             {txt.forYou}
             {activeTab === 'forYou' && (
-              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#CCFF00] rounded-full shadow-[0_0_10px_rgba(204,255,0,0.5)]" />
+              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#CCFF00] rounded-full shadow-[0_0_15px_rgba(204,255,0,0.5)]" />
             )}
           </button>
           <button
             onClick={() => setActiveTab('following')}
-            className={`flex-1 py-3 text-center font-cairo font-medium transition-colors relative ${
+            className={`flex-1 py-3.5 text-center font-cairo font-medium transition-colors relative ${
               activeTab === 'following' ? 'text-white' : 'text-[#A3A3A3]'
             }`}
           >
             {txt.following}
             {activeTab === 'following' && (
-              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#CCFF00] rounded-full shadow-[0_0_10px_rgba(204,255,0,0.5)]" />
+              <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#CCFF00] rounded-full shadow-[0_0_15px_rgba(204,255,0,0.5)]" />
             )}
           </button>
         </div>
@@ -722,7 +762,8 @@ const ThreadsPage = ({ user }) => {
         {/* Composer Button */}
         <button
           onClick={() => setShowComposer(true)}
-          className={`w-full p-4 border-b border-[#1A1A1A] flex items-center gap-3 hover:bg-[#141414] transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+          className={`w-full p-4 border-b border-[#1A1A1A] flex items-center gap-3 hover:bg-[#0F0F0F] transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+          data-testid="composer-button"
         >
           <img src={user.avatar} alt="" className="w-11 h-11 rounded-full ring-2 ring-[#262626]" />
           <span className="text-[#A3A3A3] font-almarai">{txt.startThread}</span>
@@ -735,11 +776,11 @@ const ThreadsPage = ({ user }) => {
           </div>
         ) : threads.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4">
-            <div className="w-20 h-20 rounded-full bg-[#141414] flex items-center justify-center mb-4">
+            <div className="w-20 h-20 rounded-full bg-[#141414] flex items-center justify-center mb-4 ring-1 ring-[#262626]">
               <MessageSquare className="w-10 h-10 text-[#262626]" />
             </div>
             <h3 className="text-white font-cairo font-bold text-lg mb-2">{txt.noThreads}</h3>
-            <p className="text-slate-500 font-almarai text-center">{txt.beFirst}</p>
+            <p className="text-[#A3A3A3] font-almarai text-center">{txt.beFirst}</p>
           </div>
         ) : (
           <div>
@@ -747,7 +788,7 @@ const ThreadsPage = ({ user }) => {
               <ThreadCard key={thread.id} thread={thread} />
             ))}
           </div>
-        )}
+        )}}
       </div>
 
       {/* Hidden File Inputs */}
@@ -773,24 +814,25 @@ const ThreadsPage = ({ user }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-start justify-center pt-12"
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-start justify-center pt-12"
             onClick={(e) => e.target === e.currentTarget && setShowComposer(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-black w-full max-w-[600px] rounded-2xl border border-slate-800 overflow-hidden mx-4"
+              initial={{ scale: 0.95, opacity: 0, y: -20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: -20 }}
+              className="bg-[#0A0A0A] w-full max-w-[600px] rounded-2xl border border-[#262626] overflow-hidden mx-4 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
             >
               {/* Modal Header */}
-              <div className={`flex items-center justify-between p-3 border-b border-slate-800`}>
-                <button 
+              <div className={`flex items-center justify-between p-3 border-b border-[#1A1A1A]`}>
+                <motion.button 
                   onClick={() => { setShowComposer(false); clearMedia(); }} 
-                  className="text-white hover:bg-slate-800 rounded-full p-2"
+                  className="text-white hover:bg-[#262626] rounded-full p-2"
+                  whileTap={{ scale: 0.9 }}
                 >
                   <X className="w-5 h-5" />
-                </button>
-                <button className="text-sky-500 font-medium text-sm">
+                </motion.button>
+                <button className="text-[#CCFF00] font-cairo font-medium text-sm">
                   {txt.drafts}
                 </button>
               </div>
@@ -798,7 +840,7 @@ const ThreadsPage = ({ user }) => {
               {/* Modal Content */}
               <div className="p-4">
                 <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
+                  <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-[#262626]" />
                   <div className="flex-1">
                     {/* Textarea */}
                     <input
@@ -809,74 +851,78 @@ const ThreadsPage = ({ user }) => {
                       maxLength={500}
                       autoComplete="off"
                       autoFocus
-                      className="w-full bg-transparent text-white text-xl font-almarai outline-none py-4"
+                      className="w-full bg-transparent text-white text-xl font-almarai outline-none py-4 placeholder:text-[#A3A3A3]"
+                      data-testid="thread-composer-input"
                     />
                     
                     {/* Media Preview */}
                     {mediaPreview && (
-                      <div className="relative mt-3 rounded-2xl overflow-hidden border border-slate-700">
+                      <div className="relative mt-3 rounded-2xl overflow-hidden border border-[#262626]">
                         {mediaType === 'image' ? (
                           <img src={mediaPreview} alt="" className="w-full max-h-[300px] object-cover" />
                         ) : (
                           <video src={mediaPreview} className="w-full max-h-[300px]" controls />
                         )}
-                        <button
+                        <motion.button
                           onClick={clearMedia}
                           className="absolute top-2 right-2 bg-black/70 rounded-full p-1.5 hover:bg-black"
+                          whileTap={{ scale: 0.9 }}
                         >
                           <X className="w-4 h-4 text-white" />
-                        </button>
+                        </motion.button>
                       </div>
                     )}
                     
                     {/* Twitter URL Preview */}
                     {twitterUrl && !showTwitterInput && (
-                      <div className="mt-3 rounded-2xl border border-slate-700 p-3 bg-slate-900/50">
+                      <div className="mt-3 rounded-2xl border border-[#262626] p-3 bg-[#141414]">
                         <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <Twitter className="w-4 h-4 text-sky-400" />
-                            <span className="text-sky-400 text-sm">{txt.fromTwitter}</span>
+                            <span className="text-sky-400 text-sm font-almarai">{txt.fromTwitter}</span>
                           </div>
-                          <button onClick={() => setTwitterUrl('')} className="text-slate-500 hover:text-white">
+                          <button onClick={() => setTwitterUrl('')} className="text-[#A3A3A3] hover:text-white">
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-slate-400 text-sm mt-2 truncate" dir="ltr">{twitterUrl}</p>
+                        <p className="text-[#A3A3A3] text-sm mt-2 truncate" dir="ltr">{twitterUrl}</p>
                       </div>
                     )}
                     
                     {/* Twitter URL Input */}
                     {showTwitterInput && (
-                      <div className="mt-3 rounded-2xl border border-slate-700 p-3 bg-slate-900/50">
+                      <div className="mt-3 rounded-2xl border border-[#262626] p-3 bg-[#141414]">
                         <input
                           type="url"
                           value={twitterUrl}
                           onChange={(e) => setTwitterUrl(e.target.value)}
                           placeholder={txt.twitterPlaceholder}
-                          className="w-full bg-transparent text-white text-sm outline-none mb-3 touch-action-auto"
+                          className="w-full bg-transparent text-white text-sm outline-none mb-3 touch-action-auto font-almarai"
                           dir="ltr"
                           inputMode="url"
                           autoComplete="off"
                         />
                         <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <button
+                          <motion.button
                             onClick={handleAddTwitterUrl}
-                            className="px-3 py-1.5 bg-sky-500 text-white text-sm rounded-full font-medium"
+                            className="px-3 py-1.5 bg-sky-500 text-white text-sm rounded-full font-cairo font-medium"
+                            whileTap={{ scale: 0.95 }}
                           >
                             {txt.add}
-                          </button>
-                          <button
+                          </motion.button>
+                          <motion.button
                             onClick={() => { setShowTwitterInput(false); setTwitterUrl(''); }}
-                            className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-full font-medium"
+                            className="px-3 py-1.5 bg-[#262626] text-white text-sm rounded-full font-cairo font-medium"
+                            whileTap={{ scale: 0.95 }}
                           >
                             {txt.cancel}
-                          </button>
+                          </motion.button>
                         </div>
                       </div>
                     )}
                     
                     {/* Reply Settings */}
-                    <button className={`flex items-center gap-2 mt-4 text-sky-500 text-sm font-medium ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <button className={`flex items-center gap-2 mt-4 text-[#CCFF00] text-sm font-cairo font-medium ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <Globe className="w-4 h-4" />
                       <span>{txt.everyone}</span>
                     </button>
@@ -885,24 +931,26 @@ const ThreadsPage = ({ user }) => {
               </div>
               
               {/* Modal Footer */}
-              <div className="border-t border-slate-800 p-3">
+              <div className="border-t border-[#1A1A1A] p-3">
                 <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                   {/* Media Buttons */}
                   <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <button 
+                    <motion.button 
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors"
+                      className="p-2 rounded-full hover:bg-[#CCFF00]/10 text-[#CCFF00] transition-colors"
                       title={txt.addImage}
+                      whileTap={{ scale: 0.9 }}
                     >
                       <Image className="w-5 h-5" />
-                    </button>
-                    <button 
+                    </motion.button>
+                    <motion.button 
                       onClick={() => videoInputRef.current?.click()}
-                      className="p-2 rounded-full hover:bg-sky-500/10 text-sky-500 transition-colors"
+                      className="p-2 rounded-full hover:bg-[#CCFF00]/10 text-[#CCFF00] transition-colors"
                       title={txt.addVideo}
+                      whileTap={{ scale: 0.9 }}
                     >
                       <Video className="w-5 h-5" />
-                    </button>
+                    </motion.button>
                   </div>
                   
                   {/* Character Count & Post Button */}
@@ -917,7 +965,7 @@ const ThreadsPage = ({ user }) => {
                               cy="12"
                               r="10"
                               fill="none"
-                              stroke="#2d3748"
+                              stroke="#262626"
                               strokeWidth="2"
                             />
                             <circle
@@ -925,28 +973,30 @@ const ThreadsPage = ({ user }) => {
                               cy="12"
                               r="10"
                               fill="none"
-                              stroke={isOverLimit ? '#ef4444' : charProgress > 80 ? '#f59e0b' : '#0ea5e9'}
+                              stroke={isOverLimit ? '#FF3B30' : charProgress > 80 ? '#f59e0b' : '#CCFF00'}
                               strokeWidth="2"
                               strokeDasharray={`${Math.min(charProgress, 100) * 0.628} 62.8`}
                             />
                           </svg>
                           {remainingChars <= 20 && (
-                            <span className={`absolute inset-0 flex items-center justify-center text-[10px] font-medium ${isOverLimit ? 'text-red-500' : 'text-slate-400'}`}>
+                            <span className={`absolute inset-0 flex items-center justify-center text-[10px] font-medium ${isOverLimit ? 'text-[#FF3B30]' : 'text-[#A3A3A3]'}`}>
                               {remainingChars}
                             </span>
                           )}
                         </div>
-                        <div className="w-px h-6 bg-slate-700" />
+                        <div className="w-px h-6 bg-[#262626]" />
                       </div>
                     )}
                     
-                    <button
+                    <motion.button
                       onClick={handlePostThread}
                       disabled={(!newThread.trim() && !selectedMedia && !twitterUrl) || posting || isOverLimit}
-                      className="px-4 py-1.5 bg-sky-500 text-white font-cairo font-bold rounded-full disabled:opacity-50 hover:bg-sky-600 transition-colors"
+                      className="px-5 py-2 bg-[#CCFF00] text-black font-cairo font-bold rounded-full disabled:opacity-50 hover:shadow-[0_0_15px_rgba(204,255,0,0.4)] transition-shadow"
+                      whileTap={{ scale: 0.95 }}
+                      data-testid="post-thread-btn"
                     >
                       {posting ? (uploadingMedia ? '...' : '...') : txt.post}
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
               </div>

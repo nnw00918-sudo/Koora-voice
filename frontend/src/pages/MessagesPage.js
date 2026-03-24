@@ -1,15 +1,41 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import BottomNavigation from '../components/BottomNavigation';
 import { 
   ArrowRight, Search, Send, Check, CheckCheck, X, MessageCircle,
-  Trash2, UserPlus
+  Trash2, UserPlus, Sparkles
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+// Animated background orbs for messages
+const ChatBackground = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="absolute inset-0 bg-[#0A0A0A]" />
+    <motion.div
+      className="absolute top-1/4 right-1/4 w-64 h-64 bg-lime-500/5 rounded-full blur-3xl"
+      animate={{ 
+        x: [0, 30, 0], 
+        y: [0, -20, 0],
+        scale: [1, 1.1, 1]
+      }}
+      transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+    />
+    <motion.div
+      className="absolute bottom-1/3 left-1/4 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl"
+      animate={{ 
+        x: [0, -20, 0], 
+        y: [0, 30, 0],
+        scale: [1, 1.2, 1]
+      }}
+      transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+    />
+  </div>
+);
 
 // ============ CHAT VIEW COMPONENT (Separate to prevent re-renders) ============
 const ChatView = memo(function ChatView({ 
@@ -71,82 +97,106 @@ const ChatView = memo(function ChatView({
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0e1621]" style={{ height: '100dvh' }}>
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-[#17212b] border-b border-[#232e3c] flex-shrink-0">
-        <button onClick={onBack} className="text-[#6ab2f2]">
-          <ArrowRight className="w-6 h-6" />
-        </button>
+    <div className="relative flex flex-col h-screen bg-[#0A0A0A]" style={{ height: '100dvh' }}>
+      <ChatBackground />
+      
+      {/* Header - Glassmorphism */}
+      <div className="relative flex items-center gap-3 px-4 py-3 bg-black/70 backdrop-blur-xl border-b border-white/10 flex-shrink-0 z-10">
+        <motion.button 
+          onClick={onBack} 
+          className="text-[#CCFF00] p-2 rounded-full hover:bg-[#CCFF00]/10"
+          whileTap={{ scale: 0.9 }}
+        >
+          <ArrowRight className="w-5 h-5" />
+        </motion.button>
         
-        <img
-          src={conversation?.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation?.user?.username}`}
-          alt=""
-          className="w-10 h-10 rounded-full bg-[#232e3c] cursor-pointer hover:opacity-80"
-          onClick={() => window.location.href = `/user/${conversation?.user?.id}`}
-        />
+        <div className="relative">
+          <img
+            src={conversation?.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation?.user?.username}`}
+            alt=""
+            className="w-11 h-11 rounded-full bg-[#141414] cursor-pointer hover:opacity-80 ring-2 ring-[#CCFF00]/30"
+            onClick={() => window.location.href = `/user/${conversation?.user?.id}`}
+          />
+          {/* Online indicator */}
+          <motion.div 
+            className="absolute bottom-0 right-0 w-3 h-3 bg-[#CCFF00] rounded-full ring-2 ring-[#0A0A0A]"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+        </div>
         
         <div className="flex-1 text-right">
           <p 
-            className="text-white font-medium cursor-pointer hover:text-lime-400"
+            className="text-white font-cairo font-bold cursor-pointer hover:text-[#CCFF00] transition-colors"
             onClick={() => window.location.href = `/user/${conversation?.user?.id}`}
           >
             {conversation?.user?.name || conversation?.user?.username}
           </p>
-          <p className="text-[#6c7883] text-xs">{txt.online}</p>
+          <p className="text-[#CCFF00] text-xs font-almarai">{txt.online}</p>
         </div>
 
-        <button
+        <motion.button
           onClick={onDelete}
-          className="p-2 text-[#6c7883] hover:text-red-400 rounded-full"
+          className="p-2 text-[#A3A3A3] hover:text-[#FF3B30] hover:bg-[#FF3B30]/10 rounded-full transition-colors"
+          whileTap={{ scale: 0.9 }}
         >
           <Trash2 className="w-5 h-5" />
-        </button>
+        </motion.button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-2">
+      <div className="relative flex-1 overflow-y-auto px-4 py-4 z-10">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-[#6c7883]">
-            <MessageCircle className="w-12 h-12 mb-3 opacity-50" />
-            <p>{txt.startConversation}</p>
+          <div className="flex flex-col items-center justify-center h-full text-[#A3A3A3]">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="w-20 h-20 rounded-full bg-[#141414] flex items-center justify-center mb-4 ring-1 ring-[#262626]"
+            >
+              <Sparkles className="w-10 h-10 text-[#CCFF00]/50" />
+            </motion.div>
+            <p className="font-almarai">{txt.startConversation}</p>
           </div>
         ) : (
-          <div className="space-y-1">
-            {messages.map((msg) => (
-              <div
+          <div className="space-y-3">
+            {messages.map((msg, index) => (
+              <motion.div
                 key={msg.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.02 }}
                 className={`flex ${msg.is_mine ? 'justify-start' : 'justify-end'}`}
               >
                 <div
-                  className={`max-w-[75%] px-3 py-2 rounded-lg ${
+                  className={`max-w-[80%] px-4 py-3 rounded-2xl ${
                     msg.is_mine 
-                      ? 'bg-[#2b5278] rounded-bl-none' 
-                      : 'bg-[#182533] rounded-br-none'
+                      ? 'bg-gradient-to-br from-[#CCFF00] to-emerald-500 text-black rounded-bl-md shadow-[0_0_15px_rgba(204,255,0,0.2)]' 
+                      : 'bg-[#141414] text-white rounded-br-md border border-[#262626]'
                   } ${msg.sending ? 'opacity-70' : ''}`}
                 >
-                  <p className="text-white text-[15px] text-right whitespace-pre-wrap break-words">
+                  <p className={`text-[15px] text-right whitespace-pre-wrap break-words font-almarai ${msg.is_mine ? 'text-black' : 'text-white'}`}>
                     {msg.content}
                   </p>
-                  <div className={`flex items-center gap-1 mt-1 ${msg.is_mine ? 'justify-start' : 'justify-end'}`}>
-                    <span className="text-[11px] text-[#6c7883]">
+                  <div className={`flex items-center gap-1 mt-1.5 ${msg.is_mine ? 'justify-start' : 'justify-end'}`}>
+                    <span className={`text-[11px] ${msg.is_mine ? 'text-black/60' : 'text-[#A3A3A3]'}`}>
                       {formatTime(msg.created_at)}
                     </span>
                     {msg.is_mine && !msg.sending && (
                       msg.read 
-                        ? <CheckCheck className="w-4 h-4 text-[#6ab2f2]" />
-                        : <Check className="w-4 h-4 text-[#6c7883]" />
+                        ? <CheckCheck className="w-4 h-4 text-black/60" />
+                        : <Check className="w-4 h-4 text-black/40" />
                     )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
             <div ref={messagesEndRef} />
           </div>
         )}
       </div>
 
-      {/* Input */}
-      <div className="bg-[#17212b] border-t border-[#232e3c] px-3 py-3 flex-shrink-0">
+      {/* Input - Glassmorphism */}
+      <div className="relative bg-black/70 backdrop-blur-xl border-t border-white/10 px-4 py-3 flex-shrink-0 z-10">
         <div className="flex items-end gap-3">
           <textarea
             ref={textareaRef}
@@ -154,19 +204,20 @@ const ChatView = memo(function ChatView({
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={txt.typeMessage}
-            className="flex-1 bg-[#242f3d] text-white px-4 py-3 rounded-2xl outline-none text-right resize-none"
+            className="flex-1 bg-[#141414] text-white px-4 py-3 rounded-2xl outline-none text-right resize-none border border-[#262626] focus:border-[#CCFF00]/50 font-almarai"
             style={{ fontSize: '16px', minHeight: '44px', maxHeight: '120px' }}
             dir="rtl"
             rows={1}
           />
           
-          <button
+          <motion.button
             onClick={handleSend}
             disabled={!inputValue.trim() || sending}
-            className="p-3 bg-[#6ab2f2] text-white rounded-full flex-shrink-0 disabled:opacity-50"
+            className="p-3 bg-[#CCFF00] text-black rounded-full flex-shrink-0 disabled:opacity-50 shadow-[0_0_15px_rgba(204,255,0,0.3)]"
+            whileTap={{ scale: 0.9 }}
           >
             <Send className="w-5 h-5" />
-          </button>
+          </motion.button>
         </div>
       </div>
     </div>
@@ -366,125 +417,160 @@ export default function MessagesPage() {
 
   // Conversation List
   return (
-    <div className="flex flex-col h-screen bg-[#17212b]" style={{ height: '100dvh' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#17212b] border-b border-[#232e3c]">
-        <h1 className="text-xl font-bold text-white">{txt.messages}</h1>
-        <div className="flex items-center gap-2">
-          <button
+    <div className="relative flex flex-col h-screen bg-[#0A0A0A]" style={{ height: '100dvh' }}>
+      <ChatBackground />
+      
+      {/* Header - Glassmorphism */}
+      <div className="relative flex items-center justify-between px-4 py-4 bg-black/70 backdrop-blur-xl border-b border-white/10 z-10">
+        <h1 className="text-xl font-cairo font-bold text-white">{txt.messages}</h1>
+        <div className="flex items-center gap-1">
+          <motion.button
             onClick={() => setShowSearch(true)}
-            className="p-2 text-[#6ab2f2] hover:bg-[#232e3c] rounded-full"
+            className="p-2.5 text-[#CCFF00] hover:bg-[#CCFF00]/10 rounded-full transition-colors"
+            whileTap={{ scale: 0.9 }}
           >
             <Search className="w-5 h-5" />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={() => setShowSearch(true)}
-            className="p-2 text-[#6ab2f2] hover:bg-[#232e3c] rounded-full"
+            className="p-2.5 text-[#CCFF00] hover:bg-[#CCFF00]/10 rounded-full transition-colors"
+            whileTap={{ scale: 0.9 }}
           >
             <UserPlus className="w-5 h-5" />
-          </button>
+          </motion.button>
         </div>
       </div>
 
       {/* Search Modal */}
-      {showSearch && (
-        <div className="absolute inset-0 bg-[#17212b] z-50 flex flex-col">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[#232e3c]">
-            <button onClick={() => { setShowSearch(false); setSearchQuery(''); }} className="text-[#6ab2f2]">
-              <X className="w-6 h-6" />
-            </button>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={txt.searchUsers}
-              className="flex-1 bg-[#242f3d] text-white px-4 py-2 rounded-full outline-none text-right"
-              style={{ fontSize: '16px' }}
-              autoFocus
-            />
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {searchLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="w-6 h-6 border-2 border-[#6ab2f2] border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : searchResults.length > 0 ? (
-              searchResults.map(user => (
-                <button
-                  key={user.id}
-                  onClick={() => startConversation(user.id, user)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#202b36]"
-                >
-                  <img
-                    src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`}
-                    alt={user.username}
-                    className="w-12 h-12 rounded-full bg-[#232e3c] hover:opacity-80"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.location.href = `/user/${user.id}`;
-                    }}
-                  />
-                  <div className="flex-1 text-right">
-                    <p 
-                      className="text-white font-medium hover:text-lime-400"
+      <AnimatePresence>
+        {showSearch && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-[#0A0A0A] z-50 flex flex-col"
+          >
+            <div className="flex items-center gap-3 px-4 py-4 border-b border-[#262626]">
+              <motion.button 
+                onClick={() => { setShowSearch(false); setSearchQuery(''); }} 
+                className="text-[#CCFF00] p-2 rounded-full hover:bg-[#CCFF00]/10"
+                whileTap={{ scale: 0.9 }}
+              >
+                <X className="w-5 h-5" />
+              </motion.button>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={txt.searchUsers}
+                className="flex-1 bg-[#141414] text-white px-4 py-3 rounded-2xl outline-none text-right border border-[#262626] focus:border-[#CCFF00]/50 font-almarai"
+                style={{ fontSize: '16px' }}
+                autoFocus
+              />
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {searchLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-6 h-6 border-2 border-[#CCFF00] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((user, index) => (
+                  <motion.button
+                    key={user.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => startConversation(user.id, user)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#141414] border-b border-[#1A1A1A] transition-colors"
+                  >
+                    <img
+                      src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`}
+                      alt={user.username}
+                      className="w-12 h-12 rounded-full bg-[#141414] hover:opacity-80 ring-2 ring-[#262626]"
                       onClick={(e) => {
                         e.stopPropagation();
                         window.location.href = `/user/${user.id}`;
                       }}
-                    >
-                      {user.name || user.username}
-                    </p>
-                    <p className="text-[#6c7883] text-sm">@{user.username}</p>
-                  </div>
-                </button>
-              ))
-            ) : searchQuery && (
-              <p className="text-center text-[#6c7883] py-8">{txt.noResults}</p>
-            )}
-          </div>
-        </div>
-      )}
+                    />
+                    <div className="flex-1 text-right">
+                      <p 
+                        className="text-white font-cairo font-bold hover:text-[#CCFF00] transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `/user/${user.id}`;
+                        }}
+                      >
+                        {user.name || user.username}
+                      </p>
+                      <p className="text-[#A3A3A3] text-sm font-almarai">@{user.username}</p>
+                    </div>
+                  </motion.button>
+                ))
+              ) : searchQuery && (
+                <p className="text-center text-[#A3A3A3] py-8 font-almarai">{txt.noResults}</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="relative flex-1 overflow-y-auto z-10">
         {loading ? (
           <div className="flex justify-center py-8">
-            <div className="w-8 h-8 border-2 border-[#6ab2f2] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#CCFF00] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : conversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-[#6c7883] px-4">
-            <MessageCircle className="w-16 h-16 mb-4 opacity-50" />
-            <p className="text-lg mb-2">{txt.noConversations}</p>
-            <button
+          <div className="flex flex-col items-center justify-center h-full text-[#A3A3A3] px-4">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="w-24 h-24 rounded-full bg-[#141414] flex items-center justify-center mb-4 ring-1 ring-[#262626]"
+            >
+              <MessageCircle className="w-12 h-12 text-[#262626]" />
+            </motion.div>
+            <p className="text-lg mb-2 font-cairo">{txt.noConversations}</p>
+            <motion.button
               onClick={() => setShowSearch(true)}
-              className="mt-4 px-6 py-2 bg-[#6ab2f2] text-white rounded-full font-medium"
+              className="mt-4 px-6 py-3 bg-[#CCFF00] text-black rounded-full font-cairo font-bold shadow-[0_0_20px_rgba(204,255,0,0.3)]"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               {txt.startChat}
-            </button>
+            </motion.button>
           </div>
         ) : (
-          conversations.map(convo => (
-            <button
+          conversations.map((convo, index) => (
+            <motion.button
               key={convo.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
               onClick={() => openConversation(convo)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#202b36] border-b border-[#232e3c]/50"
+              className="w-full flex items-center gap-3 px-4 py-4 hover:bg-[#141414] border-b border-[#1A1A1A] transition-colors"
             >
-              <img
-                src={convo.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${convo.user?.username}`}
-                alt={convo.user?.username}
-                className="w-14 h-14 rounded-full bg-[#232e3c] hover:opacity-80"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.location.href = `/user/${convo.user?.id}`;
-                }}
-              />
+              <div className="relative">
+                <img
+                  src={convo.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${convo.user?.username}`}
+                  alt={convo.user?.username}
+                  className="w-14 h-14 rounded-full bg-[#141414] hover:opacity-80 ring-2 ring-[#262626]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = `/user/${convo.user?.id}`;
+                  }}
+                />
+                {/* Online indicator - random for demo */}
+                {index % 2 === 0 && (
+                  <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#CCFF00] rounded-full ring-2 ring-[#0A0A0A]" />
+                )}
+              </div>
               <div className="flex-1 text-right min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#6c7883]">
+                  <span className="text-xs text-[#A3A3A3]">
                     {convo.last_message?.created_at && formatTime(convo.last_message.created_at)}
                   </span>
                   <span 
-                    className="text-white font-medium truncate hover:text-lime-400"
+                    className="text-white font-cairo font-bold truncate hover:text-[#CCFF00] transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       window.location.href = `/user/${convo.user?.id}`;
@@ -493,17 +579,17 @@ export default function MessagesPage() {
                     {convo.user?.name || convo.user?.username}
                   </span>
                 </div>
-                <p className="text-[#6c7883] text-sm truncate mt-1">
-                  {convo.last_message?.is_mine && <span className="text-[#6ab2f2]">{txt.you}: </span>}
+                <p className="text-[#A3A3A3] text-sm truncate mt-1 font-almarai">
+                  {convo.last_message?.is_mine && <span className="text-[#CCFF00]">{txt.you}: </span>}
                   {convo.last_message?.content || txt.startConversation}
                 </p>
               </div>
               {convo.unread_count > 0 && (
-                <span className="bg-[#6ab2f2] text-white text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center">
+                <span className="bg-[#CCFF00] text-black text-xs font-bold px-2.5 py-1 rounded-full min-w-[24px] text-center shadow-[0_0_10px_rgba(204,255,0,0.4)]">
                   {convo.unread_count}
                 </span>
               )}
-            </button>
+            </motion.button>
           ))
         )}
       </div>
