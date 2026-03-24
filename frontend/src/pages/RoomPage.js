@@ -107,7 +107,9 @@ const YallaLiveRoom = ({ user }) => {
   const { 
     minimizePlayer, 
     disconnectFromRoom: globalDisconnect,
-    setCurrentRoom
+    setCurrentRoom,
+    currentRoom,
+    isMinimized
   } = useRoomAudio();
   
   const [room, setRoom] = useState(null);
@@ -243,13 +245,23 @@ const YallaLiveRoom = ({ user }) => {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    fetchCurrentUserRole();
-    initializeAgora();
-    joinRoom();
-    fetchRoomData();
-    startPolling();
-    startHeartbeat();
-    fetchStreamStatus();
+    const initRoom = async () => {
+      // If there's a minimized room that's different from current room, disconnect it first
+      if (isMinimized && currentRoom && currentRoom.id !== roomId) {
+        console.log('Disconnecting from minimized room:', currentRoom.id);
+        await globalDisconnect();
+      }
+      
+      fetchCurrentUserRole();
+      initializeAgora();
+      joinRoom();
+      fetchRoomData();
+      startPolling();
+      startHeartbeat();
+      fetchStreamStatus();
+    };
+    
+    initRoom();
 
     // Poll stream status every 10 seconds
     const streamPoll = setInterval(fetchStreamStatus, 10000);
