@@ -115,9 +115,11 @@ const DashboardPage = ({ user, onLogout }) => {
   useEffect(() => {
     let result = rooms;
     
-    if (statusFilter === 'live') {
-      result = result.filter(room => room.room_type === 'diwaniya' || room.is_live);
+    // Filter by room type
+    if (statusFilter === 'diwaniya') {
+      result = result.filter(room => room.room_type === 'diwaniya');
     }
+    // 'all' shows everything - no filter needed
     
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
@@ -448,17 +450,17 @@ const DashboardPage = ({ user, onLogout }) => {
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => setStatusFilter('live')}
+              onClick={() => setStatusFilter('diwaniya')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-cairo font-bold text-sm transition-all ${
-                statusFilter === 'live'
-                  ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]'
+                statusFilter === 'diwaniya'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.4)]'
                   : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 border border-slate-700/50'
               }`}
             >
-              <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'live' ? 'bg-white' : 'bg-red-500'} animate-pulse`}></div>
-              {isRTL ? 'دوانية' : 'Diwaniya'}
+              <Crown className="w-4 h-4" />
+              {isRTL ? 'الدوانيه' : 'Diwaniya'}
               <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-                {rooms.filter(r => r.room_type === 'diwaniya' || r.is_live).length}
+                {rooms.filter(r => r.room_type === 'diwaniya').length}
               </span>
             </motion.button>
           </div>
@@ -482,10 +484,8 @@ const DashboardPage = ({ user, onLogout }) => {
                 <Mic className="w-12 h-12 text-lime-400/50" />
               </div>
               <p className="text-slate-500 font-almarai text-lg mb-2">
-                {statusFilter === 'live' 
-                  ? (isRTL ? 'لا توجد غرف مباشرة الآن' : 'No live rooms right now')
-                  : statusFilter === 'closed'
-                  ? (isRTL ? 'لا توجد غرف مغلقة' : 'No closed rooms')
+                {statusFilter === 'diwaniya' 
+                  ? (isRTL ? 'لا توجد دوانيه الآن' : 'No diwaniya rooms right now')
                   : (isRTL ? 'لا توجد غرف متاحة' : 'No rooms available')
                 }
               </p>

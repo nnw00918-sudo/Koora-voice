@@ -216,7 +216,8 @@ class RoomFull(BaseModel):
     created_at: str
     stream_url: Optional[str] = None
     stream_active: bool = False
-    chat_background: Optional[str] = None  # Chat background image URL
+    chat_background: Optional[str] = None
+    room_type: str = "all"  # "all" or "diwaniya"
 
 class RoomCreate(BaseModel):
     title: str
@@ -793,6 +794,9 @@ async def get_rooms(category: Optional[str] = None):
         room["participant_count"] = counts_map.get(room["id"], 0)
         # Member count includes the owner (+1)
         room["member_count"] = member_counts_map.get(room["id"], 0) + 1
+        # Ensure room_type exists
+        if "room_type" not in room:
+            room["room_type"] = "all"
     
     return [RoomFull(**r) for r in rooms]
 
