@@ -522,6 +522,7 @@ const ThreadsPage = ({ user }) => {
                       value={replyContent}
                       onChange={(e) => setReplyContent(e.target.value)}
                       placeholder={txt.writeReply}
+                      dir={isRTL ? 'rtl' : 'ltr'}
                       className={`w-full bg-slate-800/50 text-white font-almarai outline-none resize-none text-base p-3 rounded-xl border border-slate-700 focus:border-sky-500 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
                       rows={3}
                       maxLength={280}
@@ -747,6 +748,7 @@ const ThreadsPage = ({ user }) => {
                       value={newThread}
                       onChange={(e) => setNewThread(e.target.value)}
                       placeholder={txt.whatsNew}
+                      dir={isRTL ? 'rtl' : 'ltr'}
                       className={`w-full bg-transparent text-white text-xl font-almarai outline-none resize-none min-h-[120px] placeholder-slate-600 touch-action-auto ${isRTL ? 'text-right' : 'text-left'}`}
                       autoFocus
                       inputMode="text"
