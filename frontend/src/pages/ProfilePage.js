@@ -5,12 +5,11 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { 
   ArrowRight, Camera, Shuffle, X,
-  Settings, Edit3, Check, Trophy, Star, Mic,
-  Users, Clock, Zap, Crown, Shield, Award, Heart,
-  MessageCircle, Repeat2, FileText, Coins
+  Settings, Edit3, Check, Heart,
+  MessageCircle, Repeat2, FileText
 } from 'lucide-react';
 import BottomNavigation from '../components/BottomNavigation';
-import { GlowingAvatar, FRAME_COLORS, StatCard, ProfileTabs, BadgesList } from '../components/profile';
+import { GlowingAvatar, FRAME_COLORS, ProfileTabs } from '../components/profile';
 import { useSettings } from '../contexts/SettingsContext';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -231,17 +230,6 @@ const ProfilePage = ({ user }) => {
       fetchContent();
     }
   }, [activeTab, userData?.id, isEditing]);
-
-  // Badges data
-  const badgesEarned = userData?.badges_earned || [];
-  const badges = [
-    { icon: Mic, label: "متحدث", color: "from-lime-500 to-emerald-500", key: "speaker", earned: badgesEarned.includes("speaker") },
-    { icon: Crown, label: "مالك غرفة", color: "from-amber-500 to-yellow-500", key: "room_owner", earned: badgesEarned.includes("room_owner") },
-    { icon: Heart, label: "محبوب", color: "from-rose-500 to-pink-500", key: "popular", earned: badgesEarned.includes("popular") },
-    { icon: Star, label: "نجم", color: "from-purple-500 to-indigo-500", key: "star", earned: badgesEarned.includes("star") },
-    { icon: Shield, label: "موثق", color: "from-cyan-500 to-blue-500", key: "verified", earned: badgesEarned.includes("verified") },
-    { icon: Award, label: "أسطورة", color: "from-orange-500 to-red-500", key: "legend", earned: badgesEarned.includes("legend") },
-  ];
 
   // Tabs configuration
   const tabs = [
@@ -518,42 +506,29 @@ const ProfilePage = ({ user }) => {
           )}
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          <StatCard
-            icon={Users}
-            value={userData?.followers_count || 0}
-            label="متابع"
-            color="lime"
-            delay={0}
-          />
-          <StatCard
-            icon={Users}
-            value={userData?.following_count || 0}
-            label="متابَع"
-            color="cyan"
-            delay={0.1}
-          />
-          <StatCard
-            icon={Coins}
-            value={userData?.coins || 0}
-            label="عملة"
-            color="amber"
-            delay={0.2}
-          />
-          <StatCard
-            icon={Clock}
-            value={userData?.listening_hours || 0}
-            label="ساعة"
-            color="purple"
-            delay={0.3}
-          />
-        </div>
-
-        {/* Badges */}
-        <div className="mb-6">
-          <h3 className="text-sm font-cairo text-slate-400 mb-3">الشارات</h3>
-          <BadgesList badges={badges} />
+        {/* Stats Grid - Followers/Following Only */}
+        <div className="flex justify-center gap-8 mb-6">
+          <button
+            onClick={() => navigate(`/profile/followers`)}
+            className="flex flex-col items-center p-4 rounded-2xl bg-slate-900/50 border border-slate-800/50 hover:border-lime-500/30 transition-colors min-w-[100px]"
+            data-testid="followers-btn"
+          >
+            <span className="text-2xl font-black font-cairo text-white">
+              {userData?.followers_count || 0}
+            </span>
+            <span className="text-sm font-almarai text-lime-400">متابع</span>
+          </button>
+          
+          <button
+            onClick={() => navigate(`/profile/following`)}
+            className="flex flex-col items-center p-4 rounded-2xl bg-slate-900/50 border border-slate-800/50 hover:border-cyan-500/30 transition-colors min-w-[100px]"
+            data-testid="following-btn"
+          >
+            <span className="text-2xl font-black font-cairo text-white">
+              {userData?.following_count || 0}
+            </span>
+            <span className="text-sm font-almarai text-cyan-400">متابَع</span>
+          </button>
         </div>
 
         {/* Tabs */}

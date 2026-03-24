@@ -7,10 +7,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { 
   ArrowRight, ArrowLeft, UserPlus, UserMinus, 
   MessageSquare, MoreHorizontal, Heart, MessageCircle,
-  Repeat2, FileText, Ban, Flag, Users, Clock, Coins,
-  Crown, Shield, Star, Award, Mic, Share2, X
+  Repeat2, FileText, Ban, Flag, Share2
 } from 'lucide-react';
-import { GlowingAvatar, StatCard, ProfileTabs, BadgesList } from '../components/profile';
+import { GlowingAvatar, ProfileTabs } from '../components/profile';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -201,9 +200,6 @@ const UserProfilePage = ({ currentUser }) => {
       noReposts: 'لا توجد إعادة نشر',
       noReplies: 'لا توجد ردود',
       userNotFound: 'المستخدم غير موجود',
-      coins: 'عملة',
-      hours: 'ساعة',
-      badges: 'الشارات',
     },
     en: {
       followers: 'Followers',
@@ -220,9 +216,6 @@ const UserProfilePage = ({ currentUser }) => {
       noReposts: 'No reposts yet',
       noReplies: 'No replies yet',
       userNotFound: 'User not found',
-      coins: 'Coins',
-      hours: 'Hours',
-      badges: 'Badges',
     }
   }[language];
 
@@ -370,17 +363,6 @@ const UserProfilePage = ({ currentUser }) => {
     toast.success(isRTL ? 'تم إرسال البلاغ' : 'Report submitted');
     setShowMenu(false);
   };
-
-  // Badges
-  const badgesEarned = user?.badges_earned || [];
-  const badges = [
-    { icon: Mic, label: isRTL ? "متحدث" : "Speaker", color: "from-lime-500 to-emerald-500", key: "speaker", earned: badgesEarned.includes("speaker") },
-    { icon: Crown, label: isRTL ? "مالك غرفة" : "Room Owner", color: "from-amber-500 to-yellow-500", key: "room_owner", earned: badgesEarned.includes("room_owner") },
-    { icon: Heart, label: isRTL ? "محبوب" : "Popular", color: "from-rose-500 to-pink-500", key: "popular", earned: badgesEarned.includes("popular") },
-    { icon: Star, label: isRTL ? "نجم" : "Star", color: "from-purple-500 to-indigo-500", key: "star", earned: badgesEarned.includes("star") },
-    { icon: Shield, label: isRTL ? "موثق" : "Verified", color: "from-cyan-500 to-blue-500", key: "verified", earned: badgesEarned.includes("verified") },
-    { icon: Award, label: isRTL ? "أسطورة" : "Legend", color: "from-orange-500 to-red-500", key: "legend", earned: badgesEarned.includes("legend") },
-  ];
 
   // Tabs
   const tabs = [
@@ -537,42 +519,29 @@ const UserProfilePage = ({ currentUser }) => {
           </p>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          <StatCard
-            icon={Users}
-            value={user.followers_count || 0}
-            label={txt.followers}
-            color="cyan"
-            delay={0}
-          />
-          <StatCard
-            icon={Users}
-            value={user.following_count || 0}
-            label={txt.following}
-            color="purple"
-            delay={0.1}
-          />
-          <StatCard
-            icon={Coins}
-            value={user.coins || 0}
-            label={txt.coins}
-            color="amber"
-            delay={0.2}
-          />
-          <StatCard
-            icon={Clock}
-            value={user.listening_hours || 0}
-            label={txt.hours}
-            color="lime"
-            delay={0.3}
-          />
-        </div>
-
-        {/* Badges */}
-        <div className="mb-6">
-          <h3 className="text-sm font-cairo text-slate-400 mb-3">{txt.badges}</h3>
-          <BadgesList badges={badges} />
+        {/* Stats - Followers/Following Only */}
+        <div className="flex justify-center gap-8 mb-6">
+          <button
+            onClick={() => navigate(`/user/${userId}/followers`)}
+            className="flex flex-col items-center p-4 rounded-2xl bg-slate-900/50 border border-slate-800/50 hover:border-cyan-500/30 transition-colors min-w-[100px]"
+            data-testid="followers-btn"
+          >
+            <span className="text-2xl font-black font-cairo text-white">
+              {user.followers_count || 0}
+            </span>
+            <span className="text-sm font-almarai text-cyan-400">{txt.followers}</span>
+          </button>
+          
+          <button
+            onClick={() => navigate(`/user/${userId}/following`)}
+            className="flex flex-col items-center p-4 rounded-2xl bg-slate-900/50 border border-slate-800/50 hover:border-purple-500/30 transition-colors min-w-[100px]"
+            data-testid="following-btn"
+          >
+            <span className="text-2xl font-black font-cairo text-white">
+              {user.following_count || 0}
+            </span>
+            <span className="text-sm font-almarai text-purple-400">{txt.following}</span>
+          </button>
         </div>
 
         {/* Tabs */}
