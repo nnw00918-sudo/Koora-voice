@@ -239,7 +239,7 @@ const UserProfilePage = ({ currentUser }) => {
             
             {/* Dropdown Menu */}
             {showMenu && (
-              <div className={`absolute top-12 ${isRTL ? 'left-0' : 'right-0'} bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden min-w-[150px]`}>
+              <div className="absolute top-12 left-0 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden min-w-[150px]">
                 <button
                   onClick={() => {
                     toast.success(isRTL ? 'تم الحظر' : 'User blocked');

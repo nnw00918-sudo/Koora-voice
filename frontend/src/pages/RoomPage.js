@@ -2135,7 +2135,7 @@ const YallaLiveRoom = ({ user }) => {
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="px-4 py-3 flex items-center justify-between"
-          style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
+          style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
         >
           {/* Settings Button - Left */}
           <div className="flex items-center gap-2">
