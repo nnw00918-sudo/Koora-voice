@@ -278,15 +278,16 @@ const YallaLiveRoom = ({ user }) => {
     return () => {
       // Clear messages when leaving room (ephemeral chat like Snapchat)
       setMessages([]);
-      leaveRoom();
+      
+      // Only leave room and cleanup if we're NOT minimizing
+      if (!isMinimizingRef.current) {
+        leaveRoom();
+        cleanupAgora();
+      }
+      
       stopPolling();
       stopHeartbeat();
       clearInterval(streamPoll);
-      
-      // Only cleanup Agora if we're NOT minimizing (keep audio for minimized player)
-      if (!isMinimizingRef.current) {
-        cleanupAgora();
-      }
       
       // Stop recording if active
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
