@@ -497,24 +497,33 @@ export default function MessagesPage() {
             spellCheck="false"
           />
           
-          {newMessage.trim() ? (
-            <button
-              onClick={sendMessage}
-              disabled={sending}
-              className="p-2 text-[#6ab2f2] hover:bg-[#232e3c] rounded-full transition-colors disabled:opacity-50 flex-shrink-0"
-            >
-              <Send className="w-6 h-6" />
-            </button>
-          ) : (
-            <>
-              <button className="p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0">
-                <Image className="w-6 h-6" />
-              </button>
-              <button className="p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0">
-                <Mic className="w-6 h-6" />
-              </button>
-            </>
-          )}
+          {/* Always render all buttons, just hide/show with CSS */}
+          <button
+            onClick={sendMessage}
+            disabled={sending || !newMessage.trim()}
+            className={`p-2 rounded-full transition-all flex-shrink-0 ${
+              newMessage.trim() 
+                ? 'text-[#6ab2f2] hover:bg-[#232e3c]' 
+                : 'hidden'
+            }`}
+          >
+            <Send className="w-6 h-6" />
+          </button>
+          
+          <button 
+            className={`p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0 ${
+              newMessage.trim() ? 'hidden' : ''
+            }`}
+          >
+            <Image className="w-6 h-6" />
+          </button>
+          <button 
+            className={`p-2 text-[#6c7883] hover:text-[#6ab2f2] transition-colors flex-shrink-0 ${
+              newMessage.trim() ? 'hidden' : ''
+            }`}
+          >
+            <Mic className="w-6 h-6" />
+          </button>
         </div>
       </div>
     </div>
