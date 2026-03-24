@@ -2128,7 +2128,7 @@ const YallaLiveRoom = ({ user }) => {
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-950 to-transparent" />
       </div>
 
-      <div className="w-full max-w-lg mx-auto h-[100dvh] flex flex-col relative z-10">
+      <div className="w-full max-w-lg mx-auto min-h-[100dvh] flex flex-col relative z-10 overflow-y-auto">
         
         {/* Header */}
         <motion.div 
@@ -2547,17 +2547,18 @@ const YallaLiveRoom = ({ user }) => {
         </motion.div>
         {/* Combined Stage + Chat Section */}
         <motion.div 
-          className="px-4 pb-2 flex-1 min-h-0"
+          className="px-4 pb-24"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
           <div 
-            className="rounded-xl h-full flex flex-col relative overflow-hidden border border-lime-500/30 shadow-[0_0_20px_rgba(132,204,22,0.1)]"
+            className="rounded-xl flex flex-col relative overflow-hidden border border-lime-500/30 shadow-[0_0_20px_rgba(132,204,22,0.1)]"
             style={{
               backgroundImage: chatBackground ? `url(${chatBackground})` : 'none',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              backgroundColor: chatBackground ? 'transparent' : 'rgba(15, 23, 42, 0.6)'
+              backgroundColor: chatBackground ? 'transparent' : 'rgba(15, 23, 42, 0.6)',
+              minHeight: '400px'
             }}
           >
             {/* Dark overlay for readability */}

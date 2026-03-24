@@ -67,10 +67,10 @@ export const WatchPartyPlayer = ({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-slate-900 rounded-2xl overflow-hidden border border-lime-500/30 shadow-lg"
+      className="bg-slate-900 rounded-xl overflow-hidden border border-lime-500/30 shadow-lg"
     >
-      {/* Video Player First */}
-      <div className="relative aspect-video bg-black">
+      {/* Video Player - Smaller size */}
+      <div className="relative bg-black" style={{ height: '180px' }}>
         {embedUrl ? (
           <iframe
             key={embedUrl}
@@ -82,15 +82,15 @@ export const WatchPartyPlayer = ({
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <Tv className="w-12 h-12 text-slate-600 mx-auto mb-2" />
-              <p className="text-slate-500 font-cairo text-sm">اختر قناة</p>
+              <Tv className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+              <p className="text-slate-500 font-cairo text-xs">اختر قناة</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Channel Buttons - Bottom like remote */}
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-800">
+      <div className="flex items-center justify-between px-2 py-1.5 bg-slate-800">
         <div className="flex items-center gap-2">
           <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-cairo font-bold flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
