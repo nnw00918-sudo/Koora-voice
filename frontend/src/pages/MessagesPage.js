@@ -266,6 +266,8 @@ const MessagesPage = ({ user }) => {
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
   const typingDebounceRef = useRef(null);
+  const isUserTypingRef = useRef(false);
+  const prevMessagesLengthRef = useRef(0);
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
 
@@ -338,15 +340,15 @@ const MessagesPage = ({ user }) => {
   }, [conversationId]);
 
   useEffect(() => {
-    // Only scroll when new messages arrive, not when typing
-    if (messages.length > 0) {
-      // Use a small delay to avoid scrolling while typing
+    // Only scroll when NEW messages arrive (not on initial load while typing)
+    if (messages.length > prevMessagesLengthRef.current && !isUserTypingRef.current) {
       const timer = setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [messages.length]); // Only depend on length, not the entire array
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages.length]);
 
   const fetchConversations = async () => {
     setLoading(true);
@@ -843,13 +845,15 @@ const MessagesPage = ({ user }) => {
                   <input
                     type="text"
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                    onFocus={(e) => {
-                      handleTyping();
-                      // Prevent iOS/Android from scrolling on focus
-                      e.target.scrollIntoView({ behavior: 'instant', block: 'nearest' });
+                    onChange={(e) => {
+                      isUserTypingRef.current = true;
+                      setNewMessage(e.target.value);
+                      // Reset typing flag after a short delay
+                      setTimeout(() => { isUserTypingRef.current = false; }, 500);
                     }}
+                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                    onFocus={handleTyping}
+                    onBlur={() => { isUserTypingRef.current = false; }}
                     placeholder={txt.typeMessage}
                     className="flex-1 bg-transparent py-3 text-white font-almarai text-right outline-none placeholder-slate-500"
                     style={{ fontSize: '16px' }}
@@ -858,25 +862,23 @@ const MessagesPage = ({ user }) => {
                     enterKeyHint="send"
                   />
                   
-                  {/* Attachment buttons */}
-                  {!newMessage && (
-                    <>
-                      <motion.button
-                        className="p-3 text-slate-400 hover:text-lime-400 transition-colors"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Image className="w-5 h-5" />
-                      </motion.button>
-                      <motion.button
-                        className="p-3 text-slate-400 hover:text-lime-400 transition-colors"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Mic className="w-5 h-5" />
-                      </motion.button>
-                    </>
-                  )}
+                  {/* Attachment buttons - use opacity instead of conditional render */}
+                  <div className={`flex items-center transition-opacity duration-200 ${newMessage ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+                    <motion.button
+                      className="p-3 text-slate-400 hover:text-lime-400 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Image className="w-5 h-5" />
+                    </motion.button>
+                    <motion.button
+                      className="p-3 text-slate-400 hover:text-lime-400 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Mic className="w-5 h-5" />
+                    </motion.button>
+                  </div>
                 </div>
               </div>
               
