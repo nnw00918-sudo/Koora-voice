@@ -7,7 +7,7 @@ import {
   ArrowRight, ArrowLeft, Camera, Image, Shuffle, X,
   Settings, LogOut, Edit3, Check, Trophy, Star, Mic,
   Users, Clock, Zap, Crown, Shield, Award, Heart,
-  MessageCircle, Headphones
+  MessageCircle, Headphones, Search
 } from 'lucide-react';
 import BottomNavigation from '../components/BottomNavigation';
 
@@ -171,10 +171,11 @@ const Badge = ({ icon: Icon, label, color, earned = true }) => (
 );
 
 // Stat card component
-const StatCard = ({ icon: Icon, value, label, color }) => (
+const StatCard = ({ icon: Icon, value, label, color, onClick }) => (
   <motion.div
-    className="flex-1 bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50"
+    className={`flex-1 bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50 ${onClick ? 'cursor-pointer' : ''}`}
     whileHover={{ scale: 1.02, borderColor: 'rgba(163, 230, 53, 0.3)' }}
+    onClick={onClick}
   >
     <div className="flex flex-col items-center text-center">
       <Icon className={`w-5 h-5 ${color} mb-1`} />
@@ -306,9 +307,14 @@ const ProfilePage = ({ user, onLogout }) => {
               <BackIcon className="w-5 h-5 text-white" />
             </button>
             <h1 className="text-lg font-cairo font-bold text-white">الملف الشخصي</h1>
-            <button onClick={() => navigate('/settings')} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800/50">
-              <Settings className="w-5 h-5 text-slate-400" />
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => navigate('/search-users')} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800/50">
+                <Search className="w-5 h-5 text-slate-400" />
+              </button>
+              <button onClick={() => navigate('/settings')} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800/50">
+                <Settings className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -460,8 +466,20 @@ const ProfilePage = ({ user, onLogout }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <StatCard icon={Users} value={userData?.followers_count || 0} label="متابع" color="text-lime-400" />
-              <StatCard icon={Heart} value={userData?.following_count || 0} label="متابَع" color="text-rose-400" />
+              <StatCard 
+                icon={Users} 
+                value={userData?.followers_count || 0} 
+                label="متابع" 
+                color="text-lime-400" 
+                onClick={() => navigate(`/follows/${userData?.id}?tab=followers`)}
+              />
+              <StatCard 
+                icon={Heart} 
+                value={userData?.following_count || 0} 
+                label="متابَع" 
+                color="text-rose-400" 
+                onClick={() => navigate(`/follows/${userData?.id}?tab=following`)}
+              />
               <StatCard icon={Star} value={userData?.coins || 0} label="عملة" color="text-amber-400" />
               <StatCard icon={Headphones} value={userData?.rooms_joined || 0} label="غرفة" color="text-cyan-400" />
             </motion.div>
