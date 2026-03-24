@@ -338,8 +338,15 @@ const MessagesPage = ({ user }) => {
   }, [conversationId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Only scroll when new messages arrive, not when typing
+    if (messages.length > 0) {
+      // Use a small delay to avoid scrolling while typing
+      const timer = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [messages.length]); // Only depend on length, not the entire array
 
   const fetchConversations = async () => {
     setLoading(true);
@@ -619,7 +626,13 @@ const MessagesPage = ({ user }) => {
     };
     
     return (
-      <div className="fixed inset-0 bg-slate-950 flex flex-col">
+      <div 
+        className="fixed inset-0 bg-slate-950 flex flex-col"
+        style={{ 
+          height: '100dvh', // Use dynamic viewport height
+          touchAction: 'manipulation' // Prevent zoom on double tap
+        }}
+      >
         <EnhancedChatBackground />
         
         {/* Enhanced Header */}
@@ -732,7 +745,10 @@ const MessagesPage = ({ user }) => {
         {/* Messages Area */}
         <div 
           className="flex-1 overflow-y-auto px-4 py-2 relative z-10" 
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain' // Prevent scroll chaining
+          }}
         >
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full">
@@ -829,11 +845,17 @@ const MessagesPage = ({ user }) => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                    onFocus={handleTyping}
+                    onFocus={(e) => {
+                      handleTyping();
+                      // Prevent iOS/Android from scrolling on focus
+                      e.target.scrollIntoView({ behavior: 'instant', block: 'nearest' });
+                    }}
                     placeholder={txt.typeMessage}
                     className="flex-1 bg-transparent py-3 text-white font-almarai text-right outline-none placeholder-slate-500"
                     style={{ fontSize: '16px' }}
                     autoComplete="off"
+                    inputMode="text"
+                    enterKeyHint="send"
                   />
                   
                   {/* Attachment buttons */}
