@@ -313,6 +313,16 @@
   - تم إضافة state `securitySettings` و `setSecuritySettings` في SettingsPage.js
   - تم إزالة استدعاء دالة `saveSettings` الغير موجودة
   - إصلاح خطأ "Can't find variable: securitySettings"
+- [x] **تصميم جديد كامل لصفحة البروفايل** - تم 24 مارس 2026:
+  - إنشاء مكونات جديدة في `/app/frontend/src/components/profile/`:
+    - `GlowingAvatar.jsx` - صورة متوهجة مع إطار متحرك
+    - `StatCard.jsx` - بطاقة إحصائيات Bento Grid
+    - `ProfileTabs.jsx` - تبويبات مع Framer Motion
+    - `BadgesList.jsx` - قائمة الشارات
+  - تصميم عصري مع خلفية متحركة (AnimatedCover)
+  - دعم RTL كامل
+  - إطار صورة قابل للتخصيص (6 ألوان)
+  - تبويبات متحركة (منشورات، إعجابات، إعادة نشر، ردود)
 
 ### P1 (أولوية عالية) - Refactoring المتبقي
 - [ ] نقل Users routes (معقد - يعتمد على create_notification)
