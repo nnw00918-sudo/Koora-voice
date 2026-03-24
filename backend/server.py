@@ -2470,16 +2470,6 @@ async def update_room(room_id: str, updates: RoomUpdate):
             return {"message": "تم تحديث الغرفة بنجاح", "room": ROOMS[i]}
     raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
 
-@api_router.delete("/admin/rooms/{room_id}", dependencies=[Depends(get_admin_user)])
-async def delete_room(room_id: str):
-    for i, room in enumerate(ROOMS):
-        if room["id"] == room_id:
-            ROOMS.pop(i)
-            await db.room_participants.delete_many({"room_id": room_id})
-            await db.messages.delete_many({"room_id": room_id})
-            return {"message": "تم حذف الغرفة بنجاح"}
-    raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
-
 @api_router.post("/admin/rooms/{room_id}/toggle")
 async def toggle_room(room_id: str, current_user: User = Depends(get_current_user)):
     """Toggle room open/closed status - Room Owner or System Owner"""
