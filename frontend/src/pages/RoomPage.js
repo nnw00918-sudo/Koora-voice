@@ -850,10 +850,12 @@ const YallaLiveRoom = ({ user }) => {
 
   // Minimize - keep audio playing in background
   const handleMinimize = async () => {
+    console.log('handleMinimize called, room:', room, 'agoraClient:', agoraClient.current);
     if (room && agoraClient.current) {
       // Mark that we're minimizing so cleanup doesn't disconnect audio
       isMinimizingRef.current = true;
       
+      console.log('Setting current room in context...');
       // Store room info in global context with agora client
       setCurrentRoom({ 
         id: roomId, 
@@ -861,6 +863,8 @@ const YallaLiveRoom = ({ user }) => {
         agoraClient: agoraClient.current,
         remoteUsers: remoteUsers
       });
+      
+      console.log('Calling minimizePlayer...');
       minimizePlayer();
       
       // Don't cleanup agora - keep audio playing
@@ -868,7 +872,11 @@ const YallaLiveRoom = ({ user }) => {
       stopPolling();
       stopHeartbeat();
       
-      navigate('/dashboard');
+      console.log('Navigating to dashboard...');
+      // Use setTimeout to ensure isMinimizingRef is set before cleanup runs
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 100);
     }
   };
 
