@@ -2337,117 +2337,103 @@ const YallaLiveRoom = ({ user }) => {
                         </div>
                       </div>
                       
-                      {/* Action Buttons - Only for non-current users and if has permission and is online */}
-                      {!isCurrentUser && !isOwnerOfRoom && canManage && isOnline && (
-                        <div className="px-4 pb-4 flex flex-wrap gap-2">
-                          {/* Role Change Buttons - Only for owner/admin */}
-                          {canChangeRoles && (
+                      {/* Action Buttons - Only for non-current users and if has permission */}
+                      {!isCurrentUser && !isOwnerOfRoom && (isRoomOwner || isRoomAdmin) && (
+                        <div className="px-4 pb-3 flex flex-wrap gap-1.5">
+                          {/* Role Change Buttons */}
+                          {isRoomOwner && (
                             <>
-                              {/* Make Admin - Only owner can do this */}
-                              {isRoomOwner && !isUserAdmin && (
+                              {/* Make Admin */}
+                              {!isUserAdmin && (
                                 <button
-                                  onClick={() => handleChangeRoomRole(odId, 'admin', p.username)}
-                                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm font-cairo transition-colors"
+                                  onClick={() => handleChangeRoomRole(odId, 'admin', member.username)}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-cairo transition-colors"
+                                  title="ترقية لأدمن"
                                 >
-                                  <Shield className="w-4 h-4" />
+                                  <Shield className="w-3 h-3" />
                                   أدمن
                                 </button>
                               )}
                               
-                              {/* Make Mod - Owner or Admin can do this */}
+                              {/* Make Mod */}
                               {!isUserMod && !isUserAdmin && (
                                 <button
-                                  onClick={() => handleChangeRoomRole(odId, 'mod', p.username)}
-                                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm font-cairo transition-colors"
+                                  onClick={() => handleChangeRoomRole(odId, 'mod', member.username)}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-xs font-cairo transition-colors"
+                                  title="ترقية لمود"
                                 >
-                                  <Star className="w-4 h-4" />
+                                  <Star className="w-3 h-3" />
                                   مود
                                 </button>
                               )}
                               
                               {/* Remove Role */}
-                              {(isUserAdmin || isUserMod) && isRoomOwner && (
+                              {(isUserAdmin || isUserMod) && (
                                 <button
-                                  onClick={() => handleChangeRoomRole(odId, 'member', p.username)}
-                                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-500/20 hover:bg-slate-500/30 text-slate-400 text-sm font-cairo transition-colors"
+                                  onClick={() => handleChangeRoomRole(odId, 'member', member.username)}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-slate-400 text-xs font-cairo transition-colors"
+                                  title="إزالة الرتبة"
                                 >
-                                  <ArrowDown className="w-4 h-4" />
-                                  إزالة الرتبة
+                                  <ArrowDown className="w-3 h-3" />
+                                  عضو
                                 </button>
                               )}
                             </>
                           )}
                           
-                          {/* Promote to Speaker / Demote to Listener */}
-                          {canPromote && (
-                            isSpeaker ? (
+                          {/* Mic Controls - Only if user is online */}
+                          {isOnline && (
+                            <>
+                              {isSpeaker ? (
+                                <button
+                                  onClick={() => handleDemoteSpeaker(odId)}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 text-xs font-cairo transition-colors"
+                                  title="إنزال من المايك"
+                                >
+                                  <MicOff className="w-3 h-3" />
+                                  إنزال
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSelectedPromoteUser({ user_id: odId, username: member.username, avatar: member.avatar });
+                                    setShowPromoteModal(true);
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 text-lime-400 text-xs font-cairo transition-colors"
+                                  title="رفع للمايك"
+                                >
+                                  <Mic className="w-3 h-3" />
+                                  رفع
+                                </button>
+                              )}
+                              
+                              {/* Mute/Unmute */}
+                              {isSpeaker && (
+                                <button
+                                  onClick={() => isMuted ? handleUnmuteUser(odId) : handleMuteUser(odId)}
+                                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-cairo transition-colors ${
+                                    isMuted 
+                                      ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400' 
+                                      : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400'
+                                  }`}
+                                  title={isMuted ? 'إلغاء الكتم' : 'كتم'}
+                                >
+                                  {isMuted ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+                                  {isMuted ? 'صوت' : 'كتم'}
+                                </button>
+                              )}
+                              
+                              {/* Kick */}
                               <button
-                                onClick={() => handleDemoteSpeaker(odId)}
-                                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 text-sm font-cairo transition-colors"
+                                onClick={() => handleKickUser(odId)}
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-cairo transition-colors"
+                                title="طرد من الغرفة"
                               >
-                                <ArrowDown className="w-4 h-4" />
-                                تنزيل لمستمع
+                                <UserX className="w-3 h-3" />
+                                طرد
                               </button>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setSelectedPromoteUser(p);
-                                  setShowPromoteModal(true);
-                                }}
-                                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-lime-500/20 hover:bg-lime-500/30 text-lime-400 text-sm font-cairo transition-colors"
-                              >
-                                <ArrowUp className="w-4 h-4" />
-                                ترقية لمتحدث
-                              </button>
-                            )
+                            </>
                           )}
-                          
-                          {/* Mute/Unmute - Only for speakers */}
-                          {canManage && isSpeaker && (
-                            <button
-                              onClick={() => isMuted ? handleUnmuteUser(odId) : handleMuteUser(odId)}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-cairo transition-colors ${
-                                isMuted 
-                                  ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400' 
-                                  : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400'
-                              }`}
-                            >
-                              {isMuted ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                              {isMuted ? 'إلغاء الكتم' : 'كتم'}
-                            </button>
-                          )}
-                          
-                          {/* Kick User */}
-                          {canManage && (
-                            <button
-                              onClick={() => handleKickUser(odId)}
-                              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-cairo transition-colors"
-                            >
-                              <UserX className="w-4 h-4" />
-                              طرد
-                            </button>
-                          )}
-                          
-                          {/* Follow */}
-                          <button
-                            onClick={async () => {
-                              try {
-                                await axios.post(`${API}/users/${odId}/follow`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                                toast.success(`تمت متابعة ${p.username}`);
-                              } catch (error) {
-                                if (error.response?.status === 400) {
-                                  await axios.delete(`${API}/users/${odId}/follow`, { headers: { Authorization: `Bearer ${token}` } });
-                                  toast.success(`تم إلغاء متابعة ${p.username}`);
-                                } else {
-                                  toast.error('فشلت العملية');
-                                }
-                              }
-                            }}
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 text-sm font-cairo transition-colors"
-                          >
-                            <UserPlus className="w-4 h-4" />
-                            متابعة
-                          </button>
                         </div>
                       )}
                     </div>
