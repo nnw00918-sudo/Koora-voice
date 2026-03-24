@@ -3019,6 +3019,52 @@ async def create_thread(
     
     return {"message": "Thread created", "thread_id": thread_id}
 
+
+@api_router.get("/threads/{thread_id}")
+async def get_thread(
+    thread_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get a single thread by ID"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        
+        thread = await db.threads.find_one({"id": thread_id})
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
+        
+        # Get author info
+        author = await db.users.find_one({"id": thread.get("author_id")}, {"_id": 0, "password": 0})
+        
+        # Check if user liked this thread
+        liked = await db.likes.find_one({"user_id": user_id, "thread_id": thread_id}) is not None
+        
+        # Check if user reposted this thread
+        reposted = await db.reposts.find_one({"user_id": user_id, "thread_id": thread_id}) is not None
+        
+        return {
+            "id": thread.get("id"),
+            "content": thread.get("content"),
+            "author": author,
+            "media_url": thread.get("media_url"),
+            "media_type": thread.get("media_type"),
+            "twitter_url": thread.get("twitter_url"),
+            "likes_count": thread.get("likes_count", 0),
+            "reposts_count": thread.get("reposts_count", 0),
+            "replies_count": thread.get("replies_count", 0),
+            "liked": liked,
+            "reposted": reposted,
+            "created_at": thread.get("created_at")
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/threads/{thread_id}/like")
 async def like_thread(
     thread_id: str,

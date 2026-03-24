@@ -646,7 +646,7 @@ const ProfilePage = ({ user, onLogout }) => {
                             <div 
                               key={post.id} 
                               className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 cursor-pointer hover:border-rose-500/50 transition-colors active:scale-[0.98]"
-                              onClick={() => navigate('/threads')}
+                              onClick={() => navigate(`/threads/${post.id}`)}
                             >
                               <div 
                                 className="flex items-center gap-2 mb-2"
@@ -682,7 +682,7 @@ const ProfilePage = ({ user, onLogout }) => {
                             <div 
                               key={post.id} 
                               className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 cursor-pointer hover:border-emerald-500/50 transition-colors active:scale-[0.98]"
-                              onClick={() => navigate('/threads')}
+                              onClick={() => navigate(`/threads/${post.id}`)}
                             >
                               <div className="flex items-center gap-2 mb-2 text-emerald-400 text-xs">
                                 <Repeat2 className="w-3 h-3" />

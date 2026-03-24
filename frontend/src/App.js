@@ -9,6 +9,7 @@ import UsersPage from './pages/UsersPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CreateRoomPage from './pages/CreateRoomPage';
 import ThreadsPage from './pages/ThreadsPage';
+import ThreadDetailPage from './pages/ThreadDetailPage';
 import SettingsPage from './pages/SettingsPage';
 import MessagesPage from './pages/MessagesPage';
 import UserProfilePage from './pages/UserProfilePage';
@@ -90,6 +91,7 @@ function App() {
               <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
               <Route path="/admin" element={user?.role === 'owner' ? <AdminDashboard user={user} /> : <Navigate to="/dashboard" />} />
               <Route path="/threads" element={user ? <ThreadsPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/threads/:threadId" element={user ? <ThreadDetailPage user={user} /> : <Navigate to="/" />} />
               <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
               <Route path="/messages" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
               <Route path="/messages/:conversationId" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
