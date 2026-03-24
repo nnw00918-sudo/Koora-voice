@@ -309,6 +309,10 @@
   - تم إضافة endpoint `PUT /api/auth/password` في server.py
   - يتحقق من كلمة المرور الحالية قبل التغيير
   - يعمل الآن بشكل صحيح
+- [x] **إصلاح خطأ securitySettings في صفحة الإعدادات** - تم 24 مارس 2026:
+  - تم إضافة state `securitySettings` و `setSecuritySettings` في SettingsPage.js
+  - تم إزالة استدعاء دالة `saveSettings` الغير موجودة
+  - إصلاح خطأ "Can't find variable: securitySettings"
 
 ### P1 (أولوية عالية) - Refactoring المتبقي
 - [ ] نقل Users routes (معقد - يعتمد على create_notification)

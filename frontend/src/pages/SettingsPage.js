@@ -36,6 +36,10 @@ const SettingsPage = ({ user, onLogout }) => {
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [loadingBlocked, setLoadingBlocked] = useState(false);
+  const [securitySettings, setSecuritySettings] = useState({
+    twoFactorEnabled: false,
+    loginAlerts: true
+  });
 
   const [profileData, setProfileData] = useState({
     name: user.name || user.username || '',
@@ -722,7 +726,6 @@ const SettingsPage = ({ user, onLogout }) => {
           enabled={securitySettings.loginAlerts}
           onChange={(val) => {
             setSecuritySettings(prev => ({ ...prev, loginAlerts: val }));
-            saveSettings('security', { ...securitySettings, loginAlerts: val });
           }}
         />
       </div>
