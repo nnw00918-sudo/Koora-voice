@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useEffect, useState } from 'react';
 
 /**
  * Custom Volume Slider that works on iOS Safari
- * Uses touch events instead of native range input
+ * RTL Support - slider goes from LEFT to RIGHT
  */
 export const VolumeSlider = ({ 
   value, 
@@ -16,6 +16,7 @@ export const VolumeSlider = ({
   const sliderRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   
+  // RTL: Calculate value from RIGHT to LEFT (0% on left, 100% on right)
   const calculateValue = useCallback((clientX) => {
     if (!sliderRef.current) return value;
     
@@ -50,13 +51,11 @@ export const VolumeSlider = ({
   
   // Touch events
   const onTouchStart = (e) => {
-    e.preventDefault();
     const touch = e.touches[0];
     handleStart(touch.clientX);
   };
   
   const onTouchMove = (e) => {
-    e.preventDefault();
     const touch = e.touches[0];
     handleMove(touch.clientX);
   };
@@ -66,18 +65,24 @@ export const VolumeSlider = ({
     const onMouseMove = (e) => handleMove(e.clientX);
     const onMouseUp = () => handleEnd();
     const onTouchEnd = () => handleEnd();
+    const onTouchMoveGlobal = (e) => {
+      if (isDragging) {
+        const touch = e.touches[0];
+        handleMove(touch.clientX);
+      }
+    };
     
     if (isDragging) {
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onMouseUp);
-      window.addEventListener('touchmove', onTouchMove, { passive: false });
+      window.addEventListener('touchmove', onTouchMoveGlobal, { passive: true });
       window.addEventListener('touchend', onTouchEnd);
     }
     
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchmove', onTouchMoveGlobal);
       window.removeEventListener('touchend', onTouchEnd);
     };
   }, [isDragging, handleMove, handleEnd]);
@@ -87,37 +92,41 @@ export const VolumeSlider = ({
   return (
     <div 
       ref={sliderRef}
-      className={`relative h-12 flex items-center cursor-pointer select-none ${className}`}
+      className={`relative h-10 flex items-center cursor-pointer select-none ${className}`}
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}
-      style={{ touchAction: 'none' }}
+      onTouchMove={onTouchMove}
+      style={{ touchAction: 'pan-y' }}
     >
       {/* Track Background */}
       <div 
-        className="absolute w-full h-3 rounded-full"
+        className="absolute w-full h-2.5 rounded-full"
         style={{ backgroundColor: trackColor }}
       />
       
-      {/* Track Fill */}
+      {/* Track Fill - from LEFT */}
       <div 
-        className="absolute h-3 rounded-full transition-all duration-75"
+        className="absolute h-2.5 rounded-full"
         style={{ 
           width: `${percentage}%`,
-          backgroundColor: color
+          left: 0,
+          backgroundColor: color,
+          transition: isDragging ? 'none' : 'width 0.1s ease-out'
         }}
       />
       
       {/* Thumb */}
       <div 
-        className="absolute w-8 h-8 rounded-full shadow-lg transition-transform duration-75"
+        className="absolute w-6 h-6 rounded-full shadow-lg"
         style={{ 
-          left: `calc(${percentage}% - 16px)`,
+          left: `calc(${percentage}% - 12px)`,
           backgroundColor: color,
-          border: '4px solid #0f172a',
+          border: '3px solid #0f172a',
           boxShadow: isDragging 
-            ? `0 0 0 8px ${color}33, 0 4px 12px rgba(0,0,0,0.4)` 
-            : '0 4px 12px rgba(0,0,0,0.4)',
-          transform: isDragging ? 'scale(1.15)' : 'scale(1)'
+            ? `0 0 0 6px ${color}40` 
+            : '0 2px 8px rgba(0,0,0,0.3)',
+          transform: isDragging ? 'scale(1.1)' : 'scale(1)',
+          transition: isDragging ? 'transform 0.1s' : 'left 0.1s ease-out, transform 0.1s'
         }}
       />
     </div>
