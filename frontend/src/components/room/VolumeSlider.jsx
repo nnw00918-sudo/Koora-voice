@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useEffect, useState } from 'react';
 
 /**
  * Custom Volume Slider that works on iOS Safari
- * RTL Support - slider goes from LEFT to RIGHT
+ * RTL Support - slider starts from RIGHT (0%) to LEFT (100%)
  */
 export const VolumeSlider = ({ 
   value, 
@@ -16,13 +16,14 @@ export const VolumeSlider = ({
   const sliderRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   
-  // RTL: Calculate value from RIGHT to LEFT (0% on left, 100% on right)
+  // RTL: Calculate value from RIGHT to LEFT (0% on right, 100% on left)
   const calculateValue = useCallback((clientX) => {
     if (!sliderRef.current) return value;
     
     const rect = sliderRef.current.getBoundingClientRect();
     const x = clientX - rect.left;
-    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    // Invert for RTL: right = 0%, left = 100%
+    const percentage = Math.max(0, Math.min(1, 1 - (x / rect.width)));
     const newValue = Math.round(min + percentage * (max - min));
     return newValue;
   }, [min, max, value]);
@@ -104,29 +105,29 @@ export const VolumeSlider = ({
         style={{ backgroundColor: trackColor }}
       />
       
-      {/* Track Fill - from LEFT */}
+      {/* Track Fill - from RIGHT */}
       <div 
         className="absolute h-2.5 rounded-full"
         style={{ 
           width: `${percentage}%`,
-          left: 0,
+          right: 0,
           backgroundColor: color,
           transition: isDragging ? 'none' : 'width 0.1s ease-out'
         }}
       />
       
-      {/* Thumb */}
+      {/* Thumb - positioned from RIGHT */}
       <div 
         className="absolute w-6 h-6 rounded-full shadow-lg"
         style={{ 
-          left: `calc(${percentage}% - 12px)`,
+          right: `calc(${percentage}% - 12px)`,
           backgroundColor: color,
           border: '3px solid #0f172a',
           boxShadow: isDragging 
             ? `0 0 0 6px ${color}40` 
             : '0 2px 8px rgba(0,0,0,0.3)',
           transform: isDragging ? 'scale(1.1)' : 'scale(1)',
-          transition: isDragging ? 'transform 0.1s' : 'left 0.1s ease-out, transform 0.1s'
+          transition: isDragging ? 'transform 0.1s' : 'right 0.1s ease-out, transform 0.1s'
         }}
       />
     </div>
