@@ -207,10 +207,17 @@
 - [x] **الأدمن لا يمكنه تغيير رتبة أدمن آخر**
 - [x] اختبار شامل: `/app/backend/tests/test_admin_permissions.py` - 6/6 نجاح
 
+#### تحليل Refactoring
+- [x] تحليل server.py للتقسيم المستقبلي
+- [x] البنية موجودة في `/app/backend/routes/` و `/app/backend/models/`
+- [x] `football_router` يعمل بشكل مستقل
+
 ---
 
 ### P0 (أولوية قصوى)
 - [x] ~~اختبار صلاحيات الأدمن~~ - تم 29 ديسمبر 2025
+
+### P1 (أولوية عالية) - Refactoring
 - [ ] إكمال تقسيم server.py:
   - [ ] فصل Stories routes إلى `/routes/stories.py`
   - [ ] فصل Conversations routes إلى `/routes/conversations.py`

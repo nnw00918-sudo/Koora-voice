@@ -4589,6 +4589,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 
 # Include modular routers
 from routes.football import router as football_router
+
 api_router.include_router(football_router)
 
 # Include the API router - must be at the end after all routes are defined
