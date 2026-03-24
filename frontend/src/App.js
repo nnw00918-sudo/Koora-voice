@@ -98,6 +98,10 @@ function App() {
               <Route path="/user/:userId" element={user ? <UserProfilePage currentUser={user} /> : <Navigate to="/" />} />
               <Route path="/notifications" element={user ? <NotificationsPage user={user} /> : <Navigate to="/" />} />
               <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+              <Route path="/profile/followers" element={user ? <FollowListPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/profile/following" element={user ? <FollowListPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/user/:userId/followers" element={user ? <FollowListPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/user/:userId/following" element={user ? <FollowListPage user={user} /> : <Navigate to="/" />} />
               <Route path="/follows/:userId" element={user ? <FollowListPage user={user} /> : <Navigate to="/" />} />
               <Route path="/search-users" element={user ? <SearchUsersPage user={user} /> : <Navigate to="/" />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />

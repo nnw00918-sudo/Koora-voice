@@ -13,14 +13,26 @@ const FollowListPage = ({ user }) => {
   const navigate = useNavigate();
   const { userId } = useParams();
   const [searchParams] = useSearchParams();
-  const tab = searchParams.get('tab') || 'followers';
   
-  const [activeTab, setActiveTab] = useState(tab);
+  // Determine tab from URL path or search params
+  const getInitialTab = () => {
+    const path = window.location.pathname;
+    if (path.includes('following')) return 'following';
+    if (path.includes('followers')) return 'followers';
+    return searchParams.get('tab') || 'followers';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState({});
   const [profileUser, setProfileUser] = useState(null);
+  
+  // Update tab when URL changes
+  useEffect(() => {
+    setActiveTab(getInitialTab());
+  }, [window.location.pathname]);
 
   // Fetch profile user info
   useEffect(() => {
