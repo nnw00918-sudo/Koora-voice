@@ -1,15 +1,126 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { 
   ArrowRight, ArrowLeft, Camera, Image, Shuffle, X,
-  Settings, LogOut, Edit3, Check
+  Settings, LogOut, Edit3, Check, Trophy, Star, Mic,
+  Users, Clock, Zap, Crown, Shield, Award, Heart,
+  MessageCircle, Headphones
 } from 'lucide-react';
 import BottomNavigation from '../components/BottomNavigation';
 
 const API = process.env.REACT_APP_BACKEND_URL;
+
+// Animated gradient background
+const AnimatedBackground = () => (
+  <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+    <motion.div
+      className="absolute top-0 left-1/4 w-96 h-96 bg-lime-500/10 rounded-full blur-3xl"
+      animate={{
+        x: [0, 50, 0],
+        y: [0, 30, 0],
+        scale: [1, 1.2, 1],
+      }}
+      transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+    />
+    <motion.div
+      className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl"
+      animate={{
+        x: [0, -40, 0],
+        y: [0, -40, 0],
+        scale: [1, 1.3, 1],
+      }}
+      transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+    />
+    <motion.div
+      className="absolute top-1/2 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl"
+      animate={{
+        x: [0, -30, 0],
+        y: [0, 50, 0],
+      }}
+      transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+    />
+  </div>
+);
+
+// Glowing avatar frame
+const GlowingAvatar = ({ src, size = "large", level = 1 }) => {
+  const sizeClasses = {
+    small: "w-16 h-16",
+    medium: "w-20 h-20", 
+    large: "w-28 h-28"
+  };
+  
+  const glowColors = {
+    1: "from-lime-400 via-emerald-400 to-lime-400",
+    2: "from-cyan-400 via-blue-400 to-cyan-400",
+    3: "from-purple-400 via-pink-400 to-purple-400",
+    4: "from-amber-400 via-yellow-400 to-amber-400",
+    5: "from-rose-400 via-red-400 to-rose-400"
+  };
+
+  return (
+    <div className="relative">
+      {/* Animated glow ring */}
+      <motion.div
+        className={`absolute inset-0 ${sizeClasses[size]} rounded-full bg-gradient-to-r ${glowColors[level]} blur-md opacity-60`}
+        animate={{ 
+          scale: [1, 1.1, 1],
+          opacity: [0.4, 0.7, 0.4]
+        }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      />
+      {/* Border ring */}
+      <div className={`relative ${sizeClasses[size]} rounded-full p-1 bg-gradient-to-r ${glowColors[level]}`}>
+        <img 
+          src={src} 
+          alt="" 
+          className="w-full h-full rounded-full object-cover bg-slate-800"
+        />
+      </div>
+      {/* Level badge */}
+      <motion.div
+        className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-lg"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.3, type: "spring" }}
+      >
+        <span className="text-xs font-bold text-slate-900">{level}</span>
+      </motion.div>
+    </div>
+  );
+};
+
+// Badge component
+const Badge = ({ icon: Icon, label, color, earned = true }) => (
+  <motion.div
+    className={`flex flex-col items-center gap-1 ${!earned && 'opacity-40'}`}
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.95 }}
+  >
+    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg`}>
+      <Icon className="w-6 h-6 text-white" />
+    </div>
+    <span className="text-[10px] text-slate-400 text-center">{label}</span>
+  </motion.div>
+);
+
+// Stat card component
+const StatCard = ({ icon: Icon, value, label, color }) => (
+  <motion.div
+    className="flex-1 bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50"
+    whileHover={{ scale: 1.02, borderColor: 'rgba(163, 230, 53, 0.3)' }}
+  >
+    <div className="flex items-center gap-2 mb-1">
+      <Icon className={`w-4 h-4 ${color}`} />
+      <span className={`text-lg font-bold ${color}`}>{value}</span>
+    </div>
+    <span className="text-[10px] text-slate-500">{label}</span>
+  </motion.div>
+);
 
 const ProfilePage = ({ user, onLogout }) => {
   const navigate = useNavigate();
@@ -20,12 +131,26 @@ const ProfilePage = ({ user, onLogout }) => {
   // States
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [selectedFrame, setSelectedFrame] = useState(1);
   const [editData, setEditData] = useState({
     name: user?.name || '',
     username: user?.username || '',
     bio: user?.bio || '',
     avatar: user?.avatar || ''
   });
+
+  // Calculate user level based on activity
+  const userLevel = Math.min(5, Math.floor((user?.coins || 0) / 100) + 1);
+
+  // Badges data
+  const badges = [
+    { icon: Mic, label: "متحدث", color: "from-lime-500 to-emerald-500", earned: true },
+    { icon: Crown, label: "مالك غرفة", color: "from-amber-500 to-yellow-500", earned: user?.role === 'owner' },
+    { icon: Heart, label: "محبوب", color: "from-rose-500 to-pink-500", earned: (user?.followers_count || 0) >= 10 },
+    { icon: Star, label: "نجم", color: "from-purple-500 to-indigo-500", earned: (user?.coins || 0) >= 100 },
+    { icon: Shield, label: "موثق", color: "from-cyan-500 to-blue-500", earned: false },
+    { icon: Award, label: "أسطورة", color: "from-orange-500 to-red-500", earned: false },
+  ];
 
   // Generate random avatar
   const generateAvatar = () => {
@@ -65,7 +190,6 @@ const ProfilePage = ({ user, onLogout }) => {
       });
       toast.success('تم حفظ التغييرات');
       setIsEditing(false);
-      // Refresh page to get updated user data
       window.location.reload();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'فشل الحفظ');
@@ -75,38 +199,47 @@ const ProfilePage = ({ user, onLogout }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center">
-            <BackIcon className="w-6 h-6 text-white" />
-          </button>
-          <h1 className="text-lg font-cairo font-bold text-white">الملف الشخصي</h1>
-          <button onClick={() => navigate('/settings')} className="w-10 h-10 flex items-center justify-center">
-            <Settings className="w-5 h-5 text-slate-400" />
-          </button>
+    <div className="min-h-screen bg-slate-950 pb-24 relative overflow-hidden">
+      <AnimatedBackground />
+      
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
+          <div className="flex items-center justify-between px-4 py-3">
+            <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800/50">
+              <BackIcon className="w-5 h-5 text-white" />
+            </button>
+            <h1 className="text-lg font-cairo font-bold text-white">الملف الشخصي</h1>
+            <button onClick={() => navigate('/settings')} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800/50">
+              <Settings className="w-5 h-5 text-slate-400" />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Profile Card */}
-      <div className="px-4 py-6">
-        <div className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800">
-          {/* Avatar */}
-          <div className="flex flex-col items-center mb-6">
+        {/* Profile Content */}
+        <div className="px-4 py-6">
+          {/* Avatar Section */}
+          <motion.div 
+            className="flex flex-col items-center mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <div className="relative mb-4">
-              <img 
+              <GlowingAvatar 
                 src={isEditing ? editData.avatar : user?.avatar} 
-                alt="" 
-                className="w-24 h-24 rounded-full border-4 border-lime-500/30 object-cover"
+                level={userLevel}
               />
               {isEditing && (
-                <button 
+                <motion.button 
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center border-2 border-slate-900"
+                  className="absolute bottom-0 right-0 w-9 h-9 bg-lime-500 rounded-full flex items-center justify-center border-3 border-slate-900 shadow-lg"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                 >
                   <Camera className="w-4 h-4 text-slate-900" />
-                </button>
+                </motion.button>
               )}
             </div>
             <input 
@@ -118,40 +251,62 @@ const ProfilePage = ({ user, onLogout }) => {
             />
             
             {isEditing && (
-              <div className="flex gap-2 mb-4">
+              <motion.div 
+                className="flex gap-2 mb-4"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 bg-slate-800 rounded-lg text-white text-xs font-almarai flex items-center gap-1"
+                  className="px-4 py-2 bg-slate-800/80 backdrop-blur rounded-xl text-white text-xs font-almarai flex items-center gap-2 border border-slate-700"
                 >
-                  <Image className="w-3 h-3" /> الألبوم
+                  <Image className="w-4 h-4" /> الألبوم
                 </button>
                 <button 
                   onClick={generateAvatar}
-                  className="px-3 py-1.5 bg-slate-800 rounded-lg text-white text-xs font-almarai flex items-center gap-1"
+                  className="px-4 py-2 bg-slate-800/80 backdrop-blur rounded-xl text-white text-xs font-almarai flex items-center gap-2 border border-slate-700"
                 >
-                  <Shuffle className="w-3 h-3" /> عشوائي
+                  <Shuffle className="w-4 h-4" /> عشوائي
                 </button>
-              </div>
+              </motion.div>
             )}
 
             {/* Name & Username */}
             {!isEditing ? (
-              <>
-                <h2 className="text-xl font-cairo font-bold text-white mb-1">{user?.name}</h2>
-                <p className="text-slate-400 text-sm" dir="ltr">@{user?.username}</p>
+              <motion.div 
+                className="text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <h2 className="text-2xl font-cairo font-bold text-white">{user?.name}</h2>
+                  {user?.role === 'owner' && (
+                    <Crown className="w-5 h-5 text-amber-400" />
+                  )}
+                </div>
+                <p className="text-slate-400 text-sm mb-1" dir="ltr">@{user?.username}</p>
+                <div className="flex items-center justify-center gap-1 text-xs">
+                  <Zap className="w-3 h-3 text-amber-400" />
+                  <span className="text-amber-400 font-bold">المستوى {userLevel}</span>
+                </div>
                 {user?.bio && (
-                  <p className="text-slate-300 text-sm text-center mt-3 max-w-[250px]">{user?.bio}</p>
+                  <p className="text-slate-300 text-sm text-center mt-3 max-w-[280px] leading-relaxed">{user?.bio}</p>
                 )}
-              </>
+              </motion.div>
             ) : (
-              <div className="w-full space-y-3 mt-2">
+              <motion.div 
+                className="w-full space-y-3 mt-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
                 <div>
                   <label className="block text-slate-400 text-xs mb-1 text-right">الاسم</label>
                   <input
                     type="text"
                     value={editData.name}
                     onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-right text-sm"
+                    className="w-full bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl px-4 py-3 text-white text-right text-sm focus:border-lime-500 focus:outline-none transition-colors"
                     style={{ fontSize: '16px' }}
                     maxLength={30}
                   />
@@ -159,12 +314,12 @@ const ProfilePage = ({ user, onLogout }) => {
                 <div>
                   <label className="block text-slate-400 text-xs mb-1 text-right">اسم المستخدم</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">@</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm">@</span>
                     <input
                       type="text"
                       value={editData.username}
                       onChange={(e) => setEditData(prev => ({ ...prev, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') }))}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-white text-sm"
+                      className="w-full bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl pl-9 pr-4 py-3 text-white text-sm focus:border-lime-500 focus:outline-none transition-colors"
                       style={{ fontSize: '16px' }}
                       dir="ltr"
                       maxLength={20}
@@ -176,39 +331,61 @@ const ProfilePage = ({ user, onLogout }) => {
                   <textarea
                     value={editData.bio}
                     onChange={(e) => setEditData(prev => ({ ...prev, bio: e.target.value }))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-right text-sm resize-none h-16"
+                    className="w-full bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl px-4 py-3 text-white text-right text-sm resize-none h-20 focus:border-lime-500 focus:outline-none transition-colors"
                     style={{ fontSize: '16px' }}
                     maxLength={80}
                     placeholder="اكتب نبذة عنك..."
                   />
-                  <p className="text-slate-500 text-xs text-left">{editData.bio.length}/80</p>
+                  <p className="text-slate-500 text-xs text-left mt-1">{editData.bio.length}/80</p>
                 </div>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
 
-          {/* Stats */}
+          {/* Stats Section */}
           {!isEditing && (
-            <div className="flex justify-center gap-8 py-4 border-t border-slate-800">
-              <div className="text-center">
-                <p className="text-xl font-bold text-white">{user?.followers_count || 0}</p>
-                <p className="text-slate-400 text-xs">متابع</p>
+            <motion.div 
+              className="grid grid-cols-4 gap-2 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <StatCard icon={Users} value={user?.followers_count || 0} label="متابع" color="text-lime-400" />
+              <StatCard icon={Heart} value={user?.following_count || 0} label="متابَع" color="text-rose-400" />
+              <StatCard icon={Star} value={user?.coins || 0} label="عملة" color="text-amber-400" />
+              <StatCard icon={Headphones} value={user?.rooms_joined || 0} label="غرفة" color="text-cyan-400" />
+            </motion.div>
+          )}
+
+          {/* Badges Section */}
+          {!isEditing && (
+            <motion.div 
+              className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-800/50 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Trophy className="w-5 h-5 text-amber-400" />
+                <h3 className="text-white font-cairo font-bold">الشارات والإنجازات</h3>
               </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-white">{user?.following_count || 0}</p>
-                <p className="text-slate-400 text-xs">متابَع</p>
+              <div className="grid grid-cols-6 gap-3">
+                {badges.map((badge, idx) => (
+                  <Badge key={idx} {...badge} />
+                ))}
               </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-lime-400">{user?.coins || 0}</p>
-                <p className="text-slate-400 text-xs">عملة</p>
-              </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Action Buttons */}
-          <div className="mt-4">
+          <motion.div 
+            className="space-y-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
             {!isEditing ? (
-              <button
+              <motion.button
                 onClick={() => {
                   setEditData({
                     name: user?.name || '',
@@ -218,43 +395,51 @@ const ProfilePage = ({ user, onLogout }) => {
                   });
                   setIsEditing(true);
                 }}
-                className="w-full py-3 bg-lime-500 text-slate-900 rounded-xl font-cairo font-bold flex items-center justify-center gap-2"
+                className="w-full py-4 bg-gradient-to-r from-lime-500 to-emerald-500 text-slate-900 rounded-xl font-cairo font-bold flex items-center justify-center gap-2 shadow-lg shadow-lime-500/20"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <Edit3 className="w-4 h-4" />
+                <Edit3 className="w-5 h-5" />
                 تعديل الملف الشخصي
-              </button>
+              </motion.button>
             ) : (
               <div className="flex gap-3">
-                <button
+                <motion.button
                   onClick={() => setIsEditing(false)}
-                  className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-cairo font-bold flex items-center justify-center gap-2"
+                  className="flex-1 py-4 bg-slate-800/80 backdrop-blur text-white rounded-xl font-cairo font-bold flex items-center justify-center gap-2 border border-slate-700"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                   إلغاء
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 py-3 bg-lime-500 text-slate-900 rounded-xl font-cairo font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-4 bg-gradient-to-r from-lime-500 to-emerald-500 text-slate-900 rounded-xl font-cairo font-bold flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-lime-500/20"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-5 h-5" />
                   {saving ? 'جاري الحفظ...' : 'حفظ'}
-                </button>
+                </motion.button>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Logout Button */}
-        {!isEditing && (
-          <button
-            onClick={onLogout}
-            className="w-full mt-4 py-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl font-cairo font-bold flex items-center justify-center gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            تسجيل الخروج
-          </button>
-        )}
+            {/* Logout Button */}
+            {!isEditing && (
+              <motion.button
+                onClick={onLogout}
+                className="w-full py-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl font-cairo font-bold flex items-center justify-center gap-2"
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(239, 68, 68, 0.15)' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <LogOut className="w-5 h-5" />
+                تسجيل الخروج
+              </motion.button>
+            )}
+          </motion.div>
+        </div>
       </div>
 
       <BottomNavigation isRTL={isRTL} />
