@@ -5,7 +5,8 @@ import {
   Home, 
   MessageSquare, 
   Mail, 
-  Settings 
+  Settings,
+  User
 } from 'lucide-react';
 
 const BottomNavigation = ({ isRTL = true }) => {
@@ -16,6 +17,7 @@ const BottomNavigation = ({ isRTL = true }) => {
     { id: 'home', icon: Home, label: 'الرئيسية', labelEn: 'Home', path: '/dashboard' },
     { id: 'threads', icon: MessageSquare, label: 'المنشورات', labelEn: 'Threads', path: '/threads' },
     { id: 'messages', icon: Mail, label: 'الرسائل', labelEn: 'Messages', path: '/messages' },
+    { id: 'profile', icon: User, label: 'حسابي', labelEn: 'Profile', path: '/profile' },
     { id: 'settings', icon: Settings, label: 'الإعدادات', labelEn: 'Settings', path: '/settings' },
   ];
 
