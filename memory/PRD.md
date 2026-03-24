@@ -174,6 +174,25 @@
 - [x] **مؤشر "متصل الآن"**: نقطة خضراء على صورة المستخدم
 - [x] اختبار شامل - 100% نجاح
 
+### تصميم شاشة الدردشة الداخلية - 24 مارس 2026
+- [x] **EnhancedChatBackground**: pattern خفيف + 3 orbs متحركة (lime, emerald, cyan)
+- [x] **EnhancedMessageBubble**: 
+  - رسائلي: تدرج أخضر مع shine effect متحرك
+  - رسائل الآخرين: رمادي مع Avatar
+- [x] **Header محسّن**:
+  - صورة المستخدم مع glow effect
+  - مؤشر "متصل الآن" متحرك
+  - أزرار Phone, Video, Options
+- [x] **DateSeparator**: فاصل التاريخ بين الرسائل
+- [x] **TypingIndicator**: 3 نقاط متحركة
+- [x] **QuickReactions**: 6 إيموجي سريعة
+- [x] **Input محسّن**:
+  - زر Emoji (يفتح Quick Reactions)
+  - زر Image
+  - زر Mic (تسجيل صوتي)
+  - زر Send مع gradient
+- [x] اختبار شامل - 100% نجاح
+
 ---
 
 ## المهام القادمة
