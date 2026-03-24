@@ -7,7 +7,7 @@ import {
   ArrowRight, ArrowLeft, Camera, Image, Shuffle, X,
   Settings, LogOut, Edit3, Check, Trophy, Star, Mic,
   Users, Clock, Zap, Crown, Shield, Award, Heart,
-  MessageCircle, Headphones, Search
+  MessageCircle, Headphones, Search, Repeat2, FileText
 } from 'lucide-react';
 import BottomNavigation from '../components/BottomNavigation';
 
@@ -204,6 +204,14 @@ const ProfilePage = ({ user, onLogout }) => {
     avatar: user?.avatar || '',
     frame_color: user?.frame_color || 'lime'
   });
+  
+  // Content tabs
+  const [activeTab, setActiveTab] = useState('posts');
+  const [myPosts, setMyPosts] = useState([]);
+  const [myLikes, setMyLikes] = useState([]);
+  const [myReposts, setMyReposts] = useState([]);
+  const [myReplies, setMyReplies] = useState([]);
+  const [contentLoading, setContentLoading] = useState(false);
 
   // Fetch user profile data
   useEffect(() => {
@@ -230,6 +238,47 @@ const ProfilePage = ({ user, onLogout }) => {
     };
     fetchProfile();
   }, []);
+
+  // Fetch content based on active tab
+  useEffect(() => {
+    const fetchContent = async () => {
+      if (!userData?.id) return;
+      setContentLoading(true);
+      const token = localStorage.getItem('token');
+      
+      try {
+        if (activeTab === 'posts') {
+          const res = await axios.get(`${API}/api/users/${userData.id}/threads`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setMyPosts(res.data.threads || res.data || []);
+        } else if (activeTab === 'likes') {
+          const res = await axios.get(`${API}/api/users/${userData.id}/liked-threads`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setMyLikes(res.data.threads || res.data || []);
+        } else if (activeTab === 'reposts') {
+          const res = await axios.get(`${API}/api/users/${userData.id}/reposts`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setMyReposts(res.data.threads || res.data || []);
+        } else if (activeTab === 'replies') {
+          const res = await axios.get(`${API}/api/users/${userData.id}/replies`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setMyReplies(res.data.replies || res.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching content:', err);
+      } finally {
+        setContentLoading(false);
+      }
+    };
+    
+    if (!isEditing) {
+      fetchContent();
+    }
+  }, [activeTab, userData?.id, isEditing]);
 
   // Use profileData if available, otherwise fall back to user prop
   const userData = profileData || user;
@@ -501,6 +550,161 @@ const ProfilePage = ({ user, onLogout }) => {
                 {badges.map((badge, idx) => (
                   <Badge key={idx} {...badge} />
                 ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Content Tabs */}
+          {!isEditing && (
+            <motion.div 
+              className="mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+            >
+              {/* Tab Buttons */}
+              <div className="flex bg-slate-900/50 backdrop-blur-sm rounded-xl p-1 border border-slate-800/50 mb-4">
+                {[
+                  { id: 'posts', label: 'منشوراتي', icon: FileText },
+                  { id: 'likes', label: 'إعجاباتي', icon: Heart },
+                  { id: 'reposts', label: 'إعادة نشر', icon: Repeat2 },
+                  { id: 'replies', label: 'ردودي', icon: MessageCircle },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-lg text-xs font-cairo font-bold transition-all ${
+                      activeTab === tab.id
+                        ? 'bg-lime-500 text-slate-900'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <tab.icon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800/50 min-h-[200px]">
+                {contentLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="w-8 h-8 border-2 border-lime-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    {/* Posts Tab */}
+                    {activeTab === 'posts' && (
+                      myPosts.length > 0 ? (
+                        <div className="space-y-3">
+                          {myPosts.slice(0, 5).map((post) => (
+                            <div 
+                              key={post.id} 
+                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                              onClick={() => navigate(`/threads/${post.id}`)}
+                            >
+                              <p className="text-white text-sm text-right leading-relaxed line-clamp-2">{post.content}</p>
+                              <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                                <span className="flex items-center gap-1">
+                                  <Heart className="w-3 h-3" /> {post.likes_count || 0}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MessageCircle className="w-3 h-3" /> {post.replies_count || 0}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-500">
+                          <FileText className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">لا توجد منشورات</p>
+                        </div>
+                      )
+                    )}
+
+                    {/* Likes Tab */}
+                    {activeTab === 'likes' && (
+                      myLikes.length > 0 ? (
+                        <div className="space-y-3">
+                          {myLikes.slice(0, 5).map((post) => (
+                            <div 
+                              key={post.id} 
+                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                              onClick={() => navigate(`/threads/${post.id}`)}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <img 
+                                  src={post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.username}`} 
+                                  alt="" 
+                                  className="w-6 h-6 rounded-full"
+                                />
+                                <span className="text-lime-400 text-xs font-bold">@{post.author?.username}</span>
+                              </div>
+                              <p className="text-white text-sm text-right leading-relaxed line-clamp-2">{post.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-500">
+                          <Heart className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">لا توجد إعجابات</p>
+                        </div>
+                      )
+                    )}
+
+                    {/* Reposts Tab */}
+                    {activeTab === 'reposts' && (
+                      myReposts.length > 0 ? (
+                        <div className="space-y-3">
+                          {myReposts.slice(0, 5).map((post) => (
+                            <div 
+                              key={post.id} 
+                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                              onClick={() => navigate(`/threads/${post.id}`)}
+                            >
+                              <div className="flex items-center gap-2 mb-2 text-emerald-400 text-xs">
+                                <Repeat2 className="w-3 h-3" />
+                                <span>أعدت نشر</span>
+                              </div>
+                              <p className="text-white text-sm text-right leading-relaxed line-clamp-2">{post.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-500">
+                          <Repeat2 className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">لا توجد إعادة نشر</p>
+                        </div>
+                      )
+                    )}
+
+                    {/* Replies Tab */}
+                    {activeTab === 'replies' && (
+                      myReplies.length > 0 ? (
+                        <div className="space-y-3">
+                          {myReplies.slice(0, 5).map((reply) => (
+                            <div 
+                              key={reply.id} 
+                              className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                            >
+                              <div className="flex items-center gap-2 mb-2 text-cyan-400 text-xs">
+                                <MessageCircle className="w-3 h-3" />
+                                <span>رد على منشور</span>
+                              </div>
+                              <p className="text-white text-sm text-right leading-relaxed line-clamp-2">{reply.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-500">
+                          <MessageCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">لا توجد ردود</p>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
