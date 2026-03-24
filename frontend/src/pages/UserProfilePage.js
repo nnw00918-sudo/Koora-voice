@@ -203,20 +203,22 @@ const UserProfilePage = ({ currentUser }) => {
           <p className="text-center text-slate-400 font-almarai text-sm mb-4">{user.name}</p>
         )}
 
-        {/* Stats */}
+        {/* Stats - Only Followers/Following */}
         <div className="flex justify-center gap-8 py-4">
-          <div className="text-center">
-            <p className="text-xl font-chivo font-bold text-white">{user.following_count}</p>
+          <button 
+            onClick={() => navigate(`/follows/${userId}?tab=following`)}
+            className="text-center hover:opacity-80 transition-opacity"
+          >
+            <p className="text-xl font-chivo font-bold text-white">{user.following_count || 0}</p>
             <p className="text-slate-500 text-xs font-almarai">{txt.following}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl font-chivo font-bold text-white">{user.followers_count}</p>
+          </button>
+          <button 
+            onClick={() => navigate(`/follows/${userId}?tab=followers`)}
+            className="text-center hover:opacity-80 transition-opacity"
+          >
+            <p className="text-xl font-chivo font-bold text-white">{user.followers_count || 0}</p>
             <p className="text-slate-500 text-xs font-almarai">{txt.followers}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl font-chivo font-bold text-white">{user.coins || 0}</p>
-            <p className="text-slate-500 text-xs font-almarai">{txt.likes}</p>
-          </div>
+          </button>
         </div>
 
         {/* Action Buttons */}
@@ -253,16 +255,6 @@ const UserProfilePage = ({ currentUser }) => {
         {user.bio && (
           <p className="text-center text-white font-almarai text-sm mb-4 px-8">{user.bio}</p>
         )}
-
-        {/* Level Badge */}
-        <div className="flex justify-center gap-2 mb-6">
-          <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
-            <span className="text-yellow-400 text-xs font-chivo font-bold">Lv.{user.level || 1}</span>
-          </div>
-          <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30">
-            <span className="text-purple-400 text-xs font-chivo font-bold">{user.xp || 0} XP</span>
-          </div>
-        </div>
       </div>
 
       {/* Tabs */}
@@ -294,7 +286,11 @@ const UserProfilePage = ({ currentUser }) => {
         ) : (
           <div className="divide-y divide-slate-800">
             {userPosts.map(thread => (
-              <div key={thread.id} className="p-4">
+              <div 
+                key={thread.id} 
+                className="p-4 cursor-pointer hover:bg-slate-900/50 transition-colors active:scale-[0.99]"
+                onClick={() => navigate(`/threads/${thread.id}`)}
+              >
                 <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <img src={thread.author?.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -323,14 +319,10 @@ const UserProfilePage = ({ currentUser }) => {
                         <Repeat2 className="w-4 h-4" />
                         <span className="text-xs">{thread.reposts_count || 0}</span>
                       </span>
-                      <button 
-                        onClick={() => handleLike(thread.id)}
-                        className={`flex items-center gap-1 ${thread.liked ? 'text-red-500' : 'hover:text-red-400'}`}
-                      >
+                      <span className={`flex items-center gap-1 ${thread.liked ? 'text-red-500' : ''}`}>
                         <Heart className={`w-4 h-4 ${thread.liked ? 'fill-current' : ''}`} />
                         <span className="text-xs">{thread.likes_count || 0}</span>
-                      </button>
-                      <Share2 className="w-4 h-4" />
+                      </span>
                     </div>
                   </div>
                 </div>
