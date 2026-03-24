@@ -101,6 +101,7 @@ const YallaLiveRoom = ({ user }) => {
   const [room, setRoom] = useState(null);
   const [seats, setSeats] = useState([]);
   const [participants, setParticipants] = useState([]);
+  const [roomMembers, setRoomMembers] = useState([]); // All room members (connected + offline)
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [showMentionList, setShowMentionList] = useState(false);
@@ -686,11 +687,12 @@ const YallaLiveRoom = ({ user }) => {
 
   const fetchRoomData = async () => {
     try {
-      const [roomRes, seatsRes, messagesRes, participantsRes] = await Promise.all([
+      const [roomRes, seatsRes, messagesRes, participantsRes, membersRes] = await Promise.all([
         axios.get(`${API}/rooms/${roomId}`),
         axios.get(`${API}/rooms/${roomId}/seats`),
         axios.get(`${API}/rooms/${roomId}/messages`),
-        axios.get(`${API}/rooms/${roomId}/participants`)
+        axios.get(`${API}/rooms/${roomId}/participants`),
+        axios.get(`${API}/rooms/${roomId}/members`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
 
       const roomData = roomRes.data;
@@ -718,6 +720,11 @@ const YallaLiveRoom = ({ user }) => {
       );
       setMessages(filteredMessages);
       setParticipants(participantsRes.data);
+      
+      // Set room members (all members including offline)
+      if (membersRes.data?.members) {
+        setRoomMembers(membersRes.data.members);
+      }
       
       // Check if current user is on stage
       const myParticipant = participantsRes.data.find(p => p.user_id === user.id);
@@ -2628,22 +2635,33 @@ const YallaLiveRoom = ({ user }) => {
               </div>
             </div>
             
-            {/* Participants/Listeners Section */}
-            {participants.length > 0 && (
+            {/* Room Members Section - All members (connected + offline) */}
+            {roomMembers.length > 0 && (
               <div className="relative z-10 border-b border-lime-500/20 px-3 py-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-slate-400 text-xs font-cairo flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5" />
-                    المتصلون ({participants.length})
+                    أعضاء الغرفة ({roomMembers.length})
                   </span>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="flex items-center gap-1 text-lime-400">
+                      <span className="w-2 h-2 rounded-full bg-lime-500 animate-pulse"></span>
+                      متصل ({participants.length})
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-500">
+                      <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+                      غير متصل ({roomMembers.length - participants.length > 0 ? roomMembers.length - participants.length : 0})
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto hide-scrollbar">
-                  {[...new Map(participants.map(p => [p.user_id || p.id, p])).values()].map((p) => {
-                    const odId = p.user_id || p.id;
-                    const isOwnerOfRoom = room?.owner_id === odId;
-                    const userRoomRole = p.room_role || 'member';
-                    const isUserAdmin = userRoomRole === 'admin';
-                    const isUserMod = userRoomRole === 'mod';
+                <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto hide-scrollbar">
+                  {roomMembers.map((member) => {
+                    const odId = member.user_id;
+                    const isOwnerOfRoom = member.role === 'owner' || room?.owner_id === odId;
+                    const memberRole = member.role || 'member';
+                    const isUserAdmin = memberRole === 'admin';
+                    const isUserMod = memberRole === 'mod';
+                    const isOnline = participants.some(p => (p.user_id || p.id) === odId);
                     const isSpeaker = seats.some(s => s.occupied && s.user?.user_id === odId);
                     
                     return (
@@ -2651,32 +2669,40 @@ const YallaLiveRoom = ({ user }) => {
                         key={odId}
                         onClick={() => navigate(`/user/${odId}`)}
                         className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-cairo transition-all hover:scale-105 ${
+                          !isOnline ? 'opacity-50' : ''
+                        } ${
                           isOwnerOfRoom 
                             ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
                             : isUserAdmin
                               ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                               : isUserMod
                                 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                : isSpeaker
+                                : isSpeaker && isOnline
                                   ? 'bg-lime-500/20 text-lime-400 border border-lime-500/30'
                                   : 'bg-slate-700/50 text-slate-300 border border-slate-600/30'
                         }`}
                       >
-                        <img 
-                          src={p.user?.avatar || p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`}
-                          alt=""
-                          className={`w-5 h-5 rounded-full ring-1 ${
-                            isOwnerOfRoom ? 'ring-amber-500' : 
-                            isUserAdmin ? 'ring-purple-500' :
-                            isUserMod ? 'ring-blue-500' :
-                            isSpeaker ? 'ring-lime-500' : 'ring-slate-600'
-                          }`}
-                        />
-                        <span className="max-w-[60px] truncate">{p.user?.name || p.username}</span>
+                        <div className="relative">
+                          <img 
+                            src={member.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.username}`}
+                            alt=""
+                            className={`w-5 h-5 rounded-full ring-1 ${
+                              isOwnerOfRoom ? 'ring-amber-500' : 
+                              isUserAdmin ? 'ring-purple-500' :
+                              isUserMod ? 'ring-blue-500' :
+                              isSpeaker && isOnline ? 'ring-lime-500' : 'ring-slate-600'
+                            }`}
+                          />
+                          {/* Online indicator */}
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-slate-900 ${
+                            isOnline ? 'bg-lime-500' : 'bg-slate-600'
+                          }`}></span>
+                        </div>
+                        <span className="max-w-[60px] truncate">{member.username}</span>
                         {isOwnerOfRoom && <Crown className="w-3 h-3 text-amber-400" />}
                         {isUserAdmin && !isOwnerOfRoom && <Shield className="w-3 h-3 text-purple-400" />}
                         {isUserMod && !isOwnerOfRoom && !isUserAdmin && <Star className="w-3 h-3 text-blue-400" />}
-                        {isSpeaker && !isOwnerOfRoom && !isUserAdmin && !isUserMod && <Mic className="w-3 h-3 text-lime-400" />}
+                        {isSpeaker && isOnline && !isOwnerOfRoom && !isUserAdmin && !isUserMod && <Mic className="w-3 h-3 text-lime-400" />}
                       </button>
                     );
                   })}
