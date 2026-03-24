@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -44,6 +44,7 @@ const ThreadsPage = ({ user }) => {
   const fileInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const replyInputRef = useRef(null);
 
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
@@ -462,7 +463,22 @@ const ThreadsPage = ({ user }) => {
             
             <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <button 
-                onClick={() => setReplyingTo(replyingTo === thread.id ? null : thread.id)}
+                onClick={() => {
+                  const newReplyingTo = replyingTo === thread.id ? null : thread.id;
+                  setReplyingTo(newReplyingTo);
+                  setReplyContent('');
+                  // Scroll and focus when opening reply
+                  if (newReplyingTo) {
+                    setTimeout(() => {
+                      if (replyInputRef.current) {
+                        replyInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => {
+                          replyInputRef.current?.focus();
+                        }, 300);
+                      }
+                    }, 100);
+                  }
+                }}
                 className={`flex items-center gap-1 transition-colors ${replyingTo === thread.id ? 'text-sky-400' : 'text-slate-500 hover:text-sky-400'}`}
               >
                 <MessageCircle className="w-4 h-4" />
@@ -492,7 +508,7 @@ const ThreadsPage = ({ user }) => {
             
             {/* Reply Input */}
             {replyingTo === thread.id && (
-              <div className={`mt-4 pt-4 border-t border-slate-800 ${isRTL ? 'text-right' : 'text-left'}`}>
+              <div className={`mt-4 pt-4 border-t border-slate-800 ${isRTL ? 'text-right' : 'text-left'}`} data-testid="reply-container">
                 {/* Replying to indicator */}
                 <div className={`flex items-center gap-1 mb-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <span className="text-slate-500 text-sm">{txt.replyingTo}</span>
@@ -502,21 +518,31 @@ const ThreadsPage = ({ user }) => {
                   <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
                   <div className="flex-1">
                     <textarea
+                      ref={replyInputRef}
                       value={replyContent}
                       onChange={(e) => setReplyContent(e.target.value)}
                       placeholder={txt.writeReply}
-                      className={`w-full bg-transparent text-white font-almarai outline-none resize-none text-sm touch-action-auto ${isRTL ? 'text-right' : 'text-left'}`}
-                      rows={2}
+                      className={`w-full bg-slate-800/50 text-white font-almarai outline-none resize-none text-base p-3 rounded-xl border border-slate-700 focus:border-sky-500 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
+                      rows={3}
                       maxLength={280}
                       inputMode="text"
                       autoComplete="off"
+                      autoFocus
+                      onFocus={(e) => {
+                        // Scroll into view when focused (keyboard appears)
+                        setTimeout(() => {
+                          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 300);
+                      }}
+                      data-testid="reply-textarea"
                     />
-                    <div className={`flex items-center justify-between mt-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center justify-between mt-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <span className="text-slate-500 text-xs">{replyContent.length}/280</span>
                       <button
                         onClick={() => handleReply(thread.id)}
                         disabled={!replyContent.trim()}
-                        className="px-4 py-1.5 bg-sky-500 text-white text-sm font-cairo font-bold rounded-full disabled:opacity-50"
+                        className="px-5 py-2 bg-sky-500 text-white text-sm font-cairo font-bold rounded-full disabled:opacity-50 active:scale-95 transition-transform"
+                        data-testid="send-reply-btn"
                       >
                         {txt.sendReply}
                       </button>
