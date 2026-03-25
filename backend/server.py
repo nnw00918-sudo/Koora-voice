@@ -1455,6 +1455,7 @@ async def reject_seat_request(room_id: str, user_id: str, current_user: User = D
 
 @api_router.post("/rooms/{room_id}/kick/{user_id}")
 async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Kick user from room - Owner, Leader, or Admin"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
@@ -1468,8 +1469,9 @@ async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user:
         "user_id": current_user.id
     }, {"_id": 0})
     is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
+    is_room_leader = current_user_room_role and current_user_room_role.get("role") == "leader"
     
-    if not is_room_owner and not is_room_admin and not is_system_owner:
+    if not is_room_owner and not is_room_leader and not is_room_admin and not is_system_owner:
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     # Get target user's room role
@@ -1479,12 +1481,22 @@ async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user:
     }, {"_id": 0})
     target_role = target_room_role.get("role", "member") if target_room_role else "member"
     
-    # Check if target is owner
+    # Check if target is owner - no one can kick owner
     if room.get("owner_id") == user_id:
         raise HTTPException(status_code=403, detail="لا يمكن طرد مالك الغرفة")
     
-    # Admin cannot kick another admin - only owner can
-    if is_room_admin and not is_room_owner and not is_system_owner:
+    # Leader restrictions
+    if is_room_leader and not is_room_owner and not is_system_owner:
+        # Leader cannot kick another leader
+        if target_role == "leader":
+            raise HTTPException(status_code=403, detail="لا يمكن طرد رئيس الغرفة")
+    
+    # Admin restrictions
+    if is_room_admin and not is_room_owner and not is_room_leader and not is_system_owner:
+        # Admin cannot kick leader
+        if target_role == "leader":
+            raise HTTPException(status_code=403, detail="الأدمن لا يمكنه طرد رئيس الغرفة")
+        # Admin cannot kick another admin
         if target_role == "admin":
             raise HTTPException(status_code=403, detail="الأدمن لا يمكنه طرد أدمن آخر")
     
@@ -1499,12 +1511,53 @@ async def kick_user_from_room_by_admin(room_id: str, user_id: str, current_user:
 
 @api_router.post("/rooms/{room_id}/mute/{user_id}")
 async def mute_user(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Mute user in room - Owner, Leader, Admin, or Mod"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    if not can_kick_mute(current_user.role, current_user.id, room.get("owner_id")):
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Get current user's room role
+    current_user_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    current_role = current_user_room_role.get("role", "member") if current_user_room_role else "member"
+    is_room_leader = current_role == "leader"
+    is_room_admin = current_role == "admin"
+    is_room_mod = current_role == "mod"
+    
+    # Check permissions - Owner, Leader, Admin, Mod can mute
+    if not is_room_owner and not is_room_leader and not is_room_admin and not is_room_mod and not is_system_owner:
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
+    
+    # Cannot mute owner
+    if room.get("owner_id") == user_id:
+        raise HTTPException(status_code=403, detail="لا يمكن كتم مالك الغرفة")
+    
+    # Get target user's room role
+    target_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    target_role = target_room_role.get("role", "member") if target_room_role else "member"
+    
+    # Mod restrictions - can only mute members
+    if is_room_mod and not is_room_owner and not is_room_leader and not is_room_admin and not is_system_owner:
+        if target_role in ["leader", "admin", "mod"]:
+            raise HTTPException(status_code=403, detail="المود لا يمكنه كتم شخص برتبة أعلى أو مساوية")
+    
+    # Admin restrictions - cannot mute leader or admin
+    if is_room_admin and not is_room_owner and not is_room_leader and not is_system_owner:
+        if target_role in ["leader", "admin"]:
+            raise HTTPException(status_code=403, detail="الأدمن لا يمكنه كتم رئيس الغرفة أو أدمن آخر")
+    
+    # Leader restrictions - cannot mute another leader
+    if is_room_leader and not is_room_owner and not is_system_owner:
+        if target_role == "leader":
+            raise HTTPException(status_code=403, detail="لا يمكن كتم رئيس الغرفة")
     
     result = await db.room_participants.update_one(
         {"room_id": room_id, "user_id": user_id},
@@ -1517,11 +1570,26 @@ async def mute_user(room_id: str, user_id: str, current_user: User = Depends(get
 
 @api_router.post("/rooms/{room_id}/unmute/{user_id}")
 async def unmute_user(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Unmute user in room - Owner, Leader, Admin, or Mod"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    if not can_kick_mute(current_user.role, current_user.id, room.get("owner_id")):
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Get current user's room role
+    current_user_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    current_role = current_user_room_role.get("role", "member") if current_user_room_role else "member"
+    is_room_leader = current_role == "leader"
+    is_room_admin = current_role == "admin"
+    is_room_mod = current_role == "mod"
+    
+    # Check permissions - Owner, Leader, Admin, Mod can unmute
+    if not is_room_owner and not is_room_leader and not is_room_admin and not is_room_mod and not is_system_owner:
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     participant = await db.room_participants.find_one({
