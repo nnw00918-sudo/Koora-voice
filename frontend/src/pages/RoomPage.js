@@ -208,6 +208,9 @@ const YallaLiveRoom = ({ user }) => {
   const [showEditNewsModal, setShowEditNewsModal] = useState(false);
   const [showNewsManageModal, setShowNewsManageModal] = useState(false); // Modal to list all news for edit/delete
   
+  // Announcements state
+  const [roomAnnouncements, setRoomAnnouncements] = useState([]);
+  
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -795,6 +798,9 @@ const YallaLiveRoom = ({ user }) => {
           console.error('Failed to fetch room news');
         }
       }
+      
+      // Fetch announcements for this room
+      fetchRoomAnnouncements();
       
       setLoading(false);
     } catch (error) {
@@ -1451,6 +1457,16 @@ const YallaLiveRoom = ({ user }) => {
       setRoomNews(newNews);
     } catch (error) {
       console.error('Failed to fetch room news');
+    }
+  };
+
+  // Fetch Room Announcements
+  const fetchRoomAnnouncements = async () => {
+    try {
+      const response = await axios.get(`${API}/announcements/room/${roomId}`);
+      setRoomAnnouncements(response.data.announcements || []);
+    } catch (error) {
+      console.error('Failed to fetch announcements');
     }
   };
 
@@ -3124,21 +3140,40 @@ const YallaLiveRoom = ({ user }) => {
             
             {/* Chat Header */}
             <div className="flex items-center justify-between px-3 py-2 relative z-10 border-b border-slate-700/50">
-              <span className="text-slate-400 text-xs font-cairo">💬 الدردشة</span>
+              <span className="text-slate-400 text-xs font-cairo">💬 {isRTL ? 'الدردشة' : 'Chat'}</span>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500 text-[10px]">{messages.length} رسالة</span>
+                <span className="text-slate-500 text-[10px]">{messages.length} {isRTL ? 'رسالة' : 'messages'}</span>
                 {room?.owner_id === user.id && (
                   <button
                     onClick={() => setShowBackgroundPicker(true)}
                     className="flex items-center gap-1 px-2 py-1 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 border border-lime-500/30 transition-colors"
-                    title="تغيير خلفية الدردشة"
+                    title={isRTL ? 'تغيير خلفية الدردشة' : 'Change chat background'}
                   >
                     <ImageIcon className="w-3.5 h-3.5 text-lime-400" />
-                    <span className="text-lime-400 text-[10px] font-cairo">خلفية</span>
+                    <span className="text-lime-400 text-[10px] font-cairo">{isRTL ? 'خلفية' : 'BG'}</span>
                   </button>
                 )}
               </div>
             </div>
+            
+            {/* Pinned Announcements */}
+            {roomAnnouncements.length > 0 && (
+              <div className="relative z-10 border-b border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+                {roomAnnouncements.slice(0, 1).map(announcement => (
+                  <div key={announcement.id} className="px-3 py-2 flex items-start gap-2">
+                    <span className="text-amber-400 text-lg">📢</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-amber-200 font-almarai text-sm leading-relaxed">
+                        {announcement.text}
+                      </p>
+                      <span className="text-amber-400/60 text-[10px]">
+                        {isRTL ? 'إعلان من المالك' : 'Owner Announcement'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             
             {/* Messages - Scrollable area */}
             <div className="flex-1 overflow-y-auto space-y-2 hide-scrollbar relative z-10 p-2">

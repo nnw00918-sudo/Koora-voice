@@ -5019,6 +5019,10 @@ from routes.stories import router as stories_router
 from routes.conversations import router as conversations_router
 from routes.push import router as push_router
 from routes.news import router as news_router
+from routes.announcements import router as announcements_router, init_router as init_announcements
+
+# Initialize announcements router with db and auth
+init_announcements(db, get_current_user)
 
 api_router.include_router(football_router)
 api_router.include_router(notifications_router)
@@ -5026,6 +5030,7 @@ api_router.include_router(stories_router)
 api_router.include_router(conversations_router)
 api_router.include_router(push_router)
 api_router.include_router(news_router)
+api_router.include_router(announcements_router)
 
 # Include the API router - must be at the end after all routes are defined
 app.include_router(api_router)

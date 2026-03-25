@@ -20,6 +20,7 @@ import SearchUsersPage from './pages/SearchUsersPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import NewsManagementPage from './pages/NewsManagementPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import AnnouncementsPage from './pages/AnnouncementsPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import MiniAudioPlayer from './components/MiniAudioPlayer';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -133,6 +134,7 @@ function App() {
               <Route path="/follows/:userId" element={user ? <FollowListPage user={user} /> : <Navigate to="/" />} />
               <Route path="/search-users" element={user ? <SearchUsersPage user={user} /> : <Navigate to="/" />} />
               <Route path="/news-management" element={user && ['news_editor', 'admin', 'owner'].includes(user.role) ? <NewsManagementPage user={user} /> : <Navigate to="/dashboard" />} />
+              <Route path="/announcements" element={user?.role === 'owner' ? <AnnouncementsPage user={user} /> : <Navigate to="/dashboard" />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
             </Routes>
             <MiniAudioPlayer />

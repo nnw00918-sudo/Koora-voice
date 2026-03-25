@@ -507,6 +507,16 @@ const SettingsPage = ({ user, onLogout }) => {
         />
       )}
       
+      {/* Announcements Link - Only for owner */}
+      {user?.role === 'owner' && (
+        <SettingItem 
+          icon={Megaphone} 
+          title={isRTL ? 'الإعلانات' : 'Announcements'} 
+          description={isRTL ? 'إرسال إعلانات للغرف' : 'Send announcements to rooms'}
+          onClick={() => navigate('/announcements')} 
+        />
+      )}
+      
       <SettingItem 
         icon={Lock} 
         title={txt.account} 
