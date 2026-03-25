@@ -288,6 +288,9 @@ const YallaLiveRoom = ({ user }) => {
     
     // Poll room news every 8 seconds (for دوانية rooms)
     const newsPoll = setInterval(() => fetchRoomNews(true), 8000);
+    
+    // Poll user roles every 15 seconds (to update if role changes)
+    const rolesPoll = setInterval(fetchCurrentUserRole, 15000);
 
     return () => {
       // Clear messages when leaving room (ephemeral chat like Snapchat)
@@ -309,6 +312,7 @@ const YallaLiveRoom = ({ user }) => {
       stopHeartbeat();
       clearInterval(streamPoll);
       clearInterval(newsPoll);
+      clearInterval(rolesPoll);
       
       // Stop recording if active
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
