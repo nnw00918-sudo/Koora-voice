@@ -1,3 +1,9 @@
+// Room Layout Components
+export { RoomHeader } from './RoomHeader';
+export { SpeakersGrid, SpeakerAvatar, EmptySeat, RemoteVideoCircle } from './SpeakersGrid';
+export { RoomChat } from './RoomChat';
+export { RoomControlBar } from './RoomControlBar';
+
 // Modals
 export { ConnectedUsersList } from './ConnectedUsersList';
 export { RoomSettingsModal } from './RoomSettingsModal';
