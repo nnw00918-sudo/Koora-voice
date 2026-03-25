@@ -232,6 +232,8 @@ const YallaLiveRoom = ({ user }) => {
   const agoraClient = useRef(null);
   const agoraUid = useRef(null);
   const isMinimizingRef = useRef(false); // Track if we're minimizing
+  const roomWsRef = useRef(null); // WebSocket for room messages
+  const wsReconnectTimeoutRef = useRef(null);
 
   const token = localStorage.getItem('token');
 
@@ -276,6 +278,7 @@ const YallaLiveRoom = ({ user }) => {
       startPolling();
       startHeartbeat();
       fetchStreamStatus();
+      connectRoomWebSocket(); // Connect WebSocket for real-time messages
     };
     
     initRoom();
@@ -286,6 +289,9 @@ const YallaLiveRoom = ({ user }) => {
     return () => {
       // Clear messages when leaving room (ephemeral chat like Snapchat)
       setMessages([]);
+      
+      // Disconnect WebSocket
+      disconnectRoomWebSocket();
       
       // Only leave room and cleanup if we're NOT minimizing
       if (!isMinimizingRef.current) {
@@ -771,6 +777,76 @@ const YallaLiveRoom = ({ user }) => {
     } catch (error) {
       console.error('Failed to fetch messages');
     }
+  };
+
+  // WebSocket connection for real-time room messages
+  const connectRoomWebSocket = () => {
+    if (!token || roomWsRef.current) return;
+    
+    const wsUrl = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+    const ws = new WebSocket(`${wsUrl}/ws/${token}`);
+    
+    ws.onopen = () => {
+      console.log('Room WebSocket connected');
+      // Join the room channel
+      ws.send(JSON.stringify({ type: 'join_room', room_id: roomId }));
+    };
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      if (data.type === 'room_message' && data.room_id === roomId) {
+        // Add new message to state
+        setMessages(prev => [...prev, data.message]);
+        // Auto-scroll to bottom
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    };
+    
+    ws.onclose = () => {
+      console.log('Room WebSocket disconnected');
+      roomWsRef.current = null;
+      // Attempt to reconnect after 3 seconds
+      wsReconnectTimeoutRef.current = setTimeout(() => {
+        if (!isMinimizingRef.current) {
+          connectRoomWebSocket();
+        }
+      }, 3000);
+    };
+    
+    ws.onerror = (error) => {
+      console.error('Room WebSocket error:', error);
+    };
+    
+    roomWsRef.current = ws;
+  };
+
+  const disconnectRoomWebSocket = () => {
+    if (wsReconnectTimeoutRef.current) {
+      clearTimeout(wsReconnectTimeoutRef.current);
+    }
+    if (roomWsRef.current) {
+      // Leave the room before closing
+      if (roomWsRef.current.readyState === WebSocket.OPEN) {
+        roomWsRef.current.send(JSON.stringify({ type: 'leave_room', room_id: roomId }));
+      }
+      roomWsRef.current.close();
+      roomWsRef.current = null;
+    }
+  };
+
+  const sendMessageViaWebSocket = (content) => {
+    if (roomWsRef.current && roomWsRef.current.readyState === WebSocket.OPEN) {
+      roomWsRef.current.send(JSON.stringify({
+        type: 'room_message',
+        room_id: roomId,
+        content: content
+      }));
+      return true;
+    }
+    return false;
   };
 
   const fetchParticipants = async () => {
@@ -1873,6 +1949,16 @@ const YallaLiveRoom = ({ user }) => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
+    
+    // Try WebSocket first for instant delivery
+    const sent = sendMessageViaWebSocket(newMessage.trim());
+    if (sent) {
+      setNewMessage('');
+      setShowMentionList(false);
+      return;
+    }
+    
+    // Fallback to HTTP if WebSocket not available
     try {
       const response = await axios.post(`${API}/rooms/${roomId}/messages`, { content: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
       setMessages([...messages, response.data]);

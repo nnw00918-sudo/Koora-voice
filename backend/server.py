@@ -39,6 +39,7 @@ security = HTTPBearer()
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
+        self.room_connections: Dict[str, set] = {}  # room_id -> set of user_ids
     
     async def connect(self, websocket: WebSocket, user_id: str):
         await websocket.accept()
@@ -47,15 +48,43 @@ class ConnectionManager:
     def disconnect(self, user_id: str):
         if user_id in self.active_connections:
             del self.active_connections[user_id]
+        # Remove from all rooms
+        for room_id in list(self.room_connections.keys()):
+            if user_id in self.room_connections[room_id]:
+                self.room_connections[room_id].discard(user_id)
+    
+    def join_room(self, room_id: str, user_id: str):
+        if room_id not in self.room_connections:
+            self.room_connections[room_id] = set()
+        self.room_connections[room_id].add(user_id)
+    
+    def leave_room(self, room_id: str, user_id: str):
+        if room_id in self.room_connections:
+            self.room_connections[room_id].discard(user_id)
     
     async def send_personal_message(self, message: dict, user_id: str):
         if user_id in self.active_connections:
-            await self.active_connections[user_id].send_json(message)
+            try:
+                await self.active_connections[user_id].send_json(message)
+            except Exception:
+                pass
     
     async def broadcast_to_users(self, message: dict, user_ids: List[str]):
         for user_id in user_ids:
             if user_id in self.active_connections:
-                await self.active_connections[user_id].send_json(message)
+                try:
+                    await self.active_connections[user_id].send_json(message)
+                except Exception:
+                    pass
+    
+    async def broadcast_to_room(self, message: dict, room_id: str, exclude_user: str = None):
+        if room_id in self.room_connections:
+            for user_id in self.room_connections[room_id]:
+                if user_id != exclude_user and user_id in self.active_connections:
+                    try:
+                        await self.active_connections[user_id].send_json(message)
+                    except Exception:
+                        pass
 
 ws_manager = ConnectionManager()
 
@@ -4125,6 +4154,65 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                                 "conversation_id": conversation_id,
                                 "user_id": user_id
                             }, p_id)
+            
+            # Room WebSocket events
+            elif data.get("type") == "join_room":
+                room_id = data.get("room_id")
+                if room_id:
+                    ws_manager.join_room(room_id, user_id)
+                    await ws_manager.send_personal_message({"type": "room_joined", "room_id": room_id}, user_id)
+            
+            elif data.get("type") == "leave_room":
+                room_id = data.get("room_id")
+                if room_id:
+                    ws_manager.leave_room(room_id, user_id)
+            
+            elif data.get("type") == "room_message":
+                room_id = data.get("room_id")
+                content = data.get("content", "").strip()
+                
+                if not content or not room_id:
+                    continue
+                
+                # Verify room exists
+                room = await db.rooms.find_one({"id": room_id})
+                if not room:
+                    continue
+                
+                # Get sender info
+                sender = await db.users.find_one({"id": user_id})
+                if not sender:
+                    continue
+                
+                # Save message to room_messages collection
+                message_id = str(int(time.time() * 1000))
+                new_message = {
+                    "id": message_id,
+                    "room_id": room_id,
+                    "user_id": user_id,
+                    "username": sender.get("username"),
+                    "avatar": sender.get("avatar") or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_id}",
+                    "content": content,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.room_messages.insert_one(new_message)
+                
+                # Prepare broadcast message
+                broadcast_data = {
+                    "type": "room_message",
+                    "room_id": room_id,
+                    "message": {
+                        "id": message_id,
+                        "user_id": user_id,
+                        "username": sender.get("username"),
+                        "avatar": sender.get("avatar") or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_id}",
+                        "content": content,
+                        "created_at": new_message["created_at"]
+                    }
+                }
+                
+                # Broadcast to all users in the room
+                await ws_manager.broadcast_to_room(broadcast_data, room_id)
                             
     except WebSocketDisconnect:
         ws_manager.disconnect(user_id)
