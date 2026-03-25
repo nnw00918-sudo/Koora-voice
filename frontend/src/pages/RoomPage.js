@@ -281,6 +281,9 @@ const YallaLiveRoom = ({ user }) => {
 
     // Poll stream status every 10 seconds
     const streamPoll = setInterval(fetchStreamStatus, 10000);
+    
+    // Poll room news every 8 seconds (for دوانية rooms)
+    const newsPoll = setInterval(() => fetchRoomNews(true), 8000);
 
     return () => {
       // Clear messages when leaving room (ephemeral chat like Snapchat)
@@ -301,6 +304,7 @@ const YallaLiveRoom = ({ user }) => {
       stopPolling();
       stopHeartbeat();
       clearInterval(streamPoll);
+      clearInterval(newsPoll);
       
       // Stop recording if active
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -1370,12 +1374,26 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  // Fetch Room News (for دوانية rooms - by title)
-  const fetchRoomNews = async () => {
+  // Fetch Room News (for دوانية rooms - by title) with new news detection
+  const fetchRoomNews = async (showNewNewsToast = false) => {
     if (!room?.title?.includes('دوانية')) return;
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/news`);
-      setRoomNews(response.data.news || []);
+      const newNews = response.data.news || [];
+      
+      // Check for new news items (compare with current news)
+      if (showNewNewsToast && roomNews.length > 0 && newNews.length > roomNews.length) {
+        const latestNews = newNews[0]; // Newest is first
+        if (latestNews && latestNews.author_id !== user.id) {
+          // Show toast for new news from others
+          toast.info(
+            `📰 خبر جديد: ${latestNews.text?.substring(0, 50)}${latestNews.text?.length > 50 ? '...' : ''}`,
+            { duration: 5000 }
+          );
+        }
+      }
+      
+      setRoomNews(newNews);
     } catch (error) {
       console.error('Failed to fetch room news');
     }
