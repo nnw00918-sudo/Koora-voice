@@ -313,7 +313,7 @@ const YallaLiveRoom = ({ user }) => {
       requestsPollInterval.current = setInterval(() => {
         fetchSeatRequests();
         fetchMyInvites();
-      }, 5000); // Poll every 5 seconds
+      }, 2000); // Poll every 2 seconds for faster updates
     }
     return () => {
       if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
@@ -630,7 +630,7 @@ const YallaLiveRoom = ({ user }) => {
           console.error('Screen shares fetch error:', e);
         }
       }
-    }, 5000); // Poll every 5 seconds
+    }, 2000); // Poll every 2 seconds for faster updates
   };
 
   const stopPolling = () => {

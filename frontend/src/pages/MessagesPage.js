@@ -261,9 +261,79 @@ export default function MessagesPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
   
   const token = localStorage.getItem('token');
+  const wsRef = useRef(null);
   
+  // WebSocket connection for real-time messages
+  useEffect(() => {
+    if (!token) return;
+    
+    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+    const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+    
+    const connectWebSocket = () => {
+      try {
+        const ws = new WebSocket(`${WS_URL}/ws/${token}`);
+        
+        ws.onopen = () => {
+          console.log('WebSocket connected');
+          setWsConnected(true);
+        };
+        
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'new_message') {
+              // Add new message to current conversation
+              if (currentConversation && data.message.conversation_id === currentConversation.id) {
+                setMessages(prev => {
+                  // Avoid duplicates
+                  if (prev.some(m => m.id === data.message.id)) return prev;
+                  return [...prev, data.message];
+                });
+              }
+              
+              // Update conversation list
+              setConversations(prev => prev.map(c => 
+                c.id === data.message.conversation_id 
+                  ? { ...c, last_message: { content: data.message.content, created_at: data.message.created_at } }
+                  : c
+              ));
+            }
+          } catch (err) {
+            console.error('WebSocket message error:', err);
+          }
+        };
+        
+        ws.onclose = () => {
+          console.log('WebSocket disconnected');
+          setWsConnected(false);
+          // Reconnect after 3 seconds
+          setTimeout(connectWebSocket, 3000);
+        };
+        
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+        
+        wsRef.current = ws;
+      } catch (err) {
+        console.error('WebSocket connection error:', err);
+      }
+    };
+    
+    connectWebSocket();
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [token, currentConversation]);
+
   // Theme classes
   const theme = {
     bg: isDarkMode ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F5]',
@@ -373,14 +443,27 @@ export default function MessagesPage() {
     setMessages(prev => [...prev, tempMessage]);
 
     try {
-      await axios.post(
-        `${API}/conversations/${currentConversation.id}/messages`,
-        { content },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setMessages(prev => prev.map(m => 
-        m.id === tempMessage.id ? { ...m, sending: false } : m
-      ));
+      // Try WebSocket first for instant delivery
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          type: 'message',
+          conversation_id: currentConversation.id,
+          content
+        }));
+        setMessages(prev => prev.map(m => 
+          m.id === tempMessage.id ? { ...m, sending: false } : m
+        ));
+      } else {
+        // Fallback to HTTP
+        await axios.post(
+          `${API}/conversations/${currentConversation.id}/messages`,
+          { content },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setMessages(prev => prev.map(m => 
+          m.id === tempMessage.id ? { ...m, sending: false } : m
+        ));
+      }
     } catch (error) {
       toast.error('فشل إرسال الرسالة');
       setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
