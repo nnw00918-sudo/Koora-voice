@@ -2604,7 +2604,7 @@ const YallaLiveRoom = ({ user }) => {
               backgroundImage: chatBackground ? `url(${chatBackground})` : 'none',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              minHeight: '450px'
+              minHeight: '70vh'
             }}
           >
             {/* Dark overlay for readability */}
@@ -2612,20 +2612,46 @@ const YallaLiveRoom = ({ user }) => {
               <div className="absolute inset-0 bg-black/50" />
             )}
             
-            {/* ===== SPEAKER GRID (12 seats) ===== */}
-            <div className="relative z-10 p-4 border-b border-white/10">
+            {/* ===== STREAM/BROADCAST AREA ===== */}
+            {room?.stream_url && room.stream_url.trim() !== '' && (
+              <div className="relative z-10 border-b border-white/10">
+                <div className="aspect-video w-full bg-black rounded-t-2xl overflow-hidden">
+                  {room.stream_url.includes('youtube') || room.stream_url.includes('youtu.be') ? (
+                    <iframe
+                      src={room.stream_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                      className="w-full h-full"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    />
+                  ) : (
+                    <video
+                      src={room.stream_url}
+                      className="w-full h-full object-contain"
+                      controls
+                      autoPlay
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* ===== SPEAKERS STRIP (2 visible + scroll) ===== */}
+            <div className="relative z-10 p-3 border-b border-white/10">
               {/* Header */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Mic className="w-4 h-4 text-[#CCFF00]" />
                   <span className="font-cairo font-bold text-white text-sm">المتحدثون</span>
                 </div>
-                <span className="text-white/60 text-xs font-almarai">{speakers.length}/12</span>
+                <span className="text-white/60 text-xs font-almarai">{speakers.length} متحدث</span>
               </div>
               
-              {/* 12 Seats Grid */}
-              <div className="grid grid-cols-4 gap-3">
-                {seats.slice(0, 12).map((seat, index) => {
+              {/* Horizontal Scrollable Speakers - 2 visible at a time */}
+              <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+                {/* Show all occupied seats + 2 empty slots */}
+                {seats.filter(s => s.occupied).concat(
+                  Array(2).fill({ occupied: false, user: null })
+                ).slice(0, Math.max(speakers.length + 2, 2)).map((seat, index) => {
                   const isOccupied = seat.occupied;
                   const seatUser = seat.user;
                   const isLocalUser = seatUser?.user_id === user.id;
@@ -2634,7 +2660,7 @@ const YallaLiveRoom = ({ user }) => {
                   const hasVideo = hasLocalCamera || remoteVideo;
                   
                   return (
-                    <div key={index} className="flex flex-col items-center gap-1">
+                    <div key={index} className="flex flex-col items-center gap-1 flex-shrink-0">
                       {isOccupied ? (
                         /* Occupied Seat */
                         <button
@@ -2644,7 +2670,7 @@ const YallaLiveRoom = ({ user }) => {
                             username: seatUser?.username,
                             avatar: seatUser?.avatar
                           })}
-                          className={`w-14 h-14 rounded-full overflow-hidden relative ${
+                          className={`w-16 h-16 rounded-full overflow-hidden relative ${
                             seatUser?.is_speaking 
                               ? 'ring-2 ring-[#CCFF00] ring-offset-2 ring-offset-[#0A0A0A]' 
                               : hasVideo 
@@ -2679,14 +2705,14 @@ const YallaLiveRoom = ({ user }) => {
                         /* Empty Seat */
                         <button
                           onClick={() => !pendingRequest && !onStage && handleRequestStage()}
-                          className="w-14 h-14 rounded-full border-2 border-dashed border-white/20 bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 hover:border-white/30 transition-colors"
+                          className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 hover:border-white/30 transition-colors"
                         >
-                          <span className="text-lg">+</span>
+                          <span className="text-xl">+</span>
                         </button>
                       )}
                       {/* Username */}
-                      <span className="font-almarai text-[10px] text-white/70 truncate max-w-[60px] text-center">
-                        {isOccupied ? seatUser?.username : 'فارغ'}
+                      <span className="font-almarai text-[10px] text-white/70 truncate max-w-[70px] text-center">
+                        {isOccupied ? seatUser?.username : 'انضم'}
                       </span>
                     </div>
                   );
@@ -2811,6 +2837,20 @@ const YallaLiveRoom = ({ user }) => {
             >
               {isCameraOn ? <Video className="w-4 h-4 text-white" /> : <VideoOff className="w-4 h-4 text-slate-300" />}
             </motion.button>
+
+            {/* Stream/Broadcast Button - Owner/Admin only */}
+            {(room?.owner_id === user.id || user.role === 'admin' || user.role === 'owner') && (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowStreamModal(true)}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  room?.stream_url ? 'bg-red-500' : 'bg-slate-800 border border-slate-700'
+                }`}
+                title="بث مباشر"
+              >
+                <Tv className="w-4 h-4 text-white" />
+              </motion.button>
+            )}
 
             {/* Mic/Stage Controls */}
             {onStage ? (
