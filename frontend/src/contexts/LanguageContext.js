@@ -460,11 +460,31 @@ const translations = {
 // Create Context
 const LanguageContext = createContext();
 
+// Helper function to detect browser language
+const detectBrowserLanguage = () => {
+  // Check if user has a saved preference
+  const savedLanguage = localStorage.getItem('app_language');
+  if (savedLanguage) {
+    return savedLanguage;
+  }
+  
+  // Detect browser language
+  const browserLang = navigator.language || navigator.userLanguage || 'ar';
+  
+  // Check if browser language is Arabic (ar, ar-SA, ar-EG, etc.)
+  if (browserLang.startsWith('ar')) {
+    return 'ar';
+  }
+  
+  // Default to English for non-Arabic browsers
+  return 'en';
+};
+
 // Provider Component
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
-    // Get saved language or default to Arabic
-    return localStorage.getItem('app_language') || 'ar';
+    // Detect language from browser or use saved preference
+    return detectBrowserLanguage();
   });
 
   useEffect(() => {
