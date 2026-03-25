@@ -119,6 +119,7 @@ const YallaLiveRoom = ({ user }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userCoins, setUserCoins] = useState(user.coins || 1000);
   const [remoteUsers, setRemoteUsers] = useState([]);
+  const remoteUsersRef = useRef([]); // Ref to track remote users for volume control
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [localVideoTrack, setLocalVideoTrack] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
@@ -167,17 +168,34 @@ const YallaLiveRoom = ({ user }) => {
     setMicVolumeState(value);
     localStorage.setItem('koora_speakers_volume', value.toString());
     
-    // Immediately apply to all remote users
-    remoteUsers.forEach(remoteUser => {
+    // Immediately apply to all remote users using ref (always up-to-date)
+    const currentRemoteUsers = remoteUsersRef.current;
+    console.log(`Applying to ${currentRemoteUsers.length} remote users`);
+    currentRemoteUsers.forEach(remoteUser => {
       if (remoteUser.audioTrack) {
         try {
           remoteUser.audioTrack.setVolume(value);
-          console.log(`Applied volume ${value}% to user ${remoteUser.uid}`);
+          console.log(`Applied volume ${value}% to Agora user ${remoteUser.uid}`);
         } catch (err) {
-          console.error('Error setting volume:', err);
+          console.error('Error setting Agora volume:', err);
         }
       }
     });
+    
+    // Also control YouTube iframe
+    const iframe = document.getElementById('youtube-player');
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'setVolume',
+          args: [value]
+        }), '*');
+        console.log(`YouTube volume set to ${value}%`);
+      } catch (err) {
+        console.error('Error setting YouTube volume:', err);
+      }
+    }
   };
   const setStreamVolume = (value) => {
     setStreamVolumeState(value);
@@ -351,16 +369,21 @@ const YallaLiveRoom = ({ user }) => {
     scrollToBottom();
   }, [messages]);
 
+  // Keep remoteUsersRef in sync with remoteUsers state
+  useEffect(() => {
+    remoteUsersRef.current = remoteUsers;
+  }, [remoteUsers]);
+
   // Speakers volume control - affects how loud you hear other speakers
   useEffect(() => {
     if (remoteUsers.length > 0) {
-      console.log(`Applying volume ${micVolume}% to ${remoteUsers.length} remote users`);
+      console.log(`[useEffect] Applying volume ${micVolume}% to ${remoteUsers.length} Agora users`);
       remoteUsers.forEach(remoteUser => {
         if (remoteUser.audioTrack) {
           try {
             // Agora setVolume accepts 0-100
             remoteUser.audioTrack.setVolume(micVolume);
-            console.log(`Volume set to ${micVolume}% for user ${remoteUser.uid}`);
+            console.log(`[useEffect] Volume set to ${micVolume}% for Agora user ${remoteUser.uid}`);
           } catch (err) {
             console.error('Error setting volume:', err);
           }
@@ -518,11 +541,17 @@ const YallaLiveRoom = ({ user }) => {
             // Apply saved volume level before playing
             const savedVolume = localStorage.getItem('koora_speakers_volume');
             const volumeLevel = savedVolume ? parseInt(savedVolume) : 100;
+            console.log(`New audio user ${remoteUser.uid} - applying volume ${volumeLevel}%`);
             remoteUser.audioTrack?.setVolume(volumeLevel);
             remoteUser.audioTrack?.play();
             setRemoteUsers(prev => {
               const exists = prev.find(u => u.uid === remoteUser.uid);
-              if (!exists) return [...prev, remoteUser];
+              if (!exists) {
+                const newList = [...prev, remoteUser];
+                // Also update ref immediately
+                remoteUsersRef.current = newList;
+                return newList;
+              }
               return prev;
             });
           }
