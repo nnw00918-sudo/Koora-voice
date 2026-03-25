@@ -407,6 +407,83 @@ async def login(user_data: UserLogin):
     
     return Token(access_token=access_token, token_type="bearer", user=user_obj)
 
+# ==================== FORGOT PASSWORD ====================
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    """Request password reset - sends a 6-digit code"""
+    email = data.email.strip().lower()
+    
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    if not user:
+        # Don't reveal if email exists - return success anyway
+        return {"message": "إذا كان البريد مسجلاً، سيتم إرسال رمز التحقق"}
+    
+    # Generate 6-digit code
+    import random
+    reset_code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+    
+    # Store reset code with expiry (15 minutes)
+    await db.password_resets.delete_many({"email": email})  # Remove old codes
+    await db.password_resets.insert_one({
+        "email": email,
+        "code": reset_code,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+    })
+    
+    # In production, send email here. For now, we'll return the code (for testing)
+    # TODO: Integrate email service
+    print(f"Password reset code for {email}: {reset_code}")
+    
+    return {
+        "message": "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
+        "code_hint": reset_code  # Remove this in production!
+    }
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    """Reset password using the code"""
+    email = data.email.strip().lower()
+    
+    # Find valid reset code
+    reset_record = await db.password_resets.find_one({
+        "email": email,
+        "code": data.code
+    }, {"_id": 0})
+    
+    if not reset_record:
+        raise HTTPException(status_code=400, detail="رمز التحقق غير صحيح")
+    
+    # Check if code expired
+    expires_at = datetime.fromisoformat(reset_record["expires_at"].replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) > expires_at:
+        await db.password_resets.delete_many({"email": email})
+        raise HTTPException(status_code=400, detail="انتهت صلاحية رمز التحقق")
+    
+    # Validate new password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="كلمة المرور يجب أن تكون 6 أحرف على الأقل")
+    
+    # Update password
+    hashed_password = pwd_context.hash(data.new_password)
+    await db.users.update_one(
+        {"email": email},
+        {"$set": {"password": hashed_password}}
+    )
+    
+    # Delete used reset code
+    await db.password_resets.delete_many({"email": email})
+    
+    return {"message": "تم تغيير كلمة المرور بنجاح"}
+
 @api_router.get("/auth/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user info including updated role"""

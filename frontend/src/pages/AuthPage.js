@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
@@ -12,6 +13,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const AuthPage = ({ onLogin }) => {
+  const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -183,8 +185,20 @@ const AuthPage = ({ onLogin }) => {
             </Button>
           </form>
 
+          {/* Forgot Password Link */}
+          {isLogin && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => navigate('/forgot-password')}
+                className="text-amber-400 hover:text-amber-300 transition-colors font-almarai text-sm"
+              >
+                {t('forgotPassword')}
+              </button>
+            </div>
+          )}
+
           {/* Toggle */}
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             <button
               data-testid="toggle-auth-mode-btn"
               onClick={() => setIsLogin(!isLogin)}

@@ -19,6 +19,7 @@ import FollowListPage from './pages/FollowListPage';
 import SearchUsersPage from './pages/SearchUsersPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import NewsManagementPage from './pages/NewsManagementPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import MiniAudioPlayer from './components/MiniAudioPlayer';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -111,6 +112,7 @@ function App() {
               <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
               <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
               <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
+              <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" /> : <ForgotPasswordPage />} />
               <Route path="/dashboard" element={user ? <DashboardPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
               <Route path="/create-room" element={user?.role === 'owner' ? <CreateRoomPage user={user} /> : <Navigate to="/dashboard" />} />
               <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
