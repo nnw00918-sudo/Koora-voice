@@ -3417,7 +3417,7 @@ async def delete_room_news(room_id: str, news_id: str, current_user: User = Depe
 
 @api_router.put("/rooms/{room_id}/news/{news_id}")
 async def update_room_news(room_id: str, news_id: str, data: RoomNewsCreate, current_user: User = Depends(get_current_user)):
-    """Update room news - Owner or author only"""
+    """Update room news - Owner, author, or news_reporter"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
@@ -3430,7 +3430,17 @@ async def update_room_news(room_id: str, news_id: str, data: RoomNewsCreate, cur
     is_system_owner = current_user.role == "owner"
     is_author = news.get("author_id") == current_user.id
     
-    if not is_room_owner and not is_system_owner and not is_author:
+    # Check if user is room news reporter
+    room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    user_roles = room_role.get("roles", []) if room_role else []
+    if not user_roles and room_role and room_role.get("role"):
+        user_roles = [room_role.get("role")]
+    is_news_reporter = "news_reporter" in user_roles
+    
+    if not is_room_owner and not is_system_owner and not is_author and not is_news_reporter:
         raise HTTPException(status_code=403, detail="لا يمكنك تعديل هذا الخبر")
     
     if not data.text.strip():

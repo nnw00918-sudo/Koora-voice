@@ -4286,7 +4286,8 @@ const YallaLiveRoom = ({ user }) => {
                     </div>
                   ) : (
                     roomNews.map((news) => {
-                      const canManage = isOwner || news.author_id === user.id;
+                      // Owner, author, or news_reporter can manage
+                      const canManage = isOwner || news.author_id === user.id || isRoomNewsReporter;
                       return (
                         <div
                           key={news.id}
