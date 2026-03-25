@@ -2,13 +2,20 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Radio } from 'lucide-react';
+import { useLanguage, LanguageToggle } from '../contexts/LanguageContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-[#050505] overflow-hidden selection:bg-[#CCFF00] selection:text-black" dir="rtl">
+    <div className={`min-h-screen bg-[#050505] overflow-hidden selection:bg-[#CCFF00] selection:text-black ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       
+      {/* Language Toggle - Top Right */}
+      <div className="absolute top-6 right-6 z-20">
+        <LanguageToggle />
+      </div>
+
       {/* Background */}
       <div className="fixed inset-0">
         {/* Stadium Image */}
@@ -101,7 +108,7 @@ const LandingPage = () => {
             onClick={() => navigate('/login')}
             className="w-full py-4 rounded-2xl bg-[#CCFF00] hover:bg-[#b8e600] text-black font-cairo font-bold text-lg transition-all duration-300 shadow-lg shadow-[#CCFF00]/20 hover:shadow-[#CCFF00]/40 hover:scale-[1.02] active:scale-[0.98]"
           >
-            تسجيل دخول
+            {t('login')}
           </button>
 
           {/* Register Button */}
@@ -109,7 +116,7 @@ const LandingPage = () => {
             onClick={() => navigate('/register')}
             className="w-full py-4 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/40 text-white font-cairo font-bold text-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
           >
-            إنشاء حساب
+            {t('register')}
           </button>
         </motion.div>
 
@@ -120,7 +127,7 @@ const LandingPage = () => {
           transition={{ delay: 0.8, duration: 0.6 }}
           className="absolute bottom-8 text-slate-500 text-sm font-almarai"
         >
-          الاستاد الرقمي لعشاق كرة القدم
+          {t('tagline')}
         </motion.p>
       </div>
     </div>

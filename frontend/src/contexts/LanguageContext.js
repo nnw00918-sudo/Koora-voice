@@ -1,184 +1,284 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const LanguageContext = createContext();
-
-export const translations = {
+// Translations
+const translations = {
   ar: {
-    // Navigation
-    home: 'الرئيسية',
-    threads: 'ثريد',
-    profile: 'الملف الشخصي',
-    settings: 'الإعدادات',
-    
-    // Settings Page
-    settingsTitle: 'الإعدادات',
-    account: 'الحساب',
-    changePassword: 'تغيير كلمة المرور',
-    preferences: 'التفضيلات',
-    notifications: 'الإشعارات',
-    darkMode: 'الوضع الداكن',
-    sounds: 'الأصوات',
-    language: 'اللغة',
-    support: 'الدعم',
-    help: 'المساعدة',
-    aboutApp: 'عن التطبيق',
-    controlPanel: 'لوحة التحكم',
-    logout: 'تسجيل الخروج',
-    owner: 'مالك',
-    admin: 'أدمن',
-    mod: 'مود',
-    arabic: 'العربية',
-    english: 'English',
-    
-    // Dashboard
-    liveRooms: 'الغرف المباشرة',
-    createRoom: '+ إنشاء غرفة',
-    all: 'الكل',
-    joinNow: 'انضم الآن',
-    host: 'المضيف',
-    noRooms: 'لا توجد غرف في هذه الفئة',
-    beFirst: 'كن أول من ينشئ غرفة',
-    online: 'متصل',
-    
-    // Room
-    room: 'الغرفة',
-    requestToSpeak: 'طلب التحدث',
-    onStage: 'أنت على المنصة',
-    sendMessage: 'إرسال رسالة...',
-    roomSettings: 'إعدادات الغرفة',
-    closeRoom: 'إغلاق الغرفة',
-    openRoom: 'فتح الغرفة',
-    deleteRoom: 'حذف الغرفة',
-    manageParticipants: 'إدارة المشاركين',
-    participants: 'المشاركين',
-    mute: 'كتم',
-    unmute: 'إلغاء الكتم',
-    kick: 'طرد',
-    promote: 'ترقية',
-    demote: 'إنزال من المنصة',
-    invite: 'دعوة للمنصة',
-    seatRequests: 'طلبات الصعود',
+    // Landing Page
+    appName: 'صوت الكورة',
+    appNameEn: 'KOORA VOICE',
+    tagline: 'الاستاد الرقمي لعشاق كرة القدم',
+    login: 'تسجيل دخول',
+    register: 'إنشاء حساب',
     
     // Auth
-    welcome: 'مرحباً بعودتك',
-    loginToContinue: 'سجل دخولك للمتابعة',
+    loginTitle: 'مرحباً بعودتك',
+    loginSubtitle: 'سجل دخولك للانضمام للمجتمع',
+    registerTitle: 'انضم إلينا',
+    registerSubtitle: 'أنشئ حسابك وابدأ رحلتك',
+    emailOrUsername: 'البريد الإلكتروني أو اسم المستخدم',
     email: 'البريد الإلكتروني',
     password: 'كلمة المرور',
-    login: 'تسجيل الدخول',
+    confirmPassword: 'تأكيد كلمة المرور',
+    username: 'اسم المستخدم',
+    name: 'الاسم',
+    loginBtn: 'دخول',
+    registerBtn: 'إنشاء حساب',
     noAccount: 'ليس لديك حساب؟',
-    registerNow: 'سجل الآن',
-    
-    // Messages
-    leftRoom: 'غادرت الغرفة',
-    joinedStage: 'صعدت للمنصة',
-    micOn: 'تم تشغيل الميكروفون',
-    micOff: 'تم كتم الميكروفون',
-  },
-  en: {
-    // Navigation
-    home: 'Home',
-    threads: 'Threads',
-    profile: 'Profile',
-    settings: 'Settings',
-    
-    // Settings Page
-    settingsTitle: 'Settings',
-    account: 'Account',
-    changePassword: 'Change Password',
-    preferences: 'Preferences',
-    notifications: 'Notifications',
-    darkMode: 'Dark Mode',
-    sounds: 'Sounds',
-    language: 'Language',
-    support: 'Support',
-    help: 'Help',
-    aboutApp: 'About App',
-    controlPanel: 'Control Panel',
-    logout: 'Logout',
-    owner: 'Owner',
-    admin: 'Admin',
-    mod: 'Mod',
-    arabic: 'العربية',
-    english: 'English',
+    hasAccount: 'لديك حساب؟',
+    createAccount: 'إنشاء حساب',
+    loginHere: 'سجل دخول',
     
     // Dashboard
-    liveRooms: 'Live Rooms',
-    createRoom: '+ Create Room',
-    all: 'All',
-    joinNow: 'Join Now',
-    host: 'Host',
-    noRooms: 'No rooms in this category',
-    beFirst: 'Be the first to create a room',
-    online: 'Online',
+    home: 'الرئيسية',
+    rooms: 'الغرف',
+    myRooms: 'غرفي',
+    favorites: 'المفضلة',
+    profile: 'الملف الشخصي',
+    settings: 'الإعدادات',
+    logout: 'تسجيل خروج',
+    search: 'بحث...',
+    createRoom: 'إنشاء غرفة',
+    joinRoom: 'دخول',
+    online: 'متصل',
+    offline: 'غير متصل',
+    members: 'أعضاء',
     
-    // Room
-    room: 'Room',
-    requestToSpeak: 'Request to speak',
-    onStage: 'You are on stage',
-    sendMessage: 'Send message...',
-    roomSettings: 'Room Settings',
-    closeRoom: 'Close Room',
-    openRoom: 'Open Room',
-    deleteRoom: 'Delete Room',
-    manageParticipants: 'Manage Participants',
-    participants: 'Participants',
-    mute: 'Mute',
-    unmute: 'Unmute',
-    kick: 'Kick',
-    promote: 'Promote',
-    demote: 'Remove from stage',
-    invite: 'Invite to stage',
-    seatRequests: 'Seat Requests',
+    // Room Categories
+    all: 'الكل',
+    sports: 'رياضة',
+    entertainment: 'ترفيه',
+    technology: 'تكنولوجيا',
+    culture: 'ثقافة',
+    diwaniya: 'الدوانيه',
     
-    // Auth
-    welcome: 'Welcome Back',
-    loginToContinue: 'Login to continue',
-    email: 'Email',
-    password: 'Password',
-    login: 'Login',
-    noAccount: "Don't have an account?",
-    registerNow: 'Register Now',
+    // Room Page
+    roomOwner: 'مالك الغرفة',
+    roomLeader: 'رئيس الغرفة',
+    admin: 'أدمن',
+    mod: 'مود',
+    member: 'عضو',
+    newsReporter: 'إخباري',
+    requestMic: 'طلب مايك',
+    leaveMic: 'مغادرة المايك',
+    mute: 'كتم',
+    unmute: 'إلغاء الكتم',
+    leaveRoom: 'مغادرة الغرفة',
+    roomSettings: 'إعدادات الغرفة',
+    participants: 'المتواجدون',
+    chat: 'المحادثة',
+    sendMessage: 'أرسل رسالة...',
+    
+    // News Ticker
+    addNews: 'إضافة خبر',
+    editNews: 'تعديل الخبر',
+    deleteNews: 'حذف الخبر',
+    manageNews: 'إدارة الأخبار',
+    newsText: 'نص الخبر',
+    newsCategory: 'تصنيف الخبر',
+    noNews: 'لا توجد أخبار',
+    saveChanges: 'حفظ التعديل',
+    cancel: 'إلغاء',
+    general: 'عام',
+    results: 'نتائج',
+    transfers: 'انتقالات',
+    statements: 'تصريحات',
+    breaking: 'عاجل',
+    
+    // Roles Modal
+    userRoles: 'رتب المستخدمين',
+    multipleRolesNote: 'يمكن إضافة أكثر من رتبة للمستخدم',
+    primaryRole: 'الرتبة الرئيسية (اختر واحدة)',
+    addonRoles: 'رتب إضافية (يمكن دمجها)',
+    editRoles: 'تعديل الرتب',
+    close: 'إغلاق',
     
     // Messages
-    leftRoom: 'Left the room',
-    joinedStage: 'Joined the stage',
-    micOn: 'Microphone on',
-    micOff: 'Microphone muted',
+    success: 'تم بنجاح',
+    error: 'حدث خطأ',
+    loading: 'جاري التحميل...',
+    noResults: 'لا توجد نتائج',
+    confirm: 'تأكيد',
+    yes: 'نعم',
+    no: 'لا',
+    
+    // Time
+    now: 'الآن',
+    minutesAgo: 'دقائق',
+    hoursAgo: 'ساعات',
+    daysAgo: 'أيام',
+  },
+  
+  en: {
+    // Landing Page
+    appName: 'Koora Voice',
+    appNameEn: 'KOORA VOICE',
+    tagline: 'The Digital Stadium for Football Fans',
+    login: 'Login',
+    register: 'Create Account',
+    
+    // Auth
+    loginTitle: 'Welcome Back',
+    loginSubtitle: 'Login to join the community',
+    registerTitle: 'Join Us',
+    registerSubtitle: 'Create your account and start your journey',
+    emailOrUsername: 'Email or Username',
+    email: 'Email',
+    password: 'Password',
+    confirmPassword: 'Confirm Password',
+    username: 'Username',
+    name: 'Name',
+    loginBtn: 'Login',
+    registerBtn: 'Create Account',
+    noAccount: "Don't have an account?",
+    hasAccount: 'Already have an account?',
+    createAccount: 'Create Account',
+    loginHere: 'Login here',
+    
+    // Dashboard
+    home: 'Home',
+    rooms: 'Rooms',
+    myRooms: 'My Rooms',
+    favorites: 'Favorites',
+    profile: 'Profile',
+    settings: 'Settings',
+    logout: 'Logout',
+    search: 'Search...',
+    createRoom: 'Create Room',
+    joinRoom: 'Join',
+    online: 'Online',
+    offline: 'Offline',
+    members: 'Members',
+    
+    // Room Categories
+    all: 'All',
+    sports: 'Sports',
+    entertainment: 'Entertainment',
+    technology: 'Technology',
+    culture: 'Culture',
+    diwaniya: 'Diwaniya',
+    
+    // Room Page
+    roomOwner: 'Room Owner',
+    roomLeader: 'Room Leader',
+    admin: 'Admin',
+    mod: 'Mod',
+    member: 'Member',
+    newsReporter: 'News Reporter',
+    requestMic: 'Request Mic',
+    leaveMic: 'Leave Mic',
+    mute: 'Mute',
+    unmute: 'Unmute',
+    leaveRoom: 'Leave Room',
+    roomSettings: 'Room Settings',
+    participants: 'Participants',
+    chat: 'Chat',
+    sendMessage: 'Send a message...',
+    
+    // News Ticker
+    addNews: 'Add News',
+    editNews: 'Edit News',
+    deleteNews: 'Delete News',
+    manageNews: 'Manage News',
+    newsText: 'News Text',
+    newsCategory: 'News Category',
+    noNews: 'No news available',
+    saveChanges: 'Save Changes',
+    cancel: 'Cancel',
+    general: 'General',
+    results: 'Results',
+    transfers: 'Transfers',
+    statements: 'Statements',
+    breaking: 'Breaking',
+    
+    // Roles Modal
+    userRoles: 'User Roles',
+    multipleRolesNote: 'Users can have multiple roles',
+    primaryRole: 'Primary Role (choose one)',
+    addonRoles: 'Addon Roles (can be combined)',
+    editRoles: 'Edit Roles',
+    close: 'Close',
+    
+    // Messages
+    success: 'Success',
+    error: 'Error occurred',
+    loading: 'Loading...',
+    noResults: 'No results found',
+    confirm: 'Confirm',
+    yes: 'Yes',
+    no: 'No',
+    
+    // Time
+    now: 'Now',
+    minutesAgo: 'minutes ago',
+    hoursAgo: 'hours ago',
+    daysAgo: 'days ago',
   }
 };
 
+// Create Context
+const LanguageContext = createContext();
+
+// Provider Component
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('appLanguage') || 'ar';
+    // Get saved language or default to Arabic
+    return localStorage.getItem('app_language') || 'ar';
   });
 
   useEffect(() => {
-    localStorage.setItem('appLanguage', language);
+    // Save language preference
+    localStorage.setItem('app_language', language);
+    
+    // Update document direction
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
   }, [language]);
-
-  const t = (key) => {
-    return translations[language][key] || key;
-  };
 
   const toggleLanguage = () => {
     setLanguage(prev => prev === 'ar' ? 'en' : 'ar');
   };
 
+  const t = (key) => {
+    return translations[language][key] || key;
+  };
+
+  const isRTL = language === 'ar';
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t }}>
+    <LanguageContext.Provider value={{ 
+      language, 
+      setLanguage, 
+      toggleLanguage, 
+      t, 
+      isRTL,
+      translations: translations[language]
+    }}>
       {children}
     </LanguageContext.Provider>
   );
 };
 
+// Hook to use language
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) {
     throw new Error('useLanguage must be used within a LanguageProvider');
   }
   return context;
+};
+
+// Language Toggle Button Component
+export const LanguageToggle = ({ className = '' }) => {
+  const { language, toggleLanguage } = useLanguage();
+  
+  return (
+    <button
+      onClick={toggleLanguage}
+      className={`px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-bold transition-colors ${className}`}
+    >
+      {language === 'ar' ? 'EN' : 'عربي'}
+    </button>
+  );
 };
 
 export default LanguageContext;

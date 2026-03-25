@@ -109,6 +109,8 @@ function App() {
             <Routes>
               <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
               <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
+              <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
+              <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} />} />
               <Route path="/dashboard" element={user ? <DashboardPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
               <Route path="/create-room" element={user?.role === 'owner' ? <CreateRoomPage user={user} /> : <Navigate to="/dashboard" />} />
               <Route path="/room/:roomId" element={user ? <RoomPage user={user} /> : <Navigate to="/" />} />
