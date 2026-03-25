@@ -162,7 +162,8 @@ class Message(BaseModel):
     user_id: str
     username: str
     avatar: Optional[str] = None
-    content: str
+    content: str = ""
+    image_url: Optional[str] = None
     timestamp: str
     reply_to_id: Optional[str] = None
     reply_to_username: Optional[str] = None
@@ -2734,6 +2735,82 @@ async def send_message(room_id: str, message_data: MessageCreate, current_user: 
     
     await db.messages.insert_one(message_doc)
     return Message(**message_doc)
+
+# Image message endpoint - Admin/Owner/Room Owner only
+@api_router.post("/rooms/{room_id}/messages/image")
+async def send_image_message(
+    room_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    import base64
+    from uuid import uuid4
+    
+    # Check permissions: owner, admin, or room owner/admin
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    is_app_owner = current_user.role == "owner"
+    is_app_admin = current_user.role == "admin"
+    is_room_owner = room.get("owner_id") == current_user.id
+    
+    # Check room role
+    room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    })
+    is_room_admin = room_role and room_role.get("role") in ["admin", "mod"]
+    
+    if not (is_app_owner or is_app_admin or is_room_owner or is_room_admin):
+        raise HTTPException(status_code=403, detail="غير مصرح لك بإرسال الصور")
+    
+    # Validate file type
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="الملف ليس صورة")
+    
+    # Read and validate file size (max 5MB)
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="حجم الصورة كبير جداً (الحد 5MB)")
+    
+    # Save image to static folder
+    file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    image_filename = f"chat_{room_id}_{uuid4().hex[:8]}.{file_ext}"
+    image_path = STATIC_DIR / "chat_images"
+    image_path.mkdir(exist_ok=True)
+    
+    with open(image_path / image_filename, "wb") as f:
+        f.write(content)
+    
+    # Create image URL
+    image_url = f"/api/static/chat_images/{image_filename}"
+    
+    # Create message
+    message_id = str(uuid4())
+    message_doc = {
+        "id": message_id,
+        "room_id": room_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "content": "",
+        "image_url": image_url,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.messages.insert_one(message_doc)
+    
+    return {
+        "id": message_id,
+        "room_id": room_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "content": "",
+        "image_url": image_url,
+        "timestamp": message_doc["timestamp"]
+    }
 
 @api_router.get("/rooms/{room_id}/messages", response_model=List[Message])
 async def get_room_messages(room_id: str, limit: int = 50):

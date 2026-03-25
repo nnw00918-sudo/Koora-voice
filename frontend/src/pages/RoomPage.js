@@ -113,6 +113,8 @@ const YallaLiveRoom = ({ user }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [replyingTo, setReplyingTo] = useState(null); // {id, username, content} - message being replied to
+  const [selectedImage, setSelectedImage] = useState(null); // Image to send in chat
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [showMentionList, setShowMentionList] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionCursorPos, setMentionCursorPos] = useState(0);
@@ -168,7 +170,6 @@ const YallaLiveRoom = ({ user }) => {
   const [showSeatRequestsModal, setShowSeatRequestsModal] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [roomImageUrl, setRoomImageUrl] = useState('');
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [chatBackground, setChatBackground] = useState('');
   const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
   const [showTitleEditor, setShowTitleEditor] = useState(false);
@@ -2212,9 +2213,72 @@ const YallaLiveRoom = ({ user }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Check if user can send images (Admin, Owner, Room Owner, Mod)
+  const canSendImages = () => {
+    if (user?.role === 'owner' || user?.role === 'admin') return true;
+    if (room?.owner_id === user?.id) return true;
+    const userRole = participants.find(p => p.id === user?.id);
+    if (userRole?.role === 'admin' || userRole?.role === 'mod') return true;
+    return false;
+  };
+
+  // Handle image selection
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(isRTL ? 'حجم الصورة كبير جداً (الحد 5MB)' : 'Image too large (max 5MB)');
+      return;
+    }
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast.error(isRTL ? 'الملف ليس صورة' : 'File is not an image');
+      return;
+    }
+    
+    setSelectedImage(file);
+  };
+
+  // Upload image and send message
+  const handleSendImageMessage = async () => {
+    if (!selectedImage) return;
+    
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedImage);
+      formData.append('room_id', roomId);
+      
+      const response = await axios.post(`${API}/rooms/${roomId}/messages/image`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      // Add message to local state
+      setMessages(prev => [...prev, response.data]);
+      setSelectedImage(null);
+      toast.success(isRTL ? 'تم إرسال الصورة' : 'Image sent');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || (isRTL ? 'فشل إرسال الصورة' : 'Failed to send image'));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !selectedImage) return;
+    
+    // If there's an image, send it first
+    if (selectedImage) {
+      await handleSendImageMessage();
+      if (!newMessage.trim()) return;
+    }
     
     // Prepare message content with reply info
     const messageContent = newMessage.trim();
@@ -3243,7 +3307,7 @@ const YallaLiveRoom = ({ user }) => {
                           onClick={() => setReplyingTo({
                             id: message.id,
                             username: message.username,
-                            content: message.content
+                            content: message.content || (message.image_url ? '[صورة]' : '')
                           })}
                           className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-lime-400 transition-all"
                           title={isRTL ? 'رد' : 'Reply'}
@@ -3255,9 +3319,26 @@ const YallaLiveRoom = ({ user }) => {
                         <span className="text-slate-500 text-[10px]">{isRTL ? 'الآن' : 'now'}</span>
                       </div>
                     </div>
-                    <p className="text-slate-300 font-almarai text-sm leading-relaxed">
-                      {renderMessageContent(message.content)}
-                    </p>
+                    
+                    {/* Image Message */}
+                    {message.image_url && (
+                      <div className="mb-2">
+                        <img 
+                          src={message.image_url} 
+                          alt="Shared" 
+                          className="max-w-[200px] max-h-[200px] rounded-lg border border-slate-700 cursor-pointer hover:border-lime-500/50 transition-colors"
+                          onClick={() => window.open(message.image_url, '_blank')}
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Text Content */}
+                    {message.content && (
+                      <p className="text-slate-300 font-almarai text-sm leading-relaxed">
+                        {renderMessageContent(message.content)}
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               );
@@ -3470,7 +3551,67 @@ const YallaLiveRoom = ({ user }) => {
               )}
             </AnimatePresence>
             
+            {/* Selected Image Preview */}
+            <AnimatePresence>
+              {selectedImage && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-800/90 border-t border-lime-500/30 rounded-t-lg"
+                >
+                  <img 
+                    src={URL.createObjectURL(selectedImage)} 
+                    alt="Preview" 
+                    className="w-12 h-12 object-cover rounded-lg border border-lime-500/50"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-lime-400 text-xs font-bold">
+                      {isRTL ? 'صورة جاهزة للإرسال' : 'Image ready to send'}
+                    </span>
+                    <p className="text-slate-400 text-xs truncate">
+                      {selectedImage.name}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className="p-1 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
             <form onSubmit={handleSendMessage} className="flex gap-2" style={{ position: 'relative', zIndex: 10 }}>
+              {/* Image Upload Button - Only for Admin/Owner/Room Owner */}
+              {canSendImages() && (
+                <>
+                  <input
+                    type="file"
+                    id="chat-image-input"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="chat-image-input"
+                    className={`flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer transition-colors ${
+                      uploadingImage 
+                        ? 'bg-slate-700 text-slate-500' 
+                        : 'bg-slate-800 border border-slate-700 hover:border-lime-500 text-slate-400 hover:text-lime-400'
+                    }`}
+                    title={isRTL ? 'إرسال صورة' : 'Send image'}
+                  >
+                    {uploadingImage ? (
+                      <div className="w-4 h-4 border-2 border-lime-500 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <ImageIcon className="w-4 h-4" />
+                    )}
+                  </label>
+                </>
+              )}
+              
               <input
                 type="text"
                 value={newMessage}
@@ -3485,7 +3626,7 @@ const YallaLiveRoom = ({ user }) => {
               />
               <Button
                 type="submit"
-                disabled={!newMessage.trim()}
+                disabled={!newMessage.trim() && !selectedImage}
                 className="bg-lime-500 hover:bg-lime-400 text-slate-900 rounded-lg w-9 h-9 p-0"
               >
                 <Send className="w-4 h-4" />
