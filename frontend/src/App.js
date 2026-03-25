@@ -18,6 +18,7 @@ import ProfilePage from './pages/ProfilePage';
 import FollowListPage from './pages/FollowListPage';
 import SearchUsersPage from './pages/SearchUsersPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import NewsManagementPage from './pages/NewsManagementPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import MiniAudioPlayer from './components/MiniAudioPlayer';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -127,6 +128,7 @@ function App() {
               <Route path="/user/:userId/following" element={user ? <FollowListPage user={user} /> : <Navigate to="/" />} />
               <Route path="/follows/:userId" element={user ? <FollowListPage user={user} /> : <Navigate to="/" />} />
               <Route path="/search-users" element={user ? <SearchUsersPage user={user} /> : <Navigate to="/" />} />
+              <Route path="/news-management" element={user && ['news_editor', 'admin', 'owner'].includes(user.role) ? <NewsManagementPage user={user} /> : <Navigate to="/dashboard" />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
             </Routes>
             <MiniAudioPlayer />

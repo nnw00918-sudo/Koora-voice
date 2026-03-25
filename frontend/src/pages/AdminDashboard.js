@@ -433,11 +433,13 @@ const AdminDashboard = ({ user }) => {
                       <span className={`text-xs px-2 py-1 rounded ${
                         u.role === 'owner' ? 'bg-purple-500' :
                         u.role === 'admin' ? 'bg-red-500' :
+                        u.role === 'news_editor' ? 'bg-emerald-500' :
                         u.role === 'mod' ? 'bg-yellow-500' :
                         'bg-slate-700'
                       } text-white`}>
                         {u.role === 'owner' ? 'أونر' : 
                          u.role === 'admin' ? 'أدمن' : 
+                         u.role === 'news_editor' ? 'إخباري' :
                          u.role === 'mod' ? 'مود' : 'مستخدم'}
                       </span>
                       {u.is_banned && (
@@ -473,6 +475,7 @@ const AdminDashboard = ({ user }) => {
                           >
                             <option value="user">مستخدم</option>
                             <option value="mod">مود</option>
+                            <option value="news_editor">إخباري</option>
                             <option value="admin">أدمن</option>
                           </select>
                         )}

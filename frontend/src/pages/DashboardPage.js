@@ -69,20 +69,48 @@ const DashboardPage = ({ user, onLogout }) => {
     fetchCategories();
   }, [selectedCategory]);
 
-  // Sports News Ticker Data - Fetch from API
+  // Sports News Ticker Data - Fetch from API (local + football)
   useEffect(() => {
     const fetchSportsNews = async () => {
       setNewsLoading(true);
       try {
-        const response = await axios.get(`${API}/football/news/ticker`);
-        console.log('News response:', response.data);
-        if (response.data?.news && response.data.news.length > 0) {
-          const formattedNews = response.data.news.map(item => ({
-            type: item.type,
-            icon: item.icon,
-            text: isRTL ? item.text : (item.text_en || item.text)
-          }));
-          setSportsNews(formattedNews);
+        // Fetch both local news and football news in parallel
+        const [localResponse, footballResponse] = await Promise.all([
+          axios.get(`${API}/news/ticker`).catch(() => ({ data: { news: [] } })),
+          axios.get(`${API}/football/news/ticker`).catch(() => ({ data: { news: [] } }))
+        ]);
+        
+        // Combine local news (priority) with football news
+        const localNews = (localResponse.data?.news || []).map(item => ({
+          type: item.type,
+          icon: item.icon === 'red_circle' ? '🔴' : 
+                item.icon === 'soccer' ? '⚽' :
+                item.icon === 'arrows_counterclockwise' ? '🔄' :
+                item.icon === 'studio_microphone' ? '🎙️' :
+                item.icon === 'newspaper' ? '📰' : item.icon,
+          text: item.text,
+          priority: item.priority || 1,
+          is_local: true
+        }));
+        
+        const footballNews = (footballResponse.data?.news || []).map(item => ({
+          type: item.type,
+          icon: item.icon === 'red_circle' ? '🔴' : 
+                item.icon === 'soccer' ? '⚽' :
+                item.icon === 'arrows_counterclockwise' ? '🔄' :
+                item.icon === 'studio_microphone' ? '🎙️' :
+                item.icon === 'newspaper' ? '📰' : item.icon,
+          text: isRTL ? item.text : (item.text_en || item.text),
+          priority: item.priority || 3
+        }));
+        
+        // Combine and sort by priority (local news first)
+        const allNews = [...localNews, ...footballNews]
+          .sort((a, b) => a.priority - b.priority)
+          .slice(0, 15);
+        
+        if (allNews.length > 0) {
+          setSportsNews(allNews);
         } else {
           // Use fallback if no news
           setSportsNews([
@@ -318,6 +346,19 @@ const DashboardPage = ({ user, onLogout }) => {
               </div>
             </div>
             <div className="flex gap-2">
+              {/* News Management Button - for news_editor, admin, owner */}
+              {['news_editor', 'admin', 'owner'].includes(user?.role) && (
+                <Button
+                  data-testid="news-management-btn"
+                  onClick={() => navigate('/news-management')}
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 rounded-xl"
+                  title="إدارة الأخبار"
+                >
+                  <Zap className="w-5 h-5" strokeWidth={1.5} />
+                </Button>
+              )}
               <Button
                 data-testid="logout-btn"
                 onClick={onLogout}
