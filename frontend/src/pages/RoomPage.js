@@ -767,6 +767,16 @@ const YallaLiveRoom = ({ user }) => {
         setOnStage(false);
       }
       
+      // Fetch room news if دوانية room (by title containing "دوانية")
+      if (roomData.title?.includes('دوانية')) {
+        try {
+          const newsRes = await axios.get(`${API}/rooms/${roomId}/news`);
+          setRoomNews(newsRes.data.news || []);
+        } catch (err) {
+          console.error('Failed to fetch room news');
+        }
+      }
+      
       setLoading(false);
     } catch (error) {
       toast.error('فشل تحميل بيانات الغرفة');
@@ -1331,6 +1341,57 @@ const YallaLiveRoom = ({ user }) => {
       toast.error('فشل إزالة الخلفية');
     }
   };
+
+  // Fetch Room News (for دوانية rooms - by title)
+  const fetchRoomNews = async () => {
+    if (!room?.title?.includes('دوانية')) return;
+    try {
+      const response = await axios.get(`${API}/rooms/${roomId}/news`);
+      setRoomNews(response.data.news || []);
+    } catch (error) {
+      console.error('Failed to fetch room news');
+    }
+  };
+
+  // Add Room News
+  const handleAddRoomNews = async () => {
+    if (!newNewsText.trim()) {
+      toast.error('أدخل نص الخبر');
+      return;
+    }
+    setAddingNews(true);
+    try {
+      await axios.post(`${API}/rooms/${roomId}/news`, 
+        { text: newNewsText, category: newNewsCategory },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم إضافة الخبر');
+      setNewNewsText('');
+      setNewNewsCategory('عام');
+      setShowAddNewsModal(false);
+      fetchRoomNews();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل إضافة الخبر');
+    } finally {
+      setAddingNews(false);
+    }
+  };
+
+  // Delete Room News
+  const handleDeleteRoomNews = async (newsId) => {
+    try {
+      await axios.delete(`${API}/rooms/${roomId}/news/${newsId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('تم حذف الخبر');
+      fetchRoomNews();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل حذف الخبر');
+    }
+  };
+
+  // Check if user can add room news (owner, system owner, or news_reporter)
+  const canAddRoomNews = isOwner || roomRole === 'news_reporter';
 
   // Stream functions
   const fetchStreamStatus = async () => {
@@ -2313,6 +2374,72 @@ const YallaLiveRoom = ({ user }) => {
           <div className="flex items-center justify-center gap-2 bg-red-500/20 px-3 py-1.5 mx-4 mt-2 rounded-full border border-red-500/30">
             <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
             <span className="text-red-400 text-sm font-bold font-mono">{formatRecordingTime(recordingTime)}</span>
+          </div>
+        )}
+
+        {/* Diwaniya Room News Ticker - شريط أخبار الدوانية */}
+        {room?.title?.includes('دوانية') && (
+          <div className="relative mx-4 mt-2 overflow-hidden">
+            {/* News Ticker Container */}
+            <div className="bg-gradient-to-r from-amber-900/40 via-amber-800/30 to-amber-900/40 rounded-xl border border-amber-500/30 py-2 px-3">
+              <div className="flex items-center gap-3">
+                {/* News Icon & Add Button */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="w-6 h-6 rounded-lg bg-amber-500/30 flex items-center justify-center">
+                    <Type className="w-3.5 h-3.5 text-amber-400" />
+                  </div>
+                  {canAddRoomNews && (
+                    <button
+                      onClick={() => setShowAddNewsModal(true)}
+                      className="w-6 h-6 rounded-lg bg-lime-500/30 hover:bg-lime-500/50 flex items-center justify-center transition-colors"
+                      title="إضافة خبر"
+                    >
+                      <span className="text-lime-400 text-sm font-bold">+</span>
+                    </button>
+                  )}
+                </div>
+                
+                {/* Scrolling News */}
+                <div className="flex-1 overflow-hidden">
+                  {roomNews.length > 0 ? (
+                    <motion.div
+                      animate={{ x: ['0%', '-100%'] }}
+                      transition={{ 
+                        duration: roomNews.length * 8, 
+                        repeat: Infinity, 
+                        ease: 'linear' 
+                      }}
+                      className="flex items-center gap-8 whitespace-nowrap"
+                    >
+                      {roomNews.map((news, idx) => (
+                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-amber-100 text-sm font-cairo">
+                          <span>{news.icon || '📰'}</span>
+                          <span>{news.text}</span>
+                          {(isOwner || news.author_id === user.id) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteRoomNews(news.id); }}
+                              className="text-red-400 hover:text-red-300 text-xs"
+                              title="حذف"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                      {/* Duplicate for seamless loop */}
+                      {roomNews.map((news, idx) => (
+                        <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-amber-100 text-sm font-cairo">
+                          <span>{news.icon || '📰'}</span>
+                          <span>{news.text}</span>
+                        </span>
+                      ))}
+                    </motion.div>
+                  ) : (
+                    <span className="text-amber-400/60 text-xs font-cairo">لا توجد أخبار - اضغط + لإضافة خبر</span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -3788,6 +3915,90 @@ const YallaLiveRoom = ({ user }) => {
           roomId={roomId}
           roomTitle={room?.title || 'غرفة صوت الكورة'}
         />
+
+        {/* Add Room News Modal - إضافة خبر للدوانية */}
+        <AnimatePresence>
+          {showAddNewsModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setShowAddNewsModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-md rounded-3xl p-6 border border-amber-500/30"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-amber-600 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Type className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-cairo font-bold text-white">إضافة خبر</h3>
+                  <p className="text-slate-400 text-sm font-almarai">أضف خبراً للشريط الإخباري</p>
+                </div>
+
+                {/* News Category */}
+                <div className="mb-4">
+                  <label className="text-slate-300 text-sm font-cairo mb-2 block">تصنيف الخبر</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['عام', 'نتائج', 'انتقالات', 'تصريحات', 'عاجل'].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setNewNewsCategory(cat)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-cairo transition-colors ${
+                          newNewsCategory === cat
+                            ? 'bg-amber-500 text-black font-bold'
+                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                      >
+                        {cat === 'عام' && '📰'}
+                        {cat === 'نتائج' && '⚽'}
+                        {cat === 'انتقالات' && '🔄'}
+                        {cat === 'تصريحات' && '🎙️'}
+                        {cat === 'عاجل' && '🔴'}
+                        {' '}{cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* News Text */}
+                <div className="mb-6">
+                  <label className="text-slate-300 text-sm font-cairo mb-2 block">نص الخبر</label>
+                  <textarea
+                    value={newNewsText}
+                    onChange={(e) => setNewNewsText(e.target.value)}
+                    placeholder="اكتب الخبر هنا..."
+                    className="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-white font-almarai resize-none focus:outline-none focus:border-amber-500"
+                    rows={3}
+                    dir="rtl"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAddRoomNews}
+                    disabled={addingNews || !newNewsText.trim()}
+                    className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-cairo font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {addingNews ? 'جاري الإضافة...' : 'إضافة الخبر'}
+                  </button>
+                  <button
+                    onClick={() => setShowAddNewsModal(false)}
+                    className="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-cairo font-bold transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

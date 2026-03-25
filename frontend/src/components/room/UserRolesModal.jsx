@@ -10,7 +10,8 @@ import {
   ChevronDown,
   ChevronUp,
   Mic,
-  MicOff
+  MicOff,
+  Newspaper
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ const ROOM_ROLES = [
   { value: 'leader', label: 'رئيس الغرفة', icon: Crown, color: 'text-fuchsia-400', bgColor: 'bg-fuchsia-500/20', borderColor: 'border-fuchsia-500/50' },
   { value: 'admin', label: 'أدمن', icon: Shield, color: 'text-red-400', bgColor: 'bg-red-500/20', borderColor: 'border-red-500/50' },
   { value: 'mod', label: 'مود', icon: Star, color: 'text-amber-400', bgColor: 'bg-amber-500/20', borderColor: 'border-amber-500/50' },
+  { value: 'news_reporter', label: 'إخباري', icon: Newspaper, color: 'text-cyan-400', bgColor: 'bg-cyan-500/20', borderColor: 'border-cyan-500/50' },
   { value: 'member', label: 'عضو', icon: User, color: 'text-slate-400', bgColor: 'bg-slate-500/20', borderColor: 'border-slate-500/50' }
 ];
 
@@ -231,6 +233,10 @@ export const UserRolesModal = ({
             <div className="flex items-center gap-1 text-xs">
               <Star className="w-3 h-3 text-amber-400" />
               <span className="text-amber-400">مود</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs">
+              <Newspaper className="w-3 h-3 text-cyan-400" />
+              <span className="text-cyan-400">إخباري</span>
             </div>
             <div className="flex items-center gap-1 text-xs">
               <User className="w-3 h-3 text-slate-400" />

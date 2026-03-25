@@ -1869,8 +1869,8 @@ async def set_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate, c
         raise HTTPException(status_code=403, detail="ليس لديك صلاحية تغيير الرتب")
     
     # Validate role
-    if data.role not in ["leader", "admin", "mod", "member"]:
-        raise HTTPException(status_code=400, detail="رتبة غير صحيحة. الخيارات: leader, admin, mod, member")
+    if data.role not in ["leader", "admin", "mod", "news_reporter", "member"]:
+        raise HTTPException(status_code=400, detail="رتبة غير صحيحة. الخيارات: leader, admin, mod, news_reporter, member")
     
     # Cannot change owner's role
     if room.get("owner_id") == user_id:
@@ -1932,7 +1932,7 @@ async def set_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate, c
             upsert=True
         )
     
-    role_names = {"leader": "رئيس الغرفة", "admin": "أدمن", "mod": "مود", "member": "عضو"}
+    role_names = {"leader": "رئيس الغرفة", "admin": "أدمن", "mod": "مود", "news_reporter": "إخباري", "member": "عضو"}
     
     # Get target user info
     target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "username": 1})
@@ -1992,8 +1992,8 @@ async def update_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate
         raise HTTPException(status_code=403, detail="ليس لديك صلاحية تغيير الرتب")
     
     # Validate role
-    if data.role not in ["leader", "admin", "mod", "member"]:
-        raise HTTPException(status_code=400, detail="رتبة غير صحيحة. الخيارات: leader, admin, mod, member")
+    if data.role not in ["leader", "admin", "mod", "news_reporter", "member"]:
+        raise HTTPException(status_code=400, detail="رتبة غير صحيحة. الخيارات: leader, admin, mod, news_reporter, member")
     
     # Cannot change owner's role
     if room.get("owner_id") == user_id:
@@ -2051,7 +2051,7 @@ async def update_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate
         upsert=True
     )
     
-    role_names = {"leader": "رئيس الغرفة", "admin": "أدمن", "mod": "مود", "member": "عضو"}
+    role_names = {"leader": "رئيس الغرفة", "admin": "أدمن", "mod": "مود", "news_reporter": "إخباري", "member": "عضو"}
     
     # Get target user info
     target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "username": 1})
