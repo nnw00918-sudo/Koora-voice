@@ -1,109 +1,157 @@
 {
-  "theme": "PERFORMANCE PRO (Football Edition)",
+  "theme": "dark",
+  "archetype": "The Performance Pro (Elite Athleticism & Precision)",
   "typography": {
-    "headings": "Cairo, sans-serif",
-    "body": "Almarai, sans-serif",
-    "strategy": "High-contrast geometric sans for Arabic, prioritizing legibility and sporty tension. Numbers in stats use heavy weights (800/900) with tight tracking."
+    "fonts": {
+      "heading": "Cairo, sans-serif",
+      "body": "Almarai, sans-serif"
+    },
+    "import_url": "@import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Cairo:wght@300;400;600;700;800&display=swap');",
+    "usage": {
+      "room_title": "font-cairo font-bold text-xl text-white tracking-tight",
+      "tab_text": "font-cairo font-semibold text-sm",
+      "user_name": "font-almarai font-bold text-xs text-white/90 truncate",
+      "chat_message": "font-almarai font-normal text-sm text-white/80 leading-relaxed"
+    }
   },
   "colors": {
-    "archetype": "PERFORMANCE PRO",
-    "primary": "var(--theme-primary)",
-    "background": "var(--theme-background)",
-    "surface": "var(--theme-surface)",
-    "muted": "var(--theme-muted-foreground)",
-    "strategy": "Deep dark background (#0A0A0A) punctuated by electric lime/emerald accents to evoke the energy of a floodlit football pitch at night. Light mode uses clean white with deep emerald."
+    "background": {
+      "base": "#0A0A0A",
+      "surface": "#141414",
+      "surface_elevated": "#1A1A1A"
+    },
+    "brand": {
+      "primary": "#CCFF00",
+      "primary_hover": "#B3E600",
+      "accent": "#00E676"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA",
+      "tertiary": "#71717A",
+      "inverse": "#000000"
+    },
+    "borders": {
+      "subtle": "rgba(255, 255, 255, 0.1)",
+      "medium": "rgba(255, 255, 255, 0.2)"
+    }
   },
   "visual_enhancers": {
-    "glowing_avatar": "A vibrant, pulsating ring using framer-motion around the avatar. The ring's color is customizable by the user (simulating team colors). It uses a heavy blur for an outer glow and a crisp 2px inner solid border.",
-    "glassmorphism": "Used for floating action buttons or sticky tab headers. Heavy backdrop blur (backdrop-blur-xl) with a delicate 1px border (border-white/10).",
-    "neumorphism": "Not used to avoid muddiness; strictly sharp, high-contrast borders and glows.",
-    "animated_background": "The cover photo area has a subtle, slow pan/zoom animation using Framer Motion to keep the page feeling alive, overlaid with a subtle dark gradient."
+    "surfaces": {
+      "glass": "bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/10",
+      "neumorphic_dark": "bg-[#141414] border border-white/5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]",
+      "chat_bubble": "bg-white/5 backdrop-blur-md rounded-2xl rounded-tr-sm border border-white/5"
+    },
+    "status_indicators": {
+      "speaking_ring": "ring-2 ring-[#CCFF00] ring-offset-4 ring-offset-[#0A0A0A]",
+      "live_badge": "bg-red-500 text-white animate-pulse"
+    }
   },
-  "grids_and_layouts": {
-    "strategy": "Mobile-first responsive. RTL aligned (dir='rtl'). High density Bento grid for stats to mimic a tactical dashboard.",
-    "stats_bento": "grid grid-cols-2 md:grid-cols-4 gap-3 or gap-4. Items are strictly rectangular with minimal border radius (rounded-xl) for a 'sports stat card' feel.",
-    "profile_header": "Stacked layout. Cover image full width (h-48 to h-64). Avatar positioned absolute (-bottom-12 right-6 for RTL). Name and bio below with sufficient padding-top to clear the avatar."
+  "layouts": {
+    "global": {
+      "direction": "rtl",
+      "container": "w-full max-w-[430px] mx-auto h-[100dvh] flex flex-col bg-[#0A0A0A] overflow-hidden relative"
+    },
+    "speaker_grid": {
+      "structure": "grid grid-cols-3 gap-y-6 gap-x-4 px-6 py-4",
+      "item": "flex flex-col items-center gap-2",
+      "avatar_container": "relative w-16 h-16 rounded-full flex items-center justify-center"
+    }
   },
+  "components": [
+    {
+      "name": "RoomHeader",
+      "description": "Sticky top header with glassmorphism.",
+      "classes": "w-full flex items-center justify-between p-4 sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/10",
+      "elements": [
+        "Back button (ArrowRight icon in RTL) on the right",
+        "Center container: Room Name (Cairo) + Live listeners count indicator",
+        "Left container: Share & Settings icons"
+      ]
+    },
+    {
+      "name": "TabNavigation",
+      "description": "Segmented control for toggling between Microphones and Live chat.",
+      "classes": "flex p-1 mx-6 mt-4 bg-white/5 rounded-full border border-white/10 relative",
+      "active_tab": "bg-[#CCFF00] text-black shadow-[0_0_12px_rgba(204,255,0,0.2)] rounded-full",
+      "inactive_tab": "text-white/60 hover:text-white"
+    },
+    {
+      "name": "SpeakerSeat",
+      "description": "Individual seat in the 12-grid.",
+      "states": {
+        "empty": "w-16 h-16 rounded-full border-2 border-dashed border-white/20 bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 transition-colors",
+        "occupied": "w-16 h-16 rounded-full object-cover relative",
+        "speaking": "occupied state + ring-2 ring-[#CCFF00] ring-offset-4 ring-offset-[#0A0A0A]"
+      },
+      "mic_badge": "absolute bottom-0 left-0 w-5 h-5 bg-[#141414] rounded-full border border-white/10 flex items-center justify-center text-[10px]"
+    },
+    {
+      "name": "ChatArea",
+      "description": "Scrollable chat section with top fade mask.",
+      "classes": "flex-1 overflow-y-auto px-4 py-2 space-y-4 [mask-image:linear-gradient(to_bottom,transparent,black_10%,black)] scrollbar-hide"
+    },
+    {
+      "name": "BottomActionBar",
+      "description": "Floating controls at the bottom of the screen.",
+      "classes": "absolute bottom-6 left-4 right-4 bg-[#1A1A1A]/90 backdrop-blur-xl border border-white/10 p-2 rounded-full flex items-center justify-between shadow-2xl",
+      "primary_action": "flex-1 bg-[#CCFF00] text-black font-bold h-12 rounded-full flex items-center justify-center gap-2",
+      "secondary_actions": "flex gap-2 pe-2"
+    }
+  ],
   "motion": {
-    "avatar_glow": "Pulse and slow rotation of a conical gradient border or box-shadow to simulate an energetic glow.",
-    "tabs": "Framer motion shared layout animation for the active tab indicator (a bold primary colored underline or pill).",
-    "content_list": "Staggered fade up (y: 20, opacity: 0 -> 1) for feed items to make scrolling feel energetic."
-  },
-  "accessibility": {
-    "contrast": "Ensure muted text against background meets 4.5:1. Primary text on primary bg must be dark (black) for legibility.",
-    "rtl": "Always use logical CSS properties where possible (ps, pe, ms, me, text-start) and ensure Framer motion animations account for RTL (e.g., flip x-axis translations or rely on y-axis/opacity).",
-    "aria": "Include data-testid on all interactive elements. Use aria-selected for tabs."
-  },
-  "components": {
-    "ProfilePage": {
-      "path": "/app/frontend/src/pages/ProfilePage.js",
-      "description": "Main page container, handling edit mode state, fetching user data, and managing layout."
+    "transitions": {
+      "default": "transition-all duration-300 ease-in-out",
+      "bounce": "transition-transform duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)"
     },
-    "ProfileHeader": {
-      "path": "/app/frontend/src/components/profile/ProfileHeader.js",
-      "description": "Contains the animated cover background, glowing avatar, user info (name, handle, bio), and action buttons (Edit Profile, Settings)."
-    },
-    "GlowingAvatar": {
-      "path": "/app/frontend/src/components/profile/GlowingAvatar.js",
-      "description": "Avatar with a customizable, animated glowing border using Framer Motion."
-    },
-    "StatCard": {
-      "path": "/app/frontend/src/components/profile/StatCard.js",
-      "description": "A bento-style card for displaying a single stat (Followers, Following, Coins, Hours). Uses high-contrast typography."
-    },
-    "ProfileTabs": {
-      "path": "/app/frontend/src/components/profile/ProfileTabs.js",
-      "description": "Custom tab navigation for Posts, Likes, Reposts, Replies with Framer Motion active indicator."
-    },
-    "BadgesList": {
-      "path": "/app/frontend/src/components/profile/BadgesList.js",
-      "description": "Horizontal scrolling list of user badges."
+    "framer_motion_hints": {
+      "seat_enter": "initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}",
+      "tab_slide": "layoutId='activeTab' transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}"
     }
   },
   "media": {
     "image_urls": [
       {
-        "url": "https://images.unsplash.com/photo-1591050898137-996dcd1184d6?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwzfHxhcmFiJTIwZm9vdGJhbGwlMjBmYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzQzNjc2MDZ8MA&ixlib=rb-4.1.0&q=85",
-        "category": "avatar",
-        "description": "Default user avatar for the profile"
+        "url": "https://images.unsplash.com/photo-1771041564650-55f067de005d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHwyfHxmb290YmFsbCUyMGZhbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc3NDQ1MDE2N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Young man in soccer jersey",
+        "category": "avatars"
       },
       {
-        "url": "https://images.pexels.com/photos/7560868/pexels-photo-7560868.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-        "category": "cover_photo",
-        "description": "Soccer pitch abstract background for the profile cover"
+        "url": "https://images.unsplash.com/photo-1761358531581-06e457ed7744?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHw0fHxmb290YmFsbCUyMGZhbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc3NDQ1MDE2N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Young man wearing white soccer jersey",
+        "category": "avatars"
+      },
+      {
+        "url": "https://images.pexels.com/photos/5416860/pexels-photo-5416860.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Middle Eastern man smiling",
+        "category": "avatars"
+      },
+      {
+        "url": "https://images.pexels.com/photos/35905635/pexels-photo-35905635.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Man wearing Argentina jersey",
+        "category": "avatars"
       }
     ]
   },
-  "libraries": {
-    "icons": "lucide-react",
-    "animation": "framer-motion",
-    "ui": "shadcn/ui (customized for sports theme)"
-  },
   "instructions_to_main_agent": [
-    "Implement the Profile Page as a cohesive, mobile-first, RTL-supported experience for an Arab football social app.",
-    "Use framer-motion for the GlowingAvatar border to create a dynamic pulse/glow effect. Allow border color to be passed as a prop.",
-    "The layout MUST be strictly RTL. Ensure avatar is on the right, text aligns right. Use 'dir=\"rtl\"' on the main container or rely on logical classes (e.g., right-6 in LTR becomes start-6).",
-    "For the StatCards, use a dense bento grid (grid-cols-2 md:grid-cols-4). Make the numbers huge and bold (font-black text-2xl or 3xl, font-cairo).",
-    "Do not use generic gray boxes. Tint the backgrounds slightly with the primary color (e.g., bg-primary/5) or keep them deep background color with sharp 1px borders (border-border/40).",
-    "For the cover photo (AnimatedBackground), implement a slow, continuous zoom-in and out effect using Framer Motion to simulate a 'live' feeling.",
-    "Provide an 'Edit Mode' toggle state that transforms the avatar into an upload/generate zone and allows picking the glow color from a predefined list of sports team colors.",
-    "Include 'data-testid' attributes on all interactive elements (buttons, tabs, inputs).",
-    "Maintain the existing CSS variables for theming as defined in index.css."
+    "CRITICAL: The entire application must be set to dir='rtl' either on the body or the main wrapper.",
+    "CRITICAL: Use logical Tailwind CSS properties for RTL (e.g., ms-, me-, ps-, pe-, border-s-, border-e-, rounded-s-, rounded-e- instead of ml, mr, pl, pr, border-l, border-r).",
+    "CRITICAL: Add @import for Almarai and Cairo fonts in the global CSS file and configure them in tailwind.config.js.",
+    "The layout must simulate a mobile screen. Fix the width to max-w-[430px] and center it horizontally with a dark background for desktop viewing.",
+    "Do NOT use transparent backgrounds for the Header or Bottom Action bar; use the specified glassmorphism classes to avoid text collisions with scrolling content.",
+    "Use Phosphor icons (e.g., @phosphor-icons/react) with duotone or bold weights to match the sporty feel.",
+    "Implement the speaker grid using CSS Grid (grid-cols-3) to fit 12 seats evenly.",
+    "The primary CTA 'Join Stage' (الصعود للمسرح) must use the #CCFF00 lime color with black text for high contrast."
   ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
-    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
-    "Create depth through layered design elements with z-index hierarchy",
-    "Use glass-morphism effects with backdrop filters (12-24px blur)",
-    "You MUST NOT apply universal transition. Eg: transition: all. Always add transitions for specific interactive elements excluding transforms",
-    "You MUST NOT center align the app container. This disrupts the human natural reading flow of text",
-    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
-    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 for icons.",
-    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations.",
+  "universal_guidelines": [
+    "You tend to converge toward generic, 'on distribution' outputs. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Create depth through layered design elements with z-index hierarchy.",
     "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
-    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
-    "Prioritize using pre-existing components from src/components/ui when applicable",
-    "Components MUST use named exports, Pages MUST use default exports",
-    "Use sonner for toasts, located in /app/frontend/src/components/ui/sonner.js or similar."
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations.",
+    "All interactive and key informational elements MUST include a `data-testid` attribute to facilitate robust automated testing.",
+    "DO NOT use dark colors as gradients.",
+    "You MUST NOT apply universal transition (e.g., `transition: all`). This results in breaking transforms.",
+    "You MUST NOT center align the app container in CSS. This disrupts the human natural reading flow of text.",
+    "NEVER use AI assistant Emoji characters for icons."
   ]
 }
