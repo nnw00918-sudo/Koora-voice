@@ -49,6 +49,7 @@ import {
   Check,
   Square,
   Trash2,
+  Edit3,
   Lock,
   Unlock,
   Circle,
@@ -200,6 +201,9 @@ const YallaLiveRoom = ({ user }) => {
   const [newNewsCategory, setNewNewsCategory] = useState('عام');
   const [addingNews, setAddingNews] = useState(false);
   const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
+  const [editingNews, setEditingNews] = useState(null); // {id, text, category}
+  const [showEditNewsModal, setShowEditNewsModal] = useState(false);
+  const [showNewsManageModal, setShowNewsManageModal] = useState(false); // Modal to list all news for edit/delete
   
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -1480,6 +1484,35 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Edit Room News
+  const handleEditRoomNews = async () => {
+    if (!editingNews || !editingNews.text?.trim()) {
+      toast.error('أدخل نص الخبر');
+      return;
+    }
+    setAddingNews(true);
+    try {
+      await axios.put(`${API}/rooms/${roomId}/news/${editingNews.id}`, 
+        { text: editingNews.text, category: editingNews.category },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم تعديل الخبر');
+      setEditingNews(null);
+      setShowEditNewsModal(false);
+      fetchRoomNews();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل تعديل الخبر');
+    } finally {
+      setAddingNews(false);
+    }
+  };
+
+  // Open edit modal for specific news
+  const openEditNews = (news) => {
+    setEditingNews({ id: news.id, text: news.text, category: news.category });
+    setShowEditNewsModal(true);
+  };
+
   // Check if user can add room news (owner, system owner, or news_reporter)
   const canAddRoomNews = isOwner || isRoomNewsReporter;
 
@@ -2479,13 +2512,22 @@ const YallaLiveRoom = ({ user }) => {
                     <Type className="w-3.5 h-3.5 text-amber-400" />
                   </div>
                   {canAddRoomNews && (
-                    <button
-                      onClick={() => setShowAddNewsModal(true)}
-                      className="w-6 h-6 rounded-lg bg-lime-500/30 hover:bg-lime-500/50 flex items-center justify-center transition-colors"
-                      title="إضافة خبر"
-                    >
-                      <span className="text-lime-400 text-sm font-bold">+</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setShowAddNewsModal(true)}
+                        className="w-6 h-6 rounded-lg bg-lime-500/30 hover:bg-lime-500/50 flex items-center justify-center transition-colors"
+                        title="إضافة خبر"
+                      >
+                        <span className="text-lime-400 text-sm font-bold">+</span>
+                      </button>
+                      <button
+                        onClick={() => setShowNewsManageModal(true)}
+                        className="w-6 h-6 rounded-lg bg-slate-500/30 hover:bg-slate-500/50 flex items-center justify-center transition-colors"
+                        title="إدارة الأخبار"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                    </>
                   )}
                 </div>
                 
@@ -4111,6 +4153,206 @@ const YallaLiveRoom = ({ user }) => {
                     className="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-cairo font-bold transition-colors"
                   >
                     إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Room News Modal - تعديل خبر */}
+        <AnimatePresence>
+          {showEditNewsModal && editingNews && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => { setShowEditNewsModal(false); setEditingNews(null); }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-md rounded-3xl p-6 border border-blue-500/30"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Edit3 className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-cairo font-bold text-white">تعديل الخبر</h3>
+                </div>
+
+                {/* News Category */}
+                <div className="mb-4">
+                  <label className="text-slate-300 text-sm font-cairo mb-2 block">تصنيف الخبر</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['عام', 'نتائج', 'انتقالات', 'تصريحات', 'عاجل'].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setEditingNews({...editingNews, category: cat})}
+                        className={`px-3 py-1.5 rounded-full text-xs font-cairo transition-colors ${
+                          editingNews.category === cat
+                            ? 'bg-blue-500 text-white font-bold'
+                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                      >
+                        {cat === 'عام' && '📰'}
+                        {cat === 'نتائج' && '⚽'}
+                        {cat === 'انتقالات' && '🔄'}
+                        {cat === 'تصريحات' && '🎙️'}
+                        {cat === 'عاجل' && '🔴'}
+                        {' '}{cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* News Text */}
+                <div className="mb-6">
+                  <label className="text-slate-300 text-sm font-cairo mb-2 block">نص الخبر</label>
+                  <textarea
+                    value={editingNews.text}
+                    onChange={(e) => setEditingNews({...editingNews, text: e.target.value})}
+                    placeholder="اكتب الخبر هنا..."
+                    className="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-white font-almarai resize-none focus:outline-none focus:border-blue-500"
+                    rows={3}
+                    dir="rtl"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleEditRoomNews}
+                    disabled={addingNews || !editingNews.text?.trim()}
+                    className="flex-1 py-3 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-cairo font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {addingNews ? 'جاري التعديل...' : 'حفظ التعديل'}
+                  </button>
+                  <button
+                    onClick={() => { setShowEditNewsModal(false); setEditingNews(null); }}
+                    className="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-cairo font-bold transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* News Management Modal - إدارة الأخبار */}
+        <AnimatePresence>
+          {showNewsManageModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setShowNewsManageModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-md rounded-3xl border border-amber-500/30 max-h-[80vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="p-6 border-b border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <button onClick={() => setShowNewsManageModal(false)} className="text-slate-400 hover:text-white">
+                      <X className="w-6 h-6" />
+                    </button>
+                    <div className="text-center flex-1">
+                      <div className="w-12 h-12 bg-gradient-to-r from-amber-600 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Type className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="text-lg font-cairo font-bold text-white">إدارة الأخبار</h3>
+                      <p className="text-slate-400 text-xs">{roomNews.length} خبر</p>
+                    </div>
+                    <div className="w-6" />
+                  </div>
+                </div>
+
+                {/* News List */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {roomNews.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <Type className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p className="font-cairo">لا توجد أخبار</p>
+                    </div>
+                  ) : (
+                    roomNews.map((news) => {
+                      const canManage = isOwner || news.author_id === user.id;
+                      return (
+                        <div
+                          key={news.id}
+                          className="p-4 rounded-xl bg-slate-800/50 border border-slate-700"
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">{news.icon || '📰'}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-cairo text-sm">{news.text}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  news.category === 'عاجل' ? 'bg-red-500/20 text-red-400' :
+                                  news.category === 'نتائج' ? 'bg-green-500/20 text-green-400' :
+                                  news.category === 'انتقالات' ? 'bg-blue-500/20 text-blue-400' :
+                                  news.category === 'تصريحات' ? 'bg-purple-500/20 text-purple-400' :
+                                  'bg-slate-500/20 text-slate-400'
+                                }`}>
+                                  {news.category}
+                                </span>
+                                <span className="text-slate-500 text-xs">بواسطة {news.author_name}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Actions */}
+                          {canManage && (
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-slate-700">
+                              <button
+                                onClick={() => {
+                                  openEditNews(news);
+                                  setShowNewsManageModal(false);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm font-cairo transition-colors"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                                تعديل
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm('هل أنت متأكد من حذف هذا الخبر؟')) {
+                                    handleDeleteRoomNews(news.id);
+                                  }
+                                }}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-cairo transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                حذف
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 border-t border-slate-800">
+                  <button
+                    onClick={() => {
+                      setShowNewsManageModal(false);
+                      setShowAddNewsModal(true);
+                    }}
+                    className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-cairo font-bold transition-colors"
+                  >
+                    + إضافة خبر جديد
                   </button>
                 </div>
               </motion.div>
