@@ -673,7 +673,7 @@ const DashboardPage = ({ user, onLogout }) => {
                     </div>
 
                     {/* Title */}
-                    <h3 className={`text-sm sm:text-base font-cairo font-black text-white mb-1 ${isRTL ? 'text-right' : 'text-left'} line-clamp-1 group-hover:text-lime-100 transition-colors`}>
+                    <h3 className={`text-xs sm:text-sm font-cairo font-bold text-white mb-1 ${isRTL ? 'text-right' : 'text-left'} line-clamp-1 group-hover:text-lime-100 transition-colors`}>
                       {room.title}
                     </h3>
 

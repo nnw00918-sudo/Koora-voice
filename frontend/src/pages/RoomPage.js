@@ -2269,7 +2269,7 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Center - Room Info */}
           <div className="flex-1 text-center mx-4">
-            <h1 className="font-cairo font-bold text-lg text-white truncate">{room?.title || 'الغرفة'}</h1>
+            <h1 className="font-cairo font-bold text-sm text-white truncate">{room?.title || 'الغرفة'}</h1>
             <button
               onClick={() => setShowConnectedList(!showConnectedList)}
               className="inline-flex items-center gap-2 text-white/60 text-xs mt-0.5"
