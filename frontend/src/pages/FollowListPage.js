@@ -5,6 +5,7 @@ import axios from 'axios';
 import { 
   ArrowRight, UserPlus, UserMinus, Loader2
 } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -13,6 +14,7 @@ const FollowListPage = ({ user }) => {
   const navigate = useNavigate();
   const { userId } = useParams();
   const [searchParams] = useSearchParams();
+  const { isDarkMode } = useSettings();
   
   // Determine tab from URL path or search params
   const getInitialTab = () => {
@@ -115,30 +117,30 @@ const FollowListPage = ({ user }) => {
   const currentList = activeTab === 'followers' ? followers : following;
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-24">
+    <div className={`min-h-screen pb-24 transition-colors duration-300 ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`}>
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/50">
+      <div className={`sticky top-0 z-40 backdrop-blur-xl ${isDarkMode ? 'bg-slate-950/90 border-b border-slate-800/50' : 'bg-white/90 border-b border-gray-200'}`}>
         <div className="flex items-center gap-3 px-4 py-3">
           <button 
             onClick={() => navigate(-1)} 
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800/50"
+            className={`w-10 h-10 flex items-center justify-center rounded-full ${isDarkMode ? 'bg-slate-800/50' : 'bg-gray-100'}`}
           >
-            <ArrowRight className="w-5 h-5 text-white" />
+            <ArrowRight className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
           </button>
           <div>
-            <h1 className="text-lg font-cairo font-bold text-white">
+            <h1 className={`text-lg font-cairo font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {profileUser?.name || profileUser?.username || 'المستخدم'}
             </h1>
-            <p className="text-slate-400 text-xs" dir="ltr">@{profileUser?.username}</p>
+            <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} dir="ltr">@{profileUser?.username}</p>
           </div>
         </div>
         
         {/* Tabs */}
-        <div className="flex border-b border-slate-800">
+        <div className={`flex ${isDarkMode ? 'border-b border-slate-800' : 'border-b border-gray-200'}`}>
           <button
             onClick={() => setActiveTab('followers')}
             className={`flex-1 py-3 text-center font-cairo relative ${
-              activeTab === 'followers' ? 'text-lime-400' : 'text-slate-400'
+              activeTab === 'followers' ? (isDarkMode ? 'text-lime-400' : 'text-lime-600') : (isDarkMode ? 'text-slate-400' : 'text-gray-500')
             }`}
           >
             <span>المتابعون</span>
@@ -146,14 +148,14 @@ const FollowListPage = ({ user }) => {
             {activeTab === 'followers' && (
               <motion.div
                 layoutId="tabIndicator"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-lime-400"
+                className={`absolute bottom-0 left-0 right-0 h-0.5 ${isDarkMode ? 'bg-lime-400' : 'bg-lime-600'}`}
               />
             )}
           </button>
           <button
             onClick={() => setActiveTab('following')}
             className={`flex-1 py-3 text-center font-cairo relative ${
-              activeTab === 'following' ? 'text-lime-400' : 'text-slate-400'
+              activeTab === 'following' ? (isDarkMode ? 'text-lime-400' : 'text-lime-600') : (isDarkMode ? 'text-slate-400' : 'text-gray-500')
             }`}
           >
             <span>المتابَعون</span>

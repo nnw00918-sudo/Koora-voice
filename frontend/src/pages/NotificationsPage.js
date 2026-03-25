@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { 
   Home, MessageSquare, User, Settings, ArrowRight, ArrowLeft,
   Heart, MessageCircle, UserPlus, Bell, Check, Repeat2
@@ -15,6 +16,7 @@ const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws:
 const NotificationsPage = ({ user }) => {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { isDarkMode } = useSettings();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -245,15 +247,15 @@ const NotificationsPage = ({ user }) => {
   );
 
   return (
-    <div className="min-h-screen bg-black pb-20">
+    <div className={`min-h-screen pb-20 transition-colors duration-300 ${isDarkMode ? 'bg-black' : 'bg-gray-50'}`}>
       {/* Header */}
-      <div className="sticky top-0 bg-black/95 backdrop-blur-xl border-b border-slate-800 z-10">
+      <div className={`sticky top-0 backdrop-blur-xl z-10 ${isDarkMode ? 'bg-black/95 border-b border-slate-800' : 'bg-white/95 border-b border-gray-200'}`}>
         <div className={`flex items-center justify-between p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <h1 className="text-xl font-cairo font-bold text-white">{txt.notifications}</h1>
+          <h1 className={`text-xl font-cairo font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{txt.notifications}</h1>
           {unreadCount > 0 && (
             <button 
               onClick={markAllAsRead}
-              className="flex items-center gap-1 text-sky-400 text-sm"
+              className={`flex items-center gap-1 text-sm ${isDarkMode ? 'text-sky-400' : 'text-sky-600'}`}
             >
               <Check className="w-4 h-4" />
               <span className="font-almarai">{txt.markAllRead}</span>
@@ -263,15 +265,15 @@ const NotificationsPage = ({ user }) => {
       </div>
 
       {/* Notifications List */}
-      <div className="divide-y divide-slate-800">
+      <div className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-gray-200'}`}>
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className={`w-8 h-8 border-2 border-t-transparent rounded-full animate-spin ${isDarkMode ? 'border-sky-500' : 'border-sky-600'}`}></div>
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <Bell className="w-16 h-16 text-slate-700 mb-4" />
-            <p className="text-slate-500 font-almarai">{txt.noNotifications}</p>
+            <Bell className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-slate-700' : 'text-gray-400'}`} />
+            <p className={`font-almarai ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>{txt.noNotifications}</p>
           </div>
         ) : (
           <AnimatePresence>
@@ -282,7 +284,7 @@ const NotificationsPage = ({ user }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => handleNotificationClick(notif)}
-                className={`w-full p-4 flex items-start gap-3 hover:bg-slate-900/50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!notif.read ? 'bg-sky-500/5' : ''}`}
+                className={`w-full p-4 flex items-start gap-3 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!notif.read ? (isDarkMode ? 'bg-sky-500/5' : 'bg-sky-50') : ''} ${isDarkMode ? 'hover:bg-slate-900/50' : 'hover:bg-gray-100'}`}
                 data-testid={`notification-${notif.id}`}
               >
                 {/* Icon */}

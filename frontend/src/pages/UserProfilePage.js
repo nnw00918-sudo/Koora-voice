@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { 
   ArrowRight, ArrowLeft, UserPlus, UserMinus, 
   MessageSquare, MoreHorizontal, Heart, MessageCircle,
@@ -168,6 +169,7 @@ const UserProfilePage = ({ currentUser }) => {
   const navigate = useNavigate();
   const { userId } = useParams();
   const { language } = useLanguage();
+  const { isDarkMode } = useSettings();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('posts');
@@ -394,11 +396,11 @@ const UserProfilePage = ({ currentUser }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`}>
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full"
+          className={`w-12 h-12 border-4 border-t-transparent rounded-full ${isDarkMode ? 'border-cyan-500' : 'border-cyan-600'}`}
         />
       </div>
     );
@@ -406,14 +408,14 @@ const UserProfilePage = ({ currentUser }) => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <p className="text-slate-400 font-cairo">{txt.userNotFound}</p>
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`}>
+        <p className={`font-cairo ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{txt.userNotFound}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-8" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen pb-8 transition-colors duration-300 ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header with cover */}
       <div className="relative h-56">
         <AnimatedCover />

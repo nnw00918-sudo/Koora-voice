@@ -326,18 +326,18 @@ const ProfilePage = ({ user }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`}>
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-lime-500 border-t-transparent rounded-full"
+          className={`w-12 h-12 border-4 border-t-transparent rounded-full ${isDarkMode ? 'border-lime-500' : 'border-lime-600'}`}
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-24" dir="rtl">
+    <div className={`min-h-screen pb-24 transition-colors duration-300 ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`} dir="rtl">
       {/* Hidden file input */}
       <input
         type="file"
