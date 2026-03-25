@@ -1,8 +1,3 @@
-export { SpeakersGrid, SpeakerAvatar, EmptySeat } from './SpeakersGrid';
-export { RoomChat, ChatMessage, MentionList } from './RoomChat';
-export { RoomControlBar } from './RoomControlBar';
-export { RoomHeader, ViewModeSwitcher } from './RoomHeader';
-
 // Modals
 export { ConnectedUsersList } from './ConnectedUsersList';
 export { RoomSettingsModal } from './RoomSettingsModal';
@@ -13,3 +8,9 @@ export { StreamModal } from './StreamModal';
 export { PromoteModal } from './PromoteModal';
 export { BackgroundPickerModal } from './BackgroundPickerModal';
 export { ExpandedVideoModal } from './ExpandedVideoModal';
+
+// Features
+export { FloatingReactions, ReactionBar, PollCard, CreatePollModal } from './Reactions';
+export { WatchPartyPlayer, StartWatchPartyModal } from './WatchParty';
+export { InviteFriendsModal, InviteFriendsButton } from './InviteFriends';
+export { VolumeSlider } from './VolumeSlider';
