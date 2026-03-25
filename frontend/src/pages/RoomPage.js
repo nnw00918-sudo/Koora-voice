@@ -191,6 +191,14 @@ const YallaLiveRoom = ({ user }) => {
   const screenShareVideoRef = useRef(null);
   const streamPlayerRef = useRef(null); // Ref for ReactPlayer to control volume
   
+  // Room News states (for دوانية category)
+  const [roomNews, setRoomNews] = useState([]);
+  const [showAddNewsModal, setShowAddNewsModal] = useState(false);
+  const [newNewsText, setNewNewsText] = useState('');
+  const [newNewsCategory, setNewNewsCategory] = useState('عام');
+  const [addingNews, setAddingNews] = useState(false);
+  const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
+  
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);

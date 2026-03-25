@@ -3142,6 +3142,145 @@ async def get_stream(room_id: str):
     }
 
 
+# ============== Room News (أخبار الغرفة/الدوانية) ==============
+
+class RoomNewsCreate(BaseModel):
+    text: str
+    category: str = "عام"  # عام, نتائج, انتقالات, تصريحات, عاجل
+
+@api_router.get("/rooms/{room_id}/news")
+async def get_room_news(room_id: str):
+    """Get news for a specific room"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Get room news
+    news = await db.room_news.find(
+        {"room_id": room_id, "is_active": True},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(20)
+    
+    return {"news": news}
+
+@api_router.post("/rooms/{room_id}/news")
+async def add_room_news(room_id: str, data: RoomNewsCreate, current_user: User = Depends(get_current_user)):
+    """Add news to room - Owner or Room News Reporter only"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Check if user is room news reporter
+    room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    is_room_news_reporter = room_role and room_role.get("role") == "news_reporter"
+    
+    if not is_room_owner and not is_system_owner and not is_room_news_reporter:
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة أو الإخباري يمكنه إضافة أخبار")
+    
+    if not data.text.strip():
+        raise HTTPException(status_code=400, detail="نص الخبر مطلوب")
+    
+    category_icons = {
+        "عام": "📰",
+        "انتقالات": "🔄",
+        "نتائج": "⚽",
+        "تصريحات": "🎙️",
+        "عاجل": "🔴"
+    }
+    
+    news_item = {
+        "id": str(uuid.uuid4())[:8],
+        "room_id": room_id,
+        "text": data.text.strip(),
+        "category": data.category,
+        "icon": category_icons.get(data.category, "📰"),
+        "author_id": current_user.id,
+        "author_name": current_user.username,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.room_news.insert_one(news_item)
+    
+    return {"message": "تم إضافة الخبر", "news": {k: v for k, v in news_item.items() if k != "_id"}}
+
+@api_router.delete("/rooms/{room_id}/news/{news_id}")
+async def delete_room_news(room_id: str, news_id: str, current_user: User = Depends(get_current_user)):
+    """Delete room news - Owner or author only"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    news = await db.room_news.find_one({"id": news_id, "room_id": room_id}, {"_id": 0})
+    if not news:
+        raise HTTPException(status_code=404, detail="الخبر غير موجود")
+    
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    is_author = news.get("author_id") == current_user.id
+    
+    if not is_room_owner and not is_system_owner and not is_author:
+        raise HTTPException(status_code=403, detail="لا يمكنك حذف هذا الخبر")
+    
+    await db.room_news.delete_one({"id": news_id})
+    
+    return {"message": "تم حذف الخبر"}
+
+@api_router.post("/rooms/{room_id}/news-reporter/{user_id}")
+async def set_room_news_reporter(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Set user as room news reporter - Owner only"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    if not is_room_owner and not is_system_owner:
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه تعيين الإخباري")
+    
+    # Get target user
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    
+    # Update or create room role
+    await db.room_roles.update_one(
+        {"room_id": room_id, "user_id": user_id},
+        {"$set": {"role": "news_reporter", "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    
+    return {"message": f"تم تعيين {target_user.get('username')} كإخباري للغرفة"}
+
+@api_router.delete("/rooms/{room_id}/news-reporter/{user_id}")
+async def remove_room_news_reporter(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Remove user from room news reporter - Owner only"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    if not is_room_owner and not is_system_owner:
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه إزالة الإخباري")
+    
+    # Remove news_reporter role (set to member)
+    await db.room_roles.update_one(
+        {"room_id": room_id, "user_id": user_id},
+        {"$set": {"role": "member"}}
+    )
+    
+    return {"message": "تم إزالة الإخباري"}
+
+
 # ============== Screen Sharing / Mirror ==============
 
 class ScreenShareData(BaseModel):
