@@ -159,9 +159,15 @@ class Message(BaseModel):
     avatar: Optional[str] = None
     content: str
     timestamp: str
+    reply_to_id: Optional[str] = None
+    reply_to_username: Optional[str] = None
+    reply_to_content: Optional[str] = None
 
 class MessageCreate(BaseModel):
     content: str
+    reply_to_id: Optional[str] = None
+    reply_to_username: Optional[str] = None
+    reply_to_content: Optional[str] = None
 
 # Thread Models
 class ThreadCreate(BaseModel):
@@ -2715,6 +2721,12 @@ async def send_message(room_id: str, message_data: MessageCreate, current_user: 
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
+    # Add reply info if present
+    if message_data.reply_to_id:
+        message_doc["reply_to_id"] = message_data.reply_to_id
+        message_doc["reply_to_username"] = message_data.reply_to_username
+        message_doc["reply_to_content"] = message_data.reply_to_content
+    
     await db.messages.insert_one(message_doc)
     return Message(**message_doc)
 
@@ -4960,6 +4972,11 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                 room_id = data.get("room_id")
                 content = data.get("content", "").strip()
                 
+                # Reply info
+                reply_to_id = data.get("reply_to_id")
+                reply_to_username = data.get("reply_to_username")
+                reply_to_content = data.get("reply_to_content")
+                
                 if not content or not room_id:
                     continue
                 
@@ -4984,6 +5001,13 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     "content": content,
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
+                
+                # Add reply info if present
+                if reply_to_id:
+                    new_message["reply_to_id"] = reply_to_id
+                    new_message["reply_to_username"] = reply_to_username
+                    new_message["reply_to_content"] = reply_to_content
+                
                 await db.room_messages.insert_one(new_message)
                 
                 # Prepare broadcast message
@@ -4996,7 +5020,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                         "username": sender.get("username"),
                         "avatar": sender.get("avatar") or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_id}",
                         "content": content,
-                        "created_at": new_message["created_at"]
+                        "created_at": new_message["created_at"],
+                        "reply_to_id": reply_to_id,
+                        "reply_to_username": reply_to_username,
+                        "reply_to_content": reply_to_content
                     }
                 }
                 

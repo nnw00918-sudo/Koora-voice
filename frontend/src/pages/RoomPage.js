@@ -112,6 +112,7 @@ const YallaLiveRoom = ({ user }) => {
   const [roomMembers, setRoomMembers] = useState([]); // All room members (connected + offline)
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [replyingTo, setReplyingTo] = useState(null); // {id, username, content} - message being replied to
   const [showMentionList, setShowMentionList] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionCursorPos, setMentionCursorPos] = useState(0);
@@ -895,12 +896,13 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  const sendMessageViaWebSocket = (content) => {
+  const sendMessageViaWebSocket = (content, replyData = null) => {
     if (roomWsRef.current && roomWsRef.current.readyState === WebSocket.OPEN) {
       roomWsRef.current.send(JSON.stringify({
         type: 'room_message',
         room_id: roomId,
-        content: content
+        content: content,
+        ...(replyData || {})
       }));
       return true;
     }
@@ -2214,19 +2216,32 @@ const YallaLiveRoom = ({ user }) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
     
+    // Prepare message content with reply info
+    const messageContent = newMessage.trim();
+    const replyData = replyingTo ? {
+      reply_to_id: replyingTo.id,
+      reply_to_username: replyingTo.username,
+      reply_to_content: replyingTo.content?.substring(0, 100)
+    } : null;
+    
     // Try WebSocket first for instant delivery
-    const sent = sendMessageViaWebSocket(newMessage.trim());
+    const sent = sendMessageViaWebSocket(messageContent, replyData);
     if (sent) {
       setNewMessage('');
+      setReplyingTo(null);
       setShowMentionList(false);
       return;
     }
     
     // Fallback to HTTP if WebSocket not available
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/messages`, { content: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.post(`${API}/rooms/${roomId}/messages`, { 
+        content: messageContent,
+        ...replyData
+      }, { headers: { Authorization: `Bearer ${token}` } });
       setMessages([...messages, response.data]);
       setNewMessage('');
+      setReplyingTo(null);
       setShowMentionList(false);
     } catch (error) {
       toast.error('فشل إرسال الرسالة');
@@ -3190,18 +3205,27 @@ const YallaLiveRoom = ({ user }) => {
                   key={message.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-3"
+                  className="flex items-start gap-2 group"
                 >
                   {/* Avatar */}
                   <img 
                     src={message.avatar} 
                     alt="" 
-                    className="w-10 h-10 rounded-full flex-shrink-0 border-2 border-lime-500/30"
+                    className="w-9 h-9 rounded-full flex-shrink-0 border-2 border-lime-500/30"
                   />
                   
                   {/* Message Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
+                    {/* Reply Preview - if this message is a reply */}
+                    {message.reply_to_username && (
+                      <div className="flex items-center gap-1 mb-1 text-[10px] text-slate-500 bg-slate-800/50 rounded px-2 py-1 border-r-2 border-lime-500/50">
+                        <span>↩️</span>
+                        <span className="text-lime-400/70">@{message.reply_to_username}</span>
+                        <span className="truncate max-w-[150px]">{message.reply_to_content}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
                       <button 
                         onClick={() => {
                           if (message.user_id !== user.id) {
@@ -3212,9 +3236,26 @@ const YallaLiveRoom = ({ user }) => {
                       >
                         {message.username}
                       </button>
-                      <span className="text-slate-500 text-xs">الآن</span>
+                      
+                      <div className="flex items-center gap-1">
+                        {/* Reply Button - appears on hover */}
+                        <button
+                          onClick={() => setReplyingTo({
+                            id: message.id,
+                            username: message.username,
+                            content: message.content
+                          })}
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-lime-400 transition-all"
+                          title={isRTL ? 'رد' : 'Reply'}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                        </button>
+                        <span className="text-slate-500 text-[10px]">{isRTL ? 'الآن' : 'now'}</span>
+                      </div>
                     </div>
-                    <p className="text-slate-300 font-cairo text-sm leading-relaxed">
+                    <p className="text-slate-300 font-almarai text-sm leading-relaxed">
                       {renderMessageContent(message.content)}
                     </p>
                   </div>
@@ -3401,12 +3442,40 @@ const YallaLiveRoom = ({ user }) => {
               )}
             </AnimatePresence>
             
+            {/* Reply Preview Bar */}
+            <AnimatePresence>
+              {replyingTo && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-800/90 border-t border-lime-500/30 rounded-t-lg"
+                >
+                  <div className="w-1 h-8 bg-lime-500 rounded-full" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-lime-400 text-xs font-bold">
+                      {isRTL ? 'رد على' : 'Replying to'} @{replyingTo.username}
+                    </span>
+                    <p className="text-slate-400 text-xs truncate">
+                      {replyingTo.content?.substring(0, 50)}{replyingTo.content?.length > 50 ? '...' : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setReplyingTo(null)}
+                    className="p-1 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
             <form onSubmit={handleSendMessage} className="flex gap-2" style={{ position: 'relative', zIndex: 10 }}>
               <input
                 type="text"
                 value={newMessage}
                 onChange={handleMessageChange}
-                placeholder="اكتب رسالة..."
+                placeholder={replyingTo ? (isRTL ? 'اكتب ردك...' : 'Write your reply...') : (isRTL ? 'اكتب رسالة...' : 'Type a message...')}
                 className="flex-1 bg-slate-800 border border-slate-700 focus:border-lime-500 rounded-lg text-white placeholder:text-slate-500 h-9 px-3 text-sm outline-none"
                 dir="rtl"
                 inputMode="text"

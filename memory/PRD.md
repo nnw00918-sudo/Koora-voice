@@ -223,6 +223,14 @@ owner > admin > news_editor > mod > user
 
 ## المهام القادمة
 
+### P0 (مكتمل) - ميزة الرد على الرسائل ✅ - 25 مارس 2026
+- [x] **Backend**: تحديث WebSocket و HTTP endpoints لدعم reply_to fields
+- [x] **Frontend**: 
+  - زر رد يظهر عند hover على الرسالة
+  - شريط Reply Preview أعلى حقل الإدخال
+  - عرض الرسالة المُرد عليها في فقاعة الرد
+- [x] **تخزين في MongoDB**: حفظ reply_to_id, reply_to_username, reply_to_content
+
 ### P0 (مكتمل) - نظام الإعلانات ✅ - 25 مارس 2026
 - [x] **Backend API للإعلانات** (`/app/backend/routes/announcements.py`):
   - إنشاء إعلان مع اختيار غرف متعددة
