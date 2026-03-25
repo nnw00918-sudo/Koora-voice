@@ -163,8 +163,21 @@ const YallaLiveRoom = ({ user }) => {
   
   // Wrapper functions to save to localStorage
   const setMicVolume = (value) => {
+    console.log(`Setting mic volume to: ${value}`);
     setMicVolumeState(value);
     localStorage.setItem('koora_speakers_volume', value.toString());
+    
+    // Immediately apply to all remote users
+    remoteUsers.forEach(remoteUser => {
+      if (remoteUser.audioTrack) {
+        try {
+          remoteUser.audioTrack.setVolume(value);
+          console.log(`Applied volume ${value}% to user ${remoteUser.uid}`);
+        } catch (err) {
+          console.error('Error setting volume:', err);
+        }
+      }
+    });
   };
   const setStreamVolume = (value) => {
     setStreamVolumeState(value);
@@ -339,12 +352,34 @@ const YallaLiveRoom = ({ user }) => {
 
   // Speakers volume control - affects how loud you hear other speakers
   useEffect(() => {
-    remoteUsers.forEach(remoteUser => {
-      if (remoteUser.audioTrack) {
-        remoteUser.audioTrack.setVolume(micVolume);
-      }
-    });
+    if (remoteUsers.length > 0) {
+      console.log(`Applying volume ${micVolume}% to ${remoteUsers.length} remote users`);
+      remoteUsers.forEach(remoteUser => {
+        if (remoteUser.audioTrack) {
+          try {
+            // Agora setVolume accepts 0-100
+            remoteUser.audioTrack.setVolume(micVolume);
+            console.log(`Volume set to ${micVolume}% for user ${remoteUser.uid}`);
+          } catch (err) {
+            console.error('Error setting volume:', err);
+          }
+        }
+      });
+    }
+    // Save to localStorage
+    localStorage.setItem('koora_speakers_volume', micVolume.toString());
   }, [micVolume, remoteUsers]);
+  
+  // Also apply when muting all audio
+  useEffect(() => {
+    if (micVolume === 0) {
+      remoteUsers.forEach(remoteUser => {
+        if (remoteUser.audioTrack) {
+          remoteUser.audioTrack.setVolume(0);
+        }
+      });
+    }
+  }, [micVolume]);
 
   // Stream volume control - for video/broadcast audio
   useEffect(() => {
@@ -451,6 +486,10 @@ const YallaLiveRoom = ({ user }) => {
         try {
           await agoraClient.current.subscribe(remoteUser, mediaType);
           if (mediaType === 'audio') {
+            // Apply saved volume level before playing
+            const savedVolume = localStorage.getItem('koora_speakers_volume');
+            const volumeLevel = savedVolume ? parseInt(savedVolume) : 100;
+            remoteUser.audioTrack?.setVolume(volumeLevel);
             remoteUser.audioTrack?.play();
             setRemoteUsers(prev => {
               const exists = prev.find(u => u.uid === remoteUser.uid);

@@ -1,11 +1,9 @@
 import React, { useRef, useCallback, useEffect, useState } from 'react';
 
 /**
- * Custom Volume Slider that works on iOS Safari
- * RTL Visual but LTR Logic:
- * - Drag LEFT = DECREASE volume
- * - Drag RIGHT = INCREASE volume  
- * - Fill shows from RIGHT side
+ * Simple Volume Slider - Standard LTR behavior
+ * - Drag LEFT = DECREASE volume (0%)
+ * - Drag RIGHT = INCREASE volume (100%)
  */
 export const VolumeSlider = ({ 
   value, 
@@ -19,7 +17,6 @@ export const VolumeSlider = ({
   const sliderRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   
-  // LTR logic: left = 0%, right = 100%
   const calculateValue = useCallback((clientX) => {
     if (!sliderRef.current) return value;
     
@@ -33,6 +30,7 @@ export const VolumeSlider = ({
   const handleStart = useCallback((clientX) => {
     setIsDragging(true);
     const newValue = calculateValue(clientX);
+    console.log('Slider value changed to:', newValue);
     onChange(newValue);
   }, [calculateValue, onChange]);
   
@@ -99,7 +97,7 @@ export const VolumeSlider = ({
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
-      style={{ touchAction: 'pan-y' }}
+      style={{ touchAction: 'none' }}
     >
       {/* Track Background */}
       <div 
@@ -107,22 +105,21 @@ export const VolumeSlider = ({
         style={{ backgroundColor: trackColor }}
       />
       
-      {/* Track Fill - Visual from RIGHT but grows with value */}
+      {/* Track Fill - From left to right */}
       <div 
-        className="absolute h-2.5 rounded-full"
+        className="absolute h-2.5 rounded-full left-0"
         style={{ 
           width: `${percentage}%`,
-          right: 0,
           backgroundColor: color,
           transition: isDragging ? 'none' : 'width 0.1s ease-out'
         }}
       />
       
-      {/* Thumb - Visual from RIGHT */}
+      {/* Thumb */}
       <div 
         className="absolute w-6 h-6 rounded-full shadow-lg"
         style={{ 
-          left: `calc(${100 - percentage}% - 12px)`,
+          left: `calc(${percentage}% - 12px)`,
           backgroundColor: color,
           border: '3px solid #0f172a',
           boxShadow: isDragging 
