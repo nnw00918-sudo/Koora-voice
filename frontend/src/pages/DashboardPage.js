@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
 import { 
   Users, 
@@ -40,6 +41,7 @@ const API = `${BACKEND_URL}/api`;
 const DashboardPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
+  const { isDarkMode } = useSettings();
   const [rooms, setRooms] = useState([]);
   const [filteredRooms, setFilteredRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -274,40 +276,42 @@ const DashboardPage = ({ user, onLogout }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 relative overflow-hidden">
+    <div className={`min-h-screen relative overflow-hidden transition-colors duration-300 ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`}>
       {/* Stadium Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Pitch lines */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          <div className="absolute top-1/2 left-0 right-0 h-px bg-lime-400" />
-          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-lime-400" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-lime-400 rounded-full" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 border-b border-lime-400 rounded-b-full" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-24 border-t border-lime-400 rounded-t-full" />
+      {isDarkMode && (
+        <div className="fixed inset-0 pointer-events-none">
+          {/* Pitch lines */}
+          <div className="absolute inset-0 opacity-[0.03]">
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-lime-400" />
+            <div className="absolute top-0 bottom-0 left-1/2 w-px bg-lime-400" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-lime-400 rounded-full" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 border-b border-lime-400 rounded-b-full" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-24 border-t border-lime-400 rounded-t-full" />
+          </div>
+          
+          {/* Glow effects */}
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-lime-500/10 rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-lime-400/5 rounded-full blur-[200px]" />
         </div>
-        
-        {/* Glow effects */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-lime-500/10 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-[120px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-lime-400/5 rounded-full blur-[200px]" />
-      </div>
+      )}
 
       <div className="relative z-10 max-w-[600px] mx-auto min-h-screen pb-24">
         {/* Header */}
-        <div className="bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-transparent backdrop-blur-xl border-b border-lime-500/20 p-4 sticky top-0 z-40">
+        <div className={`backdrop-blur-xl p-4 sticky top-0 z-40 ${isDarkMode ? 'bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-transparent border-b border-lime-500/20' : 'bg-white/95 border-b border-gray-200'}`}>
           <div className={`flex items-center justify-between ${isRTL ? '' : 'flex-row-reverse'}`}>
             <div className={`flex items-center gap-3 ${isRTL ? '' : 'flex-row-reverse'}`}>
               <div className="relative">
                 <img
                   src={user.avatar}
                   alt={user.username}
-                  className="w-12 h-12 rounded-full ring-2 ring-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.3)]"
+                  className={`w-12 h-12 rounded-full ring-2 ${isDarkMode ? 'ring-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.3)]' : 'ring-lime-500'}`}
                 />
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-lime-400 rounded-full border-2 border-slate-900 animate-pulse" />
+                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 animate-pulse ${isDarkMode ? 'bg-lime-400 border-slate-900' : 'bg-lime-500 border-white'}`} />
               </div>
               <div className={isRTL ? 'text-right' : 'text-left'}>
-                <p className="text-white font-cairo font-bold text-lg">{user.username}</p>
-                <p className="text-xs text-lime-400 font-almarai flex items-center gap-1">
+                <p className={`font-cairo font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{user.username}</p>
+                <p className={`text-xs font-almarai flex items-center gap-1 ${isDarkMode ? 'text-lime-400' : 'text-lime-600'}`}>
                   <Radio className="w-3 h-3" />
                   {t('online')}
                 </p>

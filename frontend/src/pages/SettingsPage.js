@@ -468,19 +468,21 @@ const SettingsPage = ({ user, onLogout }) => {
       className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${
         danger 
           ? 'bg-red-500/10 hover:bg-red-500/20 border border-red-500/20' 
-          : 'bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50'
+          : isDarkMode 
+            ? 'bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50'
+            : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'
       } ${isRTL ? 'flex-row-reverse' : ''}`}
     >
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-        danger ? 'bg-red-500/20' : 'bg-lime-500/20'
+        danger ? 'bg-red-500/20' : isDarkMode ? 'bg-lime-500/20' : 'bg-lime-100'
       }`}>
-        <Icon className={`w-5 h-5 ${danger ? 'text-red-400' : 'text-lime-400'}`} />
+        <Icon className={`w-5 h-5 ${danger ? 'text-red-400' : isDarkMode ? 'text-lime-400' : 'text-lime-600'}`} />
       </div>
       <div className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
-        <p className={`font-cairo font-bold ${danger ? 'text-red-400' : 'text-white'}`}>{title}</p>
-        {description && <p className="text-slate-500 text-sm font-almarai">{description}</p>}
+        <p className={`font-cairo font-bold ${danger ? 'text-red-400' : isDarkMode ? 'text-white' : 'text-gray-900'}`}>{title}</p>
+        {description && <p className={`text-sm font-almarai ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>{description}</p>}
       </div>
-      {rightContent || <ForwardIcon className="w-5 h-5 text-slate-500" />}
+      {rightContent || <ForwardIcon className={`w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />}
     </motion.button>
   );
 
@@ -1200,30 +1202,32 @@ const SettingsPage = ({ user, onLogout }) => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-24" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen pb-24 transition-colors duration-300 ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 opacity-[0.03]">
-          <div className="absolute top-1/2 left-0 right-0 h-px bg-lime-400" />
-          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-lime-400" />
+      {isDarkMode && (
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 opacity-[0.03]">
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-lime-400" />
+            <div className="absolute top-0 bottom-0 left-1/2 w-px bg-lime-400" />
+          </div>
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-lime-500/5 rounded-full blur-[150px]" />
         </div>
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-lime-500/5 rounded-full blur-[150px]" />
-      </div>
+      )}
 
       <div className="relative z-10 max-w-[600px] mx-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-slate-950/95 backdrop-blur-xl border-b border-lime-500/20 z-40">
+        <div className={`sticky top-0 backdrop-blur-xl z-40 ${isDarkMode ? 'bg-slate-950/95 border-b border-lime-500/20' : 'bg-white/95 border-b border-gray-200'}`}>
           <div className={`flex items-center gap-4 p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
             {currentView !== 'main' && (
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setCurrentView('main')}
-                className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center"
+                className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-slate-800/50' : 'bg-gray-100'}`}
               >
-                <BackIcon className="w-5 h-5 text-white" />
+                <BackIcon className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
               </motion.button>
             )}
-            <h1 className="text-xl font-cairo font-black text-white flex-1">
+            <h1 className={`text-xl font-cairo font-black flex-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {currentView === 'main' && txt.settings}
               {currentView === 'profile' && txt.profile}
               {currentView === 'account' && txt.account}
