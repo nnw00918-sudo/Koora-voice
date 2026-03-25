@@ -384,23 +384,34 @@ const YallaLiveRoom = ({ user }) => {
 
   // Stream volume control - for video/broadcast audio (YouTube, etc.)
   useEffect(() => {
-    if (streamPlayerRef.current && typeof streamPlayerRef.current.getInternalPlayer === 'function') {
+    // Control YouTube iframe volume via postMessage
+    const iframe = document.getElementById('youtube-player');
+    if (iframe && iframe.contentWindow) {
       try {
-        const player = streamPlayerRef.current.getInternalPlayer();
-        if (player) {
-          // For YouTube player
-          if (typeof player.setVolume === 'function') {
-            player.setVolume(micVolume);
-            console.log(`Stream volume set to ${micVolume}%`);
-          }
-          // For HTML5 video
-          if (typeof player.volume !== 'undefined') {
-            player.volume = micVolume / 100;
-            console.log(`HTML5 video volume set to ${micVolume / 100}`);
-          }
+        // YouTube IFrame API volume command (0-100)
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'setVolume',
+          args: [micVolume]
+        }), '*');
+        console.log(`YouTube volume set to ${micVolume}%`);
+        
+        // Also handle mute/unmute
+        if (micVolume === 0) {
+          iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: 'mute',
+            args: []
+          }), '*');
+        } else {
+          iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: 'unMute',
+            args: []
+          }), '*');
         }
       } catch (err) {
-        console.error('Error setting stream volume:', err);
+        console.error('Error setting YouTube volume:', err);
       }
     }
   }, [micVolume]);
@@ -2672,45 +2683,27 @@ const YallaLiveRoom = ({ user }) => {
           {/* ===== STREAM/BROADCAST AREA ===== */}
           {room?.stream_url && room.stream_url.trim() !== '' && (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
-              <div className="aspect-video w-full bg-black">
-                <ReactPlayer
-                  ref={streamPlayerRef}
-                  url={(() => {
+              <div className="aspect-video w-full bg-black relative">
+                {/* YouTube iframe with postMessage volume control */}
+                <iframe
+                  id="youtube-player"
+                  src={(() => {
                     let url = room.stream_url;
-                    // Convert embed URL to watch URL for ReactPlayer
-                    if (url.includes('/embed/')) {
-                      const videoId = url.split('/embed/')[1].split('?')[0];
-                      url = `https://www.youtube.com/watch?v=${videoId}`;
+                    // Make sure it's in embed format with enablejsapi
+                    if (url.includes('youtube.com/watch')) {
+                      const videoId = url.split('v=')[1]?.split('&')[0];
+                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`;
+                    } else if (url.includes('youtu.be/')) {
+                      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`;
+                    } else if (!url.includes('enablejsapi')) {
+                      url = url.includes('?') ? `${url}&enablejsapi=1` : `${url}?enablejsapi=1`;
                     }
                     return url;
                   })()}
-                  playing={true}
-                  controls={true}
-                  width="100%"
-                  height="100%"
-                  volume={micVolume / 100}
-                  muted={micVolume === 0}
-                  onError={(e) => console.error('ReactPlayer error:', e)}
-                  onReady={() => {
-                    // Apply initial volume when player is ready
-                    if (streamPlayerRef.current) {
-                      const player = streamPlayerRef.current.getInternalPlayer();
-                      if (player && player.setVolume) {
-                        player.setVolume(micVolume);
-                      }
-                    }
-                  }}
-                  config={{
-                    youtube: {
-                      playerVars: {
-                        autoplay: 1,
-                        modestbranding: 1,
-                        rel: 0,
-                        playsinline: 1,
-                        origin: window.location.origin
-                      }
-                    }
-                  }}
+                  className="w-full h-full"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
               </div>
             </div>
