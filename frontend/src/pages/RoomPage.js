@@ -7,6 +7,7 @@ import ReactPlayer from 'react-player';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useRoomAudio } from '../contexts/RoomAudioContext';
+import { useLanguage, LanguageToggle } from '../contexts/LanguageContext';
 import { FloatingReactions, ReactionBar, PollCard, CreatePollModal } from '../components/room/Reactions';
 import { WatchPartyPlayer, StartWatchPartyModal } from '../components/room/WatchParty';
 import { InviteFriendsModal, InviteFriendsButton } from '../components/room/InviteFriends';
@@ -102,6 +103,8 @@ const YallaLiveRoom = ({ user }) => {
     maximizePlayer,
     agoraClient: contextAgoraClient
   } = useRoomAudio();
+  
+  const { t, isRTL, language } = useLanguage();
   
   const [room, setRoom] = useState(null);
   const [seats, setSeats] = useState([]);

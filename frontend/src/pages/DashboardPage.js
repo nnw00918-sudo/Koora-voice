@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage, LanguageToggle } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
 import { 
@@ -314,6 +314,9 @@ const DashboardPage = ({ user, onLogout }) => {
               </div>
             </div>
             <div className="flex gap-2">
+              {/* Language Toggle */}
+              <LanguageToggle className="!bg-slate-800/50 hover:!bg-slate-700/50 !text-slate-300" />
+              
               {/* News Management Button - for news_editor, admin, owner */}
               {['news_editor', 'admin', 'owner'].includes(user?.role) && (
                 <Button
@@ -322,7 +325,7 @@ const DashboardPage = ({ user, onLogout }) => {
                   variant="ghost"
                   size="icon"
                   className="hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 rounded-xl"
-                  title="إدارة الأخبار"
+                  title={t('manageNews')}
                 >
                   <Zap className="w-5 h-5" strokeWidth={1.5} />
                 </Button>
@@ -333,6 +336,7 @@ const DashboardPage = ({ user, onLogout }) => {
                 variant="ghost"
                 size="icon"
                 className="hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-xl"
+                title={t('logout')}
               >
                 <LogOut className="w-5 h-5" strokeWidth={1.5} />
               </Button>

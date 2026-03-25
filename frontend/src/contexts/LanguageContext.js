@@ -113,6 +113,22 @@ const translations = {
     yes: 'نعم',
     no: 'لا',
     
+    // Dashboard Extra
+    liveRooms: 'غرف مباشرة',
+    trending: 'الأكثر نشاطاً',
+    newRooms: 'غرف جديدة',
+    main: 'الرئيسية',
+    enterPin: 'أدخل رمز الدخول',
+    privateRoom: 'غرفة خاصة',
+    pin: 'الرمز',
+    join: 'انضمام',
+    addToFavorites: 'إضافة للمفضلة',
+    removeFromFavorites: 'إزالة من المفضلة',
+    noRoomsFound: 'لا توجد غرف',
+    createFirstRoom: 'أنشئ غرفتك الأولى',
+    welcome: 'مرحباً',
+    discoverRooms: 'اكتشف الغرف',
+    
     // Time
     now: 'الآن',
     minutesAgo: 'دقائق',
@@ -230,6 +246,22 @@ const translations = {
     confirm: 'Confirm',
     yes: 'Yes',
     no: 'No',
+    
+    // Dashboard Extra
+    liveRooms: 'Live Rooms',
+    trending: 'Trending',
+    newRooms: 'New Rooms',
+    main: 'Main',
+    enterPin: 'Enter room PIN',
+    privateRoom: 'Private Room',
+    pin: 'PIN',
+    join: 'Join',
+    addToFavorites: 'Add to Favorites',
+    removeFromFavorites: 'Remove from Favorites',
+    noRoomsFound: 'No rooms found',
+    createFirstRoom: 'Create your first room',
+    welcome: 'Welcome',
+    discoverRooms: 'Discover Rooms',
     
     // Time
     now: 'Now',
