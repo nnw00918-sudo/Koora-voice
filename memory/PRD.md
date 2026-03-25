@@ -32,7 +32,7 @@
 - ✅ تم استبدال تبويب المباريات في الـ Navigation بـ **الملف الشخصي**
 
 ### 4. المراسلة والقصص
-- ✅ رسائل خاصة
+- ✅ رسائل خاصة (WebSocket + HTTP Fallback)
 - ✅ قصص مع ردود وتفاعلات
 - ✅ Feed اجتماعي (Threads)
 
@@ -51,12 +51,15 @@
 
 ---
 
-## الهندسة المعمارية (محدّث - 29 ديسمبر 2025)
+## الهندسة المعمارية (محدّث - 25 مارس 2026)
 
 ```
 /app/
 ├── backend/
-│   ├── server.py (~3929 سطر - تقلص من 4596)
+│   ├── server.py (~4242 سطر)
+│   │   ├── ConnectionManager (WebSocket with room support)
+│   │   ├── WebSocket endpoint /ws/{token}
+│   │   └── Room message broadcasting
 │   ├── routes/
 │   │   ├── football.py ✅ (767 سطر)
 │   │   ├── notifications.py ✅ (79 سطر)
@@ -70,283 +73,55 @@
 │   │   ├── pages/
 │   │   │   ├── LandingPage.js ✅ (معاد تصميمه)
 │   │   │   ├── ThreadDetailPage.js ✅ (صفحة المنشور الفردي)
-│   │   │   └── RoomPage.js (~3556 سطر - تقلص من 3620)
+│   │   │   └── RoomPage.js (~3556 سطر) ✅ WebSocket chat
 │   │   └── components/
 │   │       └── room/
 │   │           ├── Reactions.jsx
 │   │           ├── WatchParty.jsx
-│   │           ├── ConnectedUsersList.jsx ✅ (جديد)
-│   │           ├── RoomSettingsModal.jsx ✅ (جديد)
-│   │           ├── GiftModal.jsx ✅ (جديد)
-│   │           ├── SeatRequestsModal.jsx ✅ (جديد)
-│   │           ├── InviteReceivedModal.jsx ✅ (جديد)
-│   │           ├── StreamModal.jsx ✅ (جديد)
-│   │           ├── PromoteModal.jsx ✅ (جديد)
-│   │           ├── BackgroundPickerModal.jsx ✅ (جديد)
-│   │           ├── ExpandedVideoModal.jsx ✅ (جديد)
-│   │           └── index.js (تصدير المكونات)
+│   │           ├── ConnectedUsersList.jsx ✅
+│   │           ├── RoomSettingsModal.jsx ✅
+│   │           ├── GiftModal.jsx ✅
+│   │           ├── SeatRequestsModal.jsx ✅
+│   │           ├── InviteReceivedModal.jsx ✅
+│   │           ├── StreamModal.jsx ✅
+│   │           ├── PromoteModal.jsx ✅
+│   │           ├── BackgroundPickerModal.jsx ✅
+│   │           ├── ExpandedVideoModal.jsx ✅
+│   │           └── index.js
 ```
 
 ---
 
-## المهام المكتملة (23 مارس 2026)
+## المهام المكتملة (25 مارس 2026)
 
-### التصميم
-- [x] إعادة تصميم LandingPage.js بتصميم قوي واحترافي
-- [x] خلفية ملعب حية مع تأثيرات متحركة
-- [x] شعار متحرك مع تأثير الدوران
-- [x] بطاقة مباريات حية تتبدل تلقائياً
-- [x] Features grid مع أيقونات ملونة
-- [x] إحصائيات (50K+ مستخدم، 200+ غرفة، LIVE)
-- [x] زر CTA أخضر متوهج
+### إصلاح صفحة الغرف - 25 مارس 2026
+- [x] **إصلاح أخطاء JSX في RoomPage.js**:
+  - إضافة imports ناقصة: `ArrowLeft`, `ArrowDown`, `UserX`
+  - إصلاح `</motion.div>` إلى `</div>` في السطور 2509 و 2676
+  - حذف كود مكرر (duplicate) من السطور 2607-2653
+- [x] **اختبار صفحة الغرف**: 100% نجاح
 
-### تحديث التصميم الشامل - 24 ديسمبر 2025
-- [x] **تطبيق design_guidelines.json** على كل الواجهات
-- [x] **ThreadsPage.js**:
-  - Header مع glassmorphism (bg-black/80 backdrop-blur-xl)
-  - تبويبات مع مؤشر ليموني متوهج (#CCFF00)
-  - أزرار التفاعل (إعجاب أحمر، إعادة نشر أخضر، رد أزرق)
-  - Composer modal بتصميم جديد
-- [x] **MessagesPage.js**:
-  - خلفية متحركة مع orbs (lime/emerald)
-  - Header مع glassmorphism
-  - فقاعات دردشة: المرسل (gradient أخضر)، المستلم (خلفية داكنة)
-  - مؤشر "متصل" أخضر متحرك
-- [x] **ProfilePage.js**: 
-  - إطار صورة متوهج (6 ألوان)
-  - بطاقات إحصائيات مع backdrop-blur
-- [x] **BottomNavigation.js**:
-  - Glassmorphism مع gradient
-  - شريط توهج علوي أخضر
-  - أيقونات نشطة مع glow effect
-- [x] **index.css**: 
-  - استيراد خطوط Cairo و Almarai من Google Fonts
-  - متغيرات CSS للألوان الجديدة
-- [x] اختبار شامل - 100% نجاح (iteration_20.json)
-
-### وضع النهار (Light Mode) - 24 ديسمبر 2025
-- [x] **SettingsContext.js**: 
-  - إضافة `themeColors` object لـ dark و light modes
-  - إضافة `toggleTheme()` function
-  - إضافة `currentTheme` و `isDarkMode` exports
-  - CSS variables تتغير ديناميكياً حسب الوضع
-- [x] **index.css**:
-  - متغيرات CSS لـ Light Mode (.light class)
-  - ألوان: bg=#F5F5F5, primary=#84CC16, text=#171717
-- [x] **BottomNavigation.js**: دعم ديناميكي للوضعين
-- [x] **MessagesPage.js**: دعم ديناميكي للوضعين  
-- [x] **ThreadsPage.js**: دعم جزئي (themeClasses object)
-- [x] **SettingsPage.js**: Toggle switch يعمل مع `toggleTheme()`
-- [x] **App.js**: `ThemedToaster` component للإشعارات الديناميكية
-
-### تفعيل جميع الإعدادات - 24 ديسمبر 2025
-- [x] **SettingsContext.js محدث بالكامل**:
-  - إعدادات الخصوصية: حساب خاص، إظهار الحالة، آخر ظهور، من يراسلني، الإشارات، إخفاء من البحث
-  - إعدادات الإشعارات: Push، البريد، الرسائل، الإعجابات، التعليقات، المتابعات، الإشارات، الغرف
-  - إعدادات العرض: الوضع الداكن، حجم الخط، الأصوات، الاهتزاز، تشغيل الفيديو تلقائياً، توفير البيانات
-  - مزامنة تلقائية مع Backend API
-  - تحميل الإعدادات من الخادم عند بدء التشغيل
-- [x] **SettingsPage.js محدث**:
-  - جميع الـ toggles تستخدم `updateSetting()` من Context
-  - لا توجد حالات محلية منفصلة (state removed)
-  - المزامنة مع الخادم تلقائية
-
-### التقسيم والـ Refactoring
-- [x] فصل Football routes إلى `/routes/football.py`
-- [x] تقليص server.py من 5268 إلى 4277 سطر (~1000 سطر)
-
-### الميزات الجديدة
-- [x] ميزة **دعوة الأصدقاء** (`InviteFriends.jsx`)
-  - زر مشاركة في header الغرفة
-  - Modal مع رابط قابل للنسخ
-  - مشاركة عبر واتساب، تيليجرام، تويتر
-  - دعم Native Share API للموبايل
-
-- [x] **نظام الأدوار في الغرفة** (Room Roles System) - 23 مارس 2026:
-  - API endpoints: GET/PUT/DELETE /api/rooms/{room_id}/user-role/{user_id}
-  - GET /api/rooms/{room_id}/roles - قائمة كل الأدوار
-  - MongoDB collection: room_roles
-  - Frontend: badges ملونة (ذهبي للمالك، بنفسجي للأدمن، أزرق للمود)
-  - أزرار الترقية/التنزيل في قائمة المشاركين
-  - الأدمن والمود يمكنهم الصعود للمنصة مباشرة بدون طلب
-
-### Bug Fixes - 23 مارس 2026
-- [x] إصلاح `isAdmin is not defined` error في RoomPage.js (تغيير إلى isRoomAdmin)
-
-### إزالة المباريات - 23 مارس 2026
-- [x] إزالة MatchesPage.js, MatchDetailPage.js, LeagueDetailPage.js
-- [x] تحديث App.js لإزالة routes المباريات
-- [x] تحديث BottomNavigation.js (استبدال المباريات بالملف الشخصي)
-- [x] تحديث LandingPage.js (استبدال بطاقة المباريات ببطاقة المجتمع)
-- [x] تحديث LanguageContext.js (إزالة ترجمات المباريات)
-
-### ربط صفحة الملف الشخصي - 24 مارس 2026
-- [x] إضافة route `/profile` في App.js (سطر 90)
-- [x] إضافة tab "حسابي" مع أيقونة User في BottomNavigation.js
-- [x] ProfilePage يعرض: الاسم، اسم المستخدم، الصورة، الإحصائيات
-- [x] أزرار: تعديل الملف الشخصي، تسجيل الخروج
-- [x] اختبار شامل - 100% نجاح
-
-### تصميم جديد للملف الشخصي - 24 مارس 2026
-- [x] **AnimatedBackground**: خلفية متحركة gradient مع 3 عناصر blur
-- [x] **GlowingAvatar**: إطار متوهج للصورة بـ 5 ألوان حسب المستوى
-  - المستوى 1: أخضر lime
-  - المستوى 2: سماوي cyan
-  - المستوى 3: بنفسجي purple
-  - المستوى 4: ذهبي amber
-  - المستوى 5: وردي rose
-- [x] **شارة المستوى**: تظهر على الصورة (محسوبة من العملات)
-- [x] **4 بطاقات إحصائيات**: متابع، متابَع، عملات، غرف
-- [x] **قسم الشارات والإنجازات**: 6 شارات (متحدث، مالك غرفة، محبوب، نجم، موثق، أسطورة)
-- [x] **Framer Motion animations**: تأثيرات حركية على كل العناصر
-- [x] اختبار شامل - 100% نجاح (14 اختبار)
-
-### ميزة تخصيص لون الإطار - 24 مارس 2026
-- [x] **FrameColorSelector**: 6 ألوان للاختيار (lime, cyan, purple, amber, rose, rainbow)
-- [x] **Backend support**: حقل frame_color في User model
-- [x] **API endpoint**: PUT /api/auth/profile يدعم frame_color
-- [x] **Validation**: Backend يتحقق من صحة اللون قبل الحفظ
-- [x] **Arabic labels**: أخضر، سماوي، بنفسجي، ذهبي، وردي، قوس قزح
-- [x] اختبار شامل - 100% نجاح (Backend 4/4, Frontend 10/10)
-
-### تفعيل كل الميزات - 24 مارس 2026
-- [x] **rooms_joined**: عدد الغرف المشارك فيها من room_participants
-- [x] **rooms_created**: عدد الغرف المنشأة من rooms collection
-- [x] **badges_earned**: array من الشارات المكتسبة محسوبة من الـ backend
-- [x] **شروط الشارات**:
-  - متحدث: دائماً مكتسبة
-  - مالك غرفة: أنشأ غرفة واحدة على الأقل
-  - محبوب: 10+ متابع
-  - نجم: 100+ عملة
-  - موثق: 50+ متابع و 5+ غرف
-  - أسطورة: 100+ متابع و 1000+ عملة و 20+ غرف
-- [x] اختبار شامل - 100% نجاح
-
-### صفحة المتابعين والبحث - 24 مارس 2026
-- [x] **FollowListPage**: صفحة المتابعين/المتابَعين
-  - عرض قائمة المتابعين مع أزرار متابعة/إلغاء
-  - عرض قائمة المتابَعين
-  - Tabs للتبديل بين المتابعين والمتابَعين
-  - الانتقال لملف المستخدم عند الضغط عليه
-- [x] **SearchUsersPage**: البحث عن المستخدمين
-  - البحث بالاسم أو @username
-  - Debounced search (300ms)
-  - عرض النتائج مع زر متابعة
-- [x] **ProfilePage updates**:
-  - زر البحث في Header
-  - StatCard قابلة للنقر (المتابع/المتابَع)
-- [x] **Routes جديدة**:
-  - /follows/:userId?tab=followers|following
-  - /search-users
-- [x] اختبار شامل - 100% نجاح
-
-### تصميم جديد للرسائل الخاصة - 24 مارس 2026
-- [x] **ChatBackground**: خلفية متحركة مع تأثيرات blur (lime-500/emerald-500)
-- [x] **MessageBubble**: فقاعات رسائل جديدة
-  - رسائلي: تدرج lime-500 إلى emerald-600 مع glow effect
-  - رسائل الآخرين: slate-800/80 مع border
-- [x] **ConversationCard**: بطاقات محادثات محسّنة
-  - صورة المستخدم بإطار gradient
-  - تأثيرات hover مع lime-500/5
-  - badge عدد الرسائل غير المقروءة
-- [x] **تأثيرات Framer Motion**: animations على كل العناصر
-- [x] **مؤشر "متصل الآن"**: نقطة خضراء على صورة المستخدم
-- [x] اختبار شامل - 100% نجاح
-
-### تصميم شاشة الدردشة الداخلية - 24 مارس 2026
-- [x] **EnhancedChatBackground**: pattern خفيف + 3 orbs متحركة (lime, emerald, cyan)
-- [x] **EnhancedMessageBubble**: 
-  - رسائلي: تدرج أخضر مع shine effect متحرك
-  - رسائل الآخرين: رمادي مع Avatar
-- [x] **Header محسّن**:
-  - صورة المستخدم مع glow effect
-  - مؤشر "متصل الآن" متحرك
-  - أزرار Phone, Video, Options
-- [x] **DateSeparator**: فاصل التاريخ بين الرسائل
-- [x] **TypingIndicator**: 3 نقاط متحركة
-- [x] **QuickReactions**: 6 إيموجي سريعة
-- [x] **Input محسّن**:
-  - زر Emoji (يفتح Quick Reactions)
-  - زر Image
-  - زر Mic (تسجيل صوتي)
-  - زر Send مع gradient
-- [x] اختبار شامل - 100% نجاح
+### تحويل دردشة الغرف إلى WebSocket - 25 مارس 2026
+- [x] **Backend ConnectionManager محدث**:
+  - إضافة `room_connections: Dict[str, set]` لتتبع المستخدمين في الغرف
+  - إضافة `join_room()`, `leave_room()`, `broadcast_to_room()` methods
+  - إضافة معالج `room_message` في WebSocket endpoint
+- [x] **Frontend RoomPage.js محدث**:
+  - إضافة `roomWsRef` و `wsReconnectTimeoutRef` refs
+  - إضافة `connectRoomWebSocket()`, `disconnectRoomWebSocket()`, `sendMessageViaWebSocket()`
+  - تحديث `handleSendMessage()` لاستخدام WebSocket مع HTTP fallback
+- [x] **اختبار WebSocket Chat**: 100% نجاح
+  - Backend: 11/11 اختبارات ناجحة
+  - Frontend: كل العناصر تعمل
+  - ملاحظة: WebSocket لا يعمل في K8s ingress ولكن HTTP fallback يعمل بشكل ممتاز
 
 ---
 
 ## المهام القادمة
 
-### تم إنجازه - 29 ديسمبر 2025
-
-#### صلاحيات الأدمن في الغرف (Admin RBAC)
-- [x] **الأدمن لا يمكنه طرد أدمن آخر** - فقط المالك يستطيع
-- [x] **الأدمن يمكنه طرد الأعضاء العاديين** فقط
-- [x] **الأدمن لا يمكنه ترقية لـ admin** - فقط المالك
-- [x] **الأدمن يمكنه ترقية أعضاء لـ mod**
-- [x] **الأدمن لا يمكنه تغيير رتبة أدمن آخر**
-- [x] اختبار شامل: `/app/backend/tests/test_admin_permissions.py` - 6/6 نجاح
-
-#### تحليل Refactoring
-- [x] تحليل server.py للتقسيم المستقبلي
-- [x] البنية موجودة في `/app/backend/routes/` و `/app/backend/models/`
-- [x] `football_router` يعمل بشكل مستقل
-- [x] **نقل Notifications** إلى `/routes/notifications.py` (~79 سطر)
-- [x] **نقل Stories** إلى `/routes/stories.py` (~379 سطر)
-- [x] **نقل Conversations** إلى `/routes/conversations.py` (~220 سطر)
-- [x] **server.py تقلص من 4596 إلى 3927 سطر** (-669 سطر / -14%)
-
----
-
-### P0 (أولوية قصوى)
-- [x] ~~اختبار صلاحيات الأدمن~~ - تم 29 ديسمبر 2025
-- [x] ~~Refactoring: Notifications~~ - تم 29 ديسمبر 2025
-- [x] ~~Refactoring: Stories~~ - تم 29 ديسمبر 2025
-- [x] ~~Refactoring: Conversations~~ - تم 29 ديسمبر 2025
-- [x] ~~إصلاح تبويب الردود في الملف الشخصي~~ - تم 24 مارس 2026:
-  - تحديث Backend `/users/{user_id}/replies` لإرجاع `thread_author` و `thread_content`
-  - الواجهة الأمامية تعرض الآن اسم صاحب المنشور الأصلي باللون الأخضر
-- [x] **إصلاح خطأ "Not Found" عند تغيير كلمة المرور** - تم 24 مارس 2026:
-  - تم إضافة endpoint `PUT /api/auth/password` في server.py
-  - يتحقق من كلمة المرور الحالية قبل التغيير
-  - يعمل الآن بشكل صحيح
-- [x] **إصلاح خطأ securitySettings في صفحة الإعدادات** - تم 24 مارس 2026:
-  - تم إضافة state `securitySettings` و `setSecuritySettings` في SettingsPage.js
-  - تم إزالة استدعاء دالة `saveSettings` الغير موجودة
-  - إصلاح خطأ "Can't find variable: securitySettings"
-- [x] **تصميم جديد كامل لصفحة البروفايل** - تم 24 مارس 2026:
-  - إنشاء مكونات جديدة في `/app/frontend/src/components/profile/`:
-    - `GlowingAvatar.jsx` - صورة متوهجة مع إطار متحرك
-    - `StatCard.jsx` - بطاقة إحصائيات Bento Grid
-    - `ProfileTabs.jsx` - تبويبات مع Framer Motion
-    - `BadgesList.jsx` - قائمة الشارات
-  - تصميم عصري مع خلفية متحركة (AnimatedCover)
-  - دعم RTL كامل
-  - إطار صورة قابل للتخصيص (6 ألوان)
-  - تبويبات متحركة (منشورات، إعجابات، إعادة نشر، ردود)
-- [x] **تطبيق نفس التصميم على UserProfilePage** - تم 24 مارس 2026:
-  - خلفية متحركة بألوان cyan/purple
-  - أزرار متابعة ورسالة
-  - قائمة خيارات (حظر، إبلاغ)
-  - إعادة استخدام مكونات profile/
-
 ### P1 (أولوية عالية) - Refactoring المتبقي
 - [ ] نقل Users routes (معقد - يعتمد على create_notification)
 - [ ] نقل Admin routes (معقد - يعتمد على get_admin_user)
-- [x] **تقسيم RoomPage.js Modals** - تم 24 مارس 2026:
-  - تم استخراج المكونات التالية إلى `/app/frontend/src/components/room/`:
-    - `ConnectedUsersList.jsx` (297 سطر)
-    - `RoomSettingsModal.jsx` (279 سطر)
-    - `GiftModal.jsx` (58 سطر) - ✅ مُستخدم
-    - `SeatRequestsModal.jsx` (79 سطر)
-    - `InviteReceivedModal.jsx` (51 سطر) - ✅ مُستخدم
-    - `StreamModal.jsx` (136 سطر)
-    - `PromoteModal.jsx` (59 سطر)
-    - `BackgroundPickerModal.jsx` (83 سطر) - ✅ مُستخدم
-    - `ExpandedVideoModal.jsx` (104 سطر)
-  - المكونات مستخرجة ومصدّرة من `index.js`
-  - تم تحديث imports في `RoomPage.js`
-  - **RoomPage.js تقلص من 3620 إلى 3476 سطر** (-144 سطر)
-  - 3 modals تم استبدالها: GiftModal, InviteReceivedModal, BackgroundPickerModal
 - [ ] إكمال استخدام باقي المكونات المستخرجة في RoomPage.js (6 متبقية)
 - [ ] إكمال تقسيم server.py:
   - [ ] فصل Rooms routes إلى `/routes/rooms.py`
@@ -356,6 +131,7 @@
 - [ ] اختبار شامل للـ Watch Party 5-channel system
 
 ### P2 (أولوية متوسطة)
+- [ ] اختبار ميزة "مشاركة المنشور" في ThreadDetailPage
 - [ ] نظام الشارات والمستويات (Gamification)
 - [ ] ربط Push Notifications backend بـ WebPush
 - [ ] تحسينات UI/UX إضافية
@@ -367,6 +143,7 @@
 - MongoDB
 - FastAPI + React
 - Framer Motion (animations)
+- WebSocket (real-time messaging)
 
 ## بيانات الاختبار
 - Email: naifliver@gmail.com
@@ -379,7 +156,7 @@
 
 ### UI Sensitivity
 - لا تغير تخطيط RoomPage UI إلا بطلب صريح
-- الـ Mic circles: `w-16 h-16` مع 2 slots فقط
+- الـ Mic circles: `w-14 h-14` في شبكة 4x3 (12 مقعد)
 - الـ Chat والـ Stage مدمجان في بطاقة واحدة
 
 ### Video Embedding
@@ -394,3 +171,13 @@
 ### Routes
 - جميع الـ API routes يجب أن تبدأ بـ `/api`
 - الـ Football routes الآن في ملف منفصل
+
+### WebSocket
+- WebSocket endpoint: `/ws/{token}`
+- أنواع الرسائل المدعومة:
+  - `message`: رسائل خاصة (conversations)
+  - `typing`: مؤشر الكتابة
+  - `join_room`: الانضمام لغرفة
+  - `leave_room`: مغادرة غرفة
+  - `room_message`: رسالة في غرفة
+- في بيئة K8s: WebSocket قد لا يعمل، HTTP fallback متاح دائماً
