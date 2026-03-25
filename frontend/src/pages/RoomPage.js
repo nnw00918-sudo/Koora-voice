@@ -3504,8 +3504,17 @@ const YallaLiveRoom = ({ user }) => {
           currentUserId={user.id}
           isOwner={isOwner}
           ownerId={room?.owner_id}
+          speakers={speakers}
           onRoleUpdated={(userId, newRole) => {
             // Refresh room data
+            fetchRoomData();
+          }}
+          onInviteToStage={(userId) => {
+            // Refresh seats
+            fetchRoomData();
+          }}
+          onRemoveFromStage={(userId) => {
+            // Refresh seats
             fetchRoomData();
           }}
         />

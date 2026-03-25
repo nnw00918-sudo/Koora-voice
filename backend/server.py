@@ -1545,7 +1545,7 @@ async def unmute_user(room_id: str, user_id: str, current_user: User = Depends(g
 
 @api_router.post("/rooms/{room_id}/remove-from-stage/{user_id}")
 async def remove_from_stage(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
-    """Remove a user from stage (Room Owner or Admin only)"""
+    """Remove a user from stage (Room Owner, Leader, or Admin only)"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
@@ -1559,8 +1559,9 @@ async def remove_from_stage(room_id: str, user_id: str, current_user: User = Dep
         "user_id": current_user.id
     }, {"_id": 0})
     is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
+    is_room_leader = current_user_room_role and current_user_room_role.get("role") == "leader"
     
-    if not is_room_owner and not is_room_admin and not is_system_owner:
+    if not is_room_owner and not is_room_leader and not is_room_admin and not is_system_owner:
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     # Get target user's room role
@@ -1574,8 +1575,15 @@ async def remove_from_stage(room_id: str, user_id: str, current_user: User = Dep
     if room.get("owner_id") == user_id:
         raise HTTPException(status_code=403, detail="لا يمكن إنزال مالك الغرفة من المنصة")
     
-    # Admin cannot remove another admin from stage - only owner can
-    if is_room_admin and not is_room_owner and not is_system_owner:
+    # Leader cannot remove another leader from stage - only owner can
+    if is_room_leader and not is_room_owner and not is_system_owner:
+        if target_role == "leader":
+            raise HTTPException(status_code=403, detail="لا يمكن إنزال رئيس الغرفة من المنصة")
+    
+    # Admin cannot remove leader or another admin from stage - only owner/leader can
+    if is_room_admin and not is_room_owner and not is_room_leader and not is_system_owner:
+        if target_role == "leader":
+            raise HTTPException(status_code=403, detail="لا يمكن إنزال رئيس الغرفة من المنصة")
         if target_role == "admin":
             raise HTTPException(status_code=403, detail="الأدمن لا يمكنه إنزال أدمن آخر من المنصة")
     
@@ -1639,6 +1647,82 @@ async def quick_promote_user(room_id: str, user_id: str, promote_data: QuickProm
     return {"message": "لم يتم التغيير - الصلاحية نفسها"}
 
 
+# ==================== INVITE TO STAGE ====================
+
+@api_router.post("/rooms/{room_id}/invite-stage/{user_id}")
+async def invite_user_to_stage(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Invite a user to join the stage (mic) - Owner, Leader, or Admin only"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Get current user's room role
+    current_user_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
+    is_room_leader = current_user_room_role and current_user_room_role.get("role") == "leader"
+    
+    if not is_room_owner and not is_room_leader and not is_room_admin and not is_system_owner:
+        raise HTTPException(status_code=403, detail="صلاحيات غير كافية لدعوة المستخدمين للمايك")
+    
+    # Check if target user is in the room
+    participant = await db.room_participants.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    
+    if not participant:
+        raise HTTPException(status_code=404, detail="المستخدم ليس في الغرفة")
+    
+    if participant.get("seat_number") is not None:
+        raise HTTPException(status_code=400, detail="المستخدم بالفعل على المايك")
+    
+    # Find available seat
+    all_participants = await db.room_participants.find({
+        "room_id": room_id,
+        "seat_number": {"$ne": None}
+    }, {"_id": 0, "seat_number": 1}).to_list(100)
+    
+    taken_seats = [p.get("seat_number") for p in all_participants if p.get("seat_number") is not None]
+    available_seat = None
+    for i in range(100):  # Allow up to 100 speakers
+        if i not in taken_seats:
+            available_seat = i
+            break
+    
+    if available_seat is None:
+        raise HTTPException(status_code=400, detail="لا توجد مقاعد متاحة")
+    
+    # Add user to stage
+    await db.room_participants.update_one(
+        {"room_id": room_id, "user_id": user_id},
+        {"$set": {
+            "seat_number": available_seat,
+            "room_role": "speaker",
+            "can_speak": True,
+            "is_muted": False
+        }}
+    )
+    
+    # Get target user info
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "username": 1})
+    username = target_user.get("username", "المستخدم") if target_user else "المستخدم"
+    
+    return {"message": f"تم رفع {username} للمايك", "seat_number": available_seat}
+
+
+@api_router.post("/rooms/{room_id}/kick-stage/{user_id}")
+async def kick_user_from_stage(room_id: str, user_id: str, current_user: User = Depends(get_current_user)):
+    """Kick a user from the stage (same as remove-from-stage) - Owner, Leader, or Admin only"""
+    # Use the existing remove_from_stage logic
+    return await remove_from_stage(room_id, user_id, current_user)
+
+
 # ==================== ROOM-SPECIFIC ROLES ====================
 # رتب خاصة بكل غرفة (owner, admin, mod, member)
 
@@ -1664,7 +1748,7 @@ async def get_user_room_role(room_id: str, user_id: str):
     
     if room_role:
         role = room_role.get("role", "member")
-        can_join_direct = role in ["admin", "mod"]
+        can_join_direct = role in ["leader", "admin", "mod"]
         return {"role": role, "can_join_stage_direct": can_join_direct}
     
     return {"role": "member", "can_join_stage_direct": False}
@@ -1687,13 +1771,15 @@ async def update_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate
     }, {"_id": 0})
     
     is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
+    is_room_leader = current_user_room_role and current_user_room_role.get("role") == "leader"
     
-    if not is_room_owner and not is_room_admin and not is_system_owner:
-        raise HTTPException(status_code=403, detail="فقط مالك الغرفة أو الأدمن يمكنه تغيير الرتب")
+    # Check permissions - owner, leader, or admin can change roles
+    if not is_room_owner and not is_room_leader and not is_room_admin and not is_system_owner:
+        raise HTTPException(status_code=403, detail="ليس لديك صلاحية تغيير الرتب")
     
     # Validate role
-    if data.role not in ["admin", "mod", "member"]:
-        raise HTTPException(status_code=400, detail="رتبة غير صحيحة. الخيارات: admin, mod, member")
+    if data.role not in ["leader", "admin", "mod", "member"]:
+        raise HTTPException(status_code=400, detail="رتبة غير صحيحة. الخيارات: leader, admin, mod, member")
     
     # Cannot change owner's role
     if room.get("owner_id") == user_id:
@@ -1706,18 +1792,37 @@ async def update_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate
     }, {"_id": 0})
     target_current_role = target_room_role.get("role", "member") if target_room_role else "member"
     
-    # Admin restrictions (if not owner)
-    if is_room_admin and not is_room_owner and not is_system_owner:
-        # Admin cannot promote to admin - only owner can
+    # Only owner can set leader role
+    if data.role == "leader" and not is_room_owner and not is_system_owner:
+        raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه تعيين رئيس الغرفة")
+    
+    # Leader restrictions (if not owner)
+    if is_room_leader and not is_room_owner and not is_system_owner:
+        # Leader cannot promote to leader
+        if data.role == "leader":
+            raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه تعيين رئيس الغرفة")
+        
+        # Leader cannot change another leader's role
+        if target_current_role == "leader":
+            raise HTTPException(status_code=403, detail="لا يمكن تغيير رتبة رئيس الغرفة")
+    
+    # Admin restrictions (if not owner and not leader)
+    if is_room_admin and not is_room_owner and not is_room_leader and not is_system_owner:
+        # Admin cannot promote to leader
+        if data.role == "leader":
+            raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه تعيين رئيس الغرفة")
+        
+        # Admin cannot promote to admin - only owner/leader can
         if data.role == "admin":
-            raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه ترقية لأدمن")
+            raise HTTPException(status_code=403, detail="فقط مالك الغرفة أو رئيس الغرفة يمكنه ترقية لأدمن")
+        
+        # Admin cannot change leader's role
+        if target_current_role == "leader":
+            raise HTTPException(status_code=403, detail="لا يمكن تغيير رتبة رئيس الغرفة")
         
         # Admin cannot change another admin's role
         if target_current_role == "admin":
             raise HTTPException(status_code=403, detail="الأدمن لا يمكنه تغيير رتبة أدمن آخر")
-        
-        # Admin can only promote members (not mods) - mods can only be demoted by owner
-        # Actually, let admin promote member to mod and demote mod to member
     
     # Upsert room role
     await db.room_roles.update_one(
@@ -1732,7 +1837,7 @@ async def update_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate
         upsert=True
     )
     
-    role_names = {"admin": "أدمن", "mod": "مود", "member": "عضو"}
+    role_names = {"leader": "رئيس الغرفة", "admin": "أدمن", "mod": "مود", "member": "عضو"}
     
     # Get target user info
     target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "username": 1})
