@@ -170,15 +170,26 @@ const YallaLiveRoom = ({ user }) => {
     
     // Immediately apply to all remote users using ref (always up-to-date)
     const currentRemoteUsers = remoteUsersRef.current;
-    console.log(`Applying to ${currentRemoteUsers.length} remote users`);
+    console.log(`Applying to ${currentRemoteUsers.length} remote users`, currentRemoteUsers);
+    
     currentRemoteUsers.forEach(remoteUser => {
+      console.log(`User ${remoteUser.uid} audioTrack:`, remoteUser.audioTrack);
       if (remoteUser.audioTrack) {
         try {
+          // Agora SDK setVolume (0-100)
           remoteUser.audioTrack.setVolume(value);
-          console.log(`Applied volume ${value}% to Agora user ${remoteUser.uid}`);
+          console.log(`✅ Applied volume ${value}% to Agora user ${remoteUser.uid}`);
+          
+          // Also try to get the underlying audio element and set volume directly
+          const audioElement = remoteUser.audioTrack._source?.node?.context?.destination;
+          if (audioElement) {
+            console.log('Found audio context');
+          }
         } catch (err) {
-          console.error('Error setting Agora volume:', err);
+          console.error('❌ Error setting Agora volume:', err);
         }
+      } else {
+        console.log(`⚠️ User ${remoteUser.uid} has no audioTrack`);
       }
     });
     
@@ -196,6 +207,13 @@ const YallaLiveRoom = ({ user }) => {
         console.error('Error setting YouTube volume:', err);
       }
     }
+    
+    // Also try to control all audio elements on the page
+    const audioElements = document.querySelectorAll('audio');
+    audioElements.forEach((audio, index) => {
+      audio.volume = value / 100;
+      console.log(`Set audio element ${index} volume to ${value / 100}`);
+    });
   };
   const setStreamVolume = (value) => {
     setStreamVolumeState(value);
@@ -376,12 +394,12 @@ const YallaLiveRoom = ({ user }) => {
 
   // Speakers volume control - affects how loud you hear other speakers
   useEffect(() => {
+    // Control Agora remote users volume
     if (remoteUsers.length > 0) {
       console.log(`[useEffect] Applying volume ${micVolume}% to ${remoteUsers.length} Agora users`);
       remoteUsers.forEach(remoteUser => {
         if (remoteUser.audioTrack) {
           try {
-            // Agora setVolume accepts 0-100
             remoteUser.audioTrack.setVolume(micVolume);
             console.log(`[useEffect] Volume set to ${micVolume}% for Agora user ${remoteUser.uid}`);
           } catch (err) {
@@ -390,6 +408,27 @@ const YallaLiveRoom = ({ user }) => {
         }
       });
     }
+    
+    // Also control all audio elements on the page (fallback)
+    document.querySelectorAll('audio').forEach((audio, i) => {
+      try {
+        audio.volume = micVolume / 100;
+        console.log(`[useEffect] Audio element ${i} volume set to ${micVolume / 100}`);
+      } catch (e) {}
+    });
+    
+    // Control YouTube iframe
+    const iframe = document.getElementById('youtube-player');
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'setVolume',
+          args: [micVolume]
+        }), '*');
+      } catch (e) {}
+    }
+    
     // Save to localStorage
     localStorage.setItem('koora_speakers_volume', micVolume.toString());
   }, [micVolume, remoteUsers]);
@@ -404,6 +443,27 @@ const YallaLiveRoom = ({ user }) => {
       });
     }
   }, [micVolume]);
+
+  // Continuously monitor and apply volume to all audio elements (for Agora)
+  useEffect(() => {
+    const applyVolumeToAllAudio = () => {
+      const savedVolume = localStorage.getItem('koora_speakers_volume');
+      const volume = savedVolume ? parseInt(savedVolume) : 100;
+      
+      // Apply to all audio elements
+      document.querySelectorAll('audio').forEach((audio) => {
+        if (audio.volume !== volume / 100) {
+          audio.volume = volume / 100;
+        }
+      });
+    };
+    
+    // Run immediately and then periodically
+    applyVolumeToAllAudio();
+    const interval = setInterval(applyVolumeToAllAudio, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Stream volume control - for video/broadcast audio (YouTube, etc.)
   useEffect(() => {
