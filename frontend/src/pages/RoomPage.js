@@ -1374,6 +1374,42 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Play breaking news alert sound
+  const playBreakingNewsSound = () => {
+    try {
+      // Create audio context for notification sound
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Create oscillator for alert sound (two-tone beep)
+      const playTone = (frequency, startTime, duration) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+      
+      // Play urgent two-tone alert (like news alert)
+      const now = audioContext.currentTime;
+      playTone(880, now, 0.15);        // High A
+      playTone(660, now + 0.15, 0.15); // E
+      playTone(880, now + 0.3, 0.15);  // High A
+      playTone(660, now + 0.45, 0.2);  // E (longer)
+      
+    } catch (error) {
+      console.log('Could not play notification sound');
+    }
+  };
+
   // Fetch Room News (for دوانية rooms - by title) with new news detection
   const fetchRoomNews = async (showNewNewsToast = false) => {
     if (!room?.title?.includes('دوانية')) return;
@@ -1385,10 +1421,18 @@ const YallaLiveRoom = ({ user }) => {
       if (showNewNewsToast && roomNews.length > 0 && newNews.length > roomNews.length) {
         const latestNews = newNews[0]; // Newest is first
         if (latestNews && latestNews.author_id !== user.id) {
+          // Check if it's breaking news (عاجل)
+          const isBreakingNews = latestNews.category === 'عاجل';
+          
+          // Play sound for breaking news
+          if (isBreakingNews) {
+            playBreakingNewsSound();
+          }
+          
           // Show toast for new news from others
-          toast.info(
-            `📰 خبر جديد: ${latestNews.text?.substring(0, 50)}${latestNews.text?.length > 50 ? '...' : ''}`,
-            { duration: 5000 }
+          toast[isBreakingNews ? 'error' : 'info'](
+            `${isBreakingNews ? '🚨 عاجل' : '📰 خبر جديد'}: ${latestNews.text?.substring(0, 50)}${latestNews.text?.length > 50 ? '...' : ''}`,
+            { duration: isBreakingNews ? 8000 : 5000 }
           );
         }
       }
