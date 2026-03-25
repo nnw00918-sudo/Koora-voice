@@ -81,10 +81,13 @@
 owner > admin > news_editor > mod > user
 ```
 
-### أدوار الغرفة (Room Roles)
+### أدوار الغرفة (Room Roles) - نظام رتب متعددة ✨
 ```
-owner > leader > admin > mod > news_reporter > member
+الرتب الرئيسية (واحدة فقط): leader > admin > mod > member
+الرتب الإضافية (يمكن دمجها): news_reporter
 ```
+
+**مثال:** يمكن للمستخدم أن يكون: `admin + news_reporter` أو `mod + news_reporter`
 
 ### صلاحيات كل رتبة
 | الرتبة | الوصف | الصلاحيات |
@@ -101,8 +104,13 @@ owner > leader > admin > mod > news_reporter > member
 | leader | رئيس الغرفة | صعود مباشر + إدارة الأدوار + طرد/كتم |
 | admin | أدمن الغرفة | صعود مباشر + ترقية للمود |
 | mod | مود الغرفة | صعود مباشر للمنصة |
-| news_reporter | إخباري الدوانية | إضافة أخبار خاصة بالغرفة |
+| news_reporter | إخباري الدوانية | إضافة أخبار خاصة بالغرفة (يمكن دمجها مع أي رتبة) |
 | member | عضو | صلاحيات عادية، يحتاج طلب للصعود |
+
+### API Endpoints للرتب المتعددة
+- `POST /api/rooms/{room_id}/roles/{user_id}/add` - إضافة رتبة
+- `POST /api/rooms/{room_id}/roles/{user_id}/remove` - إزالة رتبة
+- `GET /api/rooms/{room_id}/user-role/{user_id}` - الحصول على الرتب (يرجع `roles` array)
 
 ---
 

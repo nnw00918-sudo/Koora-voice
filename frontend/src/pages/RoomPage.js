@@ -127,7 +127,8 @@ const YallaLiveRoom = ({ user }) => {
   const [seatRequests, setSeatRequests] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState(null);
-  const [roomRole, setRoomRole] = useState('member'); // Room-specific role: owner, admin, mod, member
+  const [roomRole, setRoomRole] = useState('member'); // Room-specific primary role: owner, admin, mod, member
+  const [roomRoles, setRoomRoles] = useState([]); // All room roles (supports multiple roles)
   const [roleLoading, setRoleLoading] = useState(true);
   
   // Check if current user is room owner based on room data
@@ -137,14 +138,15 @@ const YallaLiveRoom = ({ user }) => {
   // Room owner or system owner has full control
   const isOwner = isRoomOwner || isSystemOwner;
   
-  // Room-specific permissions
-  const isRoomLeader = roomRole === 'leader';
-  const isRoomAdmin = roomRole === 'admin' || isRoomLeader || isOwner;
-  const isRoomMod = roomRole === 'mod' || isRoomAdmin;
+  // Room-specific permissions (supports multiple roles)
+  const isRoomLeader = roomRole === 'leader' || roomRoles.includes('leader');
+  const isRoomAdmin = roomRole === 'admin' || roomRoles.includes('admin') || isRoomLeader || isOwner;
+  const isRoomMod = roomRole === 'mod' || roomRoles.includes('mod') || isRoomAdmin;
+  const isRoomNewsReporter = roomRoles.includes('news_reporter');
   const canManageStage = isOwner || isRoomLeader || isRoomAdmin || isRoomMod;
   const canKickMute = isOwner || isRoomLeader || isRoomAdmin;
   const canChangeRoles = isOwner || isRoomLeader || isRoomAdmin; // Leader & Admin can change roles
-  const canJoinStageDirect = isOwner || isRoomLeader || roomRole === 'admin' || roomRole === 'mod'; // Leader, Admin & Mod can join stage directly
+  const canJoinStageDirect = isOwner || isRoomLeader || roomRoles.includes('admin') || roomRoles.includes('mod'); // Leader, Admin & Mod can join stage directly
   const canApproveSeatRequests = isOwner || isRoomLeader || isRoomAdmin || isRoomMod; // All staff can see/approve seat requests
   
   const [myInvites, setMyInvites] = useState([]);
@@ -703,15 +705,17 @@ const YallaLiveRoom = ({ user }) => {
         localStorage.setItem('user', JSON.stringify(storedUser));
       }
       
-      // Fetch room-specific role
+      // Fetch room-specific role (supports multiple roles)
       const roomRoleRes = await axios.get(`${API}/rooms/${roomId}/user-role/${user.id}`);
       if (roomRoleRes.data) {
         setRoomRole(roomRoleRes.data.role || 'member');
+        setRoomRoles(roomRoleRes.data.roles || []);
       }
     } catch (error) {
       console.error('Failed to fetch user role:', error);
       setCurrentUserRole(user.role || 'user');
       setRoomRole('member');
+      setRoomRoles([]);
     } finally {
       setRoleLoading(false);
     }
@@ -1078,6 +1082,30 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Toggle news_reporter role (add or remove)
+  const handleToggleNewsReporter = async (userId, username, isAdding) => {
+    try {
+      const endpoint = isAdding 
+        ? `${API}/rooms/${roomId}/roles/${userId}/add`
+        : `${API}/rooms/${roomId}/roles/${userId}/remove`;
+      
+      const response = await axios.post(
+        endpoint,
+        { role: 'news_reporter' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      fetchParticipants();
+      // Refresh room members to get updated roles
+      try {
+        const membersRes = await axios.get(`${API}/rooms/${roomId}/members`, { headers: { Authorization: `Bearer ${token}` } });
+        setRoomMembers(membersRes.data.members || []);
+      } catch {}
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل تغيير رتبة الإخباري');
+    }
+  };
+
   // Get user's room role for display
   const getUserRoomRole = async (userId) => {
     try {
@@ -1391,7 +1419,7 @@ const YallaLiveRoom = ({ user }) => {
   };
 
   // Check if user can add room news (owner, system owner, or news_reporter)
-  const canAddRoomNews = isOwner || roomRole === 'news_reporter';
+  const canAddRoomNews = isOwner || isRoomNewsReporter;
 
   // Stream functions
   const fetchStreamStatus = async () => {
@@ -2575,8 +2603,9 @@ const YallaLiveRoom = ({ user }) => {
                             )}
                           </div>
                           <p className="text-slate-400 text-sm truncate">@{member.username}</p>
-                          {/* Role Badge */}
-                          <div className="flex items-center gap-2 mt-1">
+                          {/* Role Badges - Show all roles */}
+                          <div className="flex items-center gap-1 mt-1 flex-wrap">
+                            {/* Primary Role */}
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
                               isOwnerOfRoom 
                                 ? 'text-amber-400 bg-amber-500/20' 
@@ -2590,6 +2619,12 @@ const YallaLiveRoom = ({ user }) => {
                             }`}>
                               {isOwnerOfRoom ? 'مالك الغرفة' : isUserAdmin ? 'أدمن' : isUserMod ? 'مود' : isSpeaker && isOnline ? 'متحدث' : 'عضو'}
                             </span>
+                            {/* News Reporter Badge */}
+                            {member.roles?.includes('news_reporter') && (
+                              <span className="text-xs px-2 py-0.5 rounded-full text-cyan-400 bg-cyan-500/20">
+                                إخباري
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2633,6 +2668,27 @@ const YallaLiveRoom = ({ user }) => {
                                 >
                                   <ArrowDown className="w-3 h-3" />
                                   عضو
+                                </button>
+                              )}
+                              
+                              {/* News Reporter Toggle */}
+                              {member.roles?.includes('news_reporter') ? (
+                                <button
+                                  onClick={() => handleToggleNewsReporter(odId, member.username, false)}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-500/30 hover:bg-cyan-500/40 text-cyan-400 text-xs font-cairo transition-colors"
+                                  title="إزالة رتبة إخباري"
+                                >
+                                  <Type className="w-3 h-3" />
+                                  إخباري ✓
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleToggleNewsReporter(odId, member.username, true)}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-xs font-cairo transition-colors"
+                                  title="إضافة رتبة إخباري"
+                                >
+                                  <Type className="w-3 h-3" />
+                                  + إخباري
                                 </button>
                               )}
                             </>

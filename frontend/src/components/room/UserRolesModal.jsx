@@ -7,11 +7,10 @@ import {
   Star,
   User,
   X,
-  ChevronDown,
-  ChevronUp,
   Mic,
   MicOff,
-  Newspaper
+  Newspaper,
+  Check
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -19,13 +18,20 @@ import { toast } from 'sonner';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const ROOM_ROLES = [
+// Primary roles (user can have only one)
+const PRIMARY_ROLES = [
   { value: 'leader', label: 'رئيس الغرفة', icon: Crown, color: 'text-fuchsia-400', bgColor: 'bg-fuchsia-500/20', borderColor: 'border-fuchsia-500/50' },
   { value: 'admin', label: 'أدمن', icon: Shield, color: 'text-red-400', bgColor: 'bg-red-500/20', borderColor: 'border-red-500/50' },
   { value: 'mod', label: 'مود', icon: Star, color: 'text-amber-400', bgColor: 'bg-amber-500/20', borderColor: 'border-amber-500/50' },
-  { value: 'news_reporter', label: 'إخباري', icon: Newspaper, color: 'text-cyan-400', bgColor: 'bg-cyan-500/20', borderColor: 'border-cyan-500/50' },
   { value: 'member', label: 'عضو', icon: User, color: 'text-slate-400', bgColor: 'bg-slate-500/20', borderColor: 'border-slate-500/50' }
 ];
+
+// Addon roles (can be combined with primary roles)
+const ADDON_ROLES = [
+  { value: 'news_reporter', label: 'إخباري', icon: Newspaper, color: 'text-cyan-400', bgColor: 'bg-cyan-500/20', borderColor: 'border-cyan-500/50' }
+];
+
+const ALL_ROLES = [...PRIMARY_ROLES, ...ADDON_ROLES];
 
 export const UserRolesModal = ({
   isOpen,
@@ -42,17 +48,19 @@ export const UserRolesModal = ({
 }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [roomRoles, setRoomRoles] = useState({});
+  const [roomRoles, setRoomRoles] = useState({}); // { user_id: [roles array] }
   const token = localStorage.getItem('token');
 
   // Check if current user is leader
-  const isLeader = roomRoles[currentUserId] === 'leader';
+  const currentUserRoles = roomRoles[currentUserId] || [];
+  const isLeader = currentUserRoles.includes('leader');
   const canManageRoles = isOwner || isLeader;
 
   useEffect(() => {
     if (isOpen && roomId) {
       fetchRoomRoles();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, roomId]);
 
   const fetchRoomRoles = async () => {
@@ -61,10 +69,12 @@ export const UserRolesModal = ({
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Convert array to object for easy lookup
+      // Convert array to object with roles as arrays
       const rolesMap = {};
       (response.data.roles || []).forEach(r => {
-        rolesMap[r.user_id] = r.role;
+        // Handle both old format (role) and new format (roles)
+        const userRoles = r.roles || (r.role ? [r.role] : []);
+        rolesMap[r.user_id] = userRoles;
       });
       setRoomRoles(rolesMap);
     } catch (error) {
@@ -72,32 +82,39 @@ export const UserRolesModal = ({
     }
   };
 
-  const handleChangeRole = async (userId, newRole) => {
+  const handleToggleRole = async (userId, role, isAdding) => {
     if (!canManageRoles) {
       toast.error('ليس لديك صلاحية تغيير الرتب');
       return;
     }
 
-    // Leader can't promote to leader (only owner can)
-    if (newRole === 'leader' && !isOwner) {
+    // Leader can't be set by non-owner
+    if (role === 'leader' && !isOwner) {
       toast.error('فقط صاحب الغرفة يمكنه تعيين رئيس الغرفة');
       return;
     }
 
     setLoading(true);
     try {
-      await axios.post(`${API}/rooms/${roomId}/roles/${userId}`, 
-        { role: newRole },
+      const endpoint = isAdding 
+        ? `${API}/rooms/${roomId}/roles/${userId}/add`
+        : `${API}/rooms/${roomId}/roles/${userId}/remove`;
+      
+      const response = await axios.post(endpoint, 
+        { role },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      const roleLabel = ROOM_ROLES.find(r => r.value === newRole)?.label || newRole;
-      toast.success(`تم تغيير الرتبة إلى ${roleLabel}`);
-      setRoomRoles(prev => ({ ...prev, [userId]: newRole }));
-      setSelectedUser(null);
+      toast.success(response.data.message);
+      
+      // Update local state with new roles
+      setRoomRoles(prev => ({
+        ...prev,
+        [userId]: response.data.roles || []
+      }));
       
       if (onRoleUpdated) {
-        onRoleUpdated(userId, newRole);
+        onRoleUpdated(userId, response.data.roles);
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل تغيير الرتبة');
@@ -140,14 +157,27 @@ export const UserRolesModal = ({
     }
   };
 
-  const getRoleInfo = (memberId) => {
+  const getUserRoleInfo = (memberId) => {
     // Check if this user is the owner
     if (memberId === ownerId) {
-      return { value: 'owner', label: 'المالك', icon: Crown, color: 'text-purple-400', bgColor: 'bg-purple-500/20', borderColor: 'border-purple-500/50' };
+      return { 
+        roles: ['owner'], 
+        primaryRole: { value: 'owner', label: 'المالك', icon: Crown, color: 'text-purple-400', bgColor: 'bg-purple-500/20', borderColor: 'border-purple-500/50' }
+      };
     }
     
-    const role = roomRoles[memberId] || 'member';
-    return ROOM_ROLES.find(r => r.value === role) || ROOM_ROLES[3]; // Default to member
+    const userRoles = roomRoles[memberId] || [];
+    
+    // Find primary role
+    let primaryRole = PRIMARY_ROLES.find(r => r.value === 'member'); // default
+    for (const role of PRIMARY_ROLES) {
+      if (userRoles.includes(role.value)) {
+        primaryRole = role;
+        break;
+      }
+    }
+    
+    return { roles: userRoles, primaryRole };
   };
 
   // Check if user is on stage (speaking)
@@ -168,17 +198,6 @@ export const UserRolesModal = ({
   // Get member avatar
   const getMemberAvatar = (member) => {
     return member.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${getMemberUsername(member)}`;
-  };
-
-  // Get available roles for dropdown based on who is changing
-  const getAvailableRoles = () => {
-    if (isOwner) {
-      return ROOM_ROLES; // Owner can set any role including leader
-    }
-    if (isLeader) {
-      return ROOM_ROLES.filter(r => r.value !== 'leader'); // Leader can't set another leader
-    }
-    return [];
   };
 
   if (!isOpen) return null;
@@ -210,9 +229,9 @@ export const UserRolesModal = ({
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-lg font-cairo font-bold text-white">رتب المستخدمين</h3>
-                <p className="text-slate-400 text-xs font-almarai">إدارة أدوار الأعضاء في الغرفة</p>
+                <p className="text-slate-400 text-xs font-almarai">يمكن إضافة أكثر من رتبة للمستخدم</p>
               </div>
-              <div className="w-6" /> {/* Spacer */}
+              <div className="w-6" />
             </div>
           </div>
 
@@ -263,21 +282,19 @@ export const UserRolesModal = ({
                 const memberId = getMemberId(member);
                 const memberUsername = getMemberUsername(member);
                 const memberAvatar = getMemberAvatar(member);
-                const roleInfo = getRoleInfo(memberId);
-                const RoleIcon = roleInfo.icon;
+                const { roles: memberRoles, primaryRole } = getUserRoleInfo(memberId);
+                const RoleIcon = primaryRole.icon;
                 const isCurrentUser = memberId === currentUserId;
                 const isMemberOwner = memberId === ownerId;
-                const isMemberLeader = roomRoles[memberId] === 'leader';
                 const memberOnStage = isOnStage(memberId);
                 
-                // Can edit if: owner (can edit anyone except self), or leader (can edit non-owner, non-leader, non-self)
-                const canEdit = (isOwner && !isCurrentUser) || 
-                               (isLeader && !isMemberOwner && !isMemberLeader && !isCurrentUser);
+                // Can edit if owner (can edit anyone except self)
+                const canEdit = isOwner && !isCurrentUser && !isMemberOwner;
 
                 return (
                   <div
                     key={memberId || index}
-                    className={`p-3 rounded-xl ${roleInfo.bgColor} border ${roleInfo.borderColor || 'border-slate-700'} transition-colors`}
+                    className={`p-3 rounded-xl ${primaryRole.bgColor} border ${primaryRole.borderColor || 'border-slate-700'} transition-colors`}
                   >
                     <div className="flex items-center gap-3">
                       {/* Avatar with mic indicator */}
@@ -307,86 +324,124 @@ export const UserRolesModal = ({
                             <span className="text-[10px] bg-lime-500/20 text-lime-400 px-1.5 py-0.5 rounded">على المايك</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <RoleIcon className={`w-3 h-3 ${roleInfo.color}`} />
-                          <span className={`text-xs ${roleInfo.color}`}>{roleInfo.label}</span>
+                        {/* Show all roles */}
+                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                          {memberRoles.length > 0 ? memberRoles.map(role => {
+                            const roleInfo = ALL_ROLES.find(r => r.value === role) || 
+                              (role === 'owner' ? { icon: Crown, color: 'text-purple-400', label: 'المالك' } : null);
+                            if (!roleInfo) return null;
+                            const Icon = roleInfo.icon;
+                            return (
+                              <span key={role} className={`flex items-center gap-0.5 text-xs ${roleInfo.color}`}>
+                                <Icon className="w-3 h-3" />
+                                <span>{roleInfo.label}</span>
+                              </span>
+                            );
+                          }) : (
+                            <span className="text-xs text-slate-400">عضو</span>
+                          )}
                         </div>
                       </div>
                       
                       {/* Actions */}
-                      {canEdit && (
-                        <div className="flex items-center gap-1">
-                          {/* Mic Control */}
-                          {memberOnStage ? (
-                            <button
-                              onClick={() => handleRemoveFromStage(memberId, memberUsername)}
-                              className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
-                              title="إنزال من المايك"
-                            >
-                              <MicOff className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleInviteToStage(memberId, memberUsername)}
-                              className="p-1.5 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 text-lime-400 transition-colors"
-                              title="رفع للمايك"
-                            >
-                              <Mic className="w-4 h-4" />
-                            </button>
-                          )}
-                          
-                          {/* Role Selector */}
-                          <div className="relative">
-                            <button
-                              onClick={() => setSelectedUser(selectedUser === memberId ? null : memberId)}
-                              className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-cairo transition-colors"
-                              disabled={loading}
-                            >
-                              رتبة
-                              {selectedUser === memberId ? (
-                                <ChevronUp className="w-3 h-3" />
-                              ) : (
-                                <ChevronDown className="w-3 h-3" />
-                              )}
-                            </button>
-                            
-                            {/* Dropdown */}
-                            <AnimatePresence>
-                              {selectedUser === memberId && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: -10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -10 }}
-                                  className="absolute left-0 mt-1 w-36 bg-slate-800 rounded-xl border border-slate-700 shadow-xl z-10 overflow-hidden"
-                                >
-                                  {getAvailableRoles().map((role) => {
-                                    const Icon = role.icon;
-                                    const isCurrentRole = (roomRoles[memberId] || 'member') === role.value;
-                                    
-                                    return (
-                                      <button
-                                        key={role.value}
-                                        onClick={() => handleChangeRole(memberId, role.value)}
-                                        disabled={loading || isCurrentRole}
-                                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-cairo transition-colors ${
-                                          isCurrentRole 
-                                            ? 'bg-slate-700 text-slate-400' 
-                                            : 'hover:bg-slate-700 text-white'
-                                        }`}
-                                      >
-                                        <Icon className={`w-3 h-3 ${role.color}`} />
-                                        <span>{role.label}</span>
-                                        {isCurrentRole && <span className="mr-auto text-[10px]">✓</span>}
-                                      </button>
-                                    );
-                                  })}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {/* Mic Control */}
+                        {canManageRoles && !isMemberOwner && !isCurrentUser && (
+                          <>
+                            {memberOnStage ? (
+                              <button
+                                onClick={() => handleRemoveFromStage(memberId, memberUsername)}
+                                className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
+                                title="إنزال من المايك"
+                              >
+                                <MicOff className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleInviteToStage(memberId, memberUsername)}
+                                className="p-1.5 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 text-lime-400 transition-colors"
+                                title="رفع للمايك"
+                              >
+                                <Mic className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Role Selector Button */}
+                        {canEdit && (
+                          <button
+                            onClick={() => setSelectedUser(selectedUser === memberId ? null : memberId)}
+                            className="px-2 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-cairo transition-colors"
+                            disabled={loading}
+                          >
+                            تعديل الرتب
+                          </button>
+                        )}
+                      </div>
                     </div>
+                    
+                    {/* Role Selection Panel */}
+                    <AnimatePresence>
+                      {selectedUser === memberId && canEdit && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-3 pt-3 border-t border-white/10"
+                        >
+                          <p className="text-slate-400 text-xs mb-2 font-cairo">الرتبة الرئيسية (اختر واحدة):</p>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {PRIMARY_ROLES.map((role) => {
+                              const Icon = role.icon;
+                              const isActive = memberRoles.includes(role.value);
+                              
+                              return (
+                                <button
+                                  key={role.value}
+                                  onClick={() => handleToggleRole(memberId, role.value, !isActive)}
+                                  disabled={loading || (role.value === 'leader' && !isOwner)}
+                                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-cairo transition-all ${
+                                    isActive 
+                                      ? `${role.bgColor} ${role.color} border ${role.borderColor}` 
+                                      : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 border border-transparent'
+                                  } ${(role.value === 'leader' && !isOwner) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                  <Icon className="w-3.5 h-3.5" />
+                                  <span>{role.label}</span>
+                                  {isActive && <Check className="w-3 h-3" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          
+                          <p className="text-slate-400 text-xs mb-2 font-cairo">رتب إضافية (يمكن دمجها):</p>
+                          <div className="flex flex-wrap gap-2">
+                            {ADDON_ROLES.map((role) => {
+                              const Icon = role.icon;
+                              const isActive = memberRoles.includes(role.value);
+                              
+                              return (
+                                <button
+                                  key={role.value}
+                                  onClick={() => handleToggleRole(memberId, role.value, !isActive)}
+                                  disabled={loading}
+                                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-cairo transition-all ${
+                                    isActive 
+                                      ? `${role.bgColor} ${role.color} border ${role.borderColor}` 
+                                      : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 border border-transparent'
+                                  }`}
+                                >
+                                  <Icon className="w-3.5 h-3.5" />
+                                  <span>{role.label}</span>
+                                  {isActive && <Check className="w-3 h-3" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 );
               })
