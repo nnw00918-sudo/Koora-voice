@@ -54,7 +54,8 @@ import {
   Circle,
   StopCircle,
   Youtube,
-  BarChart3
+  BarChart3,
+  Type
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -163,6 +164,9 @@ const YallaLiveRoom = ({ user }) => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [chatBackground, setChatBackground] = useState('');
   const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
+  const [showTitleEditor, setShowTitleEditor] = useState(false);
+  const [newRoomTitle, setNewRoomTitle] = useState('');
+  const [updatingTitle, setUpdatingTitle] = useState(false);
   const backgroundInputRef = useRef(null);
   const fileInputRef = useRef(null);
   
@@ -1172,6 +1176,32 @@ const YallaLiveRoom = ({ user }) => {
       setRoomImageUrl('');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل تحديث الصورة');
+    }
+  };
+
+  const handleUpdateRoomTitle = async () => {
+    if (!newRoomTitle.trim()) {
+      toast.error('أدخل اسم الغرفة');
+      return;
+    }
+    if (newRoomTitle.trim().length > 100) {
+      toast.error('اسم الغرفة طويل جداً (الحد الأقصى 100 حرف)');
+      return;
+    }
+    setUpdatingTitle(true);
+    try {
+      await axios.put(`${API}/rooms/${roomId}/title`, 
+        { title: newRoomTitle.trim() }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('تم تحديث اسم الغرفة');
+      setRoom(prev => ({ ...prev, title: newRoomTitle.trim() }));
+      setShowTitleEditor(false);
+      setNewRoomTitle('');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل تحديث اسم الغرفة');
+    } finally {
+      setUpdatingTitle(false);
     }
   };
 
@@ -3046,6 +3076,50 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
                 
                 <div className="space-y-3">
+                  {/* Change Room Title */}
+                  <button onClick={() => { setShowTitleEditor(!showTitleEditor); setNewRoomTitle(room?.title || ''); }}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-lime-500/20 hover:bg-lime-500/30 border border-lime-500/50"
+                  >
+                    <Type className="w-6 h-6 text-lime-400" />
+                    <span className="text-lime-400 font-cairo font-bold">تغيير اسم الغرفة</span>
+                  </button>
+                  
+                  {showTitleEditor && (
+                    <div className="p-4 bg-slate-800 rounded-xl space-y-3">
+                      <input
+                        type="text"
+                        value={newRoomTitle}
+                        onChange={(e) => setNewRoomTitle(e.target.value)}
+                        placeholder="اسم الغرفة الجديد..."
+                        className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white text-right font-cairo focus:border-lime-500 focus:outline-none"
+                        maxLength={100}
+                        dir="rtl"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleUpdateRoomTitle}
+                          disabled={updatingTitle || !newRoomTitle.trim()}
+                          className="flex-1 py-3 bg-lime-500 hover:bg-lime-400 disabled:bg-slate-600 disabled:cursor-not-allowed text-slate-900 rounded-lg font-cairo font-bold transition-all flex items-center justify-center gap-2"
+                        >
+                          {updatingTitle ? (
+                            <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <Check className="w-5 h-5" />
+                              <span>حفظ</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setShowTitleEditor(false)}
+                          className="px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-cairo"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Change Room Image */}
                   <button onClick={() => setShowImagePicker(!showImagePicker)}
                     className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50"

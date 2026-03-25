@@ -954,6 +954,34 @@ async def end_room(room_id: str, current_user: User = Depends(get_current_user))
 class RoomImageUpdate(BaseModel):
     image: str
 
+class RoomTitleUpdate(BaseModel):
+    title: str
+
+@api_router.put("/rooms/{room_id}/title")
+async def update_room_title(room_id: str, data: RoomTitleUpdate, current_user: User = Depends(get_current_user)):
+    """Update room title - Owner only"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Only room owner can change title
+    if room["owner_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه تغيير اسم الغرفة")
+    
+    # Validate title
+    title = data.title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="اسم الغرفة لا يمكن أن يكون فارغاً")
+    if len(title) > 100:
+        raise HTTPException(status_code=400, detail="اسم الغرفة طويل جداً (الحد الأقصى 100 حرف)")
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"title": title}}
+    )
+    
+    return {"message": "تم تحديث اسم الغرفة", "title": title}
+
 @api_router.put("/rooms/{room_id}/image")
 async def update_room_image(room_id: str, data: RoomImageUpdate, current_user: User = Depends(get_current_user)):
     """Update room cover image - Owner only"""
