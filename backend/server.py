@@ -2210,13 +2210,30 @@ async def leave_seat(room_id: str, current_user: User = Depends(get_current_user
 
 @api_router.post("/rooms/{room_id}/seat/join-direct")
 async def join_seat_direct(room_id: str, current_user: User = Depends(get_current_user)):
-    """Allow mod/admin/owner to join stage directly without request"""
-    if current_user.role not in ["mod", "admin", "owner"]:
-        raise HTTPException(status_code=403, detail="صلاحيات Mod/Admin/Owner مطلوبة للصعود المباشر")
-    
+    """Allow mod/admin/leader/owner to join stage directly without request"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check if user is room owner
+    is_room_owner = room.get("owner_id") == current_user.id
+    
+    # Check user's room-specific role
+    room_role_doc = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    room_role = room_role_doc.get("role") if room_role_doc else None
+    
+    # Allow: Room Owner, Leader, Admin, Mod (room-level) OR global owner/admin/mod
+    can_join_direct = (
+        is_room_owner or
+        room_role in ["leader", "admin", "mod"] or
+        current_user.role in ["owner", "admin", "mod"]
+    )
+    
+    if not can_join_direct:
+        raise HTTPException(status_code=403, detail="صلاحيات Mod/Admin/رئيس الغرفة/المالك مطلوبة للصعود المباشر")
     
     participant = await db.room_participants.find_one({
         "room_id": room_id,

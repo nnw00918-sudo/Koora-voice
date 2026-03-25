@@ -137,12 +137,13 @@ const YallaLiveRoom = ({ user }) => {
   const isOwner = isRoomOwner || isSystemOwner;
   
   // Room-specific permissions
-  const isRoomAdmin = roomRole === 'admin' || isOwner;
+  const isRoomLeader = roomRole === 'leader';
+  const isRoomAdmin = roomRole === 'admin' || isRoomLeader || isOwner;
   const isRoomMod = roomRole === 'mod' || isRoomAdmin;
-  const canManageStage = isOwner || isRoomAdmin;
-  const canKickMute = isOwner || isRoomAdmin;
-  const canChangeRoles = isOwner || isRoomAdmin; // Admin can change roles to mod only
-  const canJoinStageDirect = isOwner || roomRole === 'admin' || roomRole === 'mod'; // Admin & Mod can join stage directly
+  const canManageStage = isOwner || isRoomLeader || isRoomAdmin;
+  const canKickMute = isOwner || isRoomLeader || isRoomAdmin;
+  const canChangeRoles = isOwner || isRoomLeader || isRoomAdmin; // Leader & Admin can change roles
+  const canJoinStageDirect = isOwner || isRoomLeader || roomRole === 'admin' || roomRole === 'mod'; // Leader, Admin & Mod can join stage directly
   
   const [myInvites, setMyInvites] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
