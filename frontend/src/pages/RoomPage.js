@@ -2320,8 +2320,8 @@ const YallaLiveRoom = ({ user }) => {
                   const odId = member.user_id || member.id;
                   const isOnline = participants.some(p => (p.user_id || p.id) === odId);
                   const onlineParticipant = participants.find(p => (p.user_id || p.id) === odId);
-                  const isSpeaker = speakers.some(s => s.user_id === odId);
-                  const speakerData = speakers.find(s => s.user_id === odId);
+                  const isSpeaker = speakers.some(s => s.user?.user_id === odId);
+                  const speakerData = speakers.find(s => s.user?.user_id === odId);
                   const isMuted = speakerData?.user?.is_muted || false;
                   const isCurrentUser = odId === user.id;
                   const isOwnerOfRoom = member.role === 'owner' || room?.owner_id === odId;
@@ -2811,6 +2811,42 @@ const YallaLiveRoom = ({ user }) => {
             style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
           >
 
+          {/* Volume Slider Popup */}
+          <AnimatePresence>
+            {showVolumeControls && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="absolute bottom-20 left-4 right-4 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl p-4 shadow-xl z-50"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-white font-cairo text-sm font-bold">صوت المتحدثين</span>
+                  <button 
+                    onClick={() => setShowVolumeControls(false)}
+                    className="text-slate-400 hover:text-white p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <VolumeX className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                  <VolumeSlider
+                    value={micVolume}
+                    onChange={setMicVolume}
+                    min={0}
+                    max={100}
+                    color="#CCFF00"
+                    trackColor="rgb(51, 65, 85)"
+                    className="flex-1"
+                  />
+                  <Volume2 className="w-5 h-5 text-lime-400 flex-shrink-0" />
+                </div>
+                <div className="text-center mt-2 text-sm text-lime-400 font-bold">{micVolume}%</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Main Controls - Compact */}
           <div className="flex items-center gap-2">
             {/* Invite Friends Button */}
@@ -2823,15 +2859,21 @@ const YallaLiveRoom = ({ user }) => {
               <Share2 className="w-4 h-4 text-[#CCFF00]" />
             </motion.button>
 
-            {/* Audio Mute Button */}
+            {/* Volume Control Button - Long press shows slider */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={() => setIsAudioMuted(!isAudioMuted)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                isAudioMuted ? 'bg-red-500' : 'bg-slate-800 border border-slate-700'
+              onClick={() => setShowVolumeControls(!showVolumeControls)}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center relative ${
+                micVolume === 0 ? 'bg-red-500' : 'bg-slate-800 border border-slate-700'
               }`}
+              title="التحكم بالصوت"
             >
-              {isAudioMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-slate-300" />}
+              {micVolume === 0 ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-slate-300" />}
+              {/* Volume indicator */}
+              <div 
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 rounded-full bg-lime-500"
+                style={{ width: `${micVolume * 0.8}%` }}
+              />
             </motion.button>
 
             {/* Camera Button - Available for everyone */}
