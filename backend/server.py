@@ -3208,6 +3208,34 @@ async def add_room_news(room_id: str, data: RoomNewsCreate, current_user: User =
     
     await db.room_news.insert_one(news_item)
     
+    # Send push notifications to room participants
+    try:
+        from routes.push import send_push_notification
+        import asyncio
+        
+        # Get all participants in the room
+        participants = await db.room_participants.find(
+            {"room_id": room_id},
+            {"_id": 0, "user_id": 1}
+        ).to_list(100)
+        
+        room_title = room.get("title", "الغرفة")
+        news_text = data.text.strip()[:50] + "..." if len(data.text.strip()) > 50 else data.text.strip()
+        
+        for participant in participants:
+            participant_id = participant.get("user_id")
+            # Don't notify the author
+            if participant_id and participant_id != current_user.id:
+                asyncio.create_task(send_push_notification(
+                    participant_id,
+                    f"📰 خبر جديد في {room_title}",
+                    f"{category_icons.get(data.category, '📰')} {news_text}",
+                    f"/room/{room_id}"
+                ))
+    except Exception as e:
+        # Don't fail the request if notifications fail
+        print(f"Error sending room news notifications: {e}")
+    
     return {"message": "تم إضافة الخبر", "news": {k: v for k, v in news_item.items() if k != "_id"}}
 
 @api_router.delete("/rooms/{room_id}/news/{news_id}")

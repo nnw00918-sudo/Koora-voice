@@ -46,9 +46,10 @@
 - ✅ **إضافة أخبار الغرفة**: زر "+" في شريط الأخبار يفتح modal لإضافة خبر
 - ✅ **تصنيفات أخبار الغرفة**: عام، نتائج، انتقالات، تصريحات، عاجل
 - ✅ **حذف الأخبار**: صاحب الغرفة أو كاتب الخبر يمكنه الحذف
+- ✅ **إشعارات Push للأخبار**: عند إضافة خبر جديد، يتم إرسال إشعار لجميع المتواجدين في الغرفة
 - ✅ **Backend APIs**:
   - `GET /api/rooms/{room_id}/news` - جلب أخبار الغرفة
-  - `POST /api/rooms/{room_id}/news` - إضافة خبر (Owner أو news_reporter)
+  - `POST /api/rooms/{room_id}/news` - إضافة خبر (Owner أو news_reporter) + إرسال إشعارات
   - `DELETE /api/rooms/{room_id}/news/{news_id}` - حذف خبر
   - `POST /api/rooms/{room_id}/news-reporter/{user_id}` - تعيين إخباري
   - `DELETE /api/rooms/{room_id}/news-reporter/{user_id}` - إزالة إخباري
