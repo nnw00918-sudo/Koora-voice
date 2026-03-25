@@ -9,7 +9,7 @@ import {
   Video,
   Circle,
   StopCircle,
-  Youtube,
+  Users,
   BarChart3
 } from 'lucide-react';
 
@@ -41,12 +41,11 @@ export const RoomSettingsModal = ({
   onToggleRoom,
   onDeleteRoom,
   // Playback features
-  watchParty,
   activePoll,
-  onShowWatchPartyModal,
   onShowCreatePollModal,
-  onEndWatchParty,
   onClosePoll,
+  // User roles
+  onShowUserRolesModal,
   // File input ref
   fileInputRef
 }) => {
@@ -149,33 +148,22 @@ export const RoomSettingsModal = ({
             </div>
           )}
           
-          {/* Playback Features Section */}
+          {/* Room Management Section */}
           <div className="pt-2 border-t border-slate-700">
-            <p className="text-slate-500 text-xs font-cairo mb-2">ميزات Playback</p>
+            <p className="text-slate-500 text-xs font-cairo mb-2">إدارة الغرفة</p>
             
-            {/* Watch Party Button */}
-            {!watchParty ? (
-              <button 
-                onClick={() => { onClose(); onShowWatchPartyModal(); }}
-                className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 mb-2"
-                data-testid="start-watch-party-btn"
-              >
-                <Youtube className="w-6 h-6 text-red-400" />
-                <div className="flex-1 text-right">
-                  <span className="text-red-400 font-cairo font-bold">بدء Watch Party</span>
-                  <p className="text-red-300/70 text-xs">شاهدوا معاً بشكل متزامن</p>
-                </div>
-              </button>
-            ) : (
-              <button 
-                onClick={() => { onEndWatchParty(); onClose(); }}
-                className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500 hover:bg-red-600 mb-2"
-                data-testid="end-watch-party-btn"
-              >
-                <Youtube className="w-6 h-6 text-white" />
-                <span className="text-white font-cairo font-bold">إنهاء Watch Party</span>
-              </button>
-            )}
+            {/* User Roles Button - Replaces Watch Party */}
+            <button 
+              onClick={() => { onClose(); onShowUserRolesModal && onShowUserRolesModal(); }}
+              className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 mb-2"
+              data-testid="manage-user-roles-btn"
+            >
+              <Users className="w-6 h-6 text-emerald-400" />
+              <div className="flex-1 text-right">
+                <span className="text-emerald-400 font-cairo font-bold">رتب المستخدمين</span>
+                <p className="text-emerald-300/70 text-xs">إدارة أدوار الأعضاء في الغرفة</p>
+              </div>
+            </button>
             
             {/* Create Poll Button */}
             {!activePoll ? (

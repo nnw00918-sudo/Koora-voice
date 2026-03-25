@@ -21,6 +21,7 @@ import { StreamModal } from '../components/room/StreamModal';
 import { PromoteModal } from '../components/room/PromoteModal';
 import { BackgroundPickerModal } from '../components/room/BackgroundPickerModal';
 import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
+import { UserRolesModal } from '../components/room/UserRolesModal';
 import {
   Mic,
   MicOff,
@@ -220,6 +221,7 @@ const YallaLiveRoom = ({ user }) => {
   const [showCreatePollModal, setShowCreatePollModal] = useState(false);
   const [watchParty, setWatchParty] = useState(null);
   const [showWatchPartyModal, setShowWatchPartyModal] = useState(false);
+  const [showUserRolesModal, setShowUserRolesModal] = useState(false);
   const reactionIdRef = useRef(0);
   const reactionsPollingRef = useRef(null);
   const pollPollingRef = useRef(null);
@@ -3071,33 +3073,22 @@ const YallaLiveRoom = ({ user }) => {
                     </div>
                   )}
                   
-                  {/* Playback Features Section */}
+                  {/* Room Management Section */}
                   <div className="pt-2 border-t border-slate-700">
-                    <p className="text-slate-500 text-xs font-cairo mb-2">ميزات Playback</p>
+                    <p className="text-slate-500 text-xs font-cairo mb-2">إدارة الغرفة</p>
                     
-                    {/* Watch Party Button */}
-                    {!watchParty ? (
-                      <button 
-                        onClick={() => { setShowRoomSettings(false); setShowWatchPartyModal(true); }}
-                        className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 mb-2"
-                        data-testid="start-watch-party-btn"
-                      >
-                        <Youtube className="w-6 h-6 text-red-400" />
-                        <div className="flex-1 text-right">
-                          <span className="text-red-400 font-cairo font-bold">بدء Watch Party</span>
-                          <p className="text-red-300/70 text-xs">شاهدوا معاً بشكل متزامن</p>
-                        </div>
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => { handleEndWatchParty(); setShowRoomSettings(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500 hover:bg-red-600 mb-2"
-                        data-testid="end-watch-party-btn"
-                      >
-                        <Youtube className="w-6 h-6 text-white" />
-                        <span className="text-white font-cairo font-bold">إنهاء Watch Party</span>
-                      </button>
-                    )}
+                    {/* User Roles Button - Replaces Watch Party */}
+                    <button 
+                      onClick={() => { setShowRoomSettings(false); setShowUserRolesModal(true); }}
+                      className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 mb-2"
+                      data-testid="manage-user-roles-btn"
+                    >
+                      <Users className="w-6 h-6 text-emerald-400" />
+                      <div className="flex-1 text-right">
+                        <span className="text-emerald-400 font-cairo font-bold">رتب المستخدمين</span>
+                        <p className="text-emerald-300/70 text-xs">إدارة أدوار الأعضاء في الغرفة</p>
+                      </div>
+                    </button>
                     
                     {/* Create Poll Button */}
                     {!activePoll ? (
@@ -3502,6 +3493,20 @@ const YallaLiveRoom = ({ user }) => {
           isOpen={showWatchPartyModal}
           onClose={() => setShowWatchPartyModal(false)}
           onStart={handleStartWatchParty}
+        />
+
+        {/* User Roles Modal */}
+        <UserRolesModal
+          isOpen={showUserRolesModal}
+          onClose={() => setShowUserRolesModal(false)}
+          roomId={roomId}
+          roomMembers={room?.members || []}
+          currentUserId={user.id}
+          isOwner={isOwner}
+          onRoleUpdated={(userId, newRole) => {
+            // Refresh room data
+            fetchRoomData();
+          }}
         />
 
         {/* Expanded Video Modal */}
