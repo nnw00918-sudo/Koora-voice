@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -38,6 +38,85 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Memoized Room Card for better performance
+const RoomCard = memo(({ room, user, membershipStatus, favoriteLoading, onEnterRoom, onToggleFavorite, isRTL, t }) => {
+  const isMember = membershipStatus[room.id];
+  const isFavLoading = favoriteLoading[room.id];
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl overflow-hidden border border-slate-700/50 hover:border-lime-500/30 transition-all duration-300 group"
+    >
+      {/* Room Image */}
+      <div className="relative h-36 overflow-hidden">
+        <img 
+          src={room.image || `https://picsum.photos/seed/${room.id}/400/200`}
+          alt={room.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
+        
+        {/* Live indicator */}
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-lime-500/20 border border-lime-500/30 text-lime-400 text-xs font-bold">
+            <Users className="w-3 h-3" />
+            {room.participant_count || 0}
+          </span>
+        </div>
+        
+        {/* Favorite button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleFavorite(room.id); }}
+          disabled={isFavLoading}
+          className={`absolute top-3 right-3 p-2 rounded-full transition-all ${
+            room.is_favorite 
+              ? 'bg-amber-500/20 text-amber-400' 
+              : 'bg-slate-800/50 text-slate-400 hover:text-amber-400'
+          }`}
+        >
+          <Star className={`w-4 h-4 ${room.is_favorite ? 'fill-current' : ''}`} />
+        </button>
+      </div>
+      
+      {/* Room Info */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-lime-500/20 text-lime-400 text-[10px] font-bold">
+              {room.room_type === 'sports' ? (isRTL ? '⚽ رياضة' : '⚽ Sports') : (isRTL ? '🎙️ عام' : '🎙️ General')}
+            </span>
+            {isMember && (
+              <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                {isRTL ? 'عضو' : 'Member'}
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <h3 className="text-white font-cairo font-bold text-base mb-1 truncate">{room.title}</h3>
+        <p className="text-slate-400 text-xs mb-3">
+          <Users className="w-3 h-3 inline mr-1" />
+          {room.members_count || 0} {isRTL ? 'عضو' : 'members'}
+        </p>
+        
+        <Button
+          onClick={() => onEnterRoom(room)}
+          className="w-full bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-400 hover:to-green-400 text-slate-900 font-cairo font-bold rounded-xl py-2 text-sm"
+        >
+          <Play className="w-4 h-4 mr-1" />
+          {isRTL ? 'دخول' : 'Enter'}
+        </Button>
+      </div>
+    </motion.div>
+  );
+});
+
+RoomCard.displayName = 'RoomCard';
+
 const DashboardPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
@@ -64,10 +143,48 @@ const DashboardPage = ({ user, onLogout }) => {
   const isRTL = language === 'ar';
   const token = localStorage.getItem('token');
 
+  // Memoized fetch functions
+  const fetchRooms = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/rooms`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRooms(response.data);
+      setFilteredRooms(response.data);
+      
+      // Fetch membership status for all rooms in parallel
+      const membershipPromises = response.data.map(room => 
+        axios.get(`${API}/rooms/${room.id}/membership`, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        }).catch(() => ({ data: { is_member: false } }))
+      );
+      
+      const membershipResults = await Promise.all(membershipPromises);
+      const statusMap = {};
+      response.data.forEach((room, index) => {
+        statusMap[room.id] = membershipResults[index]?.data?.is_member || false;
+      });
+      setMembershipStatus(statusMap);
+    } catch (error) {
+      console.error('Failed to fetch rooms');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/categories`);
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Failed to fetch categories');
+    }
+  }, []);
+
   useEffect(() => {
     fetchRooms();
     fetchCategories();
-  }, [selectedCategory]);
+  }, [fetchRooms, fetchCategories]);
 
   // Sports News Ticker Data - Fetch from API (local + football)
   useEffect(() => {
@@ -138,46 +255,6 @@ const DashboardPage = ({ user, onLogout }) => {
     setFilteredRooms(result);
   }, [statusFilter, searchQuery, rooms]);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get(`${API}/categories`);
-      setCategories(response.data.categories);
-    } catch (error) {
-      console.error('Failed to fetch categories');
-    }
-  };
-
-  const fetchRooms = async () => {
-    try {
-      const params = selectedCategory ? { category: selectedCategory } : {};
-      const response = await axios.get(`${API}/rooms`, { params });
-      setRooms(response.data);
-      
-      if (token) {
-        const membershipPromises = response.data.map(async (room) => {
-          try {
-            const memberRes = await axios.get(`${API}/rooms/${room.id}/membership/check`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            return { roomId: room.id, ...memberRes.data };
-          } catch {
-            return { roomId: room.id, is_member: false, role: null };
-          }
-        });
-        const membershipResults = await Promise.all(membershipPromises);
-        const statusMap = {};
-        membershipResults.forEach(m => {
-          statusMap[m.roomId] = { is_member: m.is_member, role: m.role };
-        });
-        setMembershipStatus(statusMap);
-      }
-    } catch (error) {
-      toast.error(isRTL ? 'فشل تحميل الغرف' : 'Failed to load rooms');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleJoinMembership = async (roomId, e) => {
     e.stopPropagation();
     setJoiningRoom(roomId);
@@ -190,7 +267,6 @@ const DashboardPage = ({ user, onLogout }) => {
         ...prev,
         [roomId]: { is_member: true, role: 'member' }
       }));
-      fetchRooms();
     } catch (error) {
       toast.error(error.response?.data?.detail || (isRTL ? 'فشل الانضمام' : 'Failed to join'));
     } finally {

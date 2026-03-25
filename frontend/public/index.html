@@ -4,10 +4,14 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     
-    <!-- Cache Control -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <!-- Performance: Preconnect to external resources -->
+    <link rel="preconnect" href="https://api.dicebear.com" crossorigin />
+    <link rel="preconnect" href="https://picsum.photos" crossorigin />
+    <link rel="dns-prefetch" href="https://api.dicebear.com" />
+    <link rel="dns-prefetch" href="https://picsum.photos" />
+    
+    <!-- Cache Control for static assets -->
+    <meta http-equiv="Cache-Control" content="public, max-age=31536000" />
     
     <!-- Viewport - iOS keyboard fix with interactive-widget -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />

@@ -223,6 +223,16 @@ owner > admin > news_editor > mod > user
 
 ## المهام القادمة
 
+### P0 (مكتمل) - تحسين سرعة التطبيق ⚡ - 25 مارس 2026
+- [x] **MongoDB Indexes**: إضافة indexes لـ users, rooms, messages, threads, notifications, announcements
+- [x] **Lazy Loading**: تحميل الصفحات عند الحاجة فقط (Code Splitting)
+- [x] **GZip Compression**: ضغط الـ responses من Backend
+- [x] **Smart Caching**: Service Worker محسّن مع cache strategies مختلفة
+- [x] **Image Caching**: تخزين مؤقت للصور (avatars, room images)
+- [x] **Memoization**: استخدام `memo`, `useCallback`, `useMemo` للـ components
+- [x] **Preconnect**: DNS prefetch لـ external resources
+- [x] **Parallel Fetching**: جلب البيانات بالتوازي
+
 ### P0 (مكتمل) - ميزة الرد على الرسائل ✅ - 25 مارس 2026
 - [x] **Backend**: تحديث WebSocket و HTTP endpoints لدعم reply_to fields
 - [x] **Frontend**: 
