@@ -1371,10 +1371,14 @@ async def approve_seat_request(room_id: str, user_id: str, current_user: User = 
         "room_id": room_id,
         "user_id": current_user.id
     }, {"_id": 0})
-    is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
-    is_room_mod = current_user_room_role and current_user_room_role.get("role") == "mod"
+    room_role = current_user_room_role.get("role") if current_user_room_role else None
+    is_room_leader = room_role == "leader"
+    is_room_admin = room_role == "admin"
+    is_room_mod = room_role == "mod"
     
-    if not is_room_owner and not is_room_admin and not is_room_mod and not is_system_owner:
+    # All staff can approve (owner, leader, admin, mod)
+    can_approve = is_room_owner or is_system_owner or is_room_leader or is_room_admin or is_room_mod
+    if not can_approve:
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     # Get target user's room role
@@ -1384,13 +1388,13 @@ async def approve_seat_request(room_id: str, user_id: str, current_user: User = 
     }, {"_id": 0})
     target_role = target_room_role.get("role", "member") if target_room_role else "member"
     
-    # Admin can only approve members (not other admins or mods)
-    if is_room_admin and not is_room_owner and not is_system_owner:
-        if target_role in ["admin", "mod"]:
+    # Admin can only approve members (not leaders, other admins or mods)
+    if is_room_admin and not is_room_owner and not is_system_owner and not is_room_leader:
+        if target_role in ["leader", "admin", "mod"]:
             raise HTTPException(status_code=403, detail="الأدمن يمكنه فقط إصعاد الأعضاء العاديين للمنصة")
     
     # Mod can only approve members
-    if is_room_mod and not is_room_owner and not is_system_owner:
+    if is_room_mod and not is_room_owner and not is_system_owner and not is_room_leader and not is_room_admin:
         if target_role != "member":
             raise HTTPException(status_code=403, detail="المود يمكنه فقط إصعاد الأعضاء العاديين للمنصة")
     
@@ -1441,7 +1445,22 @@ async def reject_seat_request(room_id: str, user_id: str, current_user: User = D
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    if not can_manage_stage(current_user.role, current_user.id, room.get("owner_id")):
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Get current user's room role
+    current_user_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    room_role = current_user_room_role.get("role") if current_user_room_role else None
+    is_room_leader = room_role == "leader"
+    is_room_admin = room_role == "admin"
+    is_room_mod = room_role == "mod"
+    
+    # All staff can reject (owner, leader, admin, mod)
+    can_reject = is_room_owner or is_system_owner or is_room_leader or is_room_admin or is_room_mod
+    if not can_reject:
         raise HTTPException(status_code=403, detail="صلاحيات غير كافية")
     
     result = await db.seat_requests.update_one(

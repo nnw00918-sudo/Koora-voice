@@ -140,10 +140,11 @@ const YallaLiveRoom = ({ user }) => {
   const isRoomLeader = roomRole === 'leader';
   const isRoomAdmin = roomRole === 'admin' || isRoomLeader || isOwner;
   const isRoomMod = roomRole === 'mod' || isRoomAdmin;
-  const canManageStage = isOwner || isRoomLeader || isRoomAdmin;
+  const canManageStage = isOwner || isRoomLeader || isRoomAdmin || isRoomMod;
   const canKickMute = isOwner || isRoomLeader || isRoomAdmin;
   const canChangeRoles = isOwner || isRoomLeader || isRoomAdmin; // Leader & Admin can change roles
   const canJoinStageDirect = isOwner || isRoomLeader || roomRole === 'admin' || roomRole === 'mod'; // Leader, Admin & Mod can join stage directly
+  const canApproveSeatRequests = isOwner || isRoomLeader || isRoomAdmin || isRoomMod; // All staff can see/approve seat requests
   
   const [myInvites, setMyInvites] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -295,9 +296,9 @@ const YallaLiveRoom = ({ user }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
-  // Separate polling for seat requests (only for owners/admins) - FAST
+  // Separate polling for seat requests (for staff: owner, leader, admin, mod) - FAST
   useEffect(() => {
-    if (isOwner || isRoomAdmin || room?.owner_id === user?.id) {
+    if (canApproveSeatRequests) {
       fetchSeatRequests();
       fetchMyInvites();
       requestsPollInterval.current = setInterval(() => {
@@ -309,7 +310,7 @@ const YallaLiveRoom = ({ user }) => {
       if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOwner, isRoomAdmin, room?.owner_id]);
+  }, [canApproveSeatRequests]);
 
   useEffect(() => {
     scrollToBottom();
@@ -891,7 +892,7 @@ const YallaLiveRoom = ({ user }) => {
       const response = await axios.get(`${API}/rooms/${roomId}/seat/requests`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSeatRequests(response.data.requests);
+      setSeatRequests(response.data.requests || []);
     } catch (error) {
       console.error('Failed to fetch seat requests');
     }
@@ -2269,17 +2270,17 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         )}
 
-        {/* Seat Requests Badge */}
-        {(room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') && seatRequests.length > 0 && (
+        {/* Seat Requests Badge - All staff (owner, leader, admin, mod) */}
+        {canApproveSeatRequests && seatRequests.length > 0 && (
           <motion.button
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             onClick={() => setShowSeatRequestsModal(true)}
-            className="absolute top-16 right-4 flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/40 px-3 py-1.5 rounded-xl z-20"
+            className="fixed bottom-32 right-4 flex items-center gap-1.5 bg-amber-500 border border-amber-600 px-4 py-2 rounded-xl z-50 shadow-lg"
             data-testid="seat-requests-button"
           >
-            <Hand className="w-4 h-4 text-amber-400" />
-            <span className="text-amber-300 font-bold text-sm">{seatRequests.length}</span>
+            <Hand className="w-5 h-5 text-white" />
+            <span className="text-white font-bold text-base">{seatRequests.length} طلب صعود</span>
           </motion.button>
         )}
 
@@ -3442,9 +3443,9 @@ const YallaLiveRoom = ({ user }) => {
           )}
         </AnimatePresence>
 
-        {/* Seat Requests Modal - Owner & Admin only */}
+        {/* Seat Requests Modal - All staff (owner, leader, admin, mod) */}
         <AnimatePresence>
-          {showSeatRequestsModal && (room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') && (
+          {showSeatRequestsModal && canApproveSeatRequests && (
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
