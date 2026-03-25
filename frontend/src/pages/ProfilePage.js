@@ -167,6 +167,10 @@ const ProfilePage = ({ user }) => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
         const res = await axios.get(`${API}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -179,8 +183,16 @@ const ProfilePage = ({ user }) => {
           avatar: res.data.avatar || '',
           frame_color: res.data.frame_color || 'lime'
         });
+        // Update localStorage with fresh data
+        localStorage.setItem('user', JSON.stringify(res.data));
       } catch (err) {
         console.error('Error fetching profile:', err);
+        // If token is invalid, redirect to login
+        if (err.response?.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/';
+        }
       } finally {
         setLoading(false);
       }
@@ -516,7 +528,7 @@ const ProfilePage = ({ user }) => {
             <span className="text-2xl font-black font-cairo text-white">
               {userData?.followers_count || 0}
             </span>
-            <span className="text-sm font-almarai text-lime-400">متابع</span>
+            <span className="text-sm font-almarai text-lime-400">متابِعون</span>
           </button>
           
           <button
@@ -527,7 +539,7 @@ const ProfilePage = ({ user }) => {
             <span className="text-2xl font-black font-cairo text-white">
               {userData?.following_count || 0}
             </span>
-            <span className="text-sm font-almarai text-cyan-400">متابَع</span>
+            <span className="text-sm font-almarai text-cyan-400">أتابعهم</span>
           </button>
         </div>
 

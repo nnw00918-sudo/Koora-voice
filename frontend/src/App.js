@@ -53,6 +53,23 @@ function App() {
     const userData = localStorage.getItem('user');
     if (token && userData) {
       setUser(JSON.parse(userData));
+      // Refresh user data from server to get latest followers/following counts
+      const refreshUserData = async () => {
+        try {
+          const API = process.env.REACT_APP_BACKEND_URL;
+          const response = await fetch(`${API}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const freshUserData = await response.json();
+            localStorage.setItem('user', JSON.stringify(freshUserData));
+            setUser(freshUserData);
+          }
+        } catch (err) {
+          console.error('Error refreshing user data:', err);
+        }
+      };
+      refreshUserData();
     }
     setLoading(false);
   }, []);
