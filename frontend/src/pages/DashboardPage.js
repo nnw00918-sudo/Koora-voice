@@ -590,20 +590,20 @@ const DashboardPage = ({ user, onLogout }) => {
               )}
             </motion.div>
           ) : (
-            <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
               {filteredRooms.map((room, index) => (
                 <motion.div
                   key={room.id}
                   initial={{ opacity: 0, y: 40 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.08, type: "spring", stiffness: 100 }}
-                  whileHover={{ y: -4, scale: 1.01 }}
-                  className="relative bg-gradient-to-br from-slate-900/90 via-slate-900/80 to-slate-800/50 backdrop-blur-xl border border-slate-700/50 hover:border-lime-500/50 rounded-3xl overflow-hidden transition-all group cursor-pointer shadow-[0_4px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_40px_rgba(163,230,53,0.15)]"
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  className="relative bg-gradient-to-br from-slate-900/90 via-slate-900/80 to-slate-800/50 backdrop-blur-xl border border-slate-700/50 hover:border-lime-500/50 rounded-2xl overflow-hidden transition-all group cursor-pointer shadow-[0_4px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_40px_rgba(163,230,53,0.15)]"
                   onClick={() => handleRoomClick(room.id)}
                   data-testid={`room-card-${room.id}`}
                 >
                   {/* Cover Image */}
-                  <div className="relative h-40 sm:h-48 overflow-hidden">
+                  <div className="relative h-24 sm:h-28 overflow-hidden">
                     <img
                       src={room.image}
                       alt={room.title}
@@ -616,32 +616,32 @@ const DashboardPage = ({ user, onLogout }) => {
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'} flex items-center gap-2 bg-gradient-to-r from-red-500 to-orange-500 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.5)]`}
+                        className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} flex items-center gap-1 bg-gradient-to-r from-red-500 to-orange-500 px-2 py-1 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.5)]`}
                       >
-                        <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-                        <span className="text-white font-cairo font-bold text-sm">{t('live')}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
+                        <span className="text-white font-cairo font-bold text-xs">{t('live')}</span>
                       </motion.div>
                     )}
                     
-                    {/* Closed Badge - Only show when room is actually closed */}
+                    {/* Closed Badge */}
                     {room.is_closed && (
-                      <div className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'} flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(249,115,22,0.4)]`}>
-                        <Lock className="w-4 h-4 text-white" />
-                        <span className="text-white font-cairo font-bold text-sm">{isRTL ? 'مغلقة' : 'Closed'}</span>
+                      <div className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} flex items-center gap-1 bg-gradient-to-r from-orange-500 to-amber-500 px-2 py-1 rounded-full`}>
+                        <Lock className="w-3 h-3 text-white" />
+                        <span className="text-white font-cairo font-bold text-xs">{isRTL ? 'مغلقة' : 'Closed'}</span>
                       </div>
                     )}
                     
                     {/* Participants Count */}
-                    <div className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'} flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-full border border-white/10`}>
-                      <Users className="w-4 h-4 text-lime-400" strokeWidth={2} />
-                      <span className="text-white font-chivo font-bold text-sm">{room.participant_count || 0}</span>
+                    <div className={`absolute top-2 ${isRTL ? 'right-2' : 'left-2'} flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full border border-white/10`}>
+                      <Users className="w-3 h-3 text-lime-400" strokeWidth={2} />
+                      <span className="text-white font-chivo font-bold text-xs">{room.participant_count || 0}</span>
                     </div>
                     
                     {/* Favorite Button */}
                     <button
                       onClick={(e) => toggleFavorite(room.id, e)}
                       disabled={favoriteLoading[room.id]}
-                      className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'} w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
+                      className={`absolute bottom-2 ${isRTL ? 'left-2' : 'right-2'} w-7 h-7 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
                         room.is_favorite 
                           ? 'bg-yellow-500/80 text-white' 
                           : 'bg-black/60 text-slate-400 hover:text-yellow-400 border border-white/10'
@@ -649,98 +649,83 @@ const DashboardPage = ({ user, onLogout }) => {
                       data-testid={`favorite-btn-${room.id}`}
                     >
                       {favoriteLoading[room.id] ? (
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        <Star className={`w-5 h-5 ${room.is_favorite ? 'fill-current' : ''}`} />
+                        <Star className={`w-3.5 h-3.5 ${room.is_favorite ? 'fill-current' : ''}`} />
                       )}
                     </button>
-                    
-                    {/* Member Count Badge */}
-                    <div className={`absolute bottom-3 ${isRTL ? 'right-3' : 'left-3'} flex items-center gap-2 bg-violet-500/80 backdrop-blur-md px-3 py-2 rounded-full`}>
-                      <UserPlus className="w-4 h-4 text-white" strokeWidth={2} />
-                      <span className="text-white font-chivo font-bold text-sm">{room.member_count || 1}</span>
-                      <span className="text-white/70 text-xs">{isRTL ? 'عضو' : 'members'}</span>
-                    </div>
                   </div>
 
                   {/* Content */}
-                  <div className="p-4 sm:p-5">
-                    {/* Category & Membership Status */}
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-lime-500/20 text-lime-400 text-xs font-cairo font-bold border border-lime-500/30">
-                        <Zap className="w-3 h-3" />
+                  <div className="p-3">
+                    {/* Category */}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-lime-500/20 text-lime-400 text-[10px] font-cairo font-bold border border-lime-500/30">
+                        <Zap className="w-2.5 h-2.5" />
                         {room.category}
                       </span>
                       {membershipStatus[room.id]?.is_member && (
-                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-cairo border border-emerald-500/30">
-                          <Check className="w-3 h-3" />
+                        <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-cairo border border-emerald-500/30">
+                          <Check className="w-2.5 h-2.5" />
                           {isRTL ? 'عضو' : 'Member'}
                         </span>
                       )}
                     </div>
 
                     {/* Title */}
-                    <h3 className={`text-xl sm:text-2xl font-cairo font-black text-white mb-2 ${isRTL ? 'text-right' : 'text-left'} line-clamp-2 group-hover:text-lime-100 transition-colors`}>
+                    <h3 className={`text-sm sm:text-base font-cairo font-black text-white mb-1 ${isRTL ? 'text-right' : 'text-left'} line-clamp-1 group-hover:text-lime-100 transition-colors`}>
                       {room.title}
                     </h3>
 
-                    {/* Description */}
-                    <p className={`text-sm text-slate-400 font-almarai mb-4 ${isRTL ? 'text-right' : 'text-left'} line-clamp-2`}>
-                      {room.description}
-                    </p>
+                    {/* Members Count */}
+                    <div className={`flex items-center gap-1 mb-2 ${isRTL ? 'justify-end' : 'justify-start'}`}>
+                      <UserPlus className="w-3 h-3 text-violet-400" strokeWidth={2} />
+                      <span className="text-violet-400 font-chivo font-bold text-xs">{room.member_count || 1}</span>
+                      <span className="text-slate-500 text-[10px]">{isRTL ? 'عضو' : 'members'}</span>
+                    </div>
 
-                    {/* Host & Join Button */}
-                    <div className={`flex items-center justify-end ${isRTL ? '' : 'flex-row-reverse'}`}>
-                      {/* Join/Enter Button */}
+                    {/* Join Button */}
+                    <div className="w-full">
                       {room.is_closed && user.role !== 'owner' ? (
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRoomClick(room.id);
-                            }}
-                            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-cairo font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.3)]"
-                          >
-                            <Key className="w-4 h-4" />
-                            {isRTL ? 'أدخل الرمز' : 'Enter PIN'}
-                          </Button>
-                        </motion.div>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRoomClick(room.id);
+                          }}
+                          className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-cairo font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                        >
+                          <Key className="w-3 h-3" />
+                          {isRTL ? 'رمز' : 'PIN'}
+                        </Button>
                       ) : membershipStatus[room.id]?.is_member || user.role === 'owner' || room.owner_id === user.id ? (
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRoomClick(room.id);
-                            }}
-                            className="bg-gradient-to-r from-lime-400 to-emerald-500 hover:from-lime-300 hover:to-emerald-400 text-slate-950 font-cairo font-bold px-6 py-2.5 rounded-xl text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(163,230,53,0.3)]"
-                          >
-                            <Play className="w-4 h-4 fill-current" />
-                            {isRTL ? 'دخول' : 'Enter'}
-                          </Button>
-                        </motion.div>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRoomClick(room.id);
+                          }}
+                          className="w-full bg-gradient-to-r from-lime-400 to-emerald-500 hover:from-lime-300 hover:to-emerald-400 text-slate-950 font-cairo font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                        >
+                          <Play className="w-3 h-3 fill-current" />
+                          {isRTL ? 'دخول' : 'Enter'}
+                        </Button>
                       ) : (
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          <Button
-                            onClick={(e) => handleJoinMembership(room.id, e)}
-                            disabled={joiningRoom === room.id}
-                            className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400 text-white font-cairo font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(139,92,246,0.3)]"
-                          >
-                            {joiningRoom === room.id ? (
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                              <>
-                                <UserPlus className="w-4 h-4" />
-                                {isRTL ? 'انضمام' : 'Join'}
-                              </>
-                            )}
-                          </Button>
-                        </motion.div>
+                        <Button
+                          onClick={(e) => handleJoinMembership(room.id, e)}
+                          disabled={joiningRoom === room.id}
+                          className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400 text-white font-cairo font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                        >
+                          {joiningRoom === room.id ? (
+                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <UserPlus className="w-3 h-3" />
+                              {isRTL ? 'انضمام' : 'Join'}
+                            </>
+                          )}
+                        </Button>
                       )}
                     </div>
                   </div>
-
-                  {/* Decorative corner */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-lime-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </motion.div>
               ))}
             </div>
