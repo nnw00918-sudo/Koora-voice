@@ -2527,7 +2527,7 @@ const YallaLiveRoom = ({ user }) => {
         {/* Speakers Stage */}
         <div className="px-4 py-3">
           {/* View Mode Tabs - Modern Pill Style */}
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-3">
             <div className="flex p-1 bg-white/5 rounded-full border border-white/10">
               <button
                 onClick={() => setViewMode('mics')}
@@ -2554,6 +2554,17 @@ const YallaLiveRoom = ({ user }) => {
                 </button>
               )}
             </div>
+          </div>
+          
+          {/* Speakers Header - Fixed position above scroll */}
+          <div className="flex items-center justify-between mb-2 px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-[#CCFF00]/20 flex items-center justify-center">
+                <Mic className="w-3 h-3 text-[#CCFF00]" />
+              </div>
+              <span className="font-cairo font-bold text-white text-sm">المتحدثون</span>
+            </div>
+            <span className="text-[#CCFF00] text-xs font-almarai">{speakers.length} متحدث</span>
           </div>
 
           {/* Watch Party Section - Only show in stream view */}
@@ -2597,128 +2608,121 @@ const YallaLiveRoom = ({ user }) => {
           </AnimatePresence>
         </div>
         {/* Combined Stage + Chat Section */}
-        <div className="px-4 pb-32 flex-1">
+        <div className="px-4 pb-32 flex-1 overflow-y-auto">
+          {/* ===== STREAM/BROADCAST AREA ===== */}
+          {room?.stream_url && room.stream_url.trim() !== '' && (
+            <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+              <div className="aspect-video w-full bg-black">
+                {room.stream_url.includes('youtube') || room.stream_url.includes('youtu.be') ? (
+                  <iframe
+                    src={room.stream_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                ) : (
+                  <video
+                    src={room.stream_url}
+                    className="w-full h-full object-contain"
+                    controls
+                    autoPlay
+                  />
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* ===== SPEAKERS STRIP ===== */}
+          <div className="mb-4 p-3 rounded-2xl bg-[#141414] border border-white/10">
+            
+            {/* Horizontal Scrollable Speakers */}
+            <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+              {/* Show all occupied seats + 2 empty slots */}
+              {seats.filter(s => s.occupied).concat(
+                Array(2).fill({ occupied: false, user: null })
+              ).slice(0, Math.max(speakers.length + 2, 2)).map((seat, index) => {
+                const isOccupied = seat.occupied;
+                const seatUser = seat.user;
+                const isLocalUser = seatUser?.user_id === user.id;
+                const hasLocalCamera = isLocalUser && isCameraOn && localCameraStream.current;
+                const remoteVideo = isOccupied ? remoteVideoUsers.find(rv => rv.uid === seatUser?.user_id || rv.uid === seatUser?.agora_uid) : null;
+                const hasVideo = hasLocalCamera || remoteVideo;
+                
+                return (
+                  <div key={index} className="flex flex-col items-center gap-1 flex-shrink-0">
+                    {isOccupied ? (
+                      /* Occupied Seat */
+                      <button
+                        onClick={() => hasVideo && setExpandedVideo({ 
+                          isLocal: isLocalUser, 
+                          remoteUser: remoteVideo,
+                          username: seatUser?.username,
+                          avatar: seatUser?.avatar
+                        })}
+                        className={`w-16 h-16 rounded-full overflow-hidden relative ${
+                          seatUser?.is_speaking 
+                            ? 'ring-2 ring-[#CCFF00] ring-offset-2 ring-offset-[#0A0A0A]' 
+                            : hasVideo 
+                              ? 'ring-2 ring-purple-500' 
+                              : 'border-2 border-white/20'
+                        }`}
+                      >
+                        {hasLocalCamera ? (
+                          <video
+                            ref={(el) => {
+                              if (el && localCameraStream.current) {
+                                el.srcObject = localCameraStream.current;
+                              }
+                            }}
+                            autoPlay
+                            playsInline
+                            muted
+                            className="w-full h-full object-cover"
+                            style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
+                          />
+                        ) : remoteVideo ? (
+                          <RemoteVideoCircle remoteUser={remoteVideo} />
+                        ) : (
+                          <img src={seatUser?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`} alt="" className="w-full h-full object-cover" />
+                        )}
+                        {/* Mic Status Badge */}
+                        <div className={`absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0A0A0A] ${seatUser?.is_muted ? 'bg-red-500' : 'bg-[#CCFF00]'}`}>
+                          {seatUser?.is_muted ? <MicOff className="w-2.5 h-2.5 text-white" /> : <Mic className="w-2.5 h-2.5 text-black" />}
+                        </div>
+                      </button>
+                    ) : (
+                      /* Empty Seat */
+                      <button
+                        onClick={() => !pendingRequest && !onStage && handleRequestStage()}
+                        className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 hover:border-white/30 transition-colors"
+                      >
+                        <span className="text-xl">+</span>
+                      </button>
+                    )}
+                    {/* Username */}
+                    <span className="font-almarai text-[10px] text-white/70 truncate max-w-[70px] text-center">
+                      {isOccupied ? seatUser?.username : 'انضم'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          {/* ===== CHAT SECTION ===== */}
           <div 
             className="rounded-2xl flex flex-col relative overflow-hidden bg-[#141414] border border-white/10"
             style={{
               backgroundImage: chatBackground ? `url(${chatBackground})` : 'none',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              minHeight: '70vh'
+              minHeight: '400px'
             }}
           >
             {/* Dark overlay for readability */}
             {chatBackground && (
               <div className="absolute inset-0 bg-black/50" />
             )}
-            
-            {/* ===== STREAM/BROADCAST AREA ===== */}
-            {room?.stream_url && room.stream_url.trim() !== '' && (
-              <div className="relative z-10 border-b border-white/10">
-                <div className="aspect-video w-full bg-black rounded-t-2xl overflow-hidden">
-                  {room.stream_url.includes('youtube') || room.stream_url.includes('youtu.be') ? (
-                    <iframe
-                      src={room.stream_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                      className="w-full h-full"
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
-                  ) : (
-                    <video
-                      src={room.stream_url}
-                      className="w-full h-full object-contain"
-                      controls
-                      autoPlay
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* ===== SPEAKERS STRIP (2 visible + scroll) ===== */}
-            <div className="relative z-10 p-3 border-b border-white/10">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Mic className="w-4 h-4 text-[#CCFF00]" />
-                  <span className="font-cairo font-bold text-white text-sm">المتحدثون</span>
-                </div>
-                <span className="text-white/60 text-xs font-almarai">{speakers.length} متحدث</span>
-              </div>
-              
-              {/* Horizontal Scrollable Speakers - 2 visible at a time */}
-              <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
-                {/* Show all occupied seats + 2 empty slots */}
-                {seats.filter(s => s.occupied).concat(
-                  Array(2).fill({ occupied: false, user: null })
-                ).slice(0, Math.max(speakers.length + 2, 2)).map((seat, index) => {
-                  const isOccupied = seat.occupied;
-                  const seatUser = seat.user;
-                  const isLocalUser = seatUser?.user_id === user.id;
-                  const hasLocalCamera = isLocalUser && isCameraOn && localCameraStream.current;
-                  const remoteVideo = isOccupied ? remoteVideoUsers.find(rv => rv.uid === seatUser?.user_id || rv.uid === seatUser?.agora_uid) : null;
-                  const hasVideo = hasLocalCamera || remoteVideo;
-                  
-                  return (
-                    <div key={index} className="flex flex-col items-center gap-1 flex-shrink-0">
-                      {isOccupied ? (
-                        /* Occupied Seat */
-                        <button
-                          onClick={() => hasVideo && setExpandedVideo({ 
-                            isLocal: isLocalUser, 
-                            remoteUser: remoteVideo,
-                            username: seatUser?.username,
-                            avatar: seatUser?.avatar
-                          })}
-                          className={`w-16 h-16 rounded-full overflow-hidden relative ${
-                            seatUser?.is_speaking 
-                              ? 'ring-2 ring-[#CCFF00] ring-offset-2 ring-offset-[#0A0A0A]' 
-                              : hasVideo 
-                                ? 'ring-2 ring-purple-500' 
-                                : 'border-2 border-white/20'
-                          }`}
-                        >
-                          {hasLocalCamera ? (
-                            <video
-                              ref={(el) => {
-                                if (el && localCameraStream.current) {
-                                  el.srcObject = localCameraStream.current;
-                                }
-                              }}
-                              autoPlay
-                              playsInline
-                              muted
-                              className="w-full h-full object-cover"
-                              style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
-                            />
-                          ) : remoteVideo ? (
-                            <RemoteVideoCircle remoteUser={remoteVideo} />
-                          ) : (
-                            <img src={seatUser?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`} alt="" className="w-full h-full object-cover" />
-                          )}
-                          {/* Mic Status Badge */}
-                          <div className={`absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0A0A0A] ${seatUser?.is_muted ? 'bg-red-500' : 'bg-[#CCFF00]'}`}>
-                            {seatUser?.is_muted ? <MicOff className="w-2.5 h-2.5 text-white" /> : <Mic className="w-2.5 h-2.5 text-black" />}
-                          </div>
-                        </button>
-                      ) : (
-                        /* Empty Seat */
-                        <button
-                          onClick={() => !pendingRequest && !onStage && handleRequestStage()}
-                          className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 hover:border-white/30 transition-colors"
-                        >
-                          <span className="text-xl">+</span>
-                        </button>
-                      )}
-                      {/* Username */}
-                      <span className="font-almarai text-[10px] text-white/70 truncate max-w-[70px] text-center">
-                        {isOccupied ? seatUser?.username : 'انضم'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
             
             {/* Chat Header */}
             <div className="flex items-center justify-between px-3 py-2 relative z-10 border-b border-slate-700/50">
