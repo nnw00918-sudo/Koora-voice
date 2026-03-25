@@ -318,18 +318,6 @@ const DashboardPage = ({ user, onLogout }) => {
               </div>
             </div>
             <div className="flex gap-2">
-              {user.role === 'owner' && (
-                <Button
-                  data-testid="admin-dashboard-btn"
-                  onClick={() => navigate('/admin')}
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-lime-500/20 text-lime-400 rounded-xl"
-                  title={t('controlPanel')}
-                >
-                  <Shield className="w-5 h-5" strokeWidth={1.5} />
-                </Button>
-              )}
               <Button
                 data-testid="logout-btn"
                 onClick={onLogout}
