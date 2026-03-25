@@ -46,32 +46,38 @@ const ThemedToaster = () => {
 
 function App() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false for faster initial load
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     if (token && userData) {
+      // Immediately set user from localStorage (no loading state)
       setUser(JSON.parse(userData));
-      // Refresh user data from server to get latest followers/following counts
-      const refreshUserData = async () => {
-        try {
-          const API = process.env.REACT_APP_BACKEND_URL;
-          const response = await fetch(`${API}/api/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (response.ok) {
-            const freshUserData = await response.json();
-            localStorage.setItem('user', JSON.stringify(freshUserData));
-            setUser(freshUserData);
-          }
-        } catch (err) {
-          console.error('Error refreshing user data:', err);
+      
+      // Refresh user data in background (no await, non-blocking)
+      const API = process.env.REACT_APP_BACKEND_URL;
+      fetch(`${API}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(response => {
+        if (response.ok) return response.json();
+        throw new Error('Unauthorized');
+      })
+      .then(freshUserData => {
+        localStorage.setItem('user', JSON.stringify(freshUserData));
+        setUser(freshUserData);
+      })
+      .catch(err => {
+        console.error('Error refreshing user data:', err);
+        // If token is invalid, clear and redirect
+        if (err.message === 'Unauthorized') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
         }
-      };
-      refreshUserData();
+      });
     }
-    setLoading(false);
   }, []);
 
   const handleLogin = (token, userData) => {

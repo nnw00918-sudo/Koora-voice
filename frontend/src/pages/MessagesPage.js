@@ -293,15 +293,19 @@ export default function MessagesPage() {
   };
 
   const fetchConversations = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await axios.get(`${API}/conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000 // 10 second timeout
       });
       setConversations(res.data.conversations || []);
     } catch (error) {
       console.error('Error fetching conversations');
+      // Don't show error to user, just show empty state
     } finally {
       setLoading(false);
     }
@@ -558,8 +562,17 @@ export default function MessagesPage() {
       {/* Conversations List */}
       <div className="relative flex-1 overflow-y-auto z-10">
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="w-8 h-8 border-2 border-[#CCFF00] border-t-transparent rounded-full animate-spin" />
+          /* Skeleton Loading - Faster perceived loading */
+          <div className="space-y-0">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="flex items-center gap-3 px-4 py-4 border-b border-[#1A1A1A] animate-pulse">
+                <div className="w-14 h-14 rounded-full bg-[#262626]" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-[#262626] rounded w-24 mr-auto" />
+                  <div className="h-3 bg-[#1A1A1A] rounded w-32 mr-auto" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-[#A3A3A3] px-4">

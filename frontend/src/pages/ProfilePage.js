@@ -338,12 +338,25 @@ const ProfilePage = ({ user }) => {
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`}>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className={`w-12 h-12 border-4 border-t-transparent rounded-full ${isDarkMode ? 'border-lime-500' : 'border-lime-600'}`}
-        />
+      <div className={`min-h-screen pb-24 ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`} dir="rtl">
+        {/* Skeleton Loading */}
+        <div className="animate-pulse">
+          {/* Header skeleton */}
+          <div className={`h-56 ${isDarkMode ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+          
+          {/* Avatar and name skeleton */}
+          <div className="px-4 -mt-16 relative z-10">
+            <div className={`w-28 h-28 rounded-full mx-auto ${isDarkMode ? 'bg-slate-700' : 'bg-gray-300'}`}></div>
+            <div className={`h-6 w-32 mx-auto mt-4 rounded ${isDarkMode ? 'bg-slate-700' : 'bg-gray-300'}`}></div>
+            <div className={`h-4 w-24 mx-auto mt-2 rounded ${isDarkMode ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+          </div>
+          
+          {/* Stats skeleton */}
+          <div className="flex justify-center gap-8 mt-6">
+            <div className={`w-24 h-20 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+            <div className={`w-24 h-20 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+          </div>
+        </div>
       </div>
     );
   }

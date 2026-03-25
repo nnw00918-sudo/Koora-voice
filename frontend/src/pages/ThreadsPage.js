@@ -149,14 +149,15 @@ const ThreadsPage = ({ user }) => {
   }, [newThread]);
 
   const fetchThreads = async () => {
-    setLoading(true);
     try {
       const response = await axios.get(`${API}/threads`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { tab: activeTab }
+        params: { tab: activeTab },
+        timeout: 15000 // 15 second timeout
       });
       setThreads(response.data.threads || []);
     } catch (error) {
+      console.error('Error fetching threads:', error);
       setThreads([]);
     } finally {
       setLoading(false);
