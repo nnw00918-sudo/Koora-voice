@@ -74,14 +74,10 @@ const DashboardPage = ({ user, onLogout }) => {
     const fetchSportsNews = async () => {
       setNewsLoading(true);
       try {
-        // Fetch both local news and football news in parallel
-        const [localResponse, footballResponse] = await Promise.all([
-          axios.get(`${API}/news/ticker`).catch(() => ({ data: { news: [] } })),
-          axios.get(`${API}/football/news/ticker`).catch(() => ({ data: { news: [] } }))
-        ]);
+        // Fetch only local news (added by owner and news reporters)
+        const response = await axios.get(`${API}/news/ticker`).catch(() => ({ data: { news: [] } }));
         
-        // Combine local news (priority) with football news
-        const localNews = (localResponse.data?.news || []).map(item => ({
+        const localNews = (response.data?.news || []).map(item => ({
           type: item.type,
           icon: item.icon === 'red_circle' ? '🔴' : 
                 item.icon === 'soccer' ? '⚽' :
@@ -89,60 +85,32 @@ const DashboardPage = ({ user, onLogout }) => {
                 item.icon === 'studio_microphone' ? '🎙️' :
                 item.icon === 'newspaper' ? '📰' : item.icon,
           text: item.text,
-          priority: item.priority || 1,
-          is_local: true
+          priority: item.priority || 1
         }));
         
-        const footballNews = (footballResponse.data?.news || []).map(item => ({
-          type: item.type,
-          icon: item.icon === 'red_circle' ? '🔴' : 
-                item.icon === 'soccer' ? '⚽' :
-                item.icon === 'arrows_counterclockwise' ? '🔄' :
-                item.icon === 'studio_microphone' ? '🎙️' :
-                item.icon === 'newspaper' ? '📰' : item.icon,
-          text: isRTL ? item.text : (item.text_en || item.text),
-          priority: item.priority || 3
-        }));
-        
-        // Combine and sort by priority (local news first)
-        const allNews = [...localNews, ...footballNews]
-          .sort((a, b) => a.priority - b.priority)
-          .slice(0, 15);
-        
-        if (allNews.length > 0) {
-          setSportsNews(allNews);
+        if (localNews.length > 0) {
+          setSportsNews(localNews);
         } else {
-          // Use fallback if no news
+          // Show message when no news
           setSportsNews([
-            { type: 'result', icon: '⚽', text: 'الهلال 1-0 الفتح - دوري روشن' },
-            { type: 'transfer', icon: '🔄', text: 'رسمياً: انتقال مبابي إلى ريال مدريد' },
-            { type: 'result', icon: '⚽', text: 'ليفربول 1-1 توتنهام - الدوري الإنجليزي' },
+            { type: 'info', icon: '📢', text: 'لا توجد أخبار حالياً - أضف خبر من إدارة الأخبار' }
           ]);
         }
       } catch (error) {
-        console.error('Failed to fetch sports news:', error);
-        // Fallback to static news
-        const fallbackNews = [
-          { type: 'transfer', icon: '🔄', text: isRTL ? 'رسمياً: انتقال مبابي إلى ريال مدريد بصفقة تاريخية' : 'Official: Mbappé joins Real Madrid in historic deal' },
-          { type: 'result', icon: '⚽', text: isRTL ? 'الهلال 3-1 النصر في ديربي الرياض' : 'Al-Hilal 3-1 Al-Nassr in Riyadh Derby' },
-          { type: 'coach', icon: '🎙️', text: isRTL ? 'أنشيلوتي: نحن جاهزون لدوري الأبطال' : 'Ancelotti: We are ready for Champions League' },
-          { type: 'news', icon: '📰', text: isRTL ? 'فيفا يعلن عن تغييرات جديدة في قوانين التسلل' : 'FIFA announces new offside rule changes' },
-          { type: 'transfer', icon: '🔄', text: isRTL ? 'برشلونة يقترب من ضم لامين يامال' : 'Barcelona close to signing Lamine Yamal' },
-          { type: 'result', icon: '⚽', text: isRTL ? 'ليفربول 2-0 مانشستر سيتي' : 'Liverpool 2-0 Manchester City' },
-          { type: 'coach', icon: '🎙️', text: isRTL ? 'غوارديولا: سنعود أقوى الموسم القادم' : 'Guardiola: We will come back stronger next season' },
-          { type: 'news', icon: '📰', text: isRTL ? 'السعودية تستضيف كأس العالم 2034' : 'Saudi Arabia to host World Cup 2034' },
-        ];
-        setSportsNews(fallbackNews);
+        console.error('Failed to fetch news:', error);
+        setSportsNews([
+          { type: 'info', icon: '📢', text: 'لا توجد أخبار حالياً' }
+        ]);
       } finally {
         setNewsLoading(false);
       }
     };
 
     fetchSportsNews();
-    // Refresh news every 2 minutes
-    const interval = setInterval(fetchSportsNews, 120000);
+    // Refresh news every 30 seconds
+    const interval = setInterval(fetchSportsNews, 30000);
     return () => clearInterval(interval);
-  }, [isRTL]);
+  }, []);
 
   useEffect(() => {
     let result = rooms;
