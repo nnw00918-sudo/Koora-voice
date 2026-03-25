@@ -105,8 +105,8 @@ const FollowListPage = ({ user }) => {
       const updateList = (list) => list.map(u => 
         u.id === targetUserId ? { ...u, is_following: !isFollowing } : u
       );
-      setFollowers(updateList);
-      setFollowing(updateList);
+      setFollowers(prev => updateList(prev));
+      setFollowing(prev => updateList(prev));
     } catch (err) {
       console.error('Error:', err);
     } finally {
