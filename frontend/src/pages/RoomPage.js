@@ -2122,28 +2122,24 @@ const YallaLiveRoom = ({ user }) => {
 
       <div className="w-full max-w-lg mx-auto min-h-[100dvh] flex flex-col relative z-10 overflow-y-auto">
         
-        {/* Header */}
-        <motion.div 
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="px-4 py-3 flex items-center justify-between"
+        {/* Header - Fixed at top */}
+        <div 
+          className="px-4 py-3 flex items-center justify-between bg-slate-950/95 backdrop-blur-sm sticky top-0 z-50"
           style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
         >
           {/* Settings Button - Left */}
           <div className="flex items-center gap-2">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={() => setShowRoomSettings(true)}
-              className="w-11 h-11 rounded-xl bg-lime-500 hover:bg-lime-400 flex items-center justify-center shadow-lg shadow-lime-500/30 transition-colors"
+              className="w-11 h-11 rounded-xl bg-lime-500 hover:bg-lime-400 flex items-center justify-center shadow-lg shadow-lime-500/30 transition-colors active:scale-95"
             >
               <Settings className="w-5 h-5 text-slate-900" />
-            </motion.button>
+            </button>
             
             {/* Room Members Button - Shows member count */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={() => setShowConnectedList(!showConnectedList)}
-              className="h-11 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 flex items-center gap-2 border border-slate-700 transition-colors"
+              className="h-11 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 flex items-center gap-2 border border-slate-700 transition-colors active:scale-95"
               title="أعضاء الغرفة"
             >
               <Users className="w-4 h-4 text-lime-400" />
@@ -2152,7 +2148,7 @@ const YallaLiveRoom = ({ user }) => {
                 <span className="w-2 h-2 rounded-full bg-lime-500 animate-pulse"></span>
                 <span className="text-slate-400 text-xs">{participants.length}</span>
               </div>
-            </motion.button>
+            </button>
           </div>
 
           {/* Room Info - Center */}
@@ -2169,22 +2165,20 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Right Side - Close & Minimize */}
           <div className="flex items-center gap-2">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={handleMinimize}
-              className="w-10 h-10 rounded-xl bg-lime-500/20 hover:bg-lime-500/30 flex items-center justify-center border border-lime-500/30 transition-colors"
+              className="w-10 h-10 rounded-xl bg-lime-500/20 hover:bg-lime-500/30 flex items-center justify-center border border-lime-500/30 transition-colors active:scale-95"
             >
               <ArrowRight className="w-5 h-5 text-lime-400" />
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            </button>
+            <button
               onClick={handleFullLeave}
-              className="w-10 h-10 rounded-xl bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center border border-red-500/30 transition-colors"
+              className="w-10 h-10 rounded-xl bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center border border-red-500/30 transition-colors active:scale-95"
             >
               <X className="w-5 h-5 text-red-400" />
-            </motion.button>
+            </button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Seat Requests Badge */}
         {(room?.owner_id === user.id || currentUserRole === 'admin' || currentUserRole === 'owner') && seatRequests.length > 0 && (
