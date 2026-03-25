@@ -29,6 +29,7 @@ export const UserRolesModal = ({
   roomMembers = [],
   currentUserId,
   isOwner,
+  ownerId,
   onRoleUpdated
 }) => {
   const [selectedUser, setSelectedUser] = useState(null);
@@ -86,13 +87,29 @@ export const UserRolesModal = ({
     }
   };
 
-  const getRoleInfo = (userId, ownerId) => {
-    if (userId === ownerId) {
-      return { value: 'owner', label: 'المالك', icon: Crown, color: 'text-purple-400', bgColor: 'bg-purple-500/20' };
+  const getRoleInfo = (memberId) => {
+    // Check if this user is the owner
+    if (memberId === ownerId) {
+      return { value: 'owner', label: 'المالك', icon: Crown, color: 'text-purple-400', bgColor: 'bg-purple-500/20', borderColor: 'border-purple-500/50' };
     }
     
-    const role = roomRoles[userId] || 'member';
+    const role = roomRoles[memberId] || 'member';
     return ROOM_ROLES.find(r => r.value === role) || ROOM_ROLES[2];
+  };
+
+  // Get member ID - handle different data structures
+  const getMemberId = (member) => {
+    return member.user_id || member.id;
+  };
+
+  // Get member username
+  const getMemberUsername = (member) => {
+    return member.username || member.name || 'مستخدم';
+  };
+
+  // Get member avatar
+  const getMemberAvatar = (member) => {
+    return member.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${getMemberUsername(member)}`;
   };
 
   if (!isOpen) return null;
@@ -150,6 +167,13 @@ export const UserRolesModal = ({
             </div>
           </div>
 
+          {/* Members Count */}
+          <div className="px-6 py-2 bg-slate-800/50">
+            <span className="text-slate-400 text-xs font-almarai">
+              {roomMembers.length} عضو في الغرفة
+            </span>
+          </div>
+
           {/* Members List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {roomMembers.length === 0 ? (
@@ -158,31 +182,34 @@ export const UserRolesModal = ({
                 <p className="font-cairo">لا يوجد أعضاء</p>
               </div>
             ) : (
-              roomMembers.map((member) => {
-                const roleInfo = getRoleInfo(member.user_id || member.id, member.owner_id || roomMembers.find(m => m.is_owner)?.user_id);
+              roomMembers.map((member, index) => {
+                const memberId = getMemberId(member);
+                const memberUsername = getMemberUsername(member);
+                const memberAvatar = getMemberAvatar(member);
+                const roleInfo = getRoleInfo(memberId);
                 const RoleIcon = roleInfo.icon;
-                const isCurrentUser = (member.user_id || member.id) === currentUserId;
-                const isMemberOwner = roleInfo.value === 'owner';
+                const isCurrentUser = memberId === currentUserId;
+                const isMemberOwner = memberId === ownerId;
                 const canEdit = isOwner && !isMemberOwner && !isCurrentUser;
 
                 return (
                   <div
-                    key={member.user_id || member.id}
+                    key={memberId || index}
                     className={`p-3 rounded-xl ${roleInfo.bgColor} border ${roleInfo.borderColor || 'border-slate-700'} transition-colors`}
                   >
                     <div className="flex items-center gap-3">
                       {/* Avatar */}
                       <img
-                        src={member.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.username}`}
-                        alt={member.username}
-                        className="w-10 h-10 rounded-full border-2 border-white/20"
+                        src={memberAvatar}
+                        alt={memberUsername}
+                        className="w-10 h-10 rounded-full border-2 border-white/20 object-cover"
                       />
                       
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-cairo font-bold text-white text-sm truncate">
-                            {member.username}
+                            {memberUsername}
                           </span>
                           {isCurrentUser && (
                             <span className="text-[10px] bg-lime-500/20 text-lime-400 px-1.5 py-0.5 rounded">أنت</span>
@@ -198,12 +225,12 @@ export const UserRolesModal = ({
                       {canEdit && (
                         <div className="relative">
                           <button
-                            onClick={() => setSelectedUser(selectedUser === member.user_id ? null : member.user_id)}
+                            onClick={() => setSelectedUser(selectedUser === memberId ? null : memberId)}
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-cairo transition-colors"
                             disabled={loading}
                           >
                             تغيير
-                            {selectedUser === member.user_id ? (
+                            {selectedUser === memberId ? (
                               <ChevronUp className="w-3 h-3" />
                             ) : (
                               <ChevronDown className="w-3 h-3" />
@@ -212,7 +239,7 @@ export const UserRolesModal = ({
                           
                           {/* Dropdown */}
                           <AnimatePresence>
-                            {selectedUser === member.user_id && (
+                            {selectedUser === memberId && (
                               <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -221,12 +248,12 @@ export const UserRolesModal = ({
                               >
                                 {ROOM_ROLES.map((role) => {
                                   const Icon = role.icon;
-                                  const isCurrentRole = (roomRoles[member.user_id] || 'member') === role.value;
+                                  const isCurrentRole = (roomRoles[memberId] || 'member') === role.value;
                                   
                                   return (
                                     <button
                                       key={role.value}
-                                      onClick={() => handleChangeRole(member.user_id, role.value)}
+                                      onClick={() => handleChangeRole(memberId, role.value)}
                                       disabled={loading || isCurrentRole}
                                       className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-cairo transition-colors ${
                                         isCurrentRole 

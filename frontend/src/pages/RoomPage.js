@@ -3500,9 +3500,10 @@ const YallaLiveRoom = ({ user }) => {
           isOpen={showUserRolesModal}
           onClose={() => setShowUserRolesModal(false)}
           roomId={roomId}
-          roomMembers={room?.members || []}
+          roomMembers={participants.length > 0 ? participants : (room?.members || [])}
           currentUserId={user.id}
           isOwner={isOwner}
+          ownerId={room?.owner_id}
           onRoleUpdated={(userId, newRole) => {
             // Refresh room data
             fetchRoomData();
