@@ -1426,7 +1426,7 @@ const YallaLiveRoom = ({ user }) => {
   };
 
   // TV Receiver Style - Instant channel switch
-  const handlePlaySlot = (slot) => {
+  const handlePlaySlot = async (slot) => {
     const rawUrl = streamSlots[slot];
     if (!rawUrl) return;
     
@@ -1437,10 +1437,18 @@ const YallaLiveRoom = ({ user }) => {
     setStreamActive(true);
     setViewMode('stream');
     
+    // Update room state to show the new stream
+    setRoom(prev => ({ ...prev, stream_url: embedUrl }));
+    
     // Sync to server
-    axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
-      { headers: { Authorization: `Bearer ${token}` } }
-    ).catch(() => {});
+    try {
+      await axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      // Still works locally even if server sync fails
+      console.log('Channel switch synced locally');
+    }
   };
 
   const handleStartStream = async () => {
@@ -2676,6 +2684,47 @@ const YallaLiveRoom = ({ user }) => {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
               </div>
+              
+              {/* Channel Switcher - TV Remote Style */}
+              {Object.keys(streamSlots).filter(k => streamSlots[k]).length > 0 && (
+                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-3 border-t border-white/10">
+                  <div className="flex items-center justify-center gap-2 overflow-x-auto hide-scrollbar" dir="ltr">
+                    <span className="text-red-500 text-xs font-bold flex items-center gap-1 px-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                      مباشر
+                    </span>
+                    {[1, 2, 3, 4, 5].map(slot => {
+                      const hasChannel = streamSlots[slot];
+                      if (!hasChannel) return null;
+                      const isActive = activeSlot === slot;
+                      return (
+                        <button
+                          key={slot}
+                          onClick={() => handlePlaySlot(slot)}
+                          className={`min-w-[45px] h-10 rounded-xl font-bold text-lg transition-all flex items-center justify-center ${
+                            isActive
+                              ? 'bg-[#CCFF00] text-black shadow-[0_0_15px_rgba(204,255,0,0.5)] scale-110'
+                              : 'bg-white/10 text-white hover:bg-white/20 hover:scale-105'
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      );
+                    })}
+                    {isOwner && (
+                      <button
+                        onClick={handleStopStream}
+                        className="min-w-[50px] h-10 rounded-xl font-bold text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all flex items-center justify-center"
+                      >
+                        إنهاء
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-center mt-2 text-[10px] text-slate-500 font-cairo">
+                    📺 اختر القناة
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
