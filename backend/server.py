@@ -1797,6 +1797,105 @@ async def kick_user_from_stage(room_id: str, user_id: str, current_user: User = 
 class RoomRoleUpdate(BaseModel):
     role: str  # admin, mod, member
 
+@api_router.post("/rooms/{room_id}/roles/{user_id}")
+async def set_user_room_role(room_id: str, user_id: str, data: RoomRoleUpdate, current_user: User = Depends(get_current_user)):
+    """Set user's role in a room (used by UserRolesModal) - POST version"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check permissions - only room owner or admin can change roles
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_system_owner = current_user.role == "owner"
+    
+    # Get current user's room role
+    current_user_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    
+    is_room_admin = current_user_room_role and current_user_room_role.get("role") == "admin"
+    is_room_leader = current_user_room_role and current_user_room_role.get("role") == "leader"
+    
+    # Check permissions - owner, leader, or admin can change roles
+    if not is_room_owner and not is_room_leader and not is_room_admin and not is_system_owner:
+        raise HTTPException(status_code=403, detail="ليس لديك صلاحية تغيير الرتب")
+    
+    # Validate role
+    if data.role not in ["leader", "admin", "mod", "member"]:
+        raise HTTPException(status_code=400, detail="رتبة غير صحيحة. الخيارات: leader, admin, mod, member")
+    
+    # Cannot change owner's role
+    if room.get("owner_id") == user_id:
+        raise HTTPException(status_code=403, detail="لا يمكن تغيير رتبة مالك الغرفة")
+    
+    # Get target user's current role
+    target_room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": user_id
+    }, {"_id": 0})
+    target_current_role = target_room_role.get("role", "member") if target_room_role else "member"
+    
+    # Only owner can set leader role
+    if data.role == "leader" and not is_room_owner and not is_system_owner:
+        raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه تعيين رئيس الغرفة")
+    
+    # Leader restrictions (if not owner)
+    if is_room_leader and not is_room_owner and not is_system_owner:
+        # Leader cannot promote to leader
+        if data.role == "leader":
+            raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه تعيين رئيس الغرفة")
+        
+        # Leader cannot change another leader's role
+        if target_current_role == "leader":
+            raise HTTPException(status_code=403, detail="لا يمكن تغيير رتبة رئيس الغرفة")
+    
+    # Admin restrictions (if not owner and not leader)
+    if is_room_admin and not is_room_owner and not is_room_leader and not is_system_owner:
+        # Admin cannot promote to leader
+        if data.role == "leader":
+            raise HTTPException(status_code=403, detail="فقط مالك الغرفة يمكنه تعيين رئيس الغرفة")
+        
+        # Admin cannot promote to admin - only owner/leader can
+        if data.role == "admin":
+            raise HTTPException(status_code=403, detail="فقط مالك الغرفة أو رئيس الغرفة يمكنه ترقية لأدمن")
+        
+        # Admin cannot change leader's role
+        if target_current_role == "leader":
+            raise HTTPException(status_code=403, detail="لا يمكن تغيير رتبة رئيس الغرفة")
+        
+        # Admin cannot change another admin's role
+        if target_current_role == "admin":
+            raise HTTPException(status_code=403, detail="الأدمن لا يمكنه تغيير رتبة أدمن آخر")
+    
+    # If setting to member, delete the role entry
+    if data.role == "member":
+        await db.room_roles.delete_one({"room_id": room_id, "user_id": user_id})
+    else:
+        # Upsert room role
+        await db.room_roles.update_one(
+            {"room_id": room_id, "user_id": user_id},
+            {"$set": {
+                "room_id": room_id,
+                "user_id": user_id,
+                "role": data.role,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.id
+            }},
+            upsert=True
+        )
+    
+    role_names = {"leader": "رئيس الغرفة", "admin": "أدمن", "mod": "مود", "member": "عضو"}
+    
+    # Get target user info
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "username": 1})
+    username = target_user.get("username", user_id) if target_user else user_id
+    
+    return {
+        "message": f"تم تغيير رتبة {username} إلى {role_names.get(data.role, data.role)}",
+        "role": data.role
+    }
+
 @api_router.get("/rooms/{room_id}/user-role/{user_id}")
 async def get_user_room_role(room_id: str, user_id: str):
     """Get user's role in a specific room"""
