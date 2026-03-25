@@ -220,6 +220,7 @@ const YallaLiveRoom = ({ user }) => {
   const [expandedVideo, setExpandedVideo] = useState(null); // For viewing video fullscreen
   const screenShareStream = useRef(null);
   const screenShareVideoRef = useRef(null);
+  const streamPlayerRef = useRef(null); // Ref for ReactPlayer to control volume
   
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -381,11 +382,28 @@ const YallaLiveRoom = ({ user }) => {
     }
   }, [micVolume]);
 
-  // Stream volume control - for video/broadcast audio
+  // Stream volume control - for video/broadcast audio (YouTube, etc.)
   useEffect(() => {
-    // This controls video/stream volume (if any video player is used)
-    // The streamVolume state is available for video players
-  }, [streamVolume]);
+    if (streamPlayerRef.current && typeof streamPlayerRef.current.getInternalPlayer === 'function') {
+      try {
+        const player = streamPlayerRef.current.getInternalPlayer();
+        if (player) {
+          // For YouTube player
+          if (typeof player.setVolume === 'function') {
+            player.setVolume(micVolume);
+            console.log(`Stream volume set to ${micVolume}%`);
+          }
+          // For HTML5 video
+          if (typeof player.volume !== 'undefined') {
+            player.volume = micVolume / 100;
+            console.log(`HTML5 video volume set to ${micVolume / 100}`);
+          }
+        }
+      } catch (err) {
+        console.error('Error setting stream volume:', err);
+      }
+    }
+  }, [micVolume]);
 
   // Playback features polling (Reactions, Polls, Watch Party)
   useEffect(() => {
@@ -2655,21 +2673,45 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' && (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black">
-                {room.stream_url.includes('youtube') || room.stream_url.includes('youtu.be') ? (
-                  <iframe
-                    src={room.stream_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  />
-                ) : (
-                  <video
-                    src={room.stream_url}
-                    className="w-full h-full object-contain"
-                    controls
-                    autoPlay
-                  />
-                )}
+                <ReactPlayer
+                  ref={streamPlayerRef}
+                  url={(() => {
+                    let url = room.stream_url;
+                    // Convert embed URL to watch URL for ReactPlayer
+                    if (url.includes('/embed/')) {
+                      const videoId = url.split('/embed/')[1].split('?')[0];
+                      url = `https://www.youtube.com/watch?v=${videoId}`;
+                    }
+                    return url;
+                  })()}
+                  playing={true}
+                  controls={true}
+                  width="100%"
+                  height="100%"
+                  volume={micVolume / 100}
+                  muted={micVolume === 0}
+                  onError={(e) => console.error('ReactPlayer error:', e)}
+                  onReady={() => {
+                    // Apply initial volume when player is ready
+                    if (streamPlayerRef.current) {
+                      const player = streamPlayerRef.current.getInternalPlayer();
+                      if (player && player.setVolume) {
+                        player.setVolume(micVolume);
+                      }
+                    }
+                  }}
+                  config={{
+                    youtube: {
+                      playerVars: {
+                        autoplay: 1,
+                        modestbranding: 1,
+                        rel: 0,
+                        playsinline: 1,
+                        origin: window.location.origin
+                      }
+                    }
+                  }}
+                />
               </div>
             </div>
           )}
@@ -2857,10 +2899,11 @@ const YallaLiveRoom = ({ user }) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="absolute bottom-20 left-4 right-4 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl p-4 shadow-xl z-50"
+                className="absolute bottom-20 left-4 right-4 bg-slate-900/98 backdrop-blur-xl border border-slate-700 rounded-2xl p-4 shadow-xl z-[100]"
+                onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-white font-cairo text-sm font-bold">صوت المتحدثين</span>
+                  <span className="text-white font-cairo text-sm font-bold">صوت البث والمتحدثين</span>
                   <button 
                     onClick={() => setShowVolumeControls(false)}
                     className="text-slate-400 hover:text-white p-1"
@@ -2868,7 +2911,7 @@ const YallaLiveRoom = ({ user }) => {
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3" style={{ position: 'relative', zIndex: 101 }}>
                   <VolumeX className="w-5 h-5 text-slate-500 flex-shrink-0" />
                   <VolumeSlider
                     value={micVolume}
