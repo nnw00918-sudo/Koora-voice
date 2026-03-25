@@ -495,8 +495,8 @@ const SettingsPage = ({ user, onLogout }) => {
   // Main Settings View
   const MainView = () => (
     <div className="space-y-3">
-      {/* Admin Dashboard Link - Only for owner/admin */}
-      {['owner', 'admin'].includes(user?.role) && (
+      {/* Admin Dashboard Link - Only for owner */}
+      {user?.role === 'owner' && (
         <SettingItem 
           icon={Shield} 
           title={isRTL ? 'لوحة التحكم' : 'Admin Dashboard'} 

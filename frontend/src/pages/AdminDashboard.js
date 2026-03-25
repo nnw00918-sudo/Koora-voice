@@ -42,12 +42,12 @@ const AdminDashboard = ({ user }) => {
 
   const token = localStorage.getItem('token');
   
-  // Check access - owner and admin can access
+  // Check access - only owner can access
   const isOwner = user.role === 'owner';
   const canPromoteUsers = user.role === 'owner'; // Only owner can change roles
 
   useEffect(() => {
-    if (!['admin', 'owner'].includes(user.role)) {
+    if (user.role !== 'owner') {
       toast.error('لا تملك صلاحيات للوصول');
       navigate('/dashboard');
       return;
