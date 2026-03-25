@@ -1071,14 +1071,14 @@ const YallaLiveRoom = ({ user }) => {
   };
 
   const handleKickUser = async (userId) => {
-    if (!window.confirm('هل أنت متأكد من طرد هذا العضو؟')) return;
+    if (!window.confirm(t('confirmKick'))) return;
     try {
       await axios.post(`${API}/rooms/${roomId}/kick/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success('تم طرد العضو');
+      toast.success(t('memberKicked'));
       fetchSeats();
       fetchParticipants();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل الطرد');
+      toast.error(error.response?.data?.detail || t('kickFailed'));
     }
   };
 
@@ -1090,10 +1090,10 @@ const YallaLiveRoom = ({ user }) => {
         { role: newRole },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success(response.data.message || `تم تغيير رتبة ${username}`);
+      toast.success(response.data.message || t('success'));
       fetchParticipants();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل تغيير الرتبة');
+      toast.error(error.response?.data?.detail || t('roleChangeFailed'));
     }
   };
 
@@ -1117,7 +1117,7 @@ const YallaLiveRoom = ({ user }) => {
         setRoomMembers(membersRes.data.members || []);
       } catch {}
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل تغيير رتبة الإخباري');
+      toast.error(error.response?.data?.detail || t('newsRoleFailed'));
     }
   };
 
@@ -1134,31 +1134,31 @@ const YallaLiveRoom = ({ user }) => {
   const handleMuteUser = async (userId) => {
     try {
       await axios.post(`${API}/rooms/${roomId}/mute/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success('تم كتم العضو');
+      toast.success(t('memberMuted'));
       fetchSeats();
       fetchParticipants();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل الكتم');
+      toast.error(error.response?.data?.detail || t('muteFailed'));
     }
   };
 
   const handleUnmuteUser = async (userId) => {
     try {
       await axios.post(`${API}/rooms/${roomId}/unmute/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success('تم إلغاء كتم العضو');
+      toast.success(t('memberUnmuted'));
       fetchSeats();
       fetchParticipants();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل إلغاء الكتم');
+      toast.error(error.response?.data?.detail || t('unmuteFailed'));
     }
   };
 
   const handleInviteUser = async (userId, username) => {
     try {
       await axios.post(`${API}/rooms/${roomId}/seat/invite/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success(`تم إرسال دعوة إلى ${username}`);
+      toast.success(t('inviteSent'));
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل إرسال الدعوة');
+      toast.error(error.response?.data?.detail || t('inviteFailed'));
     }
   };
 
@@ -1169,7 +1169,7 @@ const YallaLiveRoom = ({ user }) => {
       fetchSeats();
       fetchParticipants();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل إنزال العضو');
+      toast.error(error.response?.data?.detail || t('demoteFailed'));
     }
   };
 
@@ -1195,29 +1195,29 @@ const YallaLiveRoom = ({ user }) => {
       fetchRoomData();
       setShowRoomSettings(false);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل تغيير حالة الغرفة');
+      toast.error(error.response?.data?.detail || t('statusChangeFailed'));
     }
   };
 
   const handleDeleteRoom = async () => {
-    if (!window.confirm('هل أنت متأكد من حذف الغرفة؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    if (!window.confirm(t('confirmDeleteRoom'))) return;
     try {
       await axios.delete(`${API}/admin/rooms/${roomId}`, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success('تم حذف الغرفة');
+      toast.success(t('roomDeleted'));
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل حذف الغرفة');
+      toast.error(error.response?.data?.detail || t('deleteRoomFailed'));
     }
   };
 
   const handleCloseAndKickAll = async () => {
-    if (!window.confirm('هل أنت متأكد من إغلاق الغرفة وطرد جميع المشاركين؟')) return;
+    if (!window.confirm(t('confirmCloseRoom'))) return;
     try {
       const response = await axios.post(`${API}/rooms/${roomId}/close-and-kick`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(response.data.message);
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل إغلاق الغرفة');
+      toast.error(error.response?.data?.detail || t('closeRoomFailed'));
     }
   };
 
@@ -1869,11 +1869,11 @@ const YallaLiveRoom = ({ user }) => {
   const handleRejectInvite = async (inviteId) => {
     try {
       await axios.post(`${API}/rooms/${roomId}/seat/invites/${inviteId}/reject`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      toast.info('رفضت الدعوة');
+      toast.info(t('declineInvite'));
       setShowInviteModal(false);
       fetchMyInvites();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل رفض الدعوة');
+      toast.error(error.response?.data?.detail || t('error'));
     }
   };
 
@@ -2728,12 +2728,12 @@ const YallaLiveRoom = ({ user }) => {
                                       ? 'text-lime-400 bg-lime-500/20' 
                                       : 'text-slate-400 bg-slate-700/50'
                             }`}>
-                              {isOwnerOfRoom ? 'مالك الغرفة' : isUserAdmin ? 'أدمن' : isUserMod ? 'مود' : isSpeaker && isOnline ? 'متحدث' : 'عضو'}
+                              {isOwnerOfRoom ? t('roomOwner') : isUserAdmin ? t('admin') : isUserMod ? t('mod') : isSpeaker && isOnline ? t('speaker') : t('member')}
                             </span>
                             {/* News Reporter Badge */}
                             {member.roles?.includes('news_reporter') && (
                               <span className="text-xs px-2 py-0.5 rounded-full text-cyan-400 bg-cyan-500/20">
-                                إخباري
+                                {t('newsReporter')}
                               </span>
                             )}
                           </div>
@@ -2751,10 +2751,10 @@ const YallaLiveRoom = ({ user }) => {
                                 <button
                                   onClick={() => handleChangeRoomRole(odId, 'admin', member.username)}
                                   className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-cairo transition-colors"
-                                  title="ترقية لأدمن"
+                                  title={t('promoteToAdmin')}
                                 >
                                   <Shield className="w-3 h-3" />
-                                  أدمن
+                                  {t('admin')}
                                 </button>
                               )}
                               
@@ -2763,10 +2763,10 @@ const YallaLiveRoom = ({ user }) => {
                                 <button
                                   onClick={() => handleChangeRoomRole(odId, 'mod', member.username)}
                                   className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-xs font-cairo transition-colors"
-                                  title="ترقية لمود"
+                                  title={t('promoteToMod')}
                                 >
                                   <Star className="w-3 h-3" />
-                                  مود
+                                  {t('mod')}
                                 </button>
                               )}
                               
@@ -2775,10 +2775,10 @@ const YallaLiveRoom = ({ user }) => {
                                 <button
                                   onClick={() => handleChangeRoomRole(odId, 'member', member.username)}
                                   className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-slate-400 text-xs font-cairo transition-colors"
-                                  title="إزالة الرتبة"
+                                  title={t('removeRole')}
                                 >
                                   <ArrowDown className="w-3 h-3" />
-                                  عضو
+                                  {t('member')}
                                 </button>
                               )}
                               
@@ -2787,19 +2787,19 @@ const YallaLiveRoom = ({ user }) => {
                                 <button
                                   onClick={() => handleToggleNewsReporter(odId, member.username, false)}
                                   className="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-500/30 hover:bg-cyan-500/40 text-cyan-400 text-xs font-cairo transition-colors"
-                                  title="إزالة رتبة إخباري"
+                                  title={t('removeNewsReporter')}
                                 >
                                   <Type className="w-3 h-3" />
-                                  إخباري ✓
+                                  {t('removeNewsReporter')}
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => handleToggleNewsReporter(odId, member.username, true)}
                                   className="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-xs font-cairo transition-colors"
-                                  title="إضافة رتبة إخباري"
+                                  title={t('addNewsReporter')}
                                 >
                                   <Type className="w-3 h-3" />
-                                  + إخباري
+                                  {t('addNewsReporter')}
                                 </button>
                               )}
                             </>
@@ -2812,10 +2812,10 @@ const YallaLiveRoom = ({ user }) => {
                                 <button
                                   onClick={() => handleDemoteSpeaker(odId)}
                                   className="flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 text-xs font-cairo transition-colors"
-                                  title="إنزال من المايك"
+                                  title={t('demoteFromMic')}
                                 >
                                   <MicOff className="w-3 h-3" />
-                                  إنزال
+                                  {t('demoteFromMic')}
                                 </button>
                               ) : (
                                 <button
@@ -2824,10 +2824,10 @@ const YallaLiveRoom = ({ user }) => {
                                     setShowPromoteModal(true);
                                   }}
                                   className="flex items-center gap-1 px-2 py-1 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 text-lime-400 text-xs font-cairo transition-colors"
-                                  title="رفع للمايك"
+                                  title={t('promoteToMic')}
                                 >
                                   <Mic className="w-3 h-3" />
-                                  رفع
+                                  {t('promoteToMic')}
                                 </button>
                               )}
                               
@@ -2840,10 +2840,10 @@ const YallaLiveRoom = ({ user }) => {
                                       ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400' 
                                       : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400'
                                   }`}
-                                  title={isMuted ? 'إلغاء الكتم' : 'كتم'}
+                                  title={isMuted ? t('unmute') : t('mute')}
                                 >
                                   {isMuted ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
-                                  {isMuted ? 'صوت' : 'كتم'}
+                                  {isMuted ? t('sound') : t('mute')}
                                 </button>
                               )}
                               
@@ -2851,10 +2851,10 @@ const YallaLiveRoom = ({ user }) => {
                               <button
                                 onClick={() => handleKickUser(odId)}
                                 className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-cairo transition-colors"
-                                title="طرد من الغرفة"
+                                title={t('kickUser')}
                               >
                                 <UserX className="w-3 h-3" />
-                                طرد
+                                {t('kickUser')}
                               </button>
                             </>
                           )}
@@ -2867,7 +2867,7 @@ const YallaLiveRoom = ({ user }) => {
                 {(roomMembers.length === 0 && participants.length === 0) && (
                   <div className="p-8 text-center text-slate-400">
                     <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p className="font-cairo">لا يوجد أعضاء في الغرفة</p>
+                    <p className="font-cairo">{t('noMembers')}</p>
                   </div>
                 )}
               </div>
@@ -3144,7 +3144,7 @@ const YallaLiveRoom = ({ user }) => {
             <div className="flex-1 overflow-y-auto space-y-2 hide-scrollbar relative z-10 p-2">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-slate-500 text-sm font-cairo">
-                  لا توجد رسائل - ابدأ المحادثة!
+                  {t('noMessages')}
                 </div>
               ) : (
                 messages.slice(-20).map((message, index) => {
@@ -3256,7 +3256,7 @@ const YallaLiveRoom = ({ user }) => {
               className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 isAudioMuted ? 'bg-red-500' : 'bg-slate-800 border border-slate-700'
               }`}
-              title={isAudioMuted ? 'إلغاء الكتم' : 'كتم الصوت'}
+              title={isAudioMuted ? t('unmute') : t('mute')}
             >
               {isAudioMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-slate-300" />}
             </motion.button>
@@ -4080,7 +4080,7 @@ const YallaLiveRoom = ({ user }) => {
           isOpen={showInviteFriendsModal}
           onClose={() => setShowInviteFriendsModal(false)}
           roomId={roomId}
-          roomTitle={room?.title || 'غرفة صوت الكورة'}
+          roomTitle={room?.title || t('appName')}
         />
 
         {/* Add Room News Modal - إضافة خبر للدوانية */}
@@ -4153,13 +4153,13 @@ const YallaLiveRoom = ({ user }) => {
                     disabled={addingNews || !newNewsText.trim()}
                     className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-cairo font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {addingNews ? 'جاري الإضافة...' : 'إضافة الخبر'}
+                    {addingNews ? t('loading') : t('addNews')}
                   </button>
                   <button
                     onClick={() => setShowAddNewsModal(false)}
                     className="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-cairo font-bold transition-colors"
                   >
-                    إلغاء
+                    {t('cancel')}
                   </button>
                 </div>
               </motion.div>
@@ -4236,13 +4236,13 @@ const YallaLiveRoom = ({ user }) => {
                     disabled={addingNews || !editingNews.text?.trim()}
                     className="flex-1 py-3 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-cairo font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {addingNews ? 'جاري التعديل...' : 'حفظ التعديل'}
+                    {addingNews ? t('loading') : t('saveChanges')}
                   </button>
                   <button
                     onClick={() => { setShowEditNewsModal(false); setEditingNews(null); }}
                     className="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-cairo font-bold transition-colors"
                   >
-                    إلغاء
+                    {t('cancel')}
                   </button>
                 </div>
               </motion.div>

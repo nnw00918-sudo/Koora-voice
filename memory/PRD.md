@@ -223,6 +223,22 @@ owner > admin > news_editor > mod > user
 
 ## المهام القادمة
 
+### P0 (مكتمل) - الترجمة الكاملة ✅ - 25 مارس 2026
+- [x] **إنشاء LanguageContext.js**:
+  - سياق عام للغة مع دالة `t()` للترجمة
+  - دعم كامل للعربية والإنجليزية
+  - تبديل تلقائي لـ RTL/LTR
+  - حفظ تفضيل اللغة في localStorage
+- [x] **ترجمة صفحة البداية (LandingPage.js)** ✅
+- [x] **ترجمة صفحة المصادقة (AuthPage.js)** ✅
+- [x] **ترجمة صفحة الداشبورد (DashboardPage.js)** ✅
+- [x] **ترجمة صفحة الغرفة (RoomPage.js)** ✅
+  - رسائل Toast
+  - أسماء الرتب
+  - أزرار التحكم
+  - رسائل التأكيد
+- [x] **زر تبديل اللغة (LanguageToggle)** في جميع الصفحات
+
 ### P1 (أولوية عالية) - Refactoring المتبقي
 - [ ] نقل Users routes (معقد - يعتمد على create_notification)
 - [ ] نقل Admin routes (معقد - يعتمد على get_admin_user)
@@ -248,6 +264,7 @@ owner > admin > news_editor > mod > user
 - FastAPI + React
 - Framer Motion (animations)
 - WebSocket (real-time messaging)
+- **LanguageContext** (Arabic/English i18n)
 
 ## بيانات الاختبار
 - Email: naifliver@gmail.com
