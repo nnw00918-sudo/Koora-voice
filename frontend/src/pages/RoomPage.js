@@ -868,6 +868,11 @@ const YallaLiveRoom = ({ user }) => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
       }
+      
+      // Handle message deletion broadcast
+      if (data.type === 'message_deleted' && data.room_id === roomId) {
+        setMessages(prev => prev.filter(m => m.id !== data.message_id));
+      }
     };
     
     ws.onclose = () => {
@@ -2394,6 +2399,23 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Delete message from chat
+  const handleDeleteMessage = async (messageId) => {
+    if (!window.confirm(isRTL ? 'هل أنت متأكد من حذف هذه الرسالة؟' : 'Are you sure you want to delete this message?')) {
+      return;
+    }
+    try {
+      await axios.delete(`${API}/rooms/${roomId}/messages/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Remove message from local state immediately
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      toast.success(isRTL ? 'تم حذف الرسالة' : 'Message deleted');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || (isRTL ? 'فشل حذف الرسالة' : 'Failed to delete message'));
+    }
+  };
+
   // ===== Playback Features Functions =====
   
   // Send Reaction
@@ -3321,6 +3343,18 @@ const YallaLiveRoom = ({ user }) => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                           </svg>
                         </button>
+                        
+                        {/* Delete Button - appears on hover for own messages or admins */}
+                        {(isOwnMessage || isRoomOwner || isAppOwner || isAdmin || isRoomLeader) && (
+                          <button
+                            onClick={() => handleDeleteMessage(message.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all"
+                            title={isRTL ? 'حذف' : 'Delete'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        
                         <span className="text-slate-500 text-[10px]">{isRTL ? 'الآن' : 'now'}</span>
                       </div>
                     </div>

@@ -314,6 +314,17 @@ owner > admin > news_editor > mod > user
   - زر حفظ الصورة على الجهاز
   - تصميم أنيق للأزرار في الأسفل
 
+### حذف الرسائل في الدردشة - 26 مارس 2026
+- [x] **Backend API** (`DELETE /api/rooms/{room_id}/messages/{message_id}`):
+  - يتحقق من صلاحيات الحذف (المرسل، مالك الغرفة، App Owner، Admin/Leader)
+  - يحذف الرسالة من `room_messages` collection
+  - يرسل broadcast عبر WebSocket لحذف الرسالة عند الجميع
+- [x] **Frontend**:
+  - دالة `handleDeleteMessage` لحذف الرسالة مع تأكيد
+  - زر حذف (سلة المهملات) يظهر عند hover على الرسالة
+  - الزر يظهر فقط للمرسل أو المالك/الأدمن
+  - WebSocket handler لـ `message_deleted` لتحديث الرسائل في real-time
+
 ---
 
 ## الاعتمادات

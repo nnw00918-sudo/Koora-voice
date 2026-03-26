@@ -2823,6 +2823,53 @@ async def get_room_messages(room_id: str, limit: int = 50):
     return [Message(**m) for m in messages]
 
 
+@api_router.delete("/rooms/{room_id}/messages/{message_id}")
+async def delete_room_message(
+    room_id: str,
+    message_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a message from room chat - only sender, room owner, or admins can delete"""
+    # Find the message in room_messages collection
+    message = await db.room_messages.find_one({"id": message_id, "room_id": room_id})
+    
+    if not message:
+        raise HTTPException(status_code=404, detail="الرسالة غير موجودة")
+    
+    # Get room info to check ownership
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Check permissions: sender, room owner, app owner, or room admin/leader
+    is_message_sender = message.get("user_id") == current_user.id
+    is_room_owner = room.get("owner_id") == current_user.id
+    is_app_owner = current_user.role == "owner"
+    
+    # Check room roles
+    room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    })
+    is_room_admin = room_role and any(r in room_role.get("roles", []) for r in ["admin", "leader"])
+    
+    if not (is_message_sender or is_room_owner or is_app_owner or is_room_admin):
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية حذف هذه الرسالة")
+    
+    # Delete the message
+    await db.room_messages.delete_one({"id": message_id, "room_id": room_id})
+    
+    # Broadcast deletion to all users in room via WebSocket
+    delete_broadcast = {
+        "type": "message_deleted",
+        "room_id": room_id,
+        "message_id": message_id
+    }
+    await ws_manager.broadcast_to_room(delete_broadcast, room_id)
+    
+    return {"message": "تم حذف الرسالة", "message_id": message_id}
+
+
 # ============ REACTIONS SYSTEM ============
 
 class ReactionCreate(BaseModel):
