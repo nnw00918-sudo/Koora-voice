@@ -115,6 +115,7 @@ const YallaLiveRoom = ({ user }) => {
   const [replyingTo, setReplyingTo] = useState(null); // {id, username, content} - message being replied to
   const [selectedImage, setSelectedImage] = useState(null); // Image to send in chat
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null); // Full-screen image viewer
   const [showMentionList, setShowMentionList] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionCursorPos, setMentionCursorPos] = useState(0);
@@ -3327,7 +3328,7 @@ const YallaLiveRoom = ({ user }) => {
                           src={message.image_url} 
                           alt="Shared" 
                           className="max-w-[200px] max-h-[200px] rounded-lg border border-slate-700 cursor-pointer hover:border-lime-500/50 transition-colors"
-                          onClick={() => window.open(message.image_url, '_blank')}
+                          onClick={() => setViewingImage(message.image_url)}
                           loading="lazy"
                         />
                       </div>
@@ -4609,6 +4610,55 @@ const YallaLiveRoom = ({ user }) => {
                   </button>
                 </div>
               </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Full-Screen Image Viewer Modal */}
+        <AnimatePresence>
+          {viewingImage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
+              onClick={() => setViewingImage(null)}
+            >
+              {/* Close Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setViewingImage(null);
+                }}
+                className="absolute top-4 right-4 z-[10000] w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-colors"
+                style={{ marginTop: 'env(safe-area-inset-top)' }}
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+              
+              {/* Back Button (Left side for RTL) */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setViewingImage(null);
+                }}
+                className="absolute top-4 left-4 z-[10000] flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-cairo transition-colors"
+                style={{ marginTop: 'env(safe-area-inset-top)' }}
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>رجوع</span>
+              </button>
+
+              {/* Image */}
+              <motion.img
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                src={viewingImage}
+                alt="Full view"
+                className="max-w-[95vw] max-h-[90vh] object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
             </motion.div>
           )}
         </AnimatePresence>
