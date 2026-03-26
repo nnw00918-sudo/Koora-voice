@@ -2830,8 +2830,14 @@ async def delete_room_message(
     current_user: User = Depends(get_current_user)
 ):
     """Delete a message from room chat - only sender, room owner, or admins can delete"""
-    # Find the message in room_messages collection
+    # Find the message - check both collections (room_messages for WebSocket, messages for HTTP)
     message = await db.room_messages.find_one({"id": message_id, "room_id": room_id})
+    message_collection = "room_messages"
+    
+    if not message:
+        # Try the messages collection (older messages stored via HTTP endpoint)
+        message = await db.messages.find_one({"id": message_id, "room_id": room_id})
+        message_collection = "messages"
     
     if not message:
         raise HTTPException(status_code=404, detail="الرسالة غير موجودة")
@@ -2842,7 +2848,9 @@ async def delete_room_message(
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
     # Check permissions: sender, room owner, app owner, or room admin/leader
-    is_message_sender = message.get("user_id") == current_user.id
+    # Handle both user_id (room_messages) and sender_id (messages) fields
+    message_sender_id = message.get("user_id") or message.get("sender_id")
+    is_message_sender = message_sender_id == current_user.id
     is_room_owner = room.get("owner_id") == current_user.id
     is_app_owner = current_user.role == "owner"
     
@@ -2856,8 +2864,11 @@ async def delete_room_message(
     if not (is_message_sender or is_room_owner or is_app_owner or is_room_admin):
         raise HTTPException(status_code=403, detail="لا تملك صلاحية حذف هذه الرسالة")
     
-    # Delete the message
-    await db.room_messages.delete_one({"id": message_id, "room_id": room_id})
+    # Delete the message from the correct collection
+    if message_collection == "room_messages":
+        await db.room_messages.delete_one({"id": message_id, "room_id": room_id})
+    else:
+        await db.messages.delete_one({"id": message_id, "room_id": room_id})
     
     # Broadcast deletion to all users in room via WebSocket
     delete_broadcast = {
