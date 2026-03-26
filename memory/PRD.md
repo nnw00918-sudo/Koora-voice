@@ -308,6 +308,11 @@ owner > admin > news_editor > mod > user
 - [x] **تحديث RoomPage.js**:
   - تغيير `onClick` للصورة من `window.open` إلى `setViewingImage`
   - دعم safe-area-inset للشاشات ذات النوتش
+- [x] **ميزات إضافية للصور**:
+  - أزرار Zoom In/Out (تكبير/تصغير من 50% إلى 300%)
+  - مؤشر نسبة التكبير
+  - زر حفظ الصورة على الجهاز
+  - تصميم أنيق للأزرار في الأسفل
 
 ---
 

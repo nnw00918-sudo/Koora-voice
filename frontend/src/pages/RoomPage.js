@@ -57,7 +57,10 @@ import {
   StopCircle,
   Youtube,
   BarChart3,
-  Type
+  Type,
+  Download,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -116,6 +119,7 @@ const YallaLiveRoom = ({ user }) => {
   const [selectedImage, setSelectedImage] = useState(null); // Image to send in chat
   const [uploadingImage, setUploadingImage] = useState(false);
   const [viewingImage, setViewingImage] = useState(null); // Full-screen image viewer
+  const [imageZoom, setImageZoom] = useState(1); // Zoom level for image viewer
   const [showMentionList, setShowMentionList] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionCursorPos, setMentionCursorPos] = useState(0);
@@ -4621,14 +4625,15 @@ const YallaLiveRoom = ({ user }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
-              onClick={() => setViewingImage(null)}
+              className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center overflow-hidden"
+              onClick={() => { setViewingImage(null); setImageZoom(1); }}
             >
               {/* Close Button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setViewingImage(null);
+                  setImageZoom(1);
                 }}
                 className="absolute top-4 right-4 z-[10000] w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-colors"
                 style={{ marginTop: 'env(safe-area-inset-top)' }}
@@ -4641,6 +4646,7 @@ const YallaLiveRoom = ({ user }) => {
                 onClick={(e) => {
                   e.stopPropagation();
                   setViewingImage(null);
+                  setImageZoom(1);
                 }}
                 className="absolute top-4 left-4 z-[10000] flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-cairo transition-colors"
                 style={{ marginTop: 'env(safe-area-inset-top)' }}
@@ -4649,15 +4655,75 @@ const YallaLiveRoom = ({ user }) => {
                 <span>رجوع</span>
               </button>
 
-              {/* Image */}
+              {/* Bottom Controls - Zoom & Download */}
+              <div 
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[10000] flex items-center gap-3 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm"
+                style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Zoom Out */}
+                <button
+                  onClick={() => setImageZoom(prev => Math.max(0.5, prev - 0.25))}
+                  className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                  disabled={imageZoom <= 0.5}
+                >
+                  <ZoomOut className="w-5 h-5 text-white" />
+                </button>
+
+                {/* Zoom Indicator */}
+                <span className="text-white font-cairo text-sm min-w-[50px] text-center">
+                  {Math.round(imageZoom * 100)}%
+                </span>
+
+                {/* Zoom In */}
+                <button
+                  onClick={() => setImageZoom(prev => Math.min(3, prev + 0.25))}
+                  className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                  disabled={imageZoom >= 3}
+                >
+                  <ZoomIn className="w-5 h-5 text-white" />
+                </button>
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-white/30" />
+
+                {/* Download Button */}
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(viewingImage);
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `koora-voice-${Date.now()}.jpg`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      window.URL.revokeObjectURL(url);
+                      toast.success('تم حفظ الصورة');
+                    } catch (err) {
+                      toast.error('فشل حفظ الصورة');
+                    }
+                  }}
+                  className="w-10 h-10 rounded-full bg-[#CCFF00]/30 hover:bg-[#CCFF00]/50 flex items-center justify-center transition-colors"
+                >
+                  <Download className="w-5 h-5 text-[#CCFF00]" />
+                </button>
+              </div>
+
+              {/* Image with Zoom */}
               <motion.img
                 initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
+                animate={{ scale: imageZoom, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 src={viewingImage}
                 alt="Full view"
-                className="max-w-[95vw] max-h-[90vh] object-contain rounded-lg"
+                className="max-w-[95vw] max-h-[80vh] object-contain rounded-lg cursor-grab active:cursor-grabbing"
                 onClick={(e) => e.stopPropagation()}
+                draggable={false}
+                style={{ touchAction: 'none' }}
               />
             </motion.div>
           )}
