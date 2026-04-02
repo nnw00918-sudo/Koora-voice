@@ -1,0 +1,2239 @@
+
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>وثيقة متطلبات النظام - صوت الكورة</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Cairo', 'Arial', sans-serif;
+            direction: rtl;
+            text-align: right;
+            line-height: 1.8;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #333;
+        }
+        
+        h1 {
+            color: #1a5f2a;
+            border-bottom: 3px solid #4ade80;
+            padding-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        h2 {
+            color: #166534;
+            border-bottom: 2px solid #86efac;
+            padding-bottom: 8px;
+            margin-top: 30px;
+            font-size: 22px;
+        }
+        
+        h3 {
+            color: #15803d;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+        
+        h4 {
+            color: #16a34a;
+            font-size: 16px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        th, td {
+            border: 1px solid #d1d5db;
+            padding: 12px;
+            text-align: right;
+        }
+        
+        th {
+            background-color: #dcfce7;
+            font-weight: 600;
+            color: #166534;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f0fdf4;
+        }
+        
+        code {
+            background-color: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            direction: ltr;
+            display: inline-block;
+        }
+        
+        pre {
+            background-color: #1f2937;
+            color: #e5e7eb;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #e5e7eb;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #e5e7eb;
+            margin: 30px 0;
+        }
+        
+        strong {
+            color: #166534;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+        
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+    </style>
+</head>
+<body>
+<h1 id="وثيقة-متطلبات-النظام-البرمجي-srs">وثيقة متطلبات النظام البرمجي (SRS)</h1>
+
+<h1 id="تطبيق-صوت-الكورة-koora-voice">تطبيق صوت الكورة - Koora Voice</h1>
+
+<p><strong>الإصدار:</strong> 1.0<br />
+<strong>التاريخ:</strong> مارس 2026<br />
+<strong>حالة المشروع:</strong> مكتمل وجاهز للنشر</p>
+
+<hr />
+
+<h2 id="جدول-المحتويات">جدول المحتويات</h2>
+
+<ol>
+<li><a href="#1-المقدمة">المقدمة</a></li>
+<li><a href="#2-الوصف-العام">الوصف العام</a></li>
+<li><a href="#3-المتطلبات-الوظيفية">المتطلبات الوظيفية</a></li>
+<li><a href="#4-المتطلبات-غير-الوظيفية">المتطلبات غير الوظيفية</a></li>
+<li><a href="#5-متطلبات-الواجهات">متطلبات الواجهات</a></li>
+<li><a href="#6-نموذج-البيانات">نموذج البيانات</a></li>
+<li><a href="#7-واجهات-برمجة-التطبيقات">واجهات برمجة التطبيقات</a></li>
+<li><a href="#8-متطلبات-الأمان">متطلبات الأمان</a></li>
+<li><a href="#9-قيود-النظام">قيود النظام</a></li>
+<li><a href="#10-الملاحق">الملاحق</a></li>
+</ol>
+
+<hr />
+
+<h2 id="1-المقدمة">1. المقدمة</h2>
+
+<h3 id="11-الغرض-من-الوثيقة">1.1 الغرض من الوثيقة</h3>
+
+<p>تهدف هذه الوثيقة إلى تحديد المتطلبات الوظيفية وغير الوظيفية لتطبيق "صوت الكورة" (Koora Voice)، وهو تطبيق تواصل اجتماعي متخصص في مجال كرة القدم يوفر غرف صوتية ومرئية للمستخدمين.</p>
+
+<h3 id="12-نطاق-المشروع">1.2 نطاق المشروع</h3>
+
+<p><strong>اسم التطبيق:</strong> صوت الكورة (Koora Voice)<br />
+<strong>نوع التطبيق:</strong> تطبيق ويب تقدمي (PWA) + تطبيق iOS<br />
+<strong>الفئة المستهدفة:</strong> محبي كرة القدم في الوطن العربي<br />
+<strong>اللغات المدعومة:</strong> العربية والإنجليزية</p>
+
+<h3 id="13-التعريفات-والاختصارات">1.3 التعريفات والاختصارات</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الاختصار</th>
+  <th>التعريف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>PWA</td>
+  <td>تطبيق ويب تقدمي (Progressive Web App)</td>
+</tr>
+<tr>
+  <td>API</td>
+  <td>واجهة برمجة التطبيقات</td>
+</tr>
+<tr>
+  <td>JWT</td>
+  <td>رمز JSON للمصادقة</td>
+</tr>
+<tr>
+  <td>WebSocket</td>
+  <td>بروتوكول اتصال ثنائي الاتجاه</td>
+</tr>
+<tr>
+  <td>RTL</td>
+  <td>من اليمين لليسار (Right to Left)</td>
+</tr>
+<tr>
+  <td>CRUD</td>
+  <td>إنشاء، قراءة، تحديث، حذف</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="14-المراجع">1.4 المراجع</h3>
+
+<ul>
+<li>وثائق React.js الرسمية</li>
+<li>وثائق FastAPI</li>
+<li>وثائق MongoDB</li>
+<li>وثائق Agora SDK</li>
+</ul>
+
+<hr />
+
+<h2 id="2-الوصف-العام">2. الوصف العام</h2>
+
+<h3 id="21-منظور-المنتج">2.1 منظور المنتج</h3>
+
+<p>تطبيق "صوت الكورة" هو منصة تواصل اجتماعي متخصصة تجمع محبي كرة القدم في غرف صوتية ومرئية تفاعلية، مع إمكانية المحادثة النصية وتبادل الهدايا الافتراضية.</p>
+
+<h3 id="22-وظايف-المنتج-الرييسية">2.2 وظائف المنتج الرئيسية</h3>
+
+<pre><code>┌────────────────────────────────────────────────────────┐
+│                    صوت الكورة                          │
+├────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐            │
+│  │  غرف    │  │  دردشة  │  │  بث     │            │
+│  │ صوتية   │  │  نصية   │  │  مباشر  │            │
+│  └──────────┘  └──────────┘  └──────────┘            │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐            │
+│  │  هدايا  │  │ إعلانات │  │  ملفات  │            │
+│  │ افتراضية│  │  عامة   │  │  شخصية  │            │
+│  └──────────┘  └──────────┘  └──────────┘            │
+└────────────────────────────────────────────────────────┘
+</code></pre>
+
+<h3 id="23-خصايص-المستخدمين">2.3 خصائص المستخدمين</h3>
+
+<table>
+<thead>
+<tr>
+  <th>نوع المستخدم</th>
+  <th>الوصف</th>
+  <th>الصلاحيات</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>زائر</td>
+  <td>مستخدم غير مسجل</td>
+  <td>عرض الغرف العامة فقط</td>
+</tr>
+<tr>
+  <td>مستخدم عادي</td>
+  <td>مستخدم مسجل</td>
+  <td>الانضمام للغرف، الدردشة، إرسال الهدايا</td>
+</tr>
+<tr>
+  <td>مشرف (Mod)</td>
+  <td>مشرف على غرفة</td>
+  <td>كتم المستخدمين، حذف الرسائل</td>
+</tr>
+<tr>
+  <td>قائد (Leader)</td>
+  <td>قائد الغرفة</td>
+  <td>صلاحيات المشرف + إدارة المقاعد</td>
+</tr>
+<tr>
+  <td>أدمن (Admin)</td>
+  <td>مدير الغرفة</td>
+  <td>صلاحيات القائد + تعيين الأدوار</td>
+</tr>
+<tr>
+  <td>مالك الغرفة</td>
+  <td>منشئ الغرفة</td>
+  <td>كامل الصلاحيات على الغرفة</td>
+</tr>
+<tr>
+  <td>مالك التطبيق</td>
+  <td>مدير النظام</td>
+  <td>كامل الصلاحيات على التطبيق</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="24-بيية-التشغيل">2.4 بيئة التشغيل</h3>
+
+<ul>
+<li><strong>المتصفحات:</strong> Chrome, Safari, Firefox, Edge</li>
+<li><strong>الأجهزة:</strong> هواتف ذكية، أجهزة لوحية، حواسيب</li>
+<li><strong>أنظمة التشغيل:</strong> iOS, Android, Windows, macOS</li>
+</ul>
+
+<h3 id="25-القيود-التصميمية">2.5 القيود التصميمية</h3>
+
+<ul>
+<li>دعم اللغة العربية (RTL)</li>
+<li>تصميم متجاوب (Responsive Design)</li>
+<li>توافق مع معايير PWA</li>
+<li>أداء عالي مع تحميل سريع</li>
+</ul>
+
+<hr />
+
+<h2 id="3-المتطلبات-الوظيفية">3. المتطلبات الوظيفية</h2>
+
+<h3 id="31-نظام-المصادقة-والتسجيل">3.1 نظام المصادقة والتسجيل</h3>
+
+<h4 id="fr-001-تسجيل-مستخدم-جديد">FR-001: تسجيل مستخدم جديد</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-001</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>تسجيل مستخدم جديد</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>يستطيع المستخدم إنشاء حساب جديد باستخدام البريد الإلكتروني وكلمة المرور</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>اسم المستخدم، البريد الإلكتروني، كلمة المرور</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>حساب مستخدم جديد، رمز JWT</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-002-تسجيل-الدخول">FR-002: تسجيل الدخول</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-002</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>تسجيل الدخول</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>يستطيع المستخدم تسجيل الدخول باستخدام البريد الإلكتروني/اسم المستخدم وكلمة المرور</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>المعرف (بريد أو اسم مستخدم)، كلمة المرور</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>رمز JWT، بيانات المستخدم</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-003-تسجيل-الخروج">FR-003: تسجيل الخروج</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-003</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>تسجيل الخروج</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>يستطيع المستخدم تسجيل الخروج من حسابه</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>رمز JWT</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>إنهاء الجلسة</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="32-نظام-الغرف-الصوتية">3.2 نظام الغرف الصوتية</h3>
+
+<h4 id="fr-004-انشاء-غرفة-جديدة">FR-004: إنشاء غرفة جديدة</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-004</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>إنشاء غرفة صوتية</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>يستطيع المستخدم إنشاء غرفة صوتية جديدة</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>اسم الغرفة، الوصف، التصنيف، الصورة، كلمة المرور (اختياري)</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>غرفة جديدة مع معرف فريد</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-005-الانضمام-الى-غرفة">FR-005: الانضمام إلى غرفة</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-005</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>الانضمام إلى غرفة</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>يستطيع المستخدم الانضمام إلى غرفة موجودة</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>معرف الغرفة، كلمة المرور (إذا كانت محمية)</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>اتصال WebSocket، اتصال Agora</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-006-مغادرة-الغرفة">FR-006: مغادرة الغرفة</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-006</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>مغادرة الغرفة</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>يستطيع المستخدم مغادرة الغرفة الحالية</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>معرف الغرفة</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>قطع الاتصال</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-007-نظام-المقاعد">FR-007: نظام المقاعد</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-007</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>إدارة المقاعد</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>نظام مقاعد للمتحدثين (8 مقاعد كحد أقصى)</td>
+</tr>
+<tr>
+  <td>الوظائف</td>
+  <td>طلب مقعد، قبول/رفض الطلب، إنزال من المقعد، قفل المقعد</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-008-البث-الصوتي">FR-008: البث الصوتي</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-008</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>البث الصوتي</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>بث صوتي مباشر للمستخدمين على المقاعد</td>
+</tr>
+<tr>
+  <td>التقنية</td>
+  <td>Agora Voice SDK</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-009-البث-المريي">FR-009: البث المرئي</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-009</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>البث المرئي</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>بث فيديو مباشر للمستخدمين المصرح لهم</td>
+</tr>
+<tr>
+  <td>التقنية</td>
+  <td>Agora Video SDK</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>متوسطة</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="33-نظام-الدردشة">3.3 نظام الدردشة</h3>
+
+<h4 id="fr-010-ارسال-رسالة-نصية">FR-010: إرسال رسالة نصية</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-010</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>إرسال رسالة</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>إرسال رسائل نصية في غرفة الدردشة</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>نص الرسالة، معرف الغرفة</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>رسالة منشورة في الغرفة</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-011-الرد-على-رسالة">FR-011: الرد على رسالة</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-011</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>الرد على رسالة</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>الرد على رسالة محددة في الدردشة</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>نص الرد، معرف الرسالة الأصلية</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>رسالة رد مرتبطة بالأصلية</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-012-حذف-رسالة">FR-012: حذف رسالة</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-012</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>حذف رسالة</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>حذف رسالة من الدردشة</td>
+</tr>
+<tr>
+  <td>الصلاحيات</td>
+  <td>المرسل، المشرفين، مالك الغرفة</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>إزالة الرسالة من جميع العملاء</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-013-ارسال-صورة">FR-013: إرسال صورة</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-013</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>إرسال صورة في الدردشة</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>رفع وإرسال صورة في الدردشة</td>
+</tr>
+<tr>
+  <td>الصلاحيات</td>
+  <td>الأدمن، مالك الغرفة، مالك التطبيق، المشرفين</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>صورة منشورة في الدردشة</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>متوسطة</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-014-عرض-الصورة-بالكامل">FR-014: عرض الصورة بالكامل</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-014</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>عارض الصور</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>عرض الصورة بحجمها الكامل مع تكبير/تصغير وحفظ</td>
+</tr>
+<tr>
+  <td>الوظائف</td>
+  <td>تكبير، تصغير، حفظ، إغلاق</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>متوسطة</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="34-نظام-الهدايا">3.4 نظام الهدايا</h3>
+
+<h4 id="fr-015-ارسال-هدية">FR-015: إرسال هدية</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-015</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>إرسال هدية</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>إرسال هدية افتراضية لمستخدم آخر</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>نوع الهدية، معرف المستلم</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>خصم من رصيد المرسل، إضافة لرصيد المستلم</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>متوسطة</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-016-شراء-عملات">FR-016: شراء عملات</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-016</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>شراء عملات</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>شراء عملات افتراضية لاستخدامها في الهدايا</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>منخفضة</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="35-نظام-الاعلانات">3.5 نظام الإعلانات</h3>
+
+<h4 id="fr-017-انشاء-اعلان-عام">FR-017: إنشاء إعلان عام</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-017</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>إنشاء إعلان</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>إنشاء إعلان يظهر في غرف محددة</td>
+</tr>
+<tr>
+  <td>الصلاحيات</td>
+  <td>مالك التطبيق فقط</td>
+</tr>
+<tr>
+  <td>المدخلات</td>
+  <td>نص الإعلان، الغرف المستهدفة</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>متوسطة</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-018-عرض-الاعلانات">FR-018: عرض الإعلانات</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-018</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>عرض الإعلانات</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>عرض الإعلانات ثابتة أعلى الدردشة</td>
+</tr>
+<tr>
+  <td>المخرجات</td>
+  <td>شريط إعلانات ثابت</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>متوسطة</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="36-نظام-الادوار-والصلاحيات">3.6 نظام الأدوار والصلاحيات</h3>
+
+<h4 id="fr-019-تعيين-دور">FR-019: تعيين دور</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-019</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>تعيين دور للمستخدم</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>تعيين أدوار متعددة للمستخدم (قابلة للتكديس)</td>
+</tr>
+<tr>
+  <td>الأدوار</td>
+  <td>mod, leader, admin, vip, mvp</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-020-كتم-مستخدم">FR-020: كتم مستخدم</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-020</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>كتم مستخدم</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>منع مستخدم من التحدث</td>
+</tr>
+<tr>
+  <td>الصلاحيات</td>
+  <td>المشرفين وما فوق</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-021-طرد-مستخدم">FR-021: طرد مستخدم</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-021</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>طرد مستخدم</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>إخراج مستخدم من الغرفة</td>
+</tr>
+<tr>
+  <td>الصلاحيات</td>
+  <td>الأدمن وما فوق</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-022-حظر-مستخدم">FR-022: حظر مستخدم</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-022</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>حظر مستخدم</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>منع مستخدم من دخول الغرفة</td>
+</tr>
+<tr>
+  <td>الصلاحيات</td>
+  <td>مالك الغرفة، مالك التطبيق</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="37-نظام-الملف-الشخصي">3.7 نظام الملف الشخصي</h3>
+
+<h4 id="fr-023-عرض-الملف-الشخصي">FR-023: عرض الملف الشخصي</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-023</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>عرض الملف الشخصي</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>عرض معلومات المستخدم</td>
+</tr>
+<tr>
+  <td>البيانات</td>
+  <td>الاسم، الصورة، المستوى، الشارات، الإحصائيات</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="fr-024-تعديل-الملف-الشخصي">FR-024: تعديل الملف الشخصي</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-024</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>تعديل الملف الشخصي</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>تعديل بيانات المستخدم الشخصية</td>
+</tr>
+<tr>
+  <td>البيانات القابلة للتعديل</td>
+  <td>الاسم، الصورة، النبذة</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="38-نظام-اللغات">3.8 نظام اللغات</h3>
+
+<h4 id="fr-025-تبديل-اللغة">FR-025: تبديل اللغة</h4>
+
+<table>
+<thead>
+<tr>
+  <th>العنصر</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المعرف</td>
+  <td>FR-025</td>
+</tr>
+<tr>
+  <td>الاسم</td>
+  <td>تبديل اللغة</td>
+</tr>
+<tr>
+  <td>الوصف</td>
+  <td>التبديل بين العربية والإنجليزية</td>
+</tr>
+<tr>
+  <td>السلوك الافتراضي</td>
+  <td>تحديد اللغة تلقائياً من المتصفح</td>
+</tr>
+<tr>
+  <td>الأولوية</td>
+  <td>عالية</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2 id="4-المتطلبات-غير-الوظيفية">4. المتطلبات غير الوظيفية</h2>
+
+<h3 id="41-متطلبات-الاداء">4.1 متطلبات الأداء</h3>
+
+<table>
+<thead>
+<tr>
+  <th>المعرف</th>
+  <th>المتطلب</th>
+  <th>المعيار</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>NFR-001</td>
+  <td>زمن تحميل الصفحة</td>
+  <td>أقل من 3 ثواني</td>
+</tr>
+<tr>
+  <td>NFR-002</td>
+  <td>زمن استجابة API</td>
+  <td>أقل من 500 مللي ثانية</td>
+</tr>
+<tr>
+  <td>NFR-003</td>
+  <td>تأخير الصوت</td>
+  <td>أقل من 200 مللي ثانية</td>
+</tr>
+<tr>
+  <td>NFR-004</td>
+  <td>عدد المستخدمين المتزامنين</td>
+  <td>1000+ مستخدم</td>
+</tr>
+<tr>
+  <td>NFR-005</td>
+  <td>عدد الرسائل في الثانية</td>
+  <td>100+ رسالة</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="42-متطلبات-الموثوقية">4.2 متطلبات الموثوقية</h3>
+
+<table>
+<thead>
+<tr>
+  <th>المعرف</th>
+  <th>المتطلب</th>
+  <th>المعيار</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>NFR-006</td>
+  <td>توفر النظام</td>
+  <td>99.5%</td>
+</tr>
+<tr>
+  <td>NFR-007</td>
+  <td>استعادة البيانات</td>
+  <td>نسخ احتياطي يومي</td>
+</tr>
+<tr>
+  <td>NFR-008</td>
+  <td>معالجة الأخطاء</td>
+  <td>رسائل خطأ واضحة للمستخدم</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="43-متطلبات-قابلية-الاستخدام">4.3 متطلبات قابلية الاستخدام</h3>
+
+<table>
+<thead>
+<tr>
+  <th>المعرف</th>
+  <th>المتطلب</th>
+  <th>المعيار</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>NFR-009</td>
+  <td>التصميم المتجاوب</td>
+  <td>دعم جميع أحجام الشاشات</td>
+</tr>
+<tr>
+  <td>NFR-010</td>
+  <td>دعم RTL</td>
+  <td>دعم كامل للغة العربية</td>
+</tr>
+<tr>
+  <td>NFR-011</td>
+  <td>سهولة التعلم</td>
+  <td>استخدام بديهي دون تدريب</td>
+</tr>
+<tr>
+  <td>NFR-012</td>
+  <td>إمكانية الوصول</td>
+  <td>توافق مع معايير WCAG 2.1</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="44-متطلبات-الامان">4.4 متطلبات الأمان</h3>
+
+<table>
+<thead>
+<tr>
+  <th>المعرف</th>
+  <th>المتطلب</th>
+  <th>المعيار</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>NFR-013</td>
+  <td>تشفير البيانات</td>
+  <td>HTTPS/TLS 1.3</td>
+</tr>
+<tr>
+  <td>NFR-014</td>
+  <td>المصادقة</td>
+  <td>JWT مع انتهاء صلاحية</td>
+</tr>
+<tr>
+  <td>NFR-015</td>
+  <td>كلمات المرور</td>
+  <td>تشفير bcrypt</td>
+</tr>
+<tr>
+  <td>NFR-016</td>
+  <td>الحماية من الهجمات</td>
+  <td>XSS, CSRF, SQL Injection</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="45-متطلبات-قابلية-الصيانة">4.5 متطلبات قابلية الصيانة</h3>
+
+<table>
+<thead>
+<tr>
+  <th>المعرف</th>
+  <th>المتطلب</th>
+  <th>المعيار</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>NFR-017</td>
+  <td>توثيق الكود</td>
+  <td>تعليقات واضحة</td>
+</tr>
+<tr>
+  <td>NFR-018</td>
+  <td>هيكلية الكود</td>
+  <td>فصل المكونات والوحدات</td>
+</tr>
+<tr>
+  <td>NFR-019</td>
+  <td>التحكم بالإصدارات</td>
+  <td>Git</td>
+</tr>
+<tr>
+  <td>NFR-020</td>
+  <td>سجلات النظام</td>
+  <td>تسجيل شامل للأخطاء</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2 id="5-متطلبات-الواجهات">5. متطلبات الواجهات</h2>
+
+<h3 id="51-واجهات-المستخدم">5.1 واجهات المستخدم</h3>
+
+<h4 id="511-صفحة-تسجيل-الدخول">5.1.1 صفحة تسجيل الدخول</h4>
+
+<pre><code>┌────────────────────────────────────────┐
+│            صوت الكورة                  │
+│         ─────────────────              │
+│                                        │
+│    ┌────────────────────────┐         │
+│    │ البريد الإلكتروني      │         │
+│    └────────────────────────┘         │
+│                                        │
+│    ┌────────────────────────┐         │
+│    │ كلمة المرور            │         │
+│    └────────────────────────┘         │
+│                                        │
+│    ┌────────────────────────┐         │
+│    │      تسجيل الدخول       │         │
+│    └────────────────────────┘         │
+│                                        │
+│         ليس لديك حساب؟                │
+│         إنشاء حساب جديد               │
+└────────────────────────────────────────┘
+</code></pre>
+
+<h4 id="512-الصفحة-الرييسية-الغرف">5.1.2 الصفحة الرئيسية (الغرف)</h4>
+
+<pre><code>┌────────────────────────────────────────┐
+│  ☰  صوت الكورة            🔔  👤     │
+├────────────────────────────────────────┤
+│  [الكل] [رياضة] [ترفيه] [أخرى]       │
+├────────────────────────────────────────┤
+│  ┌──────────────────────────────┐     │
+│  │  🎙️ غرفة عام                 │     │
+│  │  👥 15 متصل   ⭐ رياضة       │     │
+│  │  [دخول]                      │     │
+│  └──────────────────────────────┘     │
+│                                        │
+│  ┌──────────────────────────────┐     │
+│  │  🎙️ تحليل المباريات          │     │
+│  │  👥 8 متصل    ⭐ رياضة       │     │
+│  │  [دخول]                      │     │
+│  └──────────────────────────────┘     │
+│                                        │
+├────────────────────────────────────────┤
+│   🏠      🔍      ➕      👤          │
+└────────────────────────────────────────┘
+</code></pre>
+
+<h4 id="513-صفحة-الغرفة">5.1.3 صفحة الغرفة</h4>
+
+<pre><code>┌────────────────────────────────────────┐
+│  ←  غرفة عام              ⚙️  ⋮      │
+├────────────────────────────────────────┤
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐         │
+│  │ 👤 │ │ 👤 │ │ 👤 │ │ 🔒 │         │
+│  │مالك │ │أدمن│ │عضو │ │فارغ│         │
+│  └────┘ └────┘ └────┘ └────┘         │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐         │
+│  │ 🔒 │ │ 🔒 │ │ 🔒 │ │ 🔒 │         │
+│  └────┘ └────┘ └────┘ └────┘         │
+├────────────────────────────────────────┤
+│  📢 إعلان: مرحباً بكم في صوت الكورة   │
+├────────────────────────────────────────┤
+│  [الدردشة]  [المستمعين]  [الإعدادات] │
+├────────────────────────────────────────┤
+│  أحمد: مرحبا جميعاً 👋                │
+│  ↳ محمد: أهلاً وسهلاً                │
+│  سارة: [صورة 🖼️]                      │
+│  ...                                   │
+├────────────────────────────────────────┤
+│  ┌────────────────────┐  📷  🎁  ↗️  │
+│  │ اكتب رسالة...      │               │
+│  └────────────────────┘               │
+└────────────────────────────────────────┘
+</code></pre>
+
+<h3 id="52-واجهات-البرمجيات">5.2 واجهات البرمجيات</h3>
+
+<h4 id="521-الاتصال-بقاعدة-البيانات">5.2.1 الاتصال بقاعدة البيانات</h4>
+
+<ul>
+<li><strong>النوع:</strong> MongoDB</li>
+<li><strong>المكتبة:</strong> Motor (Async Driver)</li>
+<li><strong>الاتصال:</strong> عبر متغير البيئة MONGO_URL</li>
+</ul>
+
+<h4 id="522-الاتصال-بـ-agora">5.2.2 الاتصال بـ Agora</h4>
+
+<ul>
+<li><strong>النوع:</strong> Agora RTC SDK</li>
+<li><strong>الوظيفة:</strong> الصوت والفيديو</li>
+<li><strong>المفاتيح:</strong> عبر متغيرات البيئة</li>
+</ul>
+
+<h3 id="53-واجهات-الاتصال">5.3 واجهات الاتصال</h3>
+
+<h4 id="531-http-rest-api">5.3.1 HTTP REST API</h4>
+
+<ul>
+<li><strong>البروتوكول:</strong> HTTPS</li>
+<li><strong>المنفذ:</strong> 443</li>
+<li><strong>التنسيق:</strong> JSON</li>
+</ul>
+
+<h4 id="532-websocket">5.3.2 WebSocket</h4>
+
+<ul>
+<li><strong>البروتوكول:</strong> WSS</li>
+<li><strong>الوظيفة:</strong> الرسائل الفورية، تحديثات الغرف</li>
+</ul>
+
+<hr />
+
+<h2 id="6-نموذج-البيانات">6. نموذج البيانات</h2>
+
+<h3 id="61-مخطط-قاعدة-البيانات">6.1 مخطط قاعدة البيانات</h3>
+
+<h4 id="611-مجموعة-المستخدمين-users">6.1.1 مجموعة المستخدمين (users)</h4>
+
+<div class="codehilite">
+<pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (UUID)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;password_hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;avatar&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (URL)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;bio&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (user/admin/owner)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;coins&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;xp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;badges&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;datetime&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;last_login&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;datetime&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;is_active&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h4 id="612-مجموعة-الغرف-rooms">6.1.2 مجموعة الغرف (rooms)</h4>
+
+<div class="codehilite">
+<pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (UUID)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;image&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (URL)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;owner_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (ref: users)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (optional)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;room_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (all/boys/girls)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_seats&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number (default: 8)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;is_live&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;viewer_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;chat_background&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (URL)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;datetime&quot;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h4 id="613-مجموعة-الرسايل-room_messages">6.1.3 مجموعة الرسائل (room_messages)</h4>
+
+<div class="codehilite">
+<pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (UUID)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;room_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (ref: rooms)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;user_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (ref: users)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;avatar&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (URL)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;image_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (optional)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;reply_to_message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (optional)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;reply_to_username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (optional)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;reply_to_content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (optional)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;datetime&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (text/image/gift/system)&quot;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h4 id="614-مجموعة-ادوار-الغرف-room_roles">6.1.4 مجموعة أدوار الغرف (room_roles)</h4>
+
+<div class="codehilite">
+<pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (UUID)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;room_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (ref: rooms)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;user_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (ref: users)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;roles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;string (mod/leader/admin/vip/mvp)&quot;</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;assigned_by&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (ref: users)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;assigned_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;datetime&quot;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h4 id="615-مجموعة-الاعلانات-announcements">6.1.5 مجموعة الإعلانات (announcements)</h4>
+
+<div class="codehilite">
+<pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (UUID)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;rooms&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;string (ref: rooms)&quot;</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;created_by&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (ref: users)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;datetime&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;is_active&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h4 id="616-مجموعة-الهدايا-gifts">6.1.6 مجموعة الهدايا (gifts)</h4>
+
+<div class="codehilite">
+<pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (UUID)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name_ar&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;icon&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (emoji)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;price&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;animation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (optional)&quot;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="62-مخطط-العلاقات">6.2 مخطط العلاقات</h3>
+
+<pre><code>┌─────────────┐       ┌─────────────┐
+│   users     │───────│   rooms     │
+└─────────────┘  owns └─────────────┘
+      │                     │
+      │                     │
+      ▼                     ▼
+┌─────────────┐       ┌─────────────┐
+│ room_roles  │       │room_messages│
+└─────────────┘       └─────────────┘
+      │
+      ▼
+┌─────────────┐
+│announcements│
+└─────────────┘
+</code></pre>
+
+<hr />
+
+<h2 id="7-واجهات-برمجة-التطبيقات-apis">7. واجهات برمجة التطبيقات (APIs)</h2>
+
+<h3 id="71-نقاط-نهاية-المصادقة">7.1 نقاط نهاية المصادقة</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الطريقة</th>
+  <th>المسار</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>POST</td>
+  <td>/api/auth/register</td>
+  <td>تسجيل مستخدم جديد</td>
+</tr>
+<tr>
+  <td>POST</td>
+  <td>/api/auth/login</td>
+  <td>تسجيل الدخول</td>
+</tr>
+<tr>
+  <td>POST</td>
+  <td>/api/auth/logout</td>
+  <td>تسجيل الخروج</td>
+</tr>
+<tr>
+  <td>GET</td>
+  <td>/api/auth/me</td>
+  <td>الحصول على بيانات المستخدم الحالي</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="72-نقاط-نهاية-الغرف">7.2 نقاط نهاية الغرف</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الطريقة</th>
+  <th>المسار</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>GET</td>
+  <td>/api/rooms</td>
+  <td>قائمة جميع الغرف</td>
+</tr>
+<tr>
+  <td>POST</td>
+  <td>/api/rooms</td>
+  <td>إنشاء غرفة جديدة</td>
+</tr>
+<tr>
+  <td>GET</td>
+  <td>/api/rooms/{id}</td>
+  <td>تفاصيل غرفة</td>
+</tr>
+<tr>
+  <td>PUT</td>
+  <td>/api/rooms/{id}</td>
+  <td>تحديث غرفة</td>
+</tr>
+<tr>
+  <td>DELETE</td>
+  <td>/api/rooms/{id}</td>
+  <td>حذف غرفة</td>
+</tr>
+<tr>
+  <td>POST</td>
+  <td>/api/rooms/{id}/join</td>
+  <td>الانضمام للغرفة</td>
+</tr>
+<tr>
+  <td>POST</td>
+  <td>/api/rooms/{id}/leave</td>
+  <td>مغادرة الغرفة</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="73-نقاط-نهاية-الرسايل">7.3 نقاط نهاية الرسائل</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الطريقة</th>
+  <th>المسار</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>GET</td>
+  <td>/api/rooms/{id}/messages</td>
+  <td>جلب رسائل الغرفة</td>
+</tr>
+<tr>
+  <td>POST</td>
+  <td>/api/rooms/{id}/messages</td>
+  <td>إرسال رسالة</td>
+</tr>
+<tr>
+  <td>DELETE</td>
+  <td>/api/rooms/{id}/messages/{msg_id}</td>
+  <td>حذف رسالة</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="74-نقاط-نهاية-الادوار">7.4 نقاط نهاية الأدوار</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الطريقة</th>
+  <th>المسار</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>GET</td>
+  <td>/api/rooms/{id}/roles</td>
+  <td>جلب أدوار الغرفة</td>
+</tr>
+<tr>
+  <td>POST</td>
+  <td>/api/rooms/{id}/roles</td>
+  <td>تعيين دور</td>
+</tr>
+<tr>
+  <td>DELETE</td>
+  <td>/api/rooms/{id}/roles/{user_id}</td>
+  <td>إزالة دور</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="75-نقاط-نهاية-الاعلانات">7.5 نقاط نهاية الإعلانات</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الطريقة</th>
+  <th>المسار</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>GET</td>
+  <td>/api/announcements</td>
+  <td>جلب جميع الإعلانات</td>
+</tr>
+<tr>
+  <td>POST</td>
+  <td>/api/announcements</td>
+  <td>إنشاء إعلان</td>
+</tr>
+<tr>
+  <td>GET</td>
+  <td>/api/rooms/{id}/announcements</td>
+  <td>إعلانات غرفة محددة</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="76-websocket-events">7.6 WebSocket Events</h3>
+
+<h4 id="الاحداث-الصادرة-server-client">الأحداث الصادرة (Server → Client)</h4>
+
+<table>
+<thead>
+<tr>
+  <th>الحدث</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>room_message</td>
+  <td>رسالة جديدة في الغرفة</td>
+</tr>
+<tr>
+  <td>message_deleted</td>
+  <td>حذف رسالة</td>
+</tr>
+<tr>
+  <td>user_joined</td>
+  <td>انضمام مستخدم</td>
+</tr>
+<tr>
+  <td>user_left</td>
+  <td>مغادرة مستخدم</td>
+</tr>
+<tr>
+  <td>seat_updated</td>
+  <td>تحديث مقعد</td>
+</tr>
+<tr>
+  <td>role_changed</td>
+  <td>تغيير دور</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="الاحداث-الواردة-client-server">الأحداث الواردة (Client → Server)</h4>
+
+<table>
+<thead>
+<tr>
+  <th>الحدث</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>join_room</td>
+  <td>طلب انضمام</td>
+</tr>
+<tr>
+  <td>leave_room</td>
+  <td>طلب مغادرة</td>
+</tr>
+<tr>
+  <td>send_message</td>
+  <td>إرسال رسالة</td>
+</tr>
+<tr>
+  <td>request_seat</td>
+  <td>طلب مقعد</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2 id="8-متطلبات-الامان">8. متطلبات الأمان</h2>
+
+<h3 id="81-المصادقة-والتفويض">8.1 المصادقة والتفويض</h3>
+
+<table>
+<thead>
+<tr>
+  <th>المتطلب</th>
+  <th>التنفيذ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>مصادقة المستخدم</td>
+  <td>JWT (JSON Web Token)</td>
+</tr>
+<tr>
+  <td>تخزين كلمات المرور</td>
+  <td>bcrypt مع salt</td>
+</tr>
+<tr>
+  <td>صلاحية الرمز</td>
+  <td>7 أيام</td>
+</tr>
+<tr>
+  <td>التحقق من الهوية</td>
+  <td>التحقق من البريد الإلكتروني</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="82-حماية-البيانات">8.2 حماية البيانات</h3>
+
+<table>
+<thead>
+<tr>
+  <th>المتطلب</th>
+  <th>التنفيذ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>تشفير النقل</td>
+  <td>TLS 1.3</td>
+</tr>
+<tr>
+  <td>تشفير البيانات الحساسة</td>
+  <td>AES-256</td>
+</tr>
+<tr>
+  <td>حماية API</td>
+  <td>Rate Limiting</td>
+</tr>
+<tr>
+  <td>منع الهجمات</td>
+  <td>CORS, CSP Headers</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="83-سجلات-الامان">8.3 سجلات الأمان</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الحدث</th>
+  <th>المطلوب تسجيله</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>تسجيل الدخول</td>
+  <td>التاريخ، IP، الجهاز</td>
+</tr>
+<tr>
+  <td>فشل تسجيل الدخول</td>
+  <td>التاريخ، IP، السبب</td>
+</tr>
+<tr>
+  <td>تغيير كلمة المرور</td>
+  <td>التاريخ، IP</td>
+</tr>
+<tr>
+  <td>العمليات الإدارية</td>
+  <td>التاريخ، المستخدم، العملية</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2 id="9-قيود-النظام">9. قيود النظام</h2>
+
+<h3 id="91-قيود-تقنية">9.1 قيود تقنية</h3>
+
+<table>
+<thead>
+<tr>
+  <th>القيد</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>المتصفحات</td>
+  <td>يتطلب متصفحات حديثة تدعم WebSocket و WebRTC</td>
+</tr>
+<tr>
+  <td>الاتصال</td>
+  <td>يتطلب اتصال إنترنت مستقر للصوت/الفيديو</td>
+</tr>
+<tr>
+  <td>Agora</td>
+  <td>يتطلب مفتاح API من Agora للخدمات الصوتية</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="92-قيود-عملية">9.2 قيود عملية</h3>
+
+<table>
+<thead>
+<tr>
+  <th>القيد</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>عدد المقاعد</td>
+  <td>8 مقاعد كحد أقصى لكل غرفة</td>
+</tr>
+<tr>
+  <td>حجم الصورة</td>
+  <td>5 ميجابايت كحد أقصى</td>
+</tr>
+<tr>
+  <td>طول الرسالة</td>
+  <td>1000 حرف كحد أقصى</td>
+</tr>
+<tr>
+  <td>طول اسم الغرفة</td>
+  <td>50 حرف كحد أقصى</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="93-قيود-قانونية">9.3 قيود قانونية</h3>
+
+<table>
+<thead>
+<tr>
+  <th>القيد</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>العمر</td>
+  <td>يتطلب عمر 13 سنة أو أكثر</td>
+</tr>
+<tr>
+  <td>المحتوى</td>
+  <td>يُحظر المحتوى غير اللائق</td>
+</tr>
+<tr>
+  <td>الخصوصية</td>
+  <td>الالتزام بسياسة الخصوصية</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2 id="10-الملاحق">10. الملاحق</h2>
+
+<h3 id="101-قايمة-الهدايا-الافتراضية">10.1 قائمة الهدايا الافتراضية</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الهدية</th>
+  <th>الرمز</th>
+  <th>السعر (عملات)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>وردة</td>
+  <td>🌹</td>
+  <td>10</td>
+</tr>
+<tr>
+  <td>قلب</td>
+  <td>❤️</td>
+  <td>20</td>
+</tr>
+<tr>
+  <td>نجمة</td>
+  <td>⭐</td>
+  <td>50</td>
+</tr>
+<tr>
+  <td>تاج</td>
+  <td>👑</td>
+  <td>100</td>
+</tr>
+<tr>
+  <td>ماسة</td>
+  <td>💎</td>
+  <td>200</td>
+</tr>
+<tr>
+  <td>سيارة</td>
+  <td>🚗</td>
+  <td>500</td>
+</tr>
+<tr>
+  <td>يخت</td>
+  <td>🛥️</td>
+  <td>1000</td>
+</tr>
+<tr>
+  <td>قلعة</td>
+  <td>🏰</td>
+  <td>5000</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="102-رموز-الاخطاء">10.2 رموز الأخطاء</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الرمز</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>400</td>
+  <td>طلب غير صالح</td>
+</tr>
+<tr>
+  <td>401</td>
+  <td>غير مصرح</td>
+</tr>
+<tr>
+  <td>403</td>
+  <td>ممنوع الوصول</td>
+</tr>
+<tr>
+  <td>404</td>
+  <td>غير موجود</td>
+</tr>
+<tr>
+  <td>409</td>
+  <td>تعارض في البيانات</td>
+</tr>
+<tr>
+  <td>429</td>
+  <td>طلبات كثيرة</td>
+</tr>
+<tr>
+  <td>500</td>
+  <td>خطأ في الخادم</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="103-حالات-الاختبار-الرييسية">10.3 حالات الاختبار الرئيسية</h3>
+
+<table>
+<thead>
+<tr>
+  <th>الرقم</th>
+  <th>حالة الاختبار</th>
+  <th>النتيجة المتوقعة</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>TC-001</td>
+  <td>تسجيل مستخدم جديد ببيانات صحيحة</td>
+  <td>نجاح</td>
+</tr>
+<tr>
+  <td>TC-002</td>
+  <td>تسجيل ببريد موجود مسبقاً</td>
+  <td>فشل مع رسالة خطأ</td>
+</tr>
+<tr>
+  <td>TC-003</td>
+  <td>تسجيل دخول ببيانات صحيحة</td>
+  <td>نجاح مع JWT</td>
+</tr>
+<tr>
+  <td>TC-004</td>
+  <td>إنشاء غرفة جديدة</td>
+  <td>نجاح</td>
+</tr>
+<tr>
+  <td>TC-005</td>
+  <td>الانضمام لغرفة</td>
+  <td>نجاح مع اتصال</td>
+</tr>
+<tr>
+  <td>TC-006</td>
+  <td>إرسال رسالة في الدردشة</td>
+  <td>نجاح مع بث</td>
+</tr>
+<tr>
+  <td>TC-007</td>
+  <td>حذف رسالة</td>
+  <td>نجاح مع تحديث</td>
+</tr>
+<tr>
+  <td>TC-008</td>
+  <td>تعيين دور لمستخدم</td>
+  <td>نجاح</td>
+</tr>
+<tr>
+  <td>TC-009</td>
+  <td>إرسال هدية</td>
+  <td>نجاح مع تحديث الرصيد</td>
+</tr>
+<tr>
+  <td>TC-010</td>
+  <td>تبديل اللغة</td>
+  <td>نجاح مع تحديث الواجهة</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="104-معلومات-النشر">10.4 معلومات النشر</h3>
+
+<table>
+<thead>
+<tr>
+  <th>البند</th>
+  <th>القيمة</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>رابط التطبيق</td>
+  <td>https://pitch-chat.preview.emergentagent.com</td>
+</tr>
+<tr>
+  <td>مستودع الكود</td>
+  <td>github.com/nnw00918-sudo/Koora-voice</td>
+</tr>
+<tr>
+  <td>حالة Apple Developer</td>
+  <td>قيد المراجعة</td>
+</tr>
+<tr>
+  <td>رقم الطلب</td>
+  <td>102853569823</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2 id="سجل-التغييرات">سجل التغييرات</h2>
+
+<table>
+<thead>
+<tr>
+  <th>الإصدار</th>
+  <th>التاريخ</th>
+  <th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>1.0</td>
+  <td>مارس 2026</td>
+  <td>الإصدار الأولي</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<p><strong>نهاية الوثيقة</strong></p>
+
+<hr />
+
+<p>تم إعداد هذه الوثيقة بواسطة: Emergent AI<br />
+التاريخ: مارس 2026</p>
+
+</body>
+</html>
