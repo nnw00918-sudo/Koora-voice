@@ -1,0 +1,183 @@
+{
+  "timestamp": "2026-04-02T20:41:12.990173",
+  "version": "3.0",
+  "summary": {
+    "total_tests": 21,
+    "passed": 20,
+    "failed": 0,
+    "warnings": 1
+  },
+  "sections": {
+    "webrtc_agora": [
+      {
+        "test_name": "Agora Token Generation",
+        "status": "PASS",
+        "details": "تم توليد رمز Agora بنجاح",
+        "data": {
+          "has_token": true,
+          "has_app_id": true
+        },
+        "timestamp": "2026-04-02T20:41:13.800715"
+      },
+      {
+        "test_name": "Room Join with Agora Token",
+        "status": "PASS",
+        "details": "الانضمام للغرفة مع رمز Agora تلقائي",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:14.008297"
+      },
+      {
+        "test_name": "Audio Quality Monitoring",
+        "status": "PASS",
+        "details": "نظام مراقبة جودة الصوت يعمل",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:14.063879"
+      },
+      {
+        "test_name": "Audio Drop Detection",
+        "status": "PASS",
+        "details": "نظام اكتشاف انقطاع الصوت يعمل",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:14.123266"
+      }
+    ],
+    "websocket_stress": [
+      {
+        "test_name": "API Latency",
+        "status": "PASS",
+        "details": "متوسط التأخير: 110ms - ممتاز",
+        "data": {
+          "avg_ms": 109.7,
+          "min_ms": 105.6,
+          "max_ms": 115.9
+        },
+        "timestamp": "2026-04-02T20:41:14.672017"
+      },
+      {
+        "test_name": "Message Throughput",
+        "status": "PASS",
+        "details": "تم إرسال 30 رسالة بمعدل 58.3/ثانية",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306803"
+      },
+      {
+        "test_name": "Error Rate",
+        "status": "PASS",
+        "details": "عدد الأخطاء: 0",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306870"
+      }
+    ],
+    "rbac_logic": [
+      {
+        "test_name": "Role Hierarchy",
+        "status": "PASS",
+        "details": "تسلسل الأدوار معرّف بشكل صحيح",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306934"
+      },
+      {
+        "test_name": "RBAC: kick_user",
+        "status": "PASS",
+        "details": "المشرف لا يستطيع طرد الأدمن",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306948"
+      },
+      {
+        "test_name": "RBAC: kick_user",
+        "status": "PASS",
+        "details": "الأدمن يستطيع طرد المشرف",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306958"
+      },
+      {
+        "test_name": "RBAC: mute_user",
+        "status": "PASS",
+        "details": "المشرف يستطيع كتم المستخدم",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306965"
+      },
+      {
+        "test_name": "RBAC: assign_role",
+        "status": "PASS",
+        "details": "المشرف لا يستطيع تعيين أدمن",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306972"
+      },
+      {
+        "test_name": "RBAC: delete_message",
+        "status": "PASS",
+        "details": "المشرف يستطيع حذف الرسائل",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306978"
+      },
+      {
+        "test_name": "RBAC: ban_user",
+        "status": "PASS",
+        "details": "الأدمن لا يستطيع حظر المالك",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306984"
+      },
+      {
+        "test_name": "RBAC: promote_to_mod",
+        "status": "PASS",
+        "details": "الأدمن يستطيع ترقية لمشرف",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306989"
+      },
+      {
+        "test_name": "RBAC: change_settings",
+        "status": "PASS",
+        "details": "القائد لا يستطيع تغيير إعدادات المالك",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.306998"
+      },
+      {
+        "test_name": "Mod Cannot Kick Admin (Critical)",
+        "status": "PASS",
+        "details": "✅ المشرف (60) < الأدمن (80)",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.307005"
+      }
+    ],
+    "rtl_responsiveness": [
+      {
+        "test_name": "RTL HTML Support",
+        "status": "PASS",
+        "details": "دعم RTL جيد: 4/6",
+        "data": {
+          "dir=\"rtl\"": true,
+          "lang=\"ar\"": true,
+          "direction: rtl": false,
+          "text-align: right": false,
+          "font-family: Cairo": true,
+          "Content-Language": true
+        },
+        "timestamp": "2026-04-02T20:41:15.368097"
+      },
+      {
+        "test_name": "Tailwind RTL Classes",
+        "status": "WARNING",
+        "details": "فئات RTL قليلة: 1",
+        "data": [
+          "me-"
+        ],
+        "timestamp": "2026-04-02T20:41:15.368272"
+      },
+      {
+        "test_name": "Responsive Viewport",
+        "status": "PASS",
+        "details": "إعدادات viewport صحيحة",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.368284"
+      },
+      {
+        "test_name": "Arabic Content",
+        "status": "PASS",
+        "details": "المحتوى العربي موجود",
+        "data": null,
+        "timestamp": "2026-04-02T20:41:15.518065"
+      }
+    ]
+  }
+}
