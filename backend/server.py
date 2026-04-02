@@ -18,6 +18,7 @@ from agora_token_builder import RtcTokenBuilder
 import time
 import json
 import httpx
+import functools
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -31,6 +32,28 @@ AVATARS_DIR.mkdir(exist_ok=True)
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# Simple in-memory cache for API responses
+_cache = {}
+_cache_ttl = {}
+
+def cache_response(ttl_seconds: int = 30):
+    """Simple cache decorator for API responses"""
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            cache_key = f"{func.__name__}:{str(args)}:{str(kwargs)}"
+            now = time.time()
+            
+            if cache_key in _cache and _cache_ttl.get(cache_key, 0) > now:
+                return _cache[cache_key]
+            
+            result = await func(*args, **kwargs)
+            _cache[cache_key] = result
+            _cache_ttl[cache_key] = now + ttl_seconds
+            return result
+        return wrapper
+    return decorator
 
 app = FastAPI()
 
