@@ -5326,6 +5326,15 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                 
                 await db.room_messages.insert_one(new_message)
                 
+                # Award XP for sending message
+                try:
+                    await db.users.update_one(
+                        {"id": user_id},
+                        {"$inc": {"xp": 2}}  # +2 XP per message
+                    )
+                except Exception as xp_err:
+                    logger.error(f"Failed to award XP: {xp_err}")
+                
                 # Prepare broadcast message
                 broadcast_data = {
                     "type": "room_message",
@@ -5363,9 +5372,13 @@ from routes.conversations import router as conversations_router
 from routes.push import router as push_router
 from routes.news import router as news_router
 from routes.announcements import router as announcements_router, init_router as init_announcements
+from routes.badges import get_badges_router
 
 # Initialize announcements router with db and auth
 init_announcements(db, get_current_user)
+
+# Initialize badges router
+badges_router = get_badges_router(db, get_current_user)
 
 api_router.include_router(football_router)
 api_router.include_router(notifications_router)
@@ -5374,6 +5387,7 @@ api_router.include_router(conversations_router)
 api_router.include_router(push_router)
 api_router.include_router(news_router)
 api_router.include_router(announcements_router)
+api_router.include_router(badges_router)
 
 # Include the API router - must be at the end after all routes are defined
 app.include_router(api_router)

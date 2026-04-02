@@ -37,7 +37,7 @@ const AuthPage = ({ onLogin }) => {
       const response = await axios.post(`${API}${endpoint}`, payload);
       const { access_token, user } = response.data;
 
-      onLogin(access_token, user);
+      onLogin(user, access_token);
     } catch (error) {
       const message = error.response?.data?.detail || t('error');
       toast.error(message);

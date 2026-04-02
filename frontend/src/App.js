@@ -27,6 +27,7 @@ const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const NewsManagementPage = lazy(() => import('./pages/NewsManagementPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
+const BadgesPage = lazy(() => import('./pages/BadgesPage'));
 
 // Non-lazy components (always needed)
 import PWAInstallPrompt from './components/PWAInstallPrompt';
@@ -132,6 +133,7 @@ function App() {
                 <Route path="/search-users" element={user ? <SearchUsersPage user={user} /> : <Navigate to="/" />} />
                 <Route path="/news-management" element={user && ['news_editor', 'admin', 'owner'].includes(user.role) ? <NewsManagementPage user={user} /> : <Navigate to="/dashboard" />} />
                 <Route path="/announcements" element={user?.role === 'owner' ? <AnnouncementsPage user={user} /> : <Navigate to="/dashboard" />} />
+                <Route path="/badges" element={user ? <BadgesPage user={user} /> : <Navigate to="/" />} />
                 <Route path="/privacy" element={<PrivacyPolicyPage />} />
               </Routes>
             </Suspense>
