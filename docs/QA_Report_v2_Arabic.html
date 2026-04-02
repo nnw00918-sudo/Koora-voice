@@ -1,0 +1,548 @@
+
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير ضمان الجودة v2.0 - صوت الكورة</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'Cairo', Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            line-height: 1.8;
+            padding: 30px;
+            max-width: 850px;
+            margin: 0 auto;
+            color: #1f2937;
+            background: #fff;
+        }
+        
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #166534, #22c55e);
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+        }
+        
+        .header .version {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .summary-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .pass-rate {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .pass-rate .number {
+            font-size: 72px;
+            font-weight: 700;
+            color: #16a34a;
+            line-height: 1;
+        }
+        
+        .pass-rate .status {
+            font-size: 24px;
+            color: #16a34a;
+            margin-top: 5px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .stat-box .num {
+            font-size: 32px;
+            font-weight: 700;
+        }
+        
+        .stat-box .label {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+        
+        .stat-passed .num { color: #16a34a; }
+        .stat-failed .num { color: #dc2626; }
+        .stat-warnings .num { color: #f59e0b; }
+        .stat-total .num { color: #3b82f6; }
+        
+        .section {
+            margin-bottom: 25px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: #1e293b;
+            color: white;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-stats {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .test-list {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+        
+        .test-item {
+            display: flex;
+            padding: 12px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        
+        .test-icon {
+            font-size: 18px;
+            min-width: 24px;
+        }
+        
+        .test-name {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .test-desc {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 2px;
+        }
+        
+        .improvements {
+            background: #f0fdf4;
+            border: 2px solid #86efac;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .improvements h3 {
+            color: #166534;
+            margin: 0 0 15px 0;
+        }
+        
+        .improvements ul {
+            margin: 0;
+            padding-right: 20px;
+        }
+        
+        .improvements li {
+            margin-bottom: 8px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            color: #9ca3af;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-pass { background: #dcfce7; color: #166534; }
+        .badge-fail { background: #fef2f2; color: #dc2626; }
+        .badge-warn { background: #fffbeb; color: #d97706; }
+        
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 تقرير اختبارات ضمان الجودة</h1>
+        <div>تطبيق صوت الكورة - Koora Voice</div>
+        <div class="version">الإصدار 2.0 - 2026-04-02 20:09</div>
+    </div>
+    
+    <div class="summary-card">
+        <h2 style="text-align: center; margin: 0 0 10px 0; color: #374151;">📊 ملخص النتائج</h2>
+        
+        <div class="pass-rate">
+            <div class="number">87%</div>
+            <div class="status">ممتاز</div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-box stat-total">
+                <div class="num">23</div>
+                <div class="label">إجمالي الاختبارات</div>
+            </div>
+            <div class="stat-box stat-passed">
+                <div class="num">20</div>
+                <div class="label">✅ ناجح</div>
+            </div>
+            <div class="stat-box stat-failed">
+                <div class="num">0</div>
+                <div class="label">❌ فاشل</div>
+            </div>
+            <div class="stat-box stat-warnings">
+                <div class="num">3</div>
+                <div class="label">⚠️ تحذيرات</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="improvements">
+        <h3>✅ الإصلاحات المُطبّقة</h3>
+        <ul>
+            <li><strong>Agora Token:</strong> تم إصلاح توليد رمز Agora عند الانضمام للغرفة تلقائياً</li>
+            <li><strong>Audio Drop Detection:</strong> تم إضافة نظام اكتشاف انقطاع الصوت</li>
+            <li><strong>Audio Quality API:</strong> تم إضافة واجهة مراقبة جودة الصوت</li>
+            <li><strong>Tailwind RTL:</strong> تم إضافة فئات RTL المحسّنة في Tailwind</li>
+            <li><strong>CSS RTL:</strong> تم تحسين دعم RTL في ملفات CSS</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span>📡 اختبار تكامل Agora WebRTC</span>
+            <span class="section-stats">✅ 5 | ❌ 0 | ⚠️ 0</span>
+        </div>
+        <p style="padding: 10px 20px; margin: 0; color: #6b7280; font-size: 14px; background: #f9fafb;">اختبار توليد الرموز، جودة الصوت، اكتشاف الانقطاع</p>
+        <ul class="test-list">
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Agora Token Generation API <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">تم توليد رمز Agora بنجاح عبر API المخصص</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Room Join with Agora <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">الانضمام للغرفة يتضمن رمز Agora تلقائياً</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Audio Quality Monitoring API <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">نظام مراقبة جودة الصوت يعمل بشكل صحيح</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Audio Drop Detection API <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">نظام اكتشاف انقطاع الصوت يعمل بشكل صحيح</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Room Quality Statistics <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">إحصائيات جودة الصوت للغرفة متاحة</div>
+                </div>
+            </li>
+
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span>⚡ اختبار ضغط WebSocket</span>
+            <span class="section-stats">✅ 2 | ❌ 0 | ⚠️ 1</span>
+        </div>
+        <p style="padding: 10px 20px; margin: 0; color: #6b7280; font-size: 14px; background: #f9fafb;">اختبار إرسال 50+ رسالة وقياس الأداء</p>
+        <ul class="test-list">
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Message Throughput <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">تم إرسال 50 رسالة بمعدل 53.1/ثانية</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Error Rate <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">معدل الأخطاء: 0.0%</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">⚠️</span>
+                <div>
+                    <div class="test-name">API Latency <span class="badge badge-warn">تحذير</span></div>
+                    <div class="test-desc">زمن الاستجابة: 360ms - مقبول</div>
+                </div>
+            </li>
+
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span>🔐 اختبار صلاحيات RBAC</span>
+            <span class="section-stats">✅ 10 | ❌ 0 | ⚠️ 0</span>
+        </div>
+        <p style="padding: 10px 20px; margin: 0; color: #6b7280; font-size: 14px; background: #f9fafb;">التحقق من تسلسل الأدوار والصلاحيات</p>
+        <ul class="test-list">
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Role Hierarchy <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">تسلسل الأدوار معرّف بشكل صحيح</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">RBAC: kick_user <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">المشرف لا يستطيع طرد الأدمن</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">RBAC: kick_user <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">الأدمن يستطيع طرد المشرف</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">RBAC: mute_user <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">المشرف يستطيع كتم المستخدم</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">RBAC: assign_role <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">المشرف لا يستطيع تعيين أدمن</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">RBAC: delete_message <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">المشرف يستطيع حذف الرسائل</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">RBAC: ban_user <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">الأدمن لا يستطيع حظر المالك</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">RBAC: change_room_settings <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">القائد لا يستطيع تغيير إعدادات المالك</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">RBAC: promote_to_mod <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">الأدمن يستطيع ترقية لمشرف</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Mod Cannot Kick Admin (Critical) <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">✅ المشرف (مستوى 60) < الأدمن (مستوى 80)</div>
+                </div>
+            </li>
+
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span>🔄 اختبار استجابة RTL</span>
+            <span class="section-stats">✅ 3 | ❌ 0 | ⚠️ 2</span>
+        </div>
+        <p style="padding: 10px 20px; margin: 0; color: #6b7280; font-size: 14px; background: #f9fafb;">التحقق من دعم اللغة العربية واتجاه RTL</p>
+        <ul class="test-list">
+
+            <li class="test-item">
+                <span class="test-icon">⚠️</span>
+                <div>
+                    <div class="test-name">RTL HTML Support <span class="badge badge-warn">تحذير</span></div>
+                    <div class="test-desc">تم العثور على 3/6 مؤشرات RTL</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">⚠️</span>
+                <div>
+                    <div class="test-name">Tailwind RTL Classes <span class="badge badge-warn">تحذير</span></div>
+                    <div class="test-desc">تم العثور على 1 فئات RTL</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Responsive Viewport <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">إعدادات viewport صحيحة</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">Arabic Content <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">المحتوى العربي موجود ومدعوم</div>
+                </div>
+            </li>
+
+            <li class="test-item">
+                <span class="test-icon">✅</span>
+                <div>
+                    <div class="test-name">CSS RTL Styles <span class="badge badge-pass">ناجح</span></div>
+                    <div class="test-desc">ملف CSS يحتوي على أنماط RTL</div>
+                </div>
+            </li>
+
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-header">📋 جدول ملخص الاختبارات</div>
+        <div style="padding: 20px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr style="background: #f3f4f6;">
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: right;">القسم</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb;">الاختبارات</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb;">✅ ناجح</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb;">❌ فاشل</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb;">⚠️ تحذير</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb;">النسبة</th>
+                </tr>
+
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb;">اختبار تكامل Agora WebRTC</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">5</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #16a34a; font-weight: 600;">5</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #dc2626; font-weight: 600;">0</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #f59e0b; font-weight: 600;">0</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600;">100%</td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb;">اختبار ضغط WebSocket</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">3</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #16a34a; font-weight: 600;">2</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #dc2626; font-weight: 600;">0</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #f59e0b; font-weight: 600;">1</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600;">67%</td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb;">اختبار صلاحيات RBAC</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">10</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #16a34a; font-weight: 600;">10</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #dc2626; font-weight: 600;">0</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #f59e0b; font-weight: 600;">0</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600;">100%</td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb;">اختبار استجابة RTL</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">5</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #16a34a; font-weight: 600;">3</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #dc2626; font-weight: 600;">0</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #f59e0b; font-weight: 600;">2</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600;">60%</td>
+                </tr>
+
+                <tr style="background: #f0fdf4; font-weight: 600;">
+                    <td style="padding: 10px; border: 1px solid #e5e7eb;">المجموع</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center;">23</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #16a34a;">20</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #dc2626;">0</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #f59e0b;">3</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; color: #16a34a;">87%</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>🧪 تم إنشاء هذا التقرير تلقائياً بواسطة نظام ضمان الجودة</p>
+        <p>Koora Voice QA Suite v2.0 | Emergent AI | 2026-04-02</p>
+    </div>
+</body>
+</html>

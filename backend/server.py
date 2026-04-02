@@ -1400,7 +1400,33 @@ async def join_room(room_id: str, join_data: JoinWithPinRequest = None, current_
             {"$set": {"last_active": now}}
         )
     
-    return {"message": "دخلت الغرفة بنجاح"}
+    # Generate Agora token for this room
+    agora_token = None
+    agora_uid = None
+    if AGORA_APP_ID and AGORA_APP_CERTIFICATE:
+        try:
+            import random
+            agora_uid = random.randint(1, 2147483647)
+            privilege_expired_ts = int(time.time()) + 3600 * 24  # 24 hours
+            agora_token = RtcTokenBuilder.buildTokenWithUid(
+                appId=AGORA_APP_ID,
+                appCertificate=AGORA_APP_CERTIFICATE,
+                channelName=room_id,
+                uid=agora_uid,
+                role=1,  # Publisher role
+                privilegeExpiredTs=privilege_expired_ts
+            )
+        except Exception as e:
+            print(f"Agora token generation error: {e}")
+    
+    return {
+        "message": "دخلت الغرفة بنجاح",
+        "room_id": room_id,
+        "agora_token": agora_token,
+        "agora_uid": agora_uid,
+        "agora_app_id": AGORA_APP_ID if agora_token else None,
+        "channel": room_id
+    }
 
 # Update Agora UID for video matching
 class UpdateAgoraUid(BaseModel):
@@ -3949,6 +3975,133 @@ async def generate_agora_token(request: AgoraTokenRequest, current_user: User = 
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"فشل توليد Token: {str(e)}")
+
+# Audio Quality Monitoring and Drop Detection
+class AudioQualityReport(BaseModel):
+    room_id: str
+    user_id: str
+    quality_score: int  # 0-5 (0=unknown, 1=excellent, 2=good, 3=poor, 4=bad, 5=vbad)
+    network_quality: int  # 0-5
+    packet_loss: float  # percentage
+    jitter: float  # ms
+    rtt: float  # round-trip time in ms
+    audio_drops: int  # count of detected drops
+    timestamp: str
+
+class AudioDropEvent(BaseModel):
+    room_id: str
+    user_id: str
+    drop_duration_ms: int
+    reason: str  # "network", "device", "unknown"
+    recovered: bool
+
+@api_router.post("/agora/audio-quality")
+async def report_audio_quality(report: AudioQualityReport, current_user: User = Depends(get_current_user)):
+    """Report audio quality metrics for monitoring"""
+    try:
+        quality_doc = {
+            "id": f"aq_{report.room_id}_{report.user_id}_{int(time.time())}",
+            "room_id": report.room_id,
+            "user_id": report.user_id,
+            "reporter_id": current_user.id,
+            "quality_score": report.quality_score,
+            "network_quality": report.network_quality,
+            "packet_loss": report.packet_loss,
+            "jitter": report.jitter,
+            "rtt": report.rtt,
+            "audio_drops": report.audio_drops,
+            "timestamp": report.timestamp,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.audio_quality_reports.insert_one(quality_doc)
+        
+        # Alert if quality is poor
+        if report.quality_score >= 4 or report.packet_loss > 10:
+            # Broadcast warning to room
+            warning_msg = {
+                "type": "audio_quality_warning",
+                "room_id": report.room_id,
+                "user_id": report.user_id,
+                "quality": "poor" if report.quality_score == 3 else "bad",
+                "packet_loss": report.packet_loss
+            }
+            await ws_manager.broadcast_to_room(warning_msg, report.room_id)
+        
+        return {"status": "recorded", "quality_level": report.quality_score}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"فشل تسجيل جودة الصوت: {str(e)}")
+
+@api_router.post("/agora/audio-drop")
+async def report_audio_drop(event: AudioDropEvent, current_user: User = Depends(get_current_user)):
+    """Report audio drop event for analysis"""
+    try:
+        drop_doc = {
+            "id": f"drop_{event.room_id}_{event.user_id}_{int(time.time())}",
+            "room_id": event.room_id,
+            "user_id": event.user_id,
+            "reporter_id": current_user.id,
+            "drop_duration_ms": event.drop_duration_ms,
+            "reason": event.reason,
+            "recovered": event.recovered,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.audio_drop_events.insert_one(drop_doc)
+        
+        # Notify room about significant drops
+        if event.drop_duration_ms > 3000:  # More than 3 seconds
+            drop_msg = {
+                "type": "audio_drop_detected",
+                "room_id": event.room_id,
+                "user_id": event.user_id,
+                "duration_ms": event.drop_duration_ms,
+                "recovered": event.recovered
+            }
+            await ws_manager.broadcast_to_room(drop_msg, event.room_id)
+        
+        return {"status": "recorded", "drop_id": drop_doc["id"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"فشل تسجيل انقطاع الصوت: {str(e)}")
+
+@api_router.get("/agora/room/{room_id}/quality-stats")
+async def get_room_audio_quality_stats(room_id: str, current_user: User = Depends(get_current_user)):
+    """Get audio quality statistics for a room"""
+    try:
+        # Get recent quality reports (last hour)
+        one_hour_ago = datetime.now(timezone.utc).isoformat()
+        
+        reports = await db.audio_quality_reports.find(
+            {"room_id": room_id},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(100).to_list(100)
+        
+        drops = await db.audio_drop_events.find(
+            {"room_id": room_id},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(50).to_list(50)
+        
+        if not reports:
+            return {
+                "room_id": room_id,
+                "avg_quality": None,
+                "avg_packet_loss": None,
+                "total_drops": 0,
+                "status": "no_data"
+            }
+        
+        avg_quality = sum(r["quality_score"] for r in reports) / len(reports)
+        avg_packet_loss = sum(r["packet_loss"] for r in reports) / len(reports)
+        total_drops = len(drops)
+        
+        return {
+            "room_id": room_id,
+            "avg_quality": round(avg_quality, 2),
+            "avg_packet_loss": round(avg_packet_loss, 2),
+            "total_drops": total_drops,
+            "recent_reports_count": len(reports),
+            "status": "excellent" if avg_quality <= 2 else "good" if avg_quality <= 3 else "poor"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"فشل جلب إحصائيات الجودة: {str(e)}")
 
 # ==================== THREADS ENDPOINTS ====================
 

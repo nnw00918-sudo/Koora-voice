@@ -4,12 +4,85 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for safe areas */
+/* RTL Support Variables */
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
+}
+
+/* RTL Direction Support */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+
+/* RTL Logical Properties Utilities */
+.rtl\:text-right {
+  text-align: right;
+}
+
+.ltr\:text-left {
+  text-align: left;
+}
+
+[dir="rtl"] .rtl\:flex-row-reverse {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .rtl\:space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+[dir="rtl"] .rtl\:mr-0 {
+  margin-right: 0;
+}
+
+[dir="rtl"] .rtl\:ml-auto {
+  margin-left: auto;
+}
+
+[dir="rtl"] .rtl\:pr-0 {
+  padding-right: 0;
+}
+
+[dir="rtl"] .rtl\:pl-4 {
+  padding-left: 1rem;
+}
+
+[dir="rtl"] .rtl\:right-auto {
+  right: auto;
+}
+
+[dir="rtl"] .rtl\:left-0 {
+  left: 0;
+}
+
+[dir="rtl"] .rtl\:left-4 {
+  left: 1rem;
+}
+
+[dir="rtl"] .rtl\:right-4 {
+  right: 1rem;
+}
+
+/* Flip icons for RTL */
+[dir="rtl"] .rtl\:flip {
+  transform: scaleX(-1);
+}
+
+/* Arabic Font Optimization */
+[lang="ar"], 
+[dir="rtl"] {
+  font-family: 'Cairo', 'Almarai', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0;
+  word-spacing: 0.05em;
 }
 
 /* Prevent iOS zoom on input focus */

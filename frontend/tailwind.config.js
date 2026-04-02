@@ -17,6 +17,23 @@ module.exports = {
         almarai: ['Almarai', 'sans-serif'],
         chivo: ['Chivo', 'sans-serif'],
       },
+      // RTL Support - Logical Properties
+      spacing: {
+        'start': 'var(--spacing-start)',
+        'end': 'var(--spacing-end)',
+      },
+      margin: {
+        'start': 'var(--margin-start)',
+        'end': 'var(--margin-end)',
+      },
+      padding: {
+        'start': 'var(--padding-start)',
+        'end': 'var(--padding-end)',
+      },
+      textAlign: {
+        'start': 'start',
+        'end': 'end',
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -80,5 +97,120 @@ module.exports = {
       }
     }
   },
-  plugins: [require('tailwindcss-animate')]
+  plugins: [
+    require('tailwindcss-animate'),
+    // RTL Plugin
+    function({ addUtilities, addVariant }) {
+      // Add RTL variant
+      addVariant('rtl', '[dir="rtl"] &');
+      addVariant('ltr', '[dir="ltr"] &');
+      
+      // Add RTL utilities
+      addUtilities({
+        '.text-start': {
+          'text-align': 'start',
+        },
+        '.text-end': {
+          'text-align': 'end',
+        },
+        '.ms-auto': {
+          'margin-inline-start': 'auto',
+        },
+        '.me-auto': {
+          'margin-inline-end': 'auto',
+        },
+        '.ps-0': {
+          'padding-inline-start': '0',
+        },
+        '.pe-0': {
+          'padding-inline-end': '0',
+        },
+        '.ps-1': {
+          'padding-inline-start': '0.25rem',
+        },
+        '.pe-1': {
+          'padding-inline-end': '0.25rem',
+        },
+        '.ps-2': {
+          'padding-inline-start': '0.5rem',
+        },
+        '.pe-2': {
+          'padding-inline-end': '0.5rem',
+        },
+        '.ps-3': {
+          'padding-inline-start': '0.75rem',
+        },
+        '.pe-3': {
+          'padding-inline-end': '0.75rem',
+        },
+        '.ps-4': {
+          'padding-inline-start': '1rem',
+        },
+        '.pe-4': {
+          'padding-inline-end': '1rem',
+        },
+        '.ms-0': {
+          'margin-inline-start': '0',
+        },
+        '.me-0': {
+          'margin-inline-end': '0',
+        },
+        '.ms-1': {
+          'margin-inline-start': '0.25rem',
+        },
+        '.me-1': {
+          'margin-inline-end': '0.25rem',
+        },
+        '.ms-2': {
+          'margin-inline-start': '0.5rem',
+        },
+        '.me-2': {
+          'margin-inline-end': '0.5rem',
+        },
+        '.ms-3': {
+          'margin-inline-start': '0.75rem',
+        },
+        '.me-3': {
+          'margin-inline-end': '0.75rem',
+        },
+        '.ms-4': {
+          'margin-inline-start': '1rem',
+        },
+        '.me-4': {
+          'margin-inline-end': '1rem',
+        },
+        '.start-0': {
+          'inset-inline-start': '0',
+        },
+        '.end-0': {
+          'inset-inline-end': '0',
+        },
+        '.start-4': {
+          'inset-inline-start': '1rem',
+        },
+        '.end-4': {
+          'inset-inline-end': '1rem',
+        },
+        '.border-s': {
+          'border-inline-start-width': '1px',
+        },
+        '.border-e': {
+          'border-inline-end-width': '1px',
+        },
+        '.rounded-s': {
+          'border-start-start-radius': '0.25rem',
+          'border-end-start-radius': '0.25rem',
+        },
+        '.rounded-e': {
+          'border-start-end-radius': '0.25rem',
+          'border-end-end-radius': '0.25rem',
+        },
+        '.flip-rtl': {
+          '[dir="rtl"] &': {
+            'transform': 'scaleX(-1)',
+          },
+        },
+      });
+    }
+  ]
 };
