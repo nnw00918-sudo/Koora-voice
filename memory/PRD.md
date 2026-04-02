@@ -375,6 +375,39 @@ owner > admin > news_editor > mod > user
 
 ---
 
+## التقدم في إعادة الهيكلة (P1)
+
+### الوضع الحالي:
+- **server.py**: ~5395 سطر (تم استخراج بعض الـ routes)
+- **RoomPage.js**: ~4770 سطر (تم استخراج بعض المكونات)
+
+### Routes المستخرجة بالفعل:
+- ✅ `/app/backend/routes/football.py`
+- ✅ `/app/backend/routes/notifications.py`
+- ✅ `/app/backend/routes/stories.py`
+- ✅ `/app/backend/routes/conversations.py`
+- ✅ `/app/backend/routes/push.py`
+- ✅ `/app/backend/routes/news.py`
+- ✅ `/app/backend/routes/announcements.py`
+- ✅ `/app/backend/routes/badges.py`
+
+### Components المستخرجة بالفعل:
+- ✅ `/app/frontend/src/components/room/RoomChat.jsx`
+- ✅ `/app/frontend/src/components/room/RoomHeader.jsx`
+- ✅ `/app/frontend/src/components/room/SpeakersGrid.jsx`
+- ✅ `/app/frontend/src/components/room/RoomControlBar.jsx`
+- ✅ `/app/frontend/src/components/room/GiftModal.jsx`
+- ✅ `/app/frontend/src/components/room/WatchParty.jsx`
+- ✅ و 12 مكون آخر...
+
+### ما يحتاج استخراج (مستقبلاً):
+- 🟡 Thread routes من server.py (~640 سطر)
+- 🟡 Room routes من server.py (~1200 سطر)
+- 🟡 User routes من server.py (~400 سطر)
+- 🟡 Admin routes من server.py (~150 سطر)
+
+---
+
 ### Video Embedding
 - استخدم native iframe مع regex للـ YouTube URLs
 - لا تستخدم react-player (فشل مع YouTube Live)
