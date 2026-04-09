@@ -114,7 +114,7 @@ const ChatView = memo(function ChatView({
   };
 
   return (
-    <div className={`relative flex flex-col h-screen ${theme.bg}`} style={{ height: '100dvh' }}>
+    <div className={`fixed inset-0 flex flex-col ${theme.bg}`}>
       <ChatBackground isDarkMode={isDarkMode} />
       
       {/* Header - Glassmorphism */}
