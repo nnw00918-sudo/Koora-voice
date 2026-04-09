@@ -3351,8 +3351,13 @@ const YallaLiveRoom = ({ user }) => {
                             setNewMessage(prev => prev + `@${message.username} `);
                           }
                         }}
-                        className="text-white font-cairo font-bold text-sm hover:text-lime-400 transition-colors"
+                        className={`font-cairo font-bold text-sm transition-colors flex items-center gap-1 ${
+                          message.is_vip 
+                            ? 'text-amber-400 hover:text-amber-300' 
+                            : 'text-white hover:text-lime-400'
+                        }`}
                       >
+                        {message.is_vip && <Crown className="w-3.5 h-3.5 text-amber-400" />}
                         {message.username}
                       </button>
                       
@@ -3402,7 +3407,11 @@ const YallaLiveRoom = ({ user }) => {
                     
                     {/* Text Content */}
                     {message.content && (
-                      <p className="text-slate-300 font-almarai text-sm leading-relaxed">
+                      <p className={`font-almarai text-sm leading-relaxed ${
+                        message.is_vip 
+                          ? 'text-amber-200 bg-gradient-to-r from-amber-500/10 to-transparent px-2 py-1 rounded-lg border-r-2 border-amber-500/50' 
+                          : 'text-slate-300'
+                      }`}>
                         {renderMessageContent(message.content)}
                       </p>
                     )}

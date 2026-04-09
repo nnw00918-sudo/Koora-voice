@@ -5321,6 +5321,16 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                 if not sender:
                     continue
                 
+                # Check VIP status
+                is_vip = sender.get("is_vip", False)
+                if is_vip and sender.get("vip_until"):
+                    try:
+                        vip_until = datetime.fromisoformat(sender["vip_until"].replace('Z', '+00:00'))
+                        if vip_until < datetime.now(timezone.utc):
+                            is_vip = False
+                    except:
+                        pass
+                
                 # Save message to room_messages collection
                 message_id = str(int(time.time() * 1000))
                 new_message = {
@@ -5330,6 +5340,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     "username": sender.get("username"),
                     "avatar": sender.get("avatar") or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_id}",
                     "content": content,
+                    "is_vip": is_vip,
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
                 
@@ -5360,6 +5371,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                         "username": sender.get("username"),
                         "avatar": sender.get("avatar") or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_id}",
                         "content": content,
+                        "is_vip": is_vip,
                         "created_at": new_message["created_at"],
                         "reply_to_id": reply_to_id,
                         "reply_to_username": reply_to_username,
