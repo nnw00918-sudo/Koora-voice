@@ -394,10 +394,31 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
             {"$inc": {"xp": 10}}
         )
         
+        # إنشاء إشعار للمستلم
+        notification = {
+            "user_id": data.receiver_id,
+            "type": "gift_received",
+            "title": f"🎁 هدية جديدة!",
+            "message": f"{current_user.username} أرسل لك {gift['name']} {gift['icon']}",
+            "data": {
+                "sender_id": current_user.id,
+                "sender_username": current_user.username,
+                "gift_id": gift["id"],
+                "gift_name": gift["name"],
+                "gift_icon": gift["icon"],
+                "coins_received": receiver_amount,
+                "room_id": data.room_id
+            },
+            "is_read": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.notifications.insert_one(notification)
+        
         return {
             "message": f"تم إرسال {gift['name']} بنجاح",
             "gift": gift,
-            "animation": gift["animation"]
+            "animation": gift["animation"],
+            "notification_sent": True
         }
     
     @router.get("/gifts/history")

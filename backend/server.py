@@ -172,6 +172,8 @@ class User(BaseModel):
     level: int = 1
     xp: int = 0
     badges: List[str] = []
+    is_vip: bool = False
+    vip_until: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str
@@ -437,6 +439,23 @@ async def login(user_data: UserLogin):
     
     if not user or not verify_password(user_data.password, user["password"]):
         raise HTTPException(status_code=401, detail="اسم المستخدم/البريد الإلكتروني أو كلمة المرور غير صحيحة")
+    
+    # Check VIP status
+    is_vip = user.get("is_vip", False)
+    
+    # Owner is always VIP
+    if user.get("role") == "owner":
+        is_vip = True
+        user["is_vip"] = True
+        user["vip_until"] = "2099-12-31T23:59:59Z"
+    elif is_vip and user.get("vip_until"):
+        try:
+            vip_until = datetime.fromisoformat(user["vip_until"].replace('Z', '+00:00'))
+            if vip_until < datetime.now(timezone.utc):
+                is_vip = False
+                user["is_vip"] = False
+        except:
+            pass
     
     access_token = create_access_token(data={"sub": user["id"]})
     user_obj = User(**{k: v for k, v in user.items() if k != "password"})

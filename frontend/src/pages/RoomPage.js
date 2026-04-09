@@ -2231,8 +2231,13 @@ const YallaLiveRoom = ({ user }) => {
 
   // Check if user can send images (Admin, Owner, Room Owner, Mod)
   const canSendImages = () => {
+    // Owner and Admin can always send images
     if (user?.role === 'owner' || user?.role === 'admin') return true;
+    // Room owner can send images
     if (room?.owner_id === user?.id) return true;
+    // VIP users can send images
+    if (user?.is_vip) return true;
+    // Room admins/mods can send images
     const userRole = participants.find(p => p.id === user?.id);
     if (userRole?.role === 'admin' || userRole?.role === 'mod') return true;
     return false;

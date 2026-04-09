@@ -34,18 +34,24 @@ async def get_notifications(credentials: HTTPAuthorizationCredentials = Depends(
     
     result = []
     for notif in notifications:
-        result.append({
-            "id": notif["id"],
+        notif_data = {
+            "id": notif.get("id", str(notif.get("_id", ""))),
             "type": notif["type"],
+            "title": notif.get("title", ""),
             "message": notif.get("message", ""),
             "from_user": notif.get("from_user"),
             "thread_id": notif.get("thread_id"),
-            "read": notif.get("read", False),
+            "data": notif.get("data", {}),
+            "read": notif.get("read", notif.get("is_read", False)),
             "created_at": notif["created_at"]
-        })
+        }
+        result.append(notif_data)
     
     # Get unread count
-    unread_count = await db.notifications.count_documents({"user_id": user_id, "read": False})
+    unread_count = await db.notifications.count_documents({
+        "user_id": user_id, 
+        "$or": [{"read": False}, {"is_read": False}]
+    })
     
     return {"notifications": result, "unread_count": unread_count}
 
@@ -56,8 +62,8 @@ async def mark_notifications_read(credentials: HTTPAuthorizationCredentials = De
     user_id = get_user_id_from_token(credentials)
     
     await db.notifications.update_many(
-        {"user_id": user_id, "read": False},
-        {"$set": {"read": True}}
+        {"user_id": user_id, "$or": [{"read": False}, {"is_read": False}]},
+        {"$set": {"read": True, "is_read": True}}
     )
     
     return {"message": "Notifications marked as read"}
