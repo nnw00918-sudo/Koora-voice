@@ -55,29 +55,40 @@ VIP_PLANS = [
 ]
 
 # ============================================
-# تعريف الهدايا
+# تعريف الهدايا الرياضية
 # ============================================
 
 GIFTS = [
-    # هدايا بسيطة (1-10 عملات)
-    {"id": "rose", "name": "وردة", "name_en": "Rose", "icon": "🌹", "price": 1, "animation": "float"},
-    {"id": "heart", "name": "قلب", "name_en": "Heart", "icon": "❤️", "price": 5, "animation": "pulse"},
-    {"id": "star", "name": "نجمة", "name_en": "Star", "icon": "⭐", "price": 10, "animation": "spin"},
+    # هدايا بسيطة (1-10 عملات) - كرة القدم
+    {"id": "football", "name": "كرة قدم", "name_en": "Football", "icon": "⚽", "price": 1, "animation": "bounce", "category": "football"},
+    {"id": "goal", "name": "هدف", "name_en": "Goal", "icon": "🥅", "price": 5, "animation": "shake", "category": "football"},
+    {"id": "whistle", "name": "صافرة", "name_en": "Whistle", "icon": "📣", "price": 10, "animation": "pulse", "category": "football"},
     
-    # هدايا متوسطة (20-50 عملات)
-    {"id": "fire", "name": "نار", "name_en": "Fire", "icon": "🔥", "price": 20, "animation": "shake"},
-    {"id": "diamond", "name": "ماسة", "name_en": "Diamond", "icon": "💎", "price": 30, "animation": "sparkle"},
-    {"id": "gift_box", "name": "هدية", "name_en": "Gift Box", "icon": "🎁", "price": 50, "animation": "bounce"},
+    # هدايا متوسطة (20-50 عملات) - كرة السلة
+    {"id": "basketball", "name": "كرة سلة", "name_en": "Basketball", "icon": "🏀", "price": 20, "animation": "bounce", "category": "basketball"},
+    {"id": "jersey", "name": "قميص", "name_en": "Jersey", "icon": "👕", "price": 30, "animation": "float", "category": "sports"},
+    {"id": "sneakers", "name": "حذاء رياضي", "name_en": "Sneakers", "icon": "👟", "price": 50, "animation": "walk", "category": "sports"},
     
-    # هدايا كبيرة (100-500 عملات)
-    {"id": "trophy", "name": "كأس", "name_en": "Trophy", "icon": "🏆", "price": 100, "animation": "glow"},
-    {"id": "crown", "name": "تاج", "name_en": "Crown", "icon": "👑", "price": 200, "animation": "royal"},
-    {"id": "rocket", "name": "صاروخ", "name_en": "Rocket", "icon": "🚀", "price": 300, "animation": "launch"},
+    # شعارات الأندية (100-300 عملات)
+    {"id": "real_madrid", "name": "ريال مدريد", "name_en": "Real Madrid", "icon": "⚪", "price": 100, "animation": "glow", "category": "club"},
+    {"id": "barcelona", "name": "برشلونة", "name_en": "Barcelona", "icon": "🔵🔴", "price": 100, "animation": "glow", "category": "club"},
+    {"id": "al_hilal", "name": "الهلال", "name_en": "Al Hilal", "icon": "💙", "price": 100, "animation": "glow", "category": "club"},
+    {"id": "al_nassr", "name": "النصر", "name_en": "Al Nassr", "icon": "💛", "price": 100, "animation": "glow", "category": "club"},
+    {"id": "liverpool", "name": "ليفربول", "name_en": "Liverpool", "icon": "❤️", "price": 100, "animation": "glow", "category": "club"},
+    {"id": "man_city", "name": "مان سيتي", "name_en": "Man City", "icon": "🩵", "price": 100, "animation": "glow", "category": "club"},
     
-    # هدايا فاخرة (500+ عملات)
-    {"id": "sports_car", "name": "سيارة رياضية", "name_en": "Sports Car", "icon": "🏎️", "price": 500, "animation": "drive"},
-    {"id": "yacht", "name": "يخت", "name_en": "Yacht", "icon": "🛥️", "price": 1000, "animation": "sail"},
-    {"id": "private_jet", "name": "طائرة خاصة", "name_en": "Private Jet", "icon": "✈️", "price": 2000, "animation": "fly"},
+    # البطولات (200-500 عملات)
+    {"id": "champions_league", "name": "دوري الأبطال", "name_en": "Champions League", "icon": "🏆", "price": 200, "animation": "sparkle", "category": "trophy"},
+    {"id": "world_cup", "name": "كأس العالم", "name_en": "World Cup", "icon": "🏆", "price": 300, "animation": "royal", "category": "trophy"},
+    {"id": "golden_boot", "name": "الحذاء الذهبي", "name_en": "Golden Boot", "icon": "👢", "price": 250, "animation": "glow", "category": "trophy"},
+    {"id": "ballon_dor", "name": "الكرة الذهبية", "name_en": "Ballon d'Or", "icon": "🥇", "price": 500, "animation": "royal", "category": "trophy"},
+    
+    # اللاعبين الأسطوريين (500-2000 عملات)
+    {"id": "goat", "name": "الأفضل", "name_en": "GOAT", "icon": "🐐", "price": 500, "animation": "legendary", "category": "player"},
+    {"id": "number_10", "name": "رقم 10", "name_en": "Number 10", "icon": "🔟", "price": 700, "animation": "glow", "category": "player"},
+    {"id": "hat_trick", "name": "هاتريك", "name_en": "Hat Trick", "icon": "🎩⚽⚽⚽", "price": 1000, "animation": "fireworks", "category": "achievement"},
+    {"id": "stadium", "name": "ملعب", "name_en": "Stadium", "icon": "🏟️", "price": 1500, "animation": "grand", "category": "venue"},
+    {"id": "legend", "name": "أسطورة", "name_en": "Legend", "icon": "👑⚽", "price": 2000, "animation": "legendary", "category": "player"},
 ]
 
 # Pydantic Models

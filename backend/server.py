@@ -232,6 +232,7 @@ class RoomParticipant(BaseModel):
     is_muted: bool = False
     last_active: Optional[str] = None
     agora_uid: Optional[int] = None  # Agora UID for video matching
+    is_vip: bool = False  # VIP status
 
 class SeatRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -1402,6 +1403,19 @@ async def join_room(room_id: str, join_data: JoinWithPinRequest = None, current_
     
     now = datetime.now(timezone.utc).isoformat()
     
+    # Get user's VIP status
+    user_data = await db.users.find_one({"id": current_user.id}, {"_id": 0, "is_vip": 1, "vip_until": 1})
+    is_vip = user_data.get("is_vip", False) if user_data else False
+    
+    # Check VIP expiration
+    if is_vip and user_data.get("vip_until"):
+        try:
+            vip_until = datetime.fromisoformat(user_data["vip_until"].replace('Z', '+00:00'))
+            if vip_until < datetime.now(timezone.utc):
+                is_vip = False
+        except:
+            pass
+    
     if not existing:
         participant_doc = {
             "room_id": room_id,
@@ -1413,7 +1427,8 @@ async def join_room(room_id: str, join_data: JoinWithPinRequest = None, current_
             "seat_number": None,
             "room_role": "listener",
             "can_speak": False,
-            "last_active": now
+            "last_active": now,
+            "is_vip": is_vip
         }
         await db.room_participants.insert_one(participant_doc)
     else:

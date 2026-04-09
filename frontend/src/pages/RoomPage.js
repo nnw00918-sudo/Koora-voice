@@ -22,6 +22,8 @@ import { PromoteModal } from '../components/room/PromoteModal';
 import { BackgroundPickerModal } from '../components/room/BackgroundPickerModal';
 import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
+import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
+import GiftPanel, { GiftAnimation, GiftButton } from '../components/room/GiftPanel';
 import {
   Mic,
   MicOff,
@@ -48,6 +50,7 @@ import {
   Shield,
   Users,
   Check,
+  Gift,
   Square,
   Trash2,
   Edit3,
@@ -127,6 +130,9 @@ const YallaLiveRoom = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [onStage, setOnStage] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
+  const [showGiftPanel, setShowGiftPanel] = useState(false);
+  const [giftReceiver, setGiftReceiver] = useState(null);
+  const [activeGiftAnimation, setActiveGiftAnimation] = useState(null);
   const [gifts, setGifts] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userCoins, setUserCoins] = useState(user.coins || 1000);
@@ -3168,48 +3174,65 @@ const YallaLiveRoom = ({ user }) => {
                 const remoteVideo = isOccupied ? remoteVideoUsers.find(rv => rv.uid === seatUser?.user_id || rv.uid === seatUser?.agora_uid) : null;
                 const hasVideo = hasLocalCamera || remoteVideo;
                 
-                return (
-                  <div key={index} className="flex flex-col items-center gap-1 flex-shrink-0">
+                  return (
+                  <div key={index} className="flex flex-col items-center gap-1 flex-shrink-0 relative group">
                     {isOccupied ? (
                       /* Occupied Seat */
-                      <button
-                        onClick={() => hasVideo && setExpandedVideo({ 
-                          isLocal: isLocalUser, 
-                          remoteUser: remoteVideo,
-                          username: seatUser?.username,
-                          avatar: seatUser?.avatar
-                        })}
-                        className={`w-16 h-16 rounded-full overflow-hidden relative ${
-                          seatUser?.is_speaking 
-                            ? 'ring-2 ring-[#CCFF00] ring-offset-2 ring-offset-[#0A0A0A]' 
-                            : hasVideo 
-                              ? 'ring-2 ring-purple-500' 
-                              : 'border-2 border-white/20'
-                        }`}
-                      >
-                        {hasLocalCamera ? (
-                          <video
-                            ref={(el) => {
-                              if (el && localCameraStream.current) {
-                                el.srcObject = localCameraStream.current;
-                              }
+                      <>
+                        <VIPAvatarFrame isVIP={seatUser?.is_vip} size="md">
+                          <button
+                            onClick={() => hasVideo && setExpandedVideo({ 
+                              isLocal: isLocalUser, 
+                              remoteUser: remoteVideo,
+                              username: seatUser?.username,
+                              avatar: seatUser?.avatar
+                            })}
+                            className={`w-16 h-16 rounded-full overflow-hidden relative ${
+                              seatUser?.is_speaking 
+                                ? 'ring-2 ring-[#CCFF00] ring-offset-2 ring-offset-[#0A0A0A]' 
+                                : hasVideo 
+                                  ? 'ring-2 ring-purple-500' 
+                                  : ''
+                            }`}
+                          >
+                            {hasLocalCamera ? (
+                              <video
+                                ref={(el) => {
+                                  if (el && localCameraStream.current) {
+                                    el.srcObject = localCameraStream.current;
+                                  }
+                                }}
+                                autoPlay
+                                playsInline
+                                muted
+                                className="w-full h-full object-cover"
+                                style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
+                              />
+                            ) : remoteVideo ? (
+                              <RemoteVideoCircle remoteUser={remoteVideo} />
+                            ) : (
+                              <img src={seatUser?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`} alt="" className="w-full h-full object-cover" />
+                            )}
+                            {/* Mic Status Badge */}
+                            <div className={`absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0A0A0A] ${seatUser?.is_muted ? 'bg-red-500' : 'bg-[#CCFF00]'}`}>
+                              {seatUser?.is_muted ? <MicOff className="w-2.5 h-2.5 text-white" /> : <Mic className="w-2.5 h-2.5 text-black" />}
+                            </div>
+                          </button>
+                        </VIPAvatarFrame>
+                        {/* Gift Button - shows on hover for other users */}
+                        {!isLocalUser && (
+                          <GiftButton
+                            onClick={() => {
+                              setGiftReceiver({
+                                id: seatUser?.user_id,
+                                name: seatUser?.username
+                              });
+                              setShowGiftPanel(true);
                             }}
-                            autoPlay
-                            playsInline
-                            muted
-                            className="w-full h-full object-cover"
-                            style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
+                            className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           />
-                        ) : remoteVideo ? (
-                          <RemoteVideoCircle remoteUser={remoteVideo} />
-                        ) : (
-                          <img src={seatUser?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`} alt="" className="w-full h-full object-cover" />
                         )}
-                        {/* Mic Status Badge */}
-                        <div className={`absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0A0A0A] ${seatUser?.is_muted ? 'bg-red-500' : 'bg-[#CCFF00]'}`}>
-                          {seatUser?.is_muted ? <MicOff className="w-2.5 h-2.5 text-white" /> : <Mic className="w-2.5 h-2.5 text-black" />}
-                        </div>
-                      </button>
+                      </>
                     ) : (
                       /* Empty Seat */
                       <button
@@ -3219,9 +3242,14 @@ const YallaLiveRoom = ({ user }) => {
                         <span className="text-xl">+</span>
                       </button>
                     )}
-                    {/* Username */}
-                    <span className="font-almarai text-[10px] text-white/70 truncate max-w-[70px] text-center">
-                      {isOccupied ? seatUser?.username : 'انضم'}
+                    {/* Username with VIP badge */}
+                    <span className="font-almarai text-[10px] text-white/70 truncate max-w-[70px] text-center flex items-center gap-0.5">
+                      {isOccupied ? (
+                        <>
+                          <span className={seatUser?.is_vip ? 'text-amber-400' : ''}>{seatUser?.username}</span>
+                          {seatUser?.is_vip && <VIPBadge size="xs" />}
+                        </>
+                      ) : 'انضم'}
                     </span>
                   </div>
                 );
@@ -4760,6 +4788,33 @@ const YallaLiveRoom = ({ user }) => {
                 style={{ touchAction: 'none' }}
               />
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Gift Panel */}
+        <GiftPanel
+          isOpen={showGiftPanel}
+          onClose={() => {
+            setShowGiftPanel(false);
+            setGiftReceiver(null);
+          }}
+          receiverId={giftReceiver?.id}
+          receiverName={giftReceiver?.name}
+          roomId={roomId}
+          onGiftSent={(data) => {
+            setActiveGiftAnimation(data);
+          }}
+        />
+
+        {/* Gift Animation */}
+        <AnimatePresence>
+          {activeGiftAnimation && (
+            <GiftAnimation
+              gift={activeGiftAnimation.gift}
+              senderName={user.username}
+              receiverName={activeGiftAnimation.receiverName}
+              onComplete={() => setActiveGiftAnimation(null)}
+            />
           )}
         </AnimatePresence>
       </div>
