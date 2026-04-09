@@ -23,7 +23,7 @@ import { BackgroundPickerModal } from '../components/room/BackgroundPickerModal'
 import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
-import GiftPanel, { GiftAnimation, GiftButton } from '../components/room/GiftPanel';
+import GiftPanel, { GiftAnimation } from '../components/room/GiftPanel';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
 import {
   Mic,
@@ -134,7 +134,6 @@ const YallaLiveRoom = ({ user }) => {
   const [onStage, setOnStage] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [showGiftPanel, setShowGiftPanel] = useState(false);
-  const [giftReceiver, setGiftReceiver] = useState(null);
   const [activeGiftAnimation, setActiveGiftAnimation] = useState(null);
   const [gifts, setGifts] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled());
@@ -3248,19 +3247,6 @@ const YallaLiveRoom = ({ user }) => {
                             </div>
                           </button>
                         </VIPAvatarFrame>
-                        {/* Gift Button - shows on hover for other users */}
-                        {!isLocalUser && (
-                          <GiftButton
-                            onClick={() => {
-                              setGiftReceiver({
-                                id: seatUser?.user_id,
-                                name: seatUser?.username
-                              });
-                              setShowGiftPanel(true);
-                            }}
-                            className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          />
-                        )}
                       </>
                     ) : (
                       /* Empty Seat */
@@ -4834,11 +4820,9 @@ const YallaLiveRoom = ({ user }) => {
           isOpen={showGiftPanel}
           onClose={() => {
             setShowGiftPanel(false);
-            setGiftReceiver(null);
           }}
-          receiverId={giftReceiver?.id}
-          receiverName={giftReceiver?.name}
           roomId={roomId}
+          roomTitle={room?.title}
           onGiftSent={(data) => {
             setActiveGiftAnimation(data);
           }}
@@ -4849,8 +4833,7 @@ const YallaLiveRoom = ({ user }) => {
           {activeGiftAnimation && (
             <GiftAnimation
               gift={activeGiftAnimation.gift}
-              senderName={user.username}
-              receiverName={activeGiftAnimation.receiverName}
+              senderName={activeGiftAnimation.senderUsername || user.username}
               onComplete={() => setActiveGiftAnimation(null)}
             />
           )}

@@ -11,16 +11,14 @@ const API = `${BACKEND_URL}/api`;
 
 /**
  * Gift Panel Component
- * لوحة إرسال الهدايا داخل الغرفة
+ * لوحة إرسال الهدايا للغرفة - الأرباح تذهب لمالك الغرفة
  */
 const GiftPanel = ({ 
   isOpen, 
   onClose, 
-  receiverId: initialReceiverId, 
-  receiverName: initialReceiverName,
   roomId,
-  onGiftSent,
-  participants = [] // قائمة المشاركين في الغرفة
+  roomTitle,
+  onGiftSent
 }) => {
   const [gifts, setGifts] = useState([]);
   const [balance, setBalance] = useState(0);
@@ -28,13 +26,8 @@ const GiftPanel = ({
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
-  const [roomParticipants, setRoomParticipants] = useState([]);
-  const [selectedReceiver, setSelectedReceiver] = useState(
-    initialReceiverId ? { id: initialReceiverId, name: initialReceiverName } : null
-  );
   
   const token = localStorage.getItem('token');
-  const currentUserId = JSON.parse(localStorage.getItem('user') || '{}').id;
 
   const categories = [
     { id: 'all', name: 'الكل', icon: '🎁' },
@@ -48,28 +41,8 @@ const GiftPanel = ({
   useEffect(() => {
     if (isOpen) {
       fetchData();
-      // Reset selected receiver when panel opens with new props
-      if (initialReceiverId) {
-        setSelectedReceiver({ id: initialReceiverId, name: initialReceiverName });
-      } else {
-        setSelectedReceiver(null);
-        // Fetch room participants if no receiver specified
-        fetchParticipants();
-      }
     }
-  }, [isOpen, initialReceiverId]);
-
-  const fetchParticipants = async () => {
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const res = await axios.get(`${API}/rooms/${roomId}/participants`, { headers });
-      // Filter out current user
-      const others = (res.data || []).filter(p => p.user_id !== currentUserId);
-      setRoomParticipants(others);
-    } catch (error) {
-      console.error('Error fetching participants:', error);
-    }
-  };
+  }, [isOpen]);
 
   const fetchData = async () => {
     try {
@@ -91,8 +64,8 @@ const GiftPanel = ({
   };
 
   const handleSendGift = async () => {
-    if (!selectedGift || !selectedReceiver?.id) {
-      toast.error('اختر شخصاً لإرسال الهدية إليه');
+    if (!selectedGift) {
+      toast.error('اختر هدية أولاً');
       return;
     }
     
@@ -100,7 +73,7 @@ const GiftPanel = ({
       toast.error('رصيد غير كافٍ! اشحن عملاتك من المتجر');
       return;
     }
-
+    
     try {
       setSending(true);
       const headers = { Authorization: `Bearer ${token}` };
@@ -109,13 +82,12 @@ const GiftPanel = ({
         `${API}/payments/gifts/send`,
         {
           gift_id: selectedGift.id,
-          receiver_id: selectedReceiver.id,
           room_id: roomId
         },
         { headers }
       );
       
-      toast.success(`تم إرسال ${selectedGift.name} إلى ${selectedReceiver.name}`);
+      toast.success(`تم إرسال ${selectedGift.name} للغرفة!`);
       
       // Play gift sound based on price
       playGiftSound(selectedGift.price);
@@ -126,21 +98,21 @@ const GiftPanel = ({
       }
       
       // Update balance
-      setBalance(prev => prev - selectedGift.price);
+      setBalance(response.data.remaining_coins);
       
       // Notify parent
       if (onGiftSent) {
         onGiftSent({
           gift: selectedGift,
-          receiverId: selectedReceiver.id,
-          receiverName: selectedReceiver.name
+          senderUsername: response.data.sender_username
         });
       }
       
       setSelectedGift(null);
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل إرسال الهدية');
+      console.error('Error sending gift:', error);
+      toast.error(error.response?.data?.detail || 'حدث خطأ أثناء إرسال الهدية');
     } finally {
       setSending(false);
     }
@@ -158,7 +130,7 @@ const GiftPanel = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end justify-center"
         onClick={onClose}
       >
         <motion.div
@@ -166,18 +138,16 @@ const GiftPanel = ({
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25 }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-lg bg-[#1A1A1A] rounded-t-3xl overflow-hidden"
+          className="w-full max-w-lg bg-gradient-to-b from-slate-800 to-slate-900 rounded-t-3xl max-h-[85vh] overflow-hidden"
+          onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="p-4 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Gift className="w-5 h-5 text-amber-400" />
               <div>
-                <h3 className="text-white font-bold">إرسال هدية</h3>
-                <p className="text-white/60 text-sm">
-                  {selectedReceiver ? `إلى ${selectedReceiver.name}` : 'اختر شخصاً'}
-                </p>
+                <h3 className="text-white font-bold">إرسال هدية للغرفة</h3>
+                <p className="text-white/60 text-sm">{roomTitle || 'الغرفة'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -195,53 +165,18 @@ const GiftPanel = ({
             <div className="p-8 flex justify-center">
               <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
             </div>
-          ) : !selectedReceiver ? (
-            /* Participant Selection */
-            <div className="p-4">
-              <p className="text-white/60 text-sm mb-3 text-center">اختر شخصاً لإرسال الهدية إليه</p>
-              {roomParticipants.length === 0 ? (
-                <p className="text-white/40 text-center py-8">لا يوجد مشاركون آخرون في الغرفة</p>
-              ) : (
-                <div className="grid grid-cols-3 gap-3 max-h-[300px] overflow-y-auto">
-                  {roomParticipants.map((p) => (
-                    <motion.button
-                      key={p.user_id}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setSelectedReceiver({ id: p.user_id, name: p.username })}
-                      className="flex flex-col items-center gap-2 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
-                    >
-                      <img 
-                        src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
-                        alt={p.username}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <span className="text-white text-xs truncate max-w-full">{p.username}</span>
-                    </motion.button>
-                  ))}
-                </div>
-              )}
-            </div>
           ) : (
             <>
-              {/* Selected receiver info */}
-              <div className="px-4 pt-3">
-                <button 
-                  onClick={() => setSelectedReceiver(null)}
-                  className="text-xs text-amber-400 hover:underline"
-                >
-                  ← تغيير المستلم
-                </button>
-              </div>
               {/* Categories */}
-              <div className="p-3 flex gap-2 overflow-x-auto scrollbar-hide">
-                {categories.map((cat) => (
+              <div className="flex gap-2 p-3 overflow-x-auto scrollbar-hide">
+                {categories.map(cat => (
                   <button
                     key={cat.id}
                     onClick={() => setActiveCategory(cat.id)}
-                    className={`px-3 py-2 rounded-full whitespace-nowrap text-sm flex items-center gap-1 transition-all ${
-                      activeCategory === cat.id
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${
+                      activeCategory === cat.id 
+                        ? 'bg-amber-500 text-black font-bold' 
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
                     }`}
                   >
                     <span>{cat.icon}</span>
@@ -251,50 +186,62 @@ const GiftPanel = ({
               </div>
 
               {/* Gifts Grid */}
-              <div className="p-4 grid grid-cols-4 gap-3 max-h-[300px] overflow-y-auto">
-                {filteredGifts.map((gift) => (
+              <div className="p-3 grid grid-cols-4 gap-2 max-h-[40vh] overflow-y-auto">
+                {filteredGifts.map(gift => (
                   <motion.button
                     key={gift.id}
-                    whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setSelectedGift(gift)}
-                    className={`p-3 rounded-2xl border text-center transition-all ${
-                      selectedGift?.id === gift.id
-                        ? 'bg-amber-500/20 border-amber-500'
-                        : balance >= gift.price
-                          ? 'bg-white/5 border-white/10 hover:border-white/30'
-                          : 'bg-white/5 border-white/10 opacity-40'
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+                      selectedGift?.id === gift.id 
+                        ? 'bg-amber-500/30 ring-2 ring-amber-500' 
+                        : 'bg-white/5 hover:bg-white/10'
                     }`}
-                    disabled={balance < gift.price}
                   >
-                    <div className="text-3xl mb-1">{gift.icon}</div>
-                    <p className="text-white text-xs font-bold truncate">{gift.name}</p>
-                    <p className="text-amber-400 text-xs flex items-center justify-center gap-0.5 mt-1">
-                      <Coins className="w-3 h-3" />
-                      {gift.price}
-                    </p>
+                    <span className="text-2xl">{gift.icon}</span>
+                    <span className="text-white text-xs truncate w-full text-center">{gift.name}</span>
+                    <div className="flex items-center gap-0.5">
+                      <Coins className="w-3 h-3 text-amber-400" />
+                      <span className="text-amber-400 text-xs font-bold">{gift.price}</span>
+                    </div>
                   </motion.button>
                 ))}
               </div>
 
-              {/* Send Button */}
-              <div className="p-4 border-t border-white/10">
-                <Button
-                  onClick={handleSendGift}
-                  disabled={!selectedGift || sending}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-2xl disabled:opacity-50"
-                >
-                  {sending ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : selectedGift ? (
-                    <span className="flex items-center gap-2">
-                      <Send className="w-5 h-5" />
-                      إرسال {selectedGift.name} ({selectedGift.price} عملة)
-                    </span>
-                  ) : (
-                    'اختر هدية'
-                  )}
-                </Button>
+              {/* Selected Gift & Send */}
+              <div className="p-4 border-t border-white/10 bg-slate-800/50">
+                {selectedGift ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                        <span className="text-2xl">{selectedGift.icon}</span>
+                      </div>
+                      <div>
+                        <p className="text-white font-bold">{selectedGift.name}</p>
+                        <div className="flex items-center gap-1">
+                          <Coins className="w-3 h-3 text-amber-400" />
+                          <span className="text-amber-400 text-sm">{selectedGift.price} عملة</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleSendGift}
+                      disabled={sending || balance < selectedGift.price}
+                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold px-6"
+                    >
+                      {sending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 ml-2" />
+                          إرسال
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-center text-white/50">اختر هدية لإرسالها للغرفة</p>
+                )}
               </div>
             </>
           )}
@@ -304,77 +251,68 @@ const GiftPanel = ({
   );
 };
 
-/**
- * Gift Animation Overlay
- * عرض أنيميشن الهدية على الشاشة
- */
-export const GiftAnimation = ({ gift, senderName, receiverName, onComplete }) => {
+// Gift Animation Component - يظهر الهدية المتحركة على الشاشة
+export const GiftAnimation = ({ gift, senderName, onComplete }) => {
   useEffect(() => {
-    // Play sound when animation starts
-    playGiftSound(gift.price);
-    if (gift.price >= 500) {
-      setTimeout(() => playStadiumCheer(), 300);
-    }
-    
-    const timer = setTimeout(onComplete, 3000);
+    const timer = setTimeout(() => {
+      if (onComplete) onComplete();
+    }, 4000);
     return () => clearTimeout(timer);
-  }, [onComplete, gift.price]);
+  }, [onComplete]);
+
+  const getAnimationClass = () => {
+    switch (gift?.animation) {
+      case 'bounce': return 'animate-bounce';
+      case 'pulse': return 'animate-pulse';
+      case 'shake': return 'animate-shake';
+      case 'float': return 'animate-float';
+      case 'glow': return 'animate-glow';
+      case 'sparkle': return 'animate-sparkle';
+      case 'royal': return 'animate-royal';
+      case 'legendary': return 'animate-legendary';
+      case 'fireworks': return 'animate-fireworks';
+      case 'grand': return 'animate-grand';
+      default: return 'animate-bounce';
+    }
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.5 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.5 }}
-      className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
+      initial={{ scale: 0, opacity: 0, y: 100 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      exit={{ scale: 0, opacity: 0, y: -100 }}
+      className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
     >
-      <motion.div
-        initial={{ y: 50 }}
-        animate={{ y: [50, -20, 0] }}
-        transition={{ duration: 0.5 }}
-        className="text-center"
-      >
-        <motion.div
-          animate={{ 
-            scale: [1, 1.2, 1],
-            rotate: [0, 10, -10, 0]
-          }}
-          transition={{ duration: 0.5, repeat: 2 }}
-          className="text-8xl mb-4"
-        >
-          {gift.icon}
-        </motion.div>
+      <div className="flex flex-col items-center">
+        <div className={`text-8xl ${getAnimationClass()}`}>
+          {gift?.icon}
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-black/80 backdrop-blur-xl px-6 py-3 rounded-2xl"
+          className="mt-4 px-6 py-3 bg-gradient-to-r from-amber-500/90 to-orange-500/90 rounded-2xl backdrop-blur-sm"
         >
-          <p className="text-amber-400 font-bold text-lg">{gift.name}</p>
-          <p className="text-white/80 text-sm">
-            <span className="text-amber-300">{senderName}</span>
-            {' ← '}
-            <span className="text-green-300">{receiverName}</span>
+          <p className="text-white font-bold text-lg text-center">
+            {senderName} أرسل {gift?.name}
           </p>
         </motion.div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 };
 
-/**
- * Gift Button for Speaker Card
- * زر الهدية في بطاقة المتحدث
- */
-export const GiftButton = ({ onClick, className = '' }) => {
+// Gift Button Component - زر الهدية على المنصة (غير مستخدم الآن لأن الهدايا للغرفة)
+export const GiftButton = ({ onClick }) => {
   return (
     <motion.button
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       onClick={onClick}
-      className={`w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30 ${className}`}
+      className="p-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg"
       title="إرسال هدية"
     >
-      <Gift className="w-4 h-4 text-white" />
+      <Gift className="w-5 h-5" />
     </motion.button>
   );
 };

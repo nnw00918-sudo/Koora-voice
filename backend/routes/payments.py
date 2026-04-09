@@ -98,8 +98,7 @@ class CoinPurchase(BaseModel):
 
 class GiftSend(BaseModel):
     gift_id: str
-    receiver_id: str
-    room_id: Optional[str] = None
+    room_id: str  # إرسال الهدية للغرفة
 
 class VIPSubscribe(BaseModel):
     plan_id: str
@@ -335,10 +334,17 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
     
     @router.post("/gifts/send")
     async def send_gift(data: GiftSend, current_user = Depends(get_current_user)):
-        """إرسال هدية لمستخدم"""
+        """إرسال هدية للغرفة - الأرباح تذهب لمالك الغرفة"""
         gift = next((g for g in GIFTS if g["id"] == data.gift_id), None)
         if not gift:
             raise HTTPException(status_code=400, detail="هدية غير موجودة")
+        
+        # جلب معلومات الغرفة للحصول على المالك
+        room = await db.rooms.find_one({"id": data.room_id})
+        if not room:
+            raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+        
+        owner_id = room.get("owner_id")
         
         # تحقق من المرسل
         sender = await db.users.find_one({"id": current_user.id})
@@ -348,11 +354,6 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         if not is_owner and sender.get("coins", 0) < gift["price"]:
             raise HTTPException(status_code=400, detail="رصيد غير كافٍ")
         
-        # تحقق من وجود المستلم
-        receiver = await db.users.find_one({"id": data.receiver_id})
-        if not receiver:
-            raise HTTPException(status_code=404, detail="المستلم غير موجود")
-        
         # خصم من المرسل (إلا إذا كان Owner)
         if not is_owner:
             await db.users.update_one(
@@ -360,33 +361,28 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
                 {"$inc": {"coins": -gift["price"]}}
             )
         
-        # إضافة للمستلم (70% من قيمة الهدية)
-        receiver_amount = int(gift["price"] * 0.7)
-        await db.users.update_one(
-            {"id": data.receiver_id},
-            {"$inc": {"coins": receiver_amount, "total_earned": receiver_amount}}
-        )
+        # إضافة كل العملات لمالك الغرفة (100% من قيمة الهدية)
+        if owner_id and owner_id != current_user.id:
+            await db.users.update_one(
+                {"id": owner_id},
+                {"$inc": {"coins": gift["price"], "total_earned": gift["price"]}}
+            )
         
         # سجل الهدية
         gift_record = {
             "sender_id": current_user.id,
-            "receiver_id": data.receiver_id,
+            "sender_username": current_user.username,
+            "room_id": data.room_id,
+            "room_owner_id": owner_id,
             "gift_id": gift["id"],
             "gift_name": gift["name"],
             "gift_icon": gift["icon"],
             "price": gift["price"],
-            "receiver_amount": receiver_amount,
-            "room_id": data.room_id,
+            "owner_amount": gift["price"],
             "free_gift": is_owner,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.gift_history.insert_one(gift_record)
-        
-        # إضافة XP للمستلم
-        await db.users.update_one(
-            {"id": data.receiver_id},
-            {"$inc": {"xp": 5}}
-        )
         
         # إضافة XP للمرسل
         await db.users.update_one(
@@ -394,31 +390,36 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
             {"$inc": {"xp": 10}}
         )
         
-        # إنشاء إشعار للمستلم
-        notification = {
-            "user_id": data.receiver_id,
-            "type": "gift_received",
-            "title": f"🎁 هدية جديدة!",
-            "message": f"{current_user.username} أرسل لك {gift['name']} {gift['icon']}",
-            "data": {
-                "sender_id": current_user.id,
-                "sender_username": current_user.username,
-                "gift_id": gift["id"],
-                "gift_name": gift["name"],
-                "gift_icon": gift["icon"],
-                "coins_received": receiver_amount,
-                "room_id": data.room_id
-            },
-            "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.notifications.insert_one(notification)
+        # إنشاء إشعار لمالك الغرفة
+        if owner_id and owner_id != current_user.id:
+            notification = {
+                "user_id": owner_id,
+                "type": "gift_received",
+                "title": f"🎁 هدية جديدة في غرفتك!",
+                "message": f"{current_user.username} أرسل {gift['name']} {gift['icon']} في غرفتك",
+                "data": {
+                    "sender_id": current_user.id,
+                    "sender_username": current_user.username,
+                    "gift_id": gift["id"],
+                    "gift_name": gift["name"],
+                    "gift_icon": gift["icon"],
+                    "coins_received": gift["price"],
+                    "room_id": data.room_id
+                },
+                "is_read": False,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.notifications.insert_one(notification)
+        
+        # جلب الرصيد المحدث
+        updated_sender = await db.users.find_one({"id": current_user.id})
         
         return {
-            "message": f"تم إرسال {gift['name']} بنجاح",
+            "message": f"تم إرسال {gift['name']} للغرفة",
             "gift": gift,
             "animation": gift["animation"],
-            "notification_sent": True
+            "remaining_coins": updated_sender.get("coins", 0),
+            "sender_username": current_user.username
         }
     
     @router.get("/gifts/history")
