@@ -115,6 +115,57 @@ async def create_or_get_conversation(
     return {"conversation_id": convo_id}
 
 
+@router.get("/{conversation_id}")
+async def get_conversation(
+    conversation_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get a single conversation details"""
+    user_id = get_user_id_from_token(credentials)
+    
+    # Get conversation
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user_id not in convo.get("participants", []):
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Get the other participant
+    other_id = [p for p in convo["participants"] if p != user_id][0]
+    other_user = await db.users.find_one({"id": other_id})
+    
+    if not other_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get last message
+    last_msg = await db.direct_messages.find_one(
+        {"conversation_id": convo["id"]},
+        sort=[("created_at", -1)]
+    )
+    
+    # Count unread messages
+    unread_count = await db.direct_messages.count_documents({
+        "conversation_id": convo["id"],
+        "sender_id": {"$ne": user_id},
+        "read": False
+    })
+    
+    return {
+        "id": convo["id"],
+        "user": {
+            "id": other_user["id"],
+            "username": other_user["username"],
+            "name": other_user.get("name", other_user["username"]),
+            "avatar": other_user.get("avatar", f"https://api.dicebear.com/7.x/avataaars/svg?seed={other_user['username']}")
+        },
+        "last_message": {
+            "content": last_msg.get("content", "") if last_msg else "",
+            "created_at": last_msg.get("created_at", "") if last_msg else "",
+            "is_mine": last_msg.get("sender_id") == user_id if last_msg else False
+        } if last_msg else None,
+        "unread_count": unread_count,
+        "updated_at": convo.get("updated_at", "")
+    }
+
+
 @router.get("/{conversation_id}/messages")
 async def get_conversation_messages(
     conversation_id: str,

@@ -505,16 +505,45 @@ export default function MessagesPage() {
     fetchConversations();
   }, [fetchConversations]);
 
+  // Load conversation when navigating directly to a conversation URL
   useEffect(() => {
-    if (conversationId && conversations.length > 0) {
+    const loadDirectConversation = async () => {
+      if (!conversationId || !token) return;
+      
+      // First check if conversation exists in the list
       const convo = conversations.find(c => c.id === conversationId);
       if (convo) {
         setCurrentConversation(convo);
         setCurrentView('chat');
         loadConversation(conversationId);
+        return;
       }
-    }
-  }, [conversationId, conversations, loadConversation]);
+      
+      // If not in list but we have an ID, try to load it directly
+      if (conversations.length === 0 && !loading) {
+        // Conversations haven't loaded yet, wait for them
+        return;
+      }
+      
+      // Try to fetch the conversation directly
+      try {
+        const res = await axios.get(`${API}/conversations/${conversationId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data) {
+          setCurrentConversation(res.data);
+          setCurrentView('chat');
+          loadConversation(conversationId);
+        }
+      } catch (error) {
+        console.error('Error loading conversation:', error);
+        // Conversation not found, go back to list
+        navigate('/messages');
+      }
+    };
+    
+    loadDirectConversation();
+  }, [conversationId, conversations, loadConversation, token, loading, navigate]);
 
   useEffect(() => {
     const timer = setTimeout(() => searchUsers(searchQuery), 300);
