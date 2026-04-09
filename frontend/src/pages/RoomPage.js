@@ -24,6 +24,7 @@ import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import GiftPanel, { GiftAnimation, GiftButton } from '../components/room/GiftPanel';
+import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
 import {
   Mic,
   MicOff,
@@ -53,6 +54,8 @@ import {
   Gift,
   Square,
   Trash2,
+  Bell,
+  BellOff,
   Edit3,
   Lock,
   Unlock,
@@ -134,6 +137,7 @@ const YallaLiveRoom = ({ user }) => {
   const [giftReceiver, setGiftReceiver] = useState(null);
   const [activeGiftAnimation, setActiveGiftAnimation] = useState(null);
   const [gifts, setGifts] = useState([]);
+  const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled());
   const [selectedUser, setSelectedUser] = useState(null);
   const [userCoins, setUserCoins] = useState(user.coins || 1000);
   const [remoteUsers, setRemoteUsers] = useState([]);
@@ -2617,6 +2621,26 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Left Side (RTL) - Settings & Share */}
           <div className="flex items-center gap-2">
+            {/* Sound Toggle Button */}
+            <button
+              onClick={() => {
+                const newState = toggleSound();
+                setSoundEnabled(newState);
+                toast.success(newState ? '🔔 تم تفعيل الصوت' : '🔕 تم إيقاف الصوت');
+              }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                soundEnabled 
+                  ? 'bg-amber-500/20 hover:bg-amber-500/30' 
+                  : 'bg-white/10 hover:bg-white/20'
+              }`}
+              title={soundEnabled ? 'إيقاف الصوت' : 'تفعيل الصوت'}
+            >
+              {soundEnabled ? (
+                <Bell className="w-5 h-5 text-amber-400" />
+              ) : (
+                <BellOff className="w-5 h-5 text-white/50" />
+              )}
+            </button>
             <button
               onClick={() => setShowInviteFriendsModal(true)}
               className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"

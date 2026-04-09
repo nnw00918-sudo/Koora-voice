@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { X, Coins, Gift, Send, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { playGiftSound, playStadiumCheer } from '../../utils/soundManager';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -86,6 +87,14 @@ const GiftPanel = ({
       );
       
       toast.success(`تم إرسال ${selectedGift.name} إلى ${receiverName}`);
+      
+      // Play gift sound based on price
+      playGiftSound(selectedGift.price);
+      
+      // Play stadium cheer for legendary gifts (500+)
+      if (selectedGift.price >= 500) {
+        setTimeout(() => playStadiumCheer(), 500);
+      }
       
       // Update balance
       setBalance(prev => prev - selectedGift.price);
@@ -235,9 +244,15 @@ const GiftPanel = ({
  */
 export const GiftAnimation = ({ gift, senderName, receiverName, onComplete }) => {
   useEffect(() => {
+    // Play sound when animation starts
+    playGiftSound(gift.price);
+    if (gift.price >= 500) {
+      setTimeout(() => playStadiumCheer(), 300);
+    }
+    
     const timer = setTimeout(onComplete, 3000);
     return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, [onComplete, gift.price]);
 
   return (
     <motion.div
