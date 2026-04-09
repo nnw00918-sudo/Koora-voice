@@ -229,8 +229,15 @@ export const RoomSettingsModal = ({
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="أدخل اسم الغرفة..."
-            className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white font-cairo placeholder:text-slate-400"
+            className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white font-cairo placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-500"
             dir="rtl"
+            autoComplete="off"
+            onFocus={(e) => {
+              // Scroll the input into view when focused (for mobile keyboard)
+              setTimeout(() => {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300);
+            }}
           />
         </div>
         <button 
@@ -304,8 +311,14 @@ export const RoomSettingsModal = ({
             value={roomImageUrl}
             onChange={(e) => setRoomImageUrl(e.target.value)}
             placeholder="أدخل رابط الصورة..."
-            className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-400"
+            className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
             dir="ltr"
+            autoComplete="off"
+            onFocus={(e) => {
+              setTimeout(() => {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300);
+            }}
           />
           <button 
             onClick={() => {
@@ -555,14 +568,14 @@ export const RoomSettingsModal = ({
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-4 pt-16 sm:pt-4 overflow-y-auto"
       onClick={handleClose}
     >
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }} 
         animate={{ scale: 1, opacity: 1 }} 
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-violet-500/30 max-h-[90vh] overflow-y-auto"
+        className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-violet-500/30 max-h-[80vh] overflow-y-auto mb-4"
         onClick={(e) => e.stopPropagation()}
       >
         <AnimatePresence mode="wait">
