@@ -1338,6 +1338,28 @@ async def check_room_membership(room_id: str, current_user: User = Depends(get_c
     
     return {"is_member": False, "role": None}
 
+
+@api_router.get("/rooms/{room_id}/membership")
+async def get_room_membership(room_id: str, current_user: User = Depends(get_current_user)):
+    """Get membership status - alias for check endpoint"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Room owner is always a member
+    if room["owner_id"] == current_user.id:
+        return {"is_member": True, "role": "owner"}
+    
+    member = await db.room_members.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    }, {"_id": 0})
+    
+    if member:
+        return {"is_member": True, "role": member.get("role", "member")}
+    
+    return {"is_member": False, "role": None}
+
 @api_router.get("/rooms/{room_id}/members")
 async def get_room_members(room_id: str, current_user: User = Depends(get_current_user)):
     """Get list of room members with their roles (supports multiple roles)"""

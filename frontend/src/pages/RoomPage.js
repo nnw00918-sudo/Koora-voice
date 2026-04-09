@@ -1253,23 +1253,24 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  const handleUpdateRoomTitle = async () => {
-    if (!newRoomTitle.trim()) {
+  const handleUpdateRoomTitle = async (titleParam) => {
+    const title = titleParam || newRoomTitle;
+    if (!title.trim()) {
       toast.error('أدخل اسم الغرفة');
       return;
     }
-    if (newRoomTitle.trim().length > 100) {
+    if (title.trim().length > 100) {
       toast.error('اسم الغرفة طويل جداً (الحد الأقصى 100 حرف)');
       return;
     }
     setUpdatingTitle(true);
     try {
       await axios.put(`${API}/rooms/${roomId}/title`, 
-        { title: newRoomTitle.trim() }, 
+        { title: title.trim() }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success('تم تحديث اسم الغرفة');
-      setRoom(prev => ({ ...prev, title: newRoomTitle.trim() }));
+      setRoom(prev => ({ ...prev, title: title.trim() }));
       setShowTitleEditor(false);
       setNewRoomTitle('');
     } catch (error) {

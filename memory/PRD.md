@@ -465,3 +465,14 @@ owner > admin > news_editor > mod > user
   - `leave_room`: مغادرة غرفة
   - `room_message`: رسالة في غرفة
 - في بيئة K8s: WebSocket قد لا يعمل، HTTP fallback متاح دائماً
+
+---
+
+## التحديثات (أبريل 2026)
+
+### 9 أبريل 2026
+- ✅ **إصلاح RoomSettingsModal** - الآن يعمل بنظام الصفحات المتداخلة مع زر "رجوع"
+- ✅ **تحديث handleUpdateRoomTitle** - يقبل الآن parameter مباشر من المودال
+- ✅ **إضافة endpoint `/api/rooms/{room_id}/membership`** - لإصلاح أخطاء 404 في Dashboard
+- ✅ **إزالة نظام الهدايا والذهب بالكامل** - VIP فقط للمونتايزيشن
+- ✅ **تفكيك Backend monolith** - routes منفصلة في `/app/backend/routes/`
