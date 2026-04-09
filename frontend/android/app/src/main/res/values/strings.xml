@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">صوت الكورة</string>
+    <string name="title_activity_main">صوت الكورة</string>
+    <string name="package_name">com.kooravoice.app</string>
+    <string name="custom_url_scheme">com.kooravoice.app</string>
+</resources>

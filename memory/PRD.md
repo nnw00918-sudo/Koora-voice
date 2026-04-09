@@ -3,6 +3,13 @@
 ## نظرة عامة
 تطبيق شبكة اجتماعية بموضوع كرة القدم يوفر غرف صوتية/فيديو، بث مباشر، والملف الشخصي.
 
+## 📱 إصدار iOS - جاهز للرفع (أبريل 2026)
+- ✅ Capacitor 5.x مُثبت ومُعد
+- ✅ مشروع iOS جاهز في `/frontend/ios/`
+- ✅ الصلاحيات مُضافة (Microphone, Camera, Photos, Notifications)
+- ✅ Bundle ID: `com.kooravoice.app`
+- ✅ دليل الرفع: `/frontend/APP_STORE_GUIDE.md`
+
 ## الميزات الأساسية
 
 ### 1. غرف الصوت والفيديو (Agora WebRTC)
