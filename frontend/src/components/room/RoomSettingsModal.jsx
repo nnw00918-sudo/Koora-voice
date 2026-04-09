@@ -81,147 +81,78 @@ export const RoomSettingsModal = ({
     </div>
   );
 
-  // Animated Option Button Component
-  const OptionButton = ({ onClick, bgColor, hoverBgColor, borderColor, iconColor, Icon, title, subtitle, delay = 0 }) => (
-    <motion.button 
-      onClick={onClick}
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: delay * 0.05, duration: 0.3 }}
-      whileHover={{ scale: 1.02, x: -5 }}
-      whileTap={{ scale: 0.98 }}
-      className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl ${bgColor} hover:${hoverBgColor} border ${borderColor} transition-all duration-200 group`}
-    >
-      <motion.div
-        whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-        transition={{ duration: 0.5 }}
-      >
-        <Icon className={`w-6 h-6 ${iconColor} group-hover:scale-110 transition-transform`} />
-      </motion.div>
-      <div className="flex-1 text-right">
-        <span className={`${iconColor} font-cairo font-bold`}>{title}</span>
-        {subtitle && <p className={`${iconColor.replace('400', '300')}/70 text-xs`}>{subtitle}</p>}
-      </div>
-      <motion.div
-        initial={{ x: 0 }}
-        whileHover={{ x: -5 }}
-        transition={{ duration: 0.2 }}
-      >
-        <ArrowRight className={`w-5 h-5 ${iconColor} rotate-180`} />
-      </motion.div>
-    </motion.button>
-  );
-
   // Main Page - List of options
   const MainPage = () => (
     <>
       <div className="text-center mb-6">
-        <motion.div 
-          className="w-16 h-16 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full flex items-center justify-center mx-auto mb-3"
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 200, damping: 15 }}
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-          >
-            <Settings className="w-8 h-8 text-white" />
-          </motion.div>
-        </motion.div>
-        <motion.h3 
-          className="text-xl font-cairo font-bold text-white"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          إعدادات الغرفة
-        </motion.h3>
+        <h3 className="text-xl font-cairo font-bold text-white">إعدادات الغرفة</h3>
       </div>
       
       <div className="space-y-3">
         {/* Change Room Title */}
-        <OptionButton
+        <button 
           onClick={() => setCurrentPage('title')}
-          bgColor="bg-lime-500/20"
-          hoverBgColor="bg-lime-500/30"
-          borderColor="border-lime-500/50"
-          iconColor="text-lime-400"
-          Icon={Type}
-          title="تغيير اسم الغرفة"
-          delay={1}
-        />
+          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-lime-500/20 hover:bg-lime-500/30 border border-lime-500/50 transition-colors"
+        >
+          <Type className="w-6 h-6 text-lime-400" />
+          <span className="text-lime-400 font-cairo font-bold flex-1 text-right">تغيير اسم الغرفة</span>
+          <ArrowRight className="w-5 h-5 text-lime-400 rotate-180" />
+        </button>
 
         {/* Change Room Image */}
-        <OptionButton
+        <button 
           onClick={() => setCurrentPage('image')}
-          bgColor="bg-sky-500/20"
-          hoverBgColor="bg-sky-500/30"
-          borderColor="border-sky-500/50"
-          iconColor="text-sky-400"
-          Icon={ImageIcon}
-          title="تغيير صورة الغرفة"
-          delay={2}
-        />
+          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50 transition-colors"
+        >
+          <ImageIcon className="w-6 h-6 text-sky-400" />
+          <span className="text-sky-400 font-cairo font-bold flex-1 text-right">تغيير صورة الغرفة</span>
+          <ArrowRight className="w-5 h-5 text-sky-400 rotate-180" />
+        </button>
         
         {/* Room Management Section */}
-        <motion.div 
-          className="pt-2 border-t border-slate-700"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
-        >
+        <div className="pt-2 border-t border-slate-700">
           <p className="text-slate-500 text-xs font-cairo mb-2">إدارة الغرفة</p>
           
           {/* User Roles Button */}
-          <div className="mb-2">
-            <OptionButton
-              onClick={() => setCurrentPage('roles')}
-              bgColor="bg-emerald-500/20"
-              hoverBgColor="bg-emerald-500/30"
-              borderColor="border-emerald-500/50"
-              iconColor="text-emerald-400"
-              Icon={Users}
-              title="رتب المستخدمين"
-              subtitle="إدارة أدوار الأعضاء في الغرفة"
-              delay={3}
-            />
-          </div>
+          <button 
+            onClick={() => setCurrentPage('roles')}
+            className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 mb-2 transition-colors"
+          >
+            <Users className="w-6 h-6 text-emerald-400" />
+            <div className="flex-1 text-right">
+              <span className="text-emerald-400 font-cairo font-bold">رتب المستخدمين</span>
+              <p className="text-emerald-300/70 text-xs">إدارة أدوار الأعضاء في الغرفة</p>
+            </div>
+            <ArrowRight className="w-5 h-5 text-emerald-400 rotate-180" />
+          </button>
           
           {/* Create Poll Button */}
-          <OptionButton
+          <button 
             onClick={() => setCurrentPage('poll')}
-            bgColor="bg-amber-500/20"
-            hoverBgColor="bg-amber-500/30"
-            borderColor="border-amber-500/50"
-            iconColor="text-amber-400"
-            Icon={BarChart3}
-            title={activePoll ? 'إدارة الاستطلاع' : 'إنشاء استطلاع'}
-            subtitle="اسأل الجمهور رأيهم"
-            delay={4}
-          />
-        </motion.div>
+            className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 transition-colors"
+          >
+            <BarChart3 className="w-6 h-6 text-amber-400" />
+            <div className="flex-1 text-right">
+              <span className="text-amber-400 font-cairo font-bold">
+                {activePoll ? 'إدارة الاستطلاع' : 'إنشاء استطلاع'}
+              </span>
+              <p className="text-amber-300/70 text-xs">اسأل الجمهور رأيهم</p>
+            </div>
+            <ArrowRight className="w-5 h-5 text-amber-400 rotate-180" />
+          </button>
+        </div>
         
         {/* Recording Controls */}
         {(isOwner || isRoomAdmin) && (
-          <motion.button 
+          <button 
             onClick={() => setCurrentPage('record')}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25, duration: 0.3 }}
-            whileHover={{ scale: 1.02, x: -5 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 group"
+            className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 transition-colors"
           >
             {isRecording ? (
               <>
                 <div className="flex items-center gap-2">
                   <StopCircle className="w-6 h-6 text-rose-400" />
-                  <motion.div 
-                    className="w-2 h-2 bg-red-500 rounded-full"
-                    animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                  />
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 </div>
                 <div className="flex-1 text-right">
                   <span className="text-rose-400 font-cairo font-bold">تسجيل الغرفة</span>
@@ -230,91 +161,59 @@ export const RoomSettingsModal = ({
               </>
             ) : (
               <>
-                <motion.div
-                  whileHover={{ scale: 1.2 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Circle className="w-6 h-6 text-rose-400 group-hover:text-rose-300" fill="currentColor" />
-                </motion.div>
+                <Circle className="w-6 h-6 text-rose-400" fill="currentColor" />
                 <span className="text-rose-400 font-cairo font-bold flex-1 text-right">تسجيل الغرفة</span>
               </>
             )}
             <ArrowRight className="w-5 h-5 text-rose-400 rotate-180" />
-          </motion.button>
+          </button>
         )}
         
         {/* Stream Controls - Only for System Owner */}
         {user.role === 'owner' && !streamActive && (
-          <OptionButton
+          <button 
             onClick={() => setCurrentPage('stream')}
-            bgColor="bg-violet-500/20"
-            hoverBgColor="bg-violet-500/30"
-            borderColor="border-violet-500/50"
-            iconColor="text-violet-400"
-            Icon={Video}
-            title="تشغيل بث مباشر"
-            delay={6}
-          />
+            className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/50 transition-colors"
+          >
+            <Video className="w-6 h-6 text-violet-400" />
+            <span className="text-violet-400 font-cairo font-bold flex-1 text-right">تشغيل بث مباشر</span>
+            <ArrowRight className="w-5 h-5 text-violet-400 rotate-180" />
+          </button>
         )}
         
         {/* Lock/Unlock Room */}
-        <motion.button 
+        <button 
           onClick={() => setCurrentPage('lock')}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.35, duration: 0.3 }}
-          whileHover={{ scale: 1.02, x: -5 }}
-          whileTap={{ scale: 0.98 }}
-          className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-colors group ${
+          className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-colors ${
             room?.is_closed 
               ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/50' 
               : 'bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50'
           }`}
         >
-          <motion.div
-            whileHover={{ rotate: room?.is_closed ? 20 : -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {room?.is_closed ? <Unlock className="w-6 h-6 text-green-400" /> : <Lock className="w-6 h-6 text-orange-400" />}
-          </motion.div>
+          {room?.is_closed ? <Unlock className="w-6 h-6 text-green-400" /> : <Lock className="w-6 h-6 text-orange-400" />}
           <span className={`font-cairo font-bold flex-1 text-right ${room?.is_closed ? 'text-green-400' : 'text-orange-400'}`}>
             {room?.is_closed ? 'فتح الغرفة' : 'إغلاق الغرفة'}
           </span>
           <ArrowRight className={`w-5 h-5 rotate-180 ${room?.is_closed ? 'text-green-400' : 'text-orange-400'}`} />
-        </motion.button>
+        </button>
         
         {/* Delete Room */}
-        <motion.button 
+        <button 
           onClick={() => setCurrentPage('delete')}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4, duration: 0.3 }}
-          whileHover={{ scale: 1.02, x: -5, backgroundColor: 'rgba(239, 68, 68, 0.3)' }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 border border-red-500/50 group"
+          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 transition-colors"
         >
-          <motion.div
-            whileHover={{ rotate: [0, -15, 15, -15, 0] }}
-            transition={{ duration: 0.5 }}
-          >
-            <Trash2 className="w-6 h-6 text-red-400" />
-          </motion.div>
+          <Trash2 className="w-6 h-6 text-red-400" />
           <span className="text-red-400 font-cairo font-bold flex-1 text-right">حذف الغرفة</span>
           <ArrowRight className="w-5 h-5 text-red-400 rotate-180" />
-        </motion.button>
+        </button>
       </div>
       
-      <motion.button 
+      <button 
         onClick={handleClose}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.45 }}
-        whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.15)' }}
-        whileTap={{ scale: 0.98 }}
-        className="w-full mt-4 py-3 rounded-xl bg-white/10 text-white font-cairo font-bold transition-colors"
+        className="w-full mt-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-cairo font-bold transition-colors"
       >
         إلغاء
-      </motion.button>
+      </button>
     </>
   );
 
