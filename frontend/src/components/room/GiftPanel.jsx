@@ -16,10 +16,11 @@ const API = `${BACKEND_URL}/api`;
 const GiftPanel = ({ 
   isOpen, 
   onClose, 
-  receiverId, 
-  receiverName,
+  receiverId: initialReceiverId, 
+  receiverName: initialReceiverName,
   roomId,
-  onGiftSent 
+  onGiftSent,
+  participants = [] // قائمة المشاركين في الغرفة
 }) => {
   const [gifts, setGifts] = useState([]);
   const [balance, setBalance] = useState(0);
@@ -27,8 +28,13 @@ const GiftPanel = ({
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [roomParticipants, setRoomParticipants] = useState([]);
+  const [selectedReceiver, setSelectedReceiver] = useState(
+    initialReceiverId ? { id: initialReceiverId, name: initialReceiverName } : null
+  );
   
   const token = localStorage.getItem('token');
+  const currentUserId = JSON.parse(localStorage.getItem('user') || '{}').id;
 
   const categories = [
     { id: 'all', name: 'الكل', icon: '🎁' },
@@ -42,8 +48,28 @@ const GiftPanel = ({
   useEffect(() => {
     if (isOpen) {
       fetchData();
+      // Reset selected receiver when panel opens with new props
+      if (initialReceiverId) {
+        setSelectedReceiver({ id: initialReceiverId, name: initialReceiverName });
+      } else {
+        setSelectedReceiver(null);
+        // Fetch room participants if no receiver specified
+        fetchParticipants();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialReceiverId]);
+
+  const fetchParticipants = async () => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await axios.get(`${API}/rooms/${roomId}/participants`, { headers });
+      // Filter out current user
+      const others = (res.data || []).filter(p => p.user_id !== currentUserId);
+      setRoomParticipants(others);
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -65,7 +91,10 @@ const GiftPanel = ({
   };
 
   const handleSendGift = async () => {
-    if (!selectedGift || !receiverId) return;
+    if (!selectedGift || !selectedReceiver?.id) {
+      toast.error('اختر شخصاً لإرسال الهدية إليه');
+      return;
+    }
     
     if (balance < selectedGift.price) {
       toast.error('رصيد غير كافٍ! اشحن عملاتك من المتجر');
@@ -80,13 +109,13 @@ const GiftPanel = ({
         `${API}/payments/gifts/send`,
         {
           gift_id: selectedGift.id,
-          receiver_id: receiverId,
+          receiver_id: selectedReceiver.id,
           room_id: roomId
         },
         { headers }
       );
       
-      toast.success(`تم إرسال ${selectedGift.name} إلى ${receiverName}`);
+      toast.success(`تم إرسال ${selectedGift.name} إلى ${selectedReceiver.name}`);
       
       // Play gift sound based on price
       playGiftSound(selectedGift.price);
@@ -103,8 +132,8 @@ const GiftPanel = ({
       if (onGiftSent) {
         onGiftSent({
           gift: selectedGift,
-          receiverId,
-          receiverName
+          receiverId: selectedReceiver.id,
+          receiverName: selectedReceiver.name
         });
       }
       
@@ -146,7 +175,9 @@ const GiftPanel = ({
               <Gift className="w-5 h-5 text-amber-400" />
               <div>
                 <h3 className="text-white font-bold">إرسال هدية</h3>
-                <p className="text-white/60 text-sm">إلى {receiverName}</p>
+                <p className="text-white/60 text-sm">
+                  {selectedReceiver ? `إلى ${selectedReceiver.name}` : 'اختر شخصاً'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -164,8 +195,43 @@ const GiftPanel = ({
             <div className="p-8 flex justify-center">
               <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
             </div>
+          ) : !selectedReceiver ? (
+            /* Participant Selection */
+            <div className="p-4">
+              <p className="text-white/60 text-sm mb-3 text-center">اختر شخصاً لإرسال الهدية إليه</p>
+              {roomParticipants.length === 0 ? (
+                <p className="text-white/40 text-center py-8">لا يوجد مشاركون آخرون في الغرفة</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 max-h-[300px] overflow-y-auto">
+                  {roomParticipants.map((p) => (
+                    <motion.button
+                      key={p.user_id}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setSelectedReceiver({ id: p.user_id, name: p.username })}
+                      className="flex flex-col items-center gap-2 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                    >
+                      <img 
+                        src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
+                        alt={p.username}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <span className="text-white text-xs truncate max-w-full">{p.username}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             <>
+              {/* Selected receiver info */}
+              <div className="px-4 pt-3">
+                <button 
+                  onClick={() => setSelectedReceiver(null)}
+                  className="text-xs text-amber-400 hover:underline"
+                >
+                  ← تغيير المستلم
+                </button>
+              </div>
               {/* Categories */}
               <div className="p-3 flex gap-2 overflow-x-auto scrollbar-hide">
                 {categories.map((cat) => (
