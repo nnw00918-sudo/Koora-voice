@@ -3470,14 +3470,14 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Main Controls - Compact */}
           <div className="flex items-center gap-2">
-            {/* Invite Friends Button */}
+            {/* Gift Button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={() => setShowInviteFriendsModal(true)}
+              onClick={() => setShowGiftPanel(true)}
               className="w-10 h-10 rounded-xl bg-[#CCFF00]/20 hover:bg-[#CCFF00]/30 flex items-center justify-center border border-[#CCFF00]/30 transition-colors"
-              title="دعوة أصدقاء"
+              title="إرسال هدية"
             >
-              <Share2 className="w-4 h-4 text-[#CCFF00]" />
+              <Gift className="w-4 h-4 text-[#CCFF00]" />
             </motion.button>
 
             {/* Mute/Unmute Button - Simple toggle */}
