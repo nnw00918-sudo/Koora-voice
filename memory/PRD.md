@@ -446,6 +446,15 @@ owner > admin > news_editor > mod > user
 ### Routes
 - جميع الـ API routes يجب أن تبدأ بـ `/api`
 - الـ Football routes الآن في ملف منفصل
+- **تنظيم Backend Routes (أبريل 2026)**:
+  - `/routes/auth.py` - مسارات المصادقة (register, login, profile)
+  - `/routes/users.py` - مسارات المستخدمين (follow, profile)
+  - `/routes/threads.py` - مسارات المنشورات (CRUD, likes, replies)
+  - `/routes/payments.py` - مسارات المدفوعات والمتجر
+  - `/routes/badges.py` - مسارات الشارات والمستويات
+  - `/routes/notifications.py` - مسارات الإشعارات
+  - `/routes/news.py` - مسارات الأخبار
+  - `/routes/announcements.py` - مسارات الإعلانات
 
 ### WebSocket
 - WebSocket endpoint: `/ws/{token}`
