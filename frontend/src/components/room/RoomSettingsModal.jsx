@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings,
   ImageIcon,
@@ -537,34 +537,47 @@ export const RoomSettingsModal = ({
     </>
   );
 
+  // Render current page
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'title': return <TitlePage />;
+      case 'image': return <ImagePage />;
+      case 'roles': return <RolesPage />;
+      case 'poll': return <PollPage />;
+      case 'record': return <RecordPage />;
+      case 'stream': return <StreamPage />;
+      case 'lock': return <LockPage />;
+      case 'delete': return <DeletePage />;
+      default: return <MainPage />;
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) handleClose();
-      }}
-      onTouchEnd={(e) => {
-        if (e.target === e.currentTarget) handleClose();
-      }}
+      onClick={handleClose}
     >
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }} 
-        animate={{ scale: 1, opacity: 1 }}
+        animate={{ scale: 1, opacity: 1 }} 
         exit={{ scale: 0.9, opacity: 0 }}
         className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-violet-500/30 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
       >
-        {currentPage === 'main' && <MainPage />}
-        {currentPage === 'title' && <TitlePage />}
-        {currentPage === 'image' && <ImagePage />}
-        {currentPage === 'roles' && <RolesPage />}
-        {currentPage === 'poll' && <PollPage />}
-        {currentPage === 'record' && <RecordPage />}
-        {currentPage === 'stream' && <StreamPage />}
-        {currentPage === 'lock' && <LockPage />}
-        {currentPage === 'delete' && <DeletePage />}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentPage}
+            initial={{ opacity: 0, x: currentPage === 'main' ? -20 : 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: currentPage === 'main' ? 20 : -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderPage()}
+          </motion.div>
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );
