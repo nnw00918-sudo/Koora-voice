@@ -3356,20 +3356,32 @@ class BroadcastMessage(BaseModel):
     message: str
 
 @api_router.post("/admin/rooms", dependencies=[Depends(get_admin_user)])
-async def create_room(room: RoomCreate):
+async def admin_create_room(room: RoomCreate):
+    """Admin: Create a new room"""
+    from uuid import uuid4
+    room_id = str(uuid4())[:8]
     new_room = room.model_dump()
+    new_room["id"] = room_id
     new_room["is_closed"] = False
-    ROOMS.append(new_room)
-    return {"message": "تم إنشاء الغرفة بنجاح", "room": new_room}
+    new_room["created_at"] = datetime.now(timezone.utc).isoformat()
+    await db.rooms.insert_one(new_room)
+    
+    # Return without _id
+    created_room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    return {"message": "تم إنشاء الغرفة بنجاح", "room": created_room}
 
 @api_router.put("/admin/rooms/{room_id}", dependencies=[Depends(get_admin_user)])
-async def update_room(room_id: str, updates: RoomUpdate):
-    for i, room in enumerate(ROOMS):
-        if room["id"] == room_id:
-            update_data = updates.model_dump(exclude_none=True)
-            ROOMS[i].update(update_data)
-            return {"message": "تم تحديث الغرفة بنجاح", "room": ROOMS[i]}
-    raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+async def admin_update_room(room_id: str, updates: RoomUpdate):
+    """Admin: Update room"""
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    update_data = updates.model_dump(exclude_none=True)
+    await db.rooms.update_one({"id": room_id}, {"$set": update_data})
+    
+    updated_room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    return {"message": "تم تحديث الغرفة بنجاح", "room": updated_room}
 
 @api_router.post("/admin/rooms/{room_id}/toggle")
 async def toggle_room(room_id: str, current_user: User = Depends(get_current_user)):
@@ -3984,7 +3996,10 @@ async def broadcast_message(broadcast: BroadcastMessage):
     from uuid import uuid4
     message_id = str(uuid4())
     
-    for room in ROOMS:
+    # Get all rooms from database
+    rooms = await db.rooms.find({}, {"_id": 0, "id": 1}).to_list(100)
+    
+    for room in rooms:
         message_doc = {
             "id": f"{message_id}_{room['id']}",
             "room_id": room["id"],
