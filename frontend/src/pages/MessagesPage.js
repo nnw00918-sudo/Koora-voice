@@ -719,11 +719,7 @@ export default function MessagesPage() {
                 <img
                   src={convo.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${convo.user?.username}`}
                   alt={convo.user?.username}
-                  className="w-14 h-14 rounded-full bg-[#141414] hover:opacity-80 ring-2 ring-[#262626]"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.location.href = `/user/${convo.user?.id}`;
-                  }}
+                  className="w-14 h-14 rounded-full bg-[#141414] ring-2 ring-[#262626]"
                 />
                 {/* Online indicator - random for demo */}
                 {index % 2 === 0 && (
@@ -735,13 +731,7 @@ export default function MessagesPage() {
                   <span className="text-xs text-[#A3A3A3]">
                     {convo.last_message?.created_at && formatTime(convo.last_message.created_at)}
                   </span>
-                  <span 
-                    className="text-white font-cairo font-bold truncate hover:text-[#CCFF00] transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.location.href = `/user/${convo.user?.id}`;
-                    }}
-                  >
+                  <span className="text-white font-cairo font-bold truncate">
                     {convo.user?.name || convo.user?.username}
                   </span>
                 </div>

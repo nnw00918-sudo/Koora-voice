@@ -124,6 +124,7 @@ function App() {
                 <Route path="/thread/:threadId" element={user ? <ThreadDetailPage user={user} /> : <Navigate to="/" />} />
                 <Route path="/settings" element={user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
                 <Route path="/messages" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
+                <Route path="/messages/:conversationId" element={user ? <MessagesPage user={user} /> : <Navigate to="/" />} />
                 <Route path="/user/:userId" element={user ? <UserProfilePage currentUser={user} /> : <Navigate to="/" />} />
                 <Route path="/notifications" element={user ? <NotificationsPage user={user} /> : <Navigate to="/" />} />
                 <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
