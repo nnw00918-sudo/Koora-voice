@@ -557,14 +557,14 @@ export const RoomSettingsModal = ({
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
       onClick={handleClose}
     >
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }} 
         animate={{ scale: 1, opacity: 1 }} 
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-violet-500/30 max-h-[90vh] overflow-y-auto"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-b from-slate-900 to-slate-950 w-[calc(100%-2rem)] max-w-sm rounded-3xl p-6 border border-violet-500/30 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <AnimatePresence mode="wait">
