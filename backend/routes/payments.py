@@ -334,17 +334,15 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
     
     @router.post("/gifts/send")
     async def send_gift(data: GiftSend, current_user = Depends(get_current_user)):
-        """إرسال هدية للغرفة - الأرباح تذهب لمالك الغرفة"""
+        """إرسال هدية للغرفة - الأرباح تذهب للـ Owner فقط"""
         gift = next((g for g in GIFTS if g["id"] == data.gift_id), None)
         if not gift:
             raise HTTPException(status_code=400, detail="هدية غير موجودة")
         
-        # جلب معلومات الغرفة للحصول على المالك
+        # جلب معلومات الغرفة
         room = await db.rooms.find_one({"id": data.room_id})
         if not room:
             raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
-        
-        owner_id = room.get("owner_id")
         
         # تحقق من المرسل
         sender = await db.users.find_one({"id": current_user.id})
@@ -361,10 +359,12 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
                 {"$inc": {"coins": -gift["price"]}}
             )
         
-        # إضافة كل العملات لمالك الغرفة (100% من قيمة الهدية)
-        if owner_id and owner_id != current_user.id:
+        # إضافة كل العملات للـ Owner فقط (100% من قيمة الهدية)
+        # جلب الـ Owner
+        app_owner = await db.users.find_one({"role": "owner"})
+        if app_owner and app_owner["id"] != current_user.id:
             await db.users.update_one(
-                {"id": owner_id},
+                {"id": app_owner["id"]},
                 {"$inc": {"coins": gift["price"], "total_earned": gift["price"]}}
             )
         
@@ -373,12 +373,11 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
             "sender_id": current_user.id,
             "sender_username": current_user.username,
             "room_id": data.room_id,
-            "room_owner_id": owner_id,
+            "owner_earned": gift["price"],
             "gift_id": gift["id"],
             "gift_name": gift["name"],
             "gift_icon": gift["icon"],
             "price": gift["price"],
-            "owner_amount": gift["price"],
             "free_gift": is_owner,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
@@ -389,27 +388,6 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
             {"id": current_user.id},
             {"$inc": {"xp": 10}}
         )
-        
-        # إنشاء إشعار لمالك الغرفة
-        if owner_id and owner_id != current_user.id:
-            notification = {
-                "user_id": owner_id,
-                "type": "gift_received",
-                "title": f"🎁 هدية جديدة في غرفتك!",
-                "message": f"{current_user.username} أرسل {gift['name']} {gift['icon']} في غرفتك",
-                "data": {
-                    "sender_id": current_user.id,
-                    "sender_username": current_user.username,
-                    "gift_id": gift["id"],
-                    "gift_name": gift["name"],
-                    "gift_icon": gift["icon"],
-                    "coins_received": gift["price"],
-                    "room_id": data.room_id
-                },
-                "is_read": False,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.notifications.insert_one(notification)
         
         # جلب الرصيد المحدث
         updated_sender = await db.users.find_one({"id": current_user.id})
