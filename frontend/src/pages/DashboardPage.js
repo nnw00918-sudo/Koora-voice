@@ -393,13 +393,25 @@ const DashboardPage = ({ user, onLogout }) => {
               {/* Language Toggle */}
               <LanguageToggle className="!bg-slate-800/50 hover:!bg-slate-700/50 !text-slate-300" />
               
+              {/* Store Button */}
+              <Button
+                data-testid="store-btn"
+                onClick={() => navigate('/store')}
+                variant="ghost"
+                size="icon"
+                className="hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 rounded-xl"
+                title={isRTL ? 'المتجر' : 'Store'}
+              >
+                <Sparkles className="w-5 h-5" strokeWidth={1.5} />
+              </Button>
+              
               {/* Badges Button */}
               <Button
                 data-testid="badges-btn"
                 onClick={() => navigate('/badges')}
                 variant="ghost"
                 size="icon"
-                className="hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 rounded-xl"
+                className="hover:bg-violet-500/20 text-slate-400 hover:text-violet-400 rounded-xl"
                 title={isRTL ? 'الشارات والمستويات' : 'Badges & Levels'}
               >
                 <Trophy className="w-5 h-5" strokeWidth={1.5} />

@@ -378,7 +378,7 @@ owner > admin > news_editor > mod > user
 ## التقدم في إعادة الهيكلة (P1)
 
 ### الوضع الحالي:
-- **server.py**: ~5395 سطر (تم استخراج بعض الـ routes)
+- **server.py**: ~5400 سطر (تم استخراج بعض الـ routes)
 - **RoomPage.js**: ~4770 سطر (تم استخراج بعض المكونات)
 
 ### Routes المستخرجة بالفعل:
@@ -390,21 +390,47 @@ owner > admin > news_editor > mod > user
 - ✅ `/app/backend/routes/news.py`
 - ✅ `/app/backend/routes/announcements.py`
 - ✅ `/app/backend/routes/badges.py`
+- ✅ `/app/backend/routes/payments.py` - **جديد!**
 
-### Components المستخرجة بالفعل:
-- ✅ `/app/frontend/src/components/room/RoomChat.jsx`
-- ✅ `/app/frontend/src/components/room/RoomHeader.jsx`
-- ✅ `/app/frontend/src/components/room/SpeakersGrid.jsx`
-- ✅ `/app/frontend/src/components/room/RoomControlBar.jsx`
-- ✅ `/app/frontend/src/components/room/GiftModal.jsx`
-- ✅ `/app/frontend/src/components/room/WatchParty.jsx`
-- ✅ و 12 مكون آخر...
+---
 
-### ما يحتاج استخراج (مستقبلاً):
-- 🟡 Thread routes من server.py (~640 سطر)
-- 🟡 Room routes من server.py (~1200 سطر)
-- 🟡 User routes من server.py (~400 سطر)
-- 🟡 Admin routes من server.py (~150 سطر)
+## 10. نظام الربح والدفع (P2) - **جديد 9 أبريل 2026**
+
+### 💰 نظام العملات:
+- ✅ 4 باقات: 100 ($0.99), 550 ($4.99), 1200 ($9.99), 3500 ($24.99)
+- ✅ بونص على الباقات الكبيرة
+- ✅ Stripe Checkout للدفع الآمن
+
+### ⭐ اشتراك VIP:
+- ✅ شهري: $4.99/شهر
+- ✅ سنوي: $39.99/سنة (خصم 33%)
+- ✅ مميزات: شارة VIP، اسم مميز، أولوية رفع اليد، إطار للصورة
+
+### 🎁 نظام الهدايا:
+- ✅ 12 هدية متنوعة (من 1 عملة إلى 2000 عملة)
+- ✅ المرسل يخسر العملات، المستلم يحصل على 70%
+- ✅ سجل الهدايا المرسلة والمستلمة
+
+### 💵 نظام السحب:
+- ✅ حد أدنى: 1000 عملة = $7
+- ✅ طلب سحب عبر PayPal أو تحويل بنكي
+
+### صفحات الفرونت إند:
+- ✅ `/store` - صفحة المتجر الرئيسية
+- ✅ `/payment/success` - نجاح الدفع
+- ✅ `/payment/cancel` - إلغاء الدفع
+
+### APIs:
+- `GET /api/payments/coins/packages`
+- `GET /api/payments/coins/balance`
+- `POST /api/payments/coins/purchase`
+- `GET /api/payments/gifts`
+- `POST /api/payments/gifts/send`
+- `GET /api/payments/vip/plans`
+- `GET /api/payments/vip/status`
+- `POST /api/payments/vip/subscribe`
+- `GET /api/payments/withdraw/balance`
+- `POST /api/payments/withdraw/request`
 
 ---
 
