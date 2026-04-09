@@ -256,7 +256,7 @@ export const GiftAnimation = ({ gift, senderName, onComplete }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (onComplete) onComplete();
-    }, 4000);
+    }, 2000); // 2 ثواني
     return () => clearTimeout(timer);
   }, [onComplete]);
 
