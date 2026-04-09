@@ -7,7 +7,6 @@ import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Coins,
-  Gift,
   Crown,
   ArrowRight,
   Sparkles,
@@ -28,7 +27,6 @@ const StorePage = () => {
   const [activeTab, setActiveTab] = useState('coins');
   const [coinPackages, setCoinPackages] = useState([]);
   const [vipPlans, setVipPlans] = useState([]);
-  const [gifts, setGifts] = useState([]);
   const [balance, setBalance] = useState({ coins: 0, total_earned: 0 });
   const [vipStatus, setVipStatus] = useState({ is_vip: false });
   const [loading, setLoading] = useState(true);
@@ -46,17 +44,15 @@ const StorePage = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [packagesRes, plansRes, giftsRes, balanceRes, vipRes] = await Promise.all([
+      const [packagesRes, plansRes, balanceRes, vipRes] = await Promise.all([
         axios.get(`${API}/payments/coins/packages`),
         axios.get(`${API}/payments/vip/plans`),
-        axios.get(`${API}/payments/gifts`),
         axios.get(`${API}/payments/coins/balance`, { headers }),
         axios.get(`${API}/payments/vip/status`, { headers })
       ]);
       
       setCoinPackages(packagesRes.data.packages || []);
       setVipPlans(plansRes.data.plans || []);
-      setGifts(giftsRes.data.gifts || []);
       setBalance(balanceRes.data);
       setVipStatus(vipRes.data);
     } catch (error) {
@@ -188,8 +184,7 @@ const StorePage = () => {
         <div className="flex gap-2 mt-4 p-1 bg-white/5 rounded-2xl">
           {[
             { id: 'coins', icon: <Coins className="w-4 h-4" />, label: isRTL ? 'عملات' : 'Coins' },
-            { id: 'vip', icon: <Crown className="w-4 h-4" />, label: 'VIP' },
-            { id: 'gifts', icon: <Gift className="w-4 h-4" />, label: isRTL ? 'هدايا' : 'Gifts' }
+            { id: 'vip', icon: <Crown className="w-4 h-4" />, label: 'VIP' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -351,52 +346,6 @@ const StorePage = () => {
                     </Button>
                   </motion.div>
                 ))}
-              </div>
-            </motion.div>
-          )}
-
-          {activeTab === 'gifts' && (
-            <motion.div
-              key="gifts"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mt-6 space-y-4"
-            >
-              <h2 className="text-white font-bold text-lg flex items-center gap-2">
-                <Gift className="w-5 h-5 text-pink-400" />
-                {isRTL ? 'الهدايا المتاحة' : 'Available Gifts'}
-              </h2>
-              <p className="text-white/60 text-sm">
-                {isRTL ? 'أرسل هدايا للمتحدثين في الغرف لدعمهم!' : 'Send gifts to speakers in rooms to support them!'}
-              </p>
-              
-              <div className="grid grid-cols-3 gap-3">
-                {gifts.map((gift, index) => (
-                  <motion.div
-                    key={gift.id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center hover:border-pink-500/50 transition-colors"
-                  >
-                    <div className="text-4xl mb-2">{gift.icon}</div>
-                    <p className="text-white text-sm font-bold">{gift.name}</p>
-                    <p className="text-amber-400 text-xs flex items-center justify-center gap-1 mt-1">
-                      <Coins className="w-3 h-3" />
-                      {gift.price}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
-              
-              <div className="p-4 rounded-2xl bg-pink-500/10 border border-pink-500/30">
-                <p className="text-pink-300 text-sm text-center">
-                  {isRTL 
-                    ? '💡 ادخل أي غرفة واضغط على المتحدث لإرسال هدية!'
-                    : '💡 Enter any room and tap on a speaker to send a gift!'
-                  }
-                </p>
               </div>
             </motion.div>
           )}

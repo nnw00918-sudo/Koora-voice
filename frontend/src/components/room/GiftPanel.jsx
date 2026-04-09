@@ -18,7 +18,8 @@ const GiftPanel = ({
   onClose, 
   roomId,
   roomTitle,
-  onGiftSent
+  setMessages,
+  currentUser
 }) => {
   const [gifts, setGifts] = useState([]);
   const [balance, setBalance] = useState(0);
@@ -100,12 +101,28 @@ const GiftPanel = ({
       // Update balance
       setBalance(response.data.remaining_coins);
       
-      // Notify parent
-      if (onGiftSent) {
-        onGiftSent({
+      // إضافة رسالة الهدية في الدردشة مباشرة
+      console.log('=== GIFT DEBUG: About to add message ===');
+      console.log('setMessages function exists:', !!setMessages);
+      if (setMessages) {
+        const giftMessage = {
+          id: `gift_${Date.now()}`,
+          type: 'gift',
+          content: `🎁 ${response.data.sender_username} أرسل ${selectedGift.name} ${selectedGift.icon}`,
           gift: selectedGift,
-          senderUsername: response.data.sender_username
+          sender_username: response.data.sender_username,
+          created_at: new Date().toISOString(),
+          is_gift: true
+        };
+        console.log('Gift message created:', giftMessage);
+        setMessages(prev => {
+          console.log('Previous messages count:', prev.length);
+          const newMessages = [...prev, giftMessage];
+          console.log('New messages count:', newMessages.length);
+          return newMessages;
         });
+      } else {
+        console.log('setMessages is undefined!');
       }
       
       setSelectedGift(null);

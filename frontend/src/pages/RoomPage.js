@@ -14,7 +14,6 @@ import { InviteFriendsModal, InviteFriendsButton } from '../components/room/Invi
 // Extracted modals
 import { ConnectedUsersList } from '../components/room/ConnectedUsersList';
 import { RoomSettingsModal } from '../components/room/RoomSettingsModal';
-import { GiftModal } from '../components/room/GiftModal';
 import { SeatRequestsModal } from '../components/room/SeatRequestsModal';
 import { InviteReceivedModal } from '../components/room/InviteReceivedModal';
 import { StreamModal } from '../components/room/StreamModal';
@@ -23,7 +22,6 @@ import { BackgroundPickerModal } from '../components/room/BackgroundPickerModal'
 import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
-import GiftPanel, { GiftAnimation } from '../components/room/GiftPanel';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
 import {
   Mic,
@@ -132,10 +130,6 @@ const YallaLiveRoom = ({ user }) => {
   const [isMicOn, setIsMicOn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [onStage, setOnStage] = useState(false);
-  const [showGiftModal, setShowGiftModal] = useState(false);
-  const [showGiftPanel, setShowGiftPanel] = useState(false);
-  const [activeGiftAnimation, setActiveGiftAnimation] = useState(null);
-  const [gifts, setGifts] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled());
   const [selectedUser, setSelectedUser] = useState(null);
   const [userCoins, setUserCoins] = useState(user.coins || 1000);
@@ -315,8 +309,8 @@ const YallaLiveRoom = ({ user }) => {
     const rolesPoll = setInterval(fetchCurrentUserRole, 15000);
 
     return () => {
-      // Clear messages when leaving room (ephemeral chat like Snapchat)
-      setMessages([]);
+      // لا نمسح الرسائل عند cleanup لأن ذلك يمسح رسائل الهدايا
+      // setMessages([]);
       
       // Disconnect WebSocket
       disconnectRoomWebSocket();
@@ -937,15 +931,6 @@ const YallaLiveRoom = ({ user }) => {
       }
     } catch (error) {
       console.error('Failed to fetch participants');
-    }
-  };
-
-  const fetchGifts = async () => {
-    try {
-      const response = await axios.get(`${API}/gifts`);
-      setGifts(response.data.gifts);
-    } catch (error) {
-      console.error('Failed to fetch gifts');
     }
   };
 
@@ -2399,20 +2384,6 @@ const YallaLiveRoom = ({ user }) => {
     });
   };
 
-  const handleSendGift = async (giftId) => {
-    if (!selectedUser) return;
-    try {
-      const response = await axios.post(`${API}/rooms/${roomId}/gift`, { gift_id: giftId, recipient_id: selectedUser.user_id }, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success(response.data.message);
-      setUserCoins(response.data.remaining_coins);
-      setShowGiftModal(false);
-      setSelectedUser(null);
-      fetchMessages();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل إرسال الهدية');
-    }
-  };
-
   // Delete message from chat
   const handleDeleteMessage = async (messageId) => {
     if (!window.confirm(isRTL ? 'هل أنت متأكد من حذف هذه الرسالة؟' : 'Are you sure you want to delete this message?')) {
@@ -3456,16 +3427,6 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Main Controls - Compact */}
           <div className="flex items-center gap-2">
-            {/* Gift Button */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowGiftPanel(true)}
-              className="w-10 h-10 rounded-xl bg-[#CCFF00]/20 hover:bg-[#CCFF00]/30 flex items-center justify-center border border-[#CCFF00]/30 transition-colors"
-              title="إرسال هدية"
-            >
-              <Gift className="w-4 h-4 text-[#CCFF00]" />
-            </motion.button>
-
             {/* Mute/Unmute Button - Simple toggle */}
             <motion.button
               whileTap={{ scale: 0.9 }}
@@ -3726,17 +3687,6 @@ const YallaLiveRoom = ({ user }) => {
           </div>
           </div>
         </motion.div>
-
-        {/* Gift Modal */}
-        <AnimatePresence>
-          <GiftModal
-            show={showGiftModal}
-            onClose={() => setShowGiftModal(false)}
-            gifts={gifts}
-            userCoins={userCoins}
-            onSendGift={handleSendGift}
-          />
-        </AnimatePresence>
 
         {/* Room Settings Modal */}
         <AnimatePresence>
@@ -4812,30 +4762,6 @@ const YallaLiveRoom = ({ user }) => {
                 style={{ touchAction: 'none' }}
               />
             </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Gift Panel */}
-        <GiftPanel
-          isOpen={showGiftPanel}
-          onClose={() => {
-            setShowGiftPanel(false);
-          }}
-          roomId={roomId}
-          roomTitle={room?.title}
-          onGiftSent={(data) => {
-            setActiveGiftAnimation(data);
-          }}
-        />
-
-        {/* Gift Animation */}
-        <AnimatePresence>
-          {activeGiftAnimation && (
-            <GiftAnimation
-              gift={activeGiftAnimation.gift}
-              senderName={activeGiftAnimation.senderUsername || user.username}
-              onComplete={() => setActiveGiftAnimation(null)}
-            />
           )}
         </AnimatePresence>
       </div>
