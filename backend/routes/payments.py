@@ -128,10 +128,20 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
     @router.get("/coins/balance")
     async def get_coin_balance(current_user = Depends(get_current_user)):
         """الحصول على رصيد العملات"""
-        user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "coins": 1, "total_earned": 1})
+        user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "coins": 1, "total_earned": 1, "role": 1})
+        
+        # Owner يحصل على رصيد غير محدود
+        if user.get("role") == "owner":
+            return {
+                "coins": 999999,
+                "total_earned": user.get("total_earned", 0),
+                "is_owner": True
+            }
+        
         return {
             "coins": user.get("coins", 0),
-            "total_earned": user.get("total_earned", 0)
+            "total_earned": user.get("total_earned", 0),
+            "is_owner": False
         }
     
     @router.post("/coins/purchase")
@@ -140,6 +150,22 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         package = next((p for p in COIN_PACKAGES if p["id"] == data.package_id), None)
         if not package:
             raise HTTPException(status_code=400, detail="باقة غير موجودة")
+        
+        # Owner يحصل على العملات مجاناً
+        user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "role": 1})
+        if user.get("role") == "owner":
+            coins = package["coins"] + package.get("bonus", 0)
+            await db.users.update_one(
+                {"id": current_user.id},
+                {"$inc": {"coins": coins}}
+            )
+            await db.transactions.insert_one({
+                "user_id": current_user.id,
+                "type": "owner_free",
+                "amount": coins,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            return {"message": f"تم إضافة {coins} عملة مجاناً (Owner)", "coins": coins, "free": True}
         
         try:
             # إنشاء جلسة Stripe Checkout
@@ -314,9 +340,12 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         if not gift:
             raise HTTPException(status_code=400, detail="هدية غير موجودة")
         
-        # تحقق من الرصيد
+        # تحقق من المرسل
         sender = await db.users.find_one({"id": current_user.id})
-        if sender.get("coins", 0) < gift["price"]:
+        is_owner = sender.get("role") == "owner"
+        
+        # Owner لا يحتاج رصيد
+        if not is_owner and sender.get("coins", 0) < gift["price"]:
             raise HTTPException(status_code=400, detail="رصيد غير كافٍ")
         
         # تحقق من وجود المستلم
@@ -324,11 +353,12 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         if not receiver:
             raise HTTPException(status_code=404, detail="المستلم غير موجود")
         
-        # خصم من المرسل
-        await db.users.update_one(
-            {"id": current_user.id},
-            {"$inc": {"coins": -gift["price"]}}
-        )
+        # خصم من المرسل (إلا إذا كان Owner)
+        if not is_owner:
+            await db.users.update_one(
+                {"id": current_user.id},
+                {"$inc": {"coins": -gift["price"]}}
+            )
         
         # إضافة للمستلم (70% من قيمة الهدية)
         receiver_amount = int(gift["price"] * 0.7)
@@ -347,6 +377,7 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
             "price": gift["price"],
             "receiver_amount": receiver_amount,
             "room_id": data.room_id,
+            "free_gift": is_owner,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.gift_history.insert_one(gift_record)
@@ -398,8 +429,17 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         """حالة اشتراك VIP"""
         user = await db.users.find_one(
             {"id": current_user.id},
-            {"_id": 0, "is_vip": 1, "vip_until": 1, "vip_plan": 1}
+            {"_id": 0, "is_vip": 1, "vip_until": 1, "vip_plan": 1, "role": 1}
         )
+        
+        # Owner دائماً VIP
+        if user.get("role") == "owner":
+            return {
+                "is_vip": True,
+                "vip_until": "2099-12-31T23:59:59Z",
+                "vip_plan": "owner_lifetime",
+                "is_owner": True
+            }
         
         is_vip = user.get("is_vip", False)
         vip_until = user.get("vip_until")
@@ -418,7 +458,8 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         return {
             "is_vip": is_vip,
             "vip_until": vip_until,
-            "vip_plan": user.get("vip_plan")
+            "vip_plan": user.get("vip_plan"),
+            "is_owner": False
         }
     
     @router.post("/vip/subscribe")
@@ -427,6 +468,23 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         plan = next((p for p in VIP_PLANS if p["id"] == data.plan_id), None)
         if not plan:
             raise HTTPException(status_code=400, detail="باقة غير موجودة")
+        
+        # Owner يحصل على VIP مجاناً
+        user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "role": 1})
+        if user.get("role") == "owner":
+            vip_until = datetime.now(timezone.utc) + timedelta(days=365*10)  # 10 سنوات
+            await db.users.update_one(
+                {"id": current_user.id},
+                {
+                    "$set": {
+                        "is_vip": True,
+                        "vip_until": vip_until.isoformat(),
+                        "vip_plan": "owner_lifetime"
+                    },
+                    "$addToSet": {"badges": "vip_member"}
+                }
+            )
+            return {"message": "تم تفعيل VIP مجاناً (Owner)", "vip_until": vip_until.isoformat(), "free": True}
         
         try:
             frontend_url = os.environ.get('FRONTEND_URL', 'https://pitch-chat.preview.emergentagent.com')

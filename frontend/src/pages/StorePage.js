@@ -77,6 +77,13 @@ const StorePage = () => {
         { headers }
       );
       
+      // Owner يحصل على العملات مجاناً
+      if (response.data.free) {
+        toast.success(`🎉 ${response.data.message}`);
+        fetchData(); // Refresh balance
+        return;
+      }
+      
       if (response.data.checkout_url) {
         window.location.href = response.data.checkout_url;
       }
@@ -97,6 +104,13 @@ const StorePage = () => {
         { plan_id: planId },
         { headers }
       );
+      
+      // Owner يحصل على VIP مجاناً
+      if (response.data.free) {
+        toast.success(`🎉 ${response.data.message}`);
+        fetchData(); // Refresh status
+        return;
+      }
       
       if (response.data.checkout_url) {
         window.location.href = response.data.checkout_url;
@@ -136,17 +150,30 @@ const StorePage = () => {
         
         {/* Balance Card */}
         <div className="max-w-lg mx-auto px-4">
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-between">
+          <div className={`p-4 rounded-2xl border flex items-center justify-between ${
+            balance.is_owner 
+              ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/30' 
+              : 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/30'
+          }`}>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center">
-                <Coins className="w-6 h-6 text-white" />
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                balance.is_owner ? 'bg-purple-500' : 'bg-amber-500'
+              }`}>
+                {balance.is_owner ? <Crown className="w-6 h-6 text-white" /> : <Coins className="w-6 h-6 text-white" />}
               </div>
               <div>
                 <p className="text-white/60 text-sm">{isRTL ? 'رصيدك' : 'Your Balance'}</p>
-                <p className="text-white font-bold text-xl">{balance.coins.toLocaleString()}</p>
+                <p className="text-white font-bold text-xl">
+                  {balance.is_owner ? (isRTL ? '∞ غير محدود' : '∞ Unlimited') : balance.coins.toLocaleString()}
+                </p>
               </div>
             </div>
-            {vipStatus.is_vip && (
+            {balance.is_owner ? (
+              <div className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center gap-1">
+                <Crown className="w-4 h-4 text-white" />
+                <span className="text-white text-sm font-bold">OWNER</span>
+              </div>
+            ) : vipStatus.is_vip && (
               <div className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center gap-1">
                 <Crown className="w-4 h-4 text-white" />
                 <span className="text-white text-sm font-bold">VIP</span>
@@ -229,9 +256,13 @@ const StorePage = () => {
                       <Button
                         onClick={() => handlePurchaseCoins(pkg.id)}
                         disabled={purchasing}
-                        className="w-full mt-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl"
+                        className={`w-full mt-3 font-bold rounded-xl ${
+                          balance.is_owner
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600'
+                            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
+                        } text-white`}
                       >
-                        {pkg.price_display}
+                        {balance.is_owner ? (isRTL ? '🎁 مجاني' : '🎁 Free') : pkg.price_display}
                       </Button>
                     </div>
                   </motion.div>
