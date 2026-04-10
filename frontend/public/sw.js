@@ -1,7 +1,7 @@
-const CACHE_NAME = 'koraverse-v3';
-const STATIC_CACHE = 'koraverse-static-v3';
-const DYNAMIC_CACHE = 'koraverse-dynamic-v3';
-const IMAGE_CACHE = 'koraverse-images-v3';
+const CACHE_NAME = 'koraverse-v5';
+const STATIC_CACHE = 'koraverse-static-v5';
+const DYNAMIC_CACHE = 'koraverse-dynamic-v5';
+const IMAGE_CACHE = 'koraverse-images-v5';
 
 // Static assets to cache immediately
 const STATIC_ASSETS = [
@@ -22,6 +22,26 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.filter((cacheName) => {
+          // Delete any cache that doesn't match current versions
+          return !cacheName.includes('-v5');
+        }).map((cacheName) => {
+          console.log('Deleting old cache:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(() => {
+      // Take control of all clients immediately
+      return self.clients.claim();
+    })
+  );
+});
+
 // Fetch event with smart caching strategy
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -32,24 +52,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // API requests - Network first, fallback to cache
+  // API requests - Always fetch from network, never cache
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Clone and cache successful responses
-          if (response.ok) {
-            const clonedResponse = response.clone();
-            caches.open(DYNAMIC_CACHE).then((cache) => {
-              cache.put(request, clonedResponse);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request);
-        })
-    );
+    event.respondWith(fetch(request));
     return;
   }
   
