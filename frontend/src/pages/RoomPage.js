@@ -255,6 +255,13 @@ const YallaLiveRoom = ({ user }) => {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
+    // Check if user is authenticated
+    if (!token) {
+      toast.error('يرجى تسجيل الدخول أولاً');
+      navigate('/');
+      return;
+    }
+    
     // Reset minimizing flag
     isMinimizingRef.current = false;
     
@@ -769,16 +776,10 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  const fetchRoomData = async () => {
+  const fetchRoomData = async (retryCount = 0) => {
     try {
-      const [roomRes, seatsRes, messagesRes, participantsRes, membersRes] = await Promise.all([
-        axios.get(`${API}/rooms/${roomId}`),
-        axios.get(`${API}/rooms/${roomId}/seats`),
-        axios.get(`${API}/rooms/${roomId}/messages`),
-        axios.get(`${API}/rooms/${roomId}/participants`),
-        axios.get(`${API}/rooms/${roomId}/members`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
-
+      // Fetch main room data first
+      const roomRes = await axios.get(`${API}/rooms/${roomId}`);
       const roomData = roomRes.data;
       setRoom(roomData);
       
@@ -795,23 +796,37 @@ const YallaLiveRoom = ({ user }) => {
         return;
       }
       
-      setSeats(seatsRes.data.seats);
+      // Fetch other data in parallel with error handling for each
+      const [seatsRes, messagesRes, participantsRes] = await Promise.all([
+        axios.get(`${API}/rooms/${roomId}/seats`).catch(() => ({ data: { seats: [] } })),
+        axios.get(`${API}/rooms/${roomId}/messages`).catch(() => ({ data: [] })),
+        axios.get(`${API}/rooms/${roomId}/participants`).catch(() => ({ data: [] }))
+      ]);
       
-      const filteredMessages = messagesRes.data.filter(msg => 
+      // Fetch members separately with token (optional, won't fail room load)
+      try {
+        const membersRes = await axios.get(`${API}/rooms/${roomId}/members`, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+        if (membersRes.data?.members) {
+          setRoomMembers(membersRes.data.members);
+        }
+      } catch (err) {
+        // Members fetch is optional
+      }
+      
+      setSeats(seatsRes.data.seats || []);
+      
+      const filteredMessages = (messagesRes.data || []).filter(msg => 
         !msg.content?.toLowerCase().includes('test message') &&
         !msg.content?.toLowerCase().includes('voice test') &&
         !msg.username?.toLowerCase().includes('test_user')
       );
       setMessages(filteredMessages);
-      setParticipants(participantsRes.data);
-      
-      // Set room members (all members including offline)
-      if (membersRes.data?.members) {
-        setRoomMembers(membersRes.data.members);
-      }
+      setParticipants(participantsRes.data || []);
       
       // Check if current user is on stage
-      const myParticipant = participantsRes.data.find(p => p.user_id === user.id);
+      const myParticipant = (participantsRes.data || []).find(p => p.user_id === user.id);
       if (myParticipant && myParticipant.seat_number !== null) {
         setOnStage(true);
         setPendingRequest(false); // Clear pending if approved
@@ -825,7 +840,7 @@ const YallaLiveRoom = ({ user }) => {
           const newsRes = await axios.get(`${API}/rooms/${roomId}/news`);
           setRoomNews(newsRes.data.news || []);
         } catch (err) {
-          console.error('Failed to fetch room news');
+          // News fetch is optional
         }
       }
       
@@ -834,6 +849,12 @@ const YallaLiveRoom = ({ user }) => {
       
       setLoading(false);
     } catch (error) {
+      console.error('Room load error:', error);
+      // Retry up to 2 times with delay
+      if (retryCount < 2) {
+        setTimeout(() => fetchRoomData(retryCount + 1), 1000);
+        return;
+      }
       toast.error('فشل تحميل بيانات الغرفة');
       navigate('/dashboard');
     }
