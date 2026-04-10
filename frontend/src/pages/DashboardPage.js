@@ -144,29 +144,45 @@ const DashboardPage = ({ user, onLogout }) => {
   const token = localStorage.getItem('token');
 
   // Memoized fetch functions
-  const fetchRooms = useCallback(async () => {
+  const fetchRooms = useCallback(async (retryCount = 0) => {
     try {
       const response = await axios.get(`${API}/rooms`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-      setRooms(response.data);
-      setFilteredRooms(response.data);
+      
+      if (!response.data || response.data.length === 0) {
+        // Retry if no data and haven't exceeded retries
+        if (retryCount < 2) {
+          setTimeout(() => fetchRooms(retryCount + 1), 1000);
+          return;
+        }
+      }
+      
+      setRooms(response.data || []);
+      setFilteredRooms(response.data || []);
       
       // Fetch membership status for all rooms in parallel
-      const membershipPromises = response.data.map(room => 
-        axios.get(`${API}/rooms/${room.id}/membership`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        }).catch(() => ({ data: { is_member: false } }))
-      );
-      
-      const membershipResults = await Promise.all(membershipPromises);
-      const statusMap = {};
-      response.data.forEach((room, index) => {
-        statusMap[room.id] = membershipResults[index]?.data?.is_member || false;
-      });
-      setMembershipStatus(statusMap);
+      if (token && response.data?.length > 0) {
+        const membershipPromises = response.data.map(room => 
+          axios.get(`${API}/rooms/${room.id}/membership`, { 
+            headers: { Authorization: `Bearer ${token}` } 
+          }).catch(() => ({ data: { is_member: false } }))
+        );
+        
+        const membershipResults = await Promise.all(membershipPromises);
+        const statusMap = {};
+        response.data.forEach((room, index) => {
+          statusMap[room.id] = membershipResults[index]?.data?.is_member || false;
+        });
+        setMembershipStatus(statusMap);
+      }
     } catch (error) {
-      console.error('Failed to fetch rooms');
+      console.error('Failed to fetch rooms:', error);
+      // Retry on error
+      if (retryCount < 2) {
+        setTimeout(() => fetchRooms(retryCount + 1), 1000);
+        return;
+      }
     } finally {
       setLoading(false);
     }
