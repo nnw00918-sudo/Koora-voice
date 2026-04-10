@@ -25,9 +25,6 @@ const MiniAudioPlayer = () => {
     maximizePlayer 
   } = useRoomAudio();
 
-  // Debug logs
-  console.log('MiniAudioPlayer render:', { currentRoom, isConnected, isMinimized, isOnRoomPage: location.pathname.startsWith('/room/') });
-
   // Don't show if not connected or if we're on the room page
   const isOnRoomPage = location.pathname.startsWith('/room/');
   

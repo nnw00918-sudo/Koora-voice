@@ -250,6 +250,7 @@ const YallaLiveRoom = ({ user }) => {
   const isMinimizingRef = useRef(false); // Track if we're minimizing
   const roomWsRef = useRef(null); // WebSocket for room messages
   const wsReconnectTimeoutRef = useRef(null);
+  const roomInitializedRef = useRef(false); // Track if room has been initialized
 
   const token = localStorage.getItem('token');
 
@@ -258,17 +259,12 @@ const YallaLiveRoom = ({ user }) => {
     isMinimizingRef.current = false;
     
     const initRoom = async () => {
-      console.log('RoomPage useEffect - checking state:', {
-        isMinimized,
-        currentRoom: currentRoom?.id,
-        roomId,
-        hasContextAgoraClient: !!contextAgoraClient,
-        hasLocalAgoraClient: !!agoraClient.current
-      });
+      // Prevent double initialization from StrictMode
+      if (roomInitializedRef.current) return;
+      roomInitializedRef.current = true;
       
       // If returning from minimized state for SAME room, just maximize
       if (isMinimized && currentRoom && currentRoom.id === roomId && contextAgoraClient) {
-        console.log('Returning to SAME minimized room - just maximize');
         agoraClient.current = contextAgoraClient;
         maximizePlayer();
         fetchRoomData();
@@ -281,12 +277,10 @@ const YallaLiveRoom = ({ user }) => {
       
       // If there's a minimized room for DIFFERENT room, disconnect it first
       if (isMinimized && currentRoom && currentRoom.id !== roomId) {
-        console.log('Different room - disconnecting from minimized room first');
         await globalDisconnect();
       }
       
       // Initialize fresh connection
-      console.log('Initializing fresh connection');
       fetchCurrentUserRole();
       initializeAgora();
       joinRoom();
@@ -309,6 +303,9 @@ const YallaLiveRoom = ({ user }) => {
     const rolesPoll = setInterval(fetchCurrentUserRole, 15000);
 
     return () => {
+      // Reset initialization flag for next mount
+      roomInitializedRef.current = false;
+      
       // لا نمسح الرسائل عند cleanup لأن ذلك يمسح رسائل الهدايا
       // setMessages([]);
       
@@ -317,11 +314,8 @@ const YallaLiveRoom = ({ user }) => {
       
       // Only leave room and cleanup if we're NOT minimizing
       if (!isMinimizingRef.current) {
-        console.log('Cleanup: leaving room and cleaning up Agora');
         leaveRoom();
         cleanupAgora();
-      } else {
-        console.log('Cleanup: minimizing - keeping connection');
       }
       
       stopPolling();
@@ -346,7 +340,7 @@ const YallaLiveRoom = ({ user }) => {
       requestsPollInterval.current = setInterval(() => {
         fetchSeatRequests();
         fetchMyInvites();
-      }, 2000); // Poll every 2 seconds for faster updates
+      }, 5000); // Poll every 5 seconds
     }
     return () => {
       if (requestsPollInterval.current) clearInterval(requestsPollInterval.current);
@@ -443,9 +437,7 @@ const YallaLiveRoom = ({ user }) => {
         });
         setWatchParty(response.data.watch_party);
       } catch (error) {
-        if (error.response?.status !== 404) {
-          console.error('Error fetching watch party:', error);
-        }
+        // 404 is expected when no watch party exists
         setWatchParty(null);
       }
     };
@@ -456,9 +448,9 @@ const YallaLiveRoom = ({ user }) => {
     fetchWatchParty();
 
     // Set up polling intervals
-    reactionsPollingRef.current = setInterval(fetchReactions, 2000);
-    pollPollingRef.current = setInterval(fetchActivePoll, 3000);
-    watchPartyPollingRef.current = setInterval(fetchWatchParty, 5000);
+    reactionsPollingRef.current = setInterval(fetchReactions, 5000);
+    pollPollingRef.current = setInterval(fetchActivePoll, 8000);
+    watchPartyPollingRef.current = setInterval(fetchWatchParty, 10000);
 
     return () => {
       if (reactionsPollingRef.current) clearInterval(reactionsPollingRef.current);
@@ -471,20 +463,34 @@ const YallaLiveRoom = ({ user }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Track if initialization is in progress
+  const isInitializingRef = useRef(false);
+  
   const initializeAgora = async () => {
+    // Prevent double initialization
+    if (isInitializingRef.current) {
+      return;
+    }
+    isInitializingRef.current = true;
+    
     try {
       // Clean up any existing local connection first
       if (agoraClient.current) {
-        console.log('Cleaning up existing local Agora client');
         try {
-          await agoraClient.current.leave();
+          // Check if client is in a state that needs leaving
+          const state = agoraClient.current.connectionState;
+          if (state === 'CONNECTED' || state === 'CONNECTING') {
+            await agoraClient.current.leave();
+          }
         } catch (e) {
           // Ignore leave errors
         }
         agoraClient.current = null;
       }
       
-      console.log('Creating new Agora client');
+      // Small delay to ensure cleanup is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       agoraClient.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       
       agoraClient.current.on('user-published', async (remoteUser, mediaType) => {
@@ -544,6 +550,17 @@ const YallaLiveRoom = ({ user }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // Double-check client state before joining
+      if (!agoraClient.current) {
+        return;
+      }
+      
+      const clientState = agoraClient.current.connectionState;
+      if (clientState === 'CONNECTED' || clientState === 'CONNECTING') {
+        // Already connected or connecting, skip join
+        return;
+      }
+
       await agoraClient.current.join(
         AGORA_APP_ID,
         roomId,
@@ -563,10 +580,13 @@ const YallaLiveRoom = ({ user }) => {
       }
     } catch (error) {
       console.error('Agora error:', error);
+    } finally {
+      isInitializingRef.current = false;
     }
   };
 
   const cleanupAgora = async () => {
+    isInitializingRef.current = false; // Reset initialization flag
     try {
       if (localAudioTrack) {
         localAudioTrack.stop();
@@ -692,7 +712,7 @@ const YallaLiveRoom = ({ user }) => {
           console.error('Screen shares fetch error:', e);
         }
       }
-    }, 2000); // Poll every 2 seconds for faster updates
+    }, 5000); // Poll every 5 seconds
   };
 
   const stopPolling = () => {
@@ -713,7 +733,7 @@ const YallaLiveRoom = ({ user }) => {
     };
     
     sendHeartbeat(); // Send immediately
-    heartbeatInterval.current = setInterval(sendHeartbeat, 5000);
+    heartbeatInterval.current = setInterval(sendHeartbeat, 15000);
   };
 
   const stopHeartbeat = () => {
@@ -855,7 +875,7 @@ const YallaLiveRoom = ({ user }) => {
     const ws = new WebSocket(`${wsUrl}/ws/${token}`);
     
     ws.onopen = () => {
-      console.log('Room WebSocket connected');
+      
       // Join the room channel
       ws.send(JSON.stringify({ type: 'join_room', room_id: roomId }));
     };
@@ -879,7 +899,7 @@ const YallaLiveRoom = ({ user }) => {
     };
     
     ws.onclose = () => {
-      console.log('Room WebSocket disconnected');
+      
       roomWsRef.current = null;
       // Attempt to reconnect after 3 seconds
       wsReconnectTimeoutRef.current = setTimeout(() => {
@@ -889,8 +909,8 @@ const YallaLiveRoom = ({ user }) => {
       }, 3000);
     };
     
-    ws.onerror = (error) => {
-      console.error('Room WebSocket error:', error);
+    ws.onerror = () => {
+      // Silent error - will auto-reconnect
     };
     
     roomWsRef.current = ws;
@@ -1011,12 +1031,12 @@ const YallaLiveRoom = ({ user }) => {
 
   // Minimize - keep audio playing in background
   const handleMinimize = async () => {
-    console.log('handleMinimize called, room:', room, 'agoraClient:', agoraClient.current);
+    
     if (room && agoraClient.current) {
       // Mark that we're minimizing so cleanup doesn't disconnect audio
       isMinimizingRef.current = true;
       
-      console.log('Setting current room in context...');
+      
       // Store room info in global context with agora client
       setCurrentRoom({ 
         id: roomId, 
@@ -1025,7 +1045,7 @@ const YallaLiveRoom = ({ user }) => {
         remoteUsers: remoteUsers
       });
       
-      console.log('Calling minimizePlayer...');
+      
       minimizePlayer();
       
       // Don't cleanup agora - keep audio playing
@@ -1033,7 +1053,7 @@ const YallaLiveRoom = ({ user }) => {
       stopPolling();
       stopHeartbeat();
       
-      console.log('Navigating to dashboard...');
+      
       // Use setTimeout to ensure isMinimizingRef is set before cleanup runs
       setTimeout(() => {
         navigate('/dashboard');
@@ -1431,7 +1451,7 @@ const YallaLiveRoom = ({ user }) => {
       playTone(660, now + 0.45, 0.2);  // E (longer)
       
     } catch (error) {
-      console.log('Could not play notification sound');
+      
     }
   };
 
@@ -1670,7 +1690,7 @@ const YallaLiveRoom = ({ user }) => {
       );
     } catch (error) {
       // Still works locally even if server sync fails
-      console.log('Channel switch synced locally');
+      
     }
   };
 
@@ -2472,11 +2492,11 @@ const YallaLiveRoom = ({ user }) => {
   // Start Watch Party
   const handleStartWatchParty = async (data) => {
     try {
-      console.log('Starting Watch Party with data:', data);
+      
       const response = await axios.post(`${API}/rooms/${roomId}/watch-party`, data, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      console.log('Watch Party started:', response.data);
+      
       setWatchParty(response.data.watch_party);
       setShowWatchPartyModal(false);
       toast.success('تم بدء Watch Party! 🎉');
@@ -3461,7 +3481,7 @@ const YallaLiveRoom = ({ user }) => {
                   } catch (e) {}
                 }
                 
-                console.log(newMuted ? 'Audio muted' : 'Audio unmuted');
+                
               }}
               className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 isAudioMuted ? 'bg-red-500' : 'bg-slate-800 border border-slate-700'
