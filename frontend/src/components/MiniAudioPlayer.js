@@ -116,21 +116,14 @@ const MiniAudioPlayer = () => {
               </div>
             </div>
 
-            {/* Audio Visualizer */}
+            {/* Audio Visualizer - simplified */}
             {!isAudioMuted && remoteUsers.length > 0 && (
               <div className="mt-3 flex items-center justify-center gap-1">
-                {[...Array(12)].map((_, i) => (
-                  <motion.div
+                {[...Array(5)].map((_, i) => (
+                  <div
                     key={i}
-                    className="w-1 bg-lime-500 rounded-full"
-                    animate={{
-                      height: [4, Math.random() * 16 + 4, 4],
-                    }}
-                    transition={{
-                      duration: 0.5,
-                      repeat: Infinity,
-                      delay: i * 0.05,
-                    }}
+                    className="w-1 h-3 bg-lime-500 rounded-full animate-pulse"
+                    style={{ animationDelay: `${i * 0.1}s` }}
                   />
                 ))}
               </div>

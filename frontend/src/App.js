@@ -1,10 +1,14 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios';
 import '@/App.css';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { RoomAudioProvider } from './contexts/RoomAudioContext';
 import { Toaster } from 'sonner';
+
+// Set global axios timeout to prevent hanging
+axios.defaults.timeout = 15000; // 15 seconds
 
 // Lazy load pages for faster initial load
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -45,16 +49,13 @@ const PageLoader = () => (
   </div>
 );
 
-// Register Service Worker
+// Service Worker disabled for stability
+// Unregister any existing service workers
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('SW registered:', registration.scope);
-      })
-      .catch((error) => {
-        console.log('SW registration failed:', error);
-      });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
   });
 }
 

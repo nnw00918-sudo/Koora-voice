@@ -44,9 +44,7 @@ const RoomCard = memo(({ room, user, membershipStatus, favoriteLoading, onEnterR
   const isFavLoading = favoriteLoading[room.id];
   
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl overflow-hidden border border-slate-700/50 hover:border-lime-500/30 transition-all duration-300 group"
     >
       {/* Room Image */}
@@ -111,7 +109,7 @@ const RoomCard = memo(({ room, user, membershipStatus, favoriteLoading, onEnterR
           {isRTL ? 'دخول' : 'Enter'}
         </Button>
       </div>
-    </motion.div>
+    </div>
   );
 });
 
