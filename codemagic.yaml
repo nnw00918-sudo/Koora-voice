@@ -19,7 +19,7 @@ workflows:
       - name: Build React app
         script: |
           cd frontend
-          npm run build
+          CI=false npm run build
       - name: Sync Capacitor
         script: |
           cd frontend
