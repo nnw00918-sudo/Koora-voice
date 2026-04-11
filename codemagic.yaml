@@ -11,26 +11,29 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.kooravoice.app
       vars:
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_WORKSPACE: "frontend/ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
       node: 18.17.0
     
     scripts:
       - name: Install dependencies
         script: |
+          cd frontend
           npm install
           
       - name: Build React app
         script: |
+          cd frontend
           npm run build
           
       - name: Sync Capacitor
         script: |
+          cd frontend
           npx cap sync ios
           
       - name: Install CocoaPods
         script: |
-          cd ios/App
+          cd frontend/ios/App
           pod install
           
       - name: Set up code signing
@@ -39,7 +42,7 @@ workflows:
           
       - name: Build iOS app
         script: |
-          cd ios/App
+          cd frontend/ios/App
           xcodebuild -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
@@ -48,14 +51,14 @@ workflows:
             
       - name: Export IPA
         script: |
-          cd ios/App
+          cd frontend/ios/App
           xcodebuild -exportArchive \
             -archivePath build/App.xcarchive \
             -exportPath build/ipa \
             -exportOptionsPlist ExportOptions.plist
     
     artifacts:
-      - ios/App/build/ipa/*.ipa
+      - frontend/ios/App/build/ipa/*.ipa
     
     publishing:
       app_store_connect:
