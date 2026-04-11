@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings,
@@ -56,8 +56,37 @@ export const RoomSettingsModal = ({
 }) => {
   const [currentPage, setCurrentPage] = useState('main'); // main, title, image, roles, poll, record, stream, lock, delete
   const [newTitle, setNewTitle] = useState(room?.title || '');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const localFileInputRef = useRef(null);
   const inputRef = fileInputRef || localFileInputRef;
+  const modalRef = useRef(null);
+
+  // Handle keyboard visibility on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      // Detect if keyboard is open by checking viewport height change
+      const isKeyboard = window.visualViewport && 
+        window.visualViewport.height < window.innerHeight * 0.75;
+      setKeyboardVisible(isKeyboard);
+    };
+
+    // Listen to visual viewport changes (better for mobile keyboards)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport.removeEventListener('resize', handleResize);
+    }
+
+    // Fallback for older browsers
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Scroll input into view when focused
+  const handleInputFocus = (e) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  };
 
   if (!show || !isOwner) return null;
 
@@ -228,10 +257,12 @@ export const RoomSettingsModal = ({
             type="text"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
+            onFocus={handleInputFocus}
             placeholder="أدخل اسم الغرفة..."
             className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white font-cairo placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-500"
             dir="rtl"
             autoComplete="off"
+            enterKeyHint="done"
           />
         </div>
         <button 
@@ -304,10 +335,12 @@ export const RoomSettingsModal = ({
             type="text"
             value={roomImageUrl}
             onChange={(e) => setRoomImageUrl(e.target.value)}
+            onFocus={handleInputFocus}
             placeholder="أدخل رابط الصورة..."
             className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
             dir="ltr"
             autoComplete="off"
+            enterKeyHint="done"
           />
           <button 
             onClick={() => {
@@ -557,14 +590,19 @@ export const RoomSettingsModal = ({
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex ${keyboardVisible ? 'items-start pt-4' : 'items-center'} justify-center p-4`}
       onClick={handleClose}
     >
       <motion.div 
+        ref={modalRef}
         initial={{ scale: 0.9, opacity: 0 }} 
         animate={{ scale: 1, opacity: 1 }} 
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-violet-500/30 max-h-[90vh] overflow-y-auto"
+        className={`bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-violet-500/30 overflow-y-auto ${keyboardVisible ? 'max-h-[50vh]' : 'max-h-[90vh]'}`}
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <AnimatePresence mode="wait">
