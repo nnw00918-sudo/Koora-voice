@@ -34,17 +34,10 @@ workflows:
       - name: Build iOS app
         script: |
           cd frontend/ios/App
-          xcodebuild -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -archivePath build/App.xcarchive \
-            archive
-      - name: Export IPA
-        script: |
-          cd frontend/ios/App
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build/ipa \
-            -exportOptionsPlist ExportOptions.plist
+          xcode-project build-ipa \
+            --workspace App.xcworkspace \
+            --scheme App
     artifacts:
-      - frontend/ios/App/build/ipa/*.ipa
+      - frontend/ios/App/build/ios/ipa/*.ipa
+      - frontend/ios/App/*.ipa
+      - /tmp/xcodebuild_logs/*.log
