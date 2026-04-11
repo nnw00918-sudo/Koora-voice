@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Tv } from 'lucide-react';
+import { X, Tv, Volume2, VolumeX, Maximize2, Minimize2, RefreshCw } from 'lucide-react';
 
 // Helper function to convert YouTube URL to embed URL
 const getYouTubeEmbedUrl = (url) => {
@@ -19,7 +19,7 @@ const getYouTubeEmbedUrl = (url) => {
   const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
   if (shortMatch) videoId = shortMatch[1];
   
-  if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1`;
+  if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&mute=0`;
   
   return url;
 };
@@ -32,6 +32,9 @@ export const WatchPartyPlayer = ({
   onChangeChannel
 }) => {
   const [activeChannel, setActiveChannel] = useState(watchParty?.active_channel || 1);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Update active channel when watchParty changes (synced from server)
   useEffect(() => {
@@ -51,6 +54,8 @@ export const WatchPartyPlayer = ({
   if (!watchParty) return null;
   
   const embedUrl = getYouTubeEmbedUrl(currentUrl);
+  const muteParam = isMuted ? '&mute=1' : '&mute=0';
+  const finalUrl = embedUrl ? `${embedUrl}${muteParam}` : null;
 
   const handleChannelChange = (channelId) => {
     const channel = channels.find(c => c.id === channelId);
@@ -62,19 +67,26 @@ export const WatchPartyPlayer = ({
     }
   };
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 100);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-slate-900 rounded-xl overflow-hidden border border-lime-500/30 shadow-lg"
+      className={`bg-slate-900 rounded-xl overflow-hidden border border-lime-500/30 shadow-lg transition-all duration-300 ${
+        isExpanded ? 'fixed inset-4 z-50' : ''
+      }`}
     >
-      {/* Video Player - Smaller size */}
-      <div className="relative bg-black" style={{ height: '180px' }}>
-        {embedUrl ? (
+      {/* Video Player */}
+      <div className="relative bg-black" style={{ height: isExpanded ? 'calc(100% - 60px)' : '180px' }}>
+        {!isRefreshing && finalUrl ? (
           <iframe
-            key={embedUrl}
-            src={embedUrl}
+            key={finalUrl}
+            src={finalUrl}
             className="absolute inset-0 w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen
@@ -87,6 +99,31 @@ export const WatchPartyPlayer = ({
             </div>
           </div>
         )}
+        
+        {/* Overlay Controls */}
+        <div className="absolute top-2 right-2 flex gap-2">
+          <button
+            onClick={handleRefresh}
+            className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+            title="تحديث"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+            title={isMuted ? 'تشغيل الصوت' : 'كتم الصوت'}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+            title={isExpanded ? 'تصغير' : 'تكبير'}
+          >
+            {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
 
       {/* Channel Buttons - Bottom like remote */}
