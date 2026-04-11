@@ -3,8 +3,6 @@ workflows:
     name: iOS Release
     max_build_duration: 60
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: Koora API
     environment:
       ios_signing:
         distribution_type: app_store
@@ -50,7 +48,3 @@ workflows:
             -exportOptionsPlist ExportOptions.plist
     artifacts:
       - frontend/ios/App/build/ipa/*.ipa
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
