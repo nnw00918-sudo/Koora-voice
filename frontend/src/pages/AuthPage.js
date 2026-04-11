@@ -23,8 +23,14 @@ const AuthPage = ({ onLogin }) => {
   });
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
+    // Prevent double submission
+    if (loading) return;
+    
     setLoading(true);
+    console.log('[AUTH] Starting login attempt...');
+    console.log('[AUTH] API URL:', API);
 
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
@@ -32,16 +38,32 @@ const AuthPage = ({ onLogin }) => {
         ? { identifier: formData.identifier, password: formData.password }
         : { email: formData.email, password: formData.password, username: formData.username };
 
+      console.log('[AUTH] Endpoint:', `${API}${endpoint}`);
+      console.log('[AUTH] Payload:', JSON.stringify(payload));
+
       const response = await axios.post(`${API}${endpoint}`, payload);
+      console.log('[AUTH] Response received:', response.status);
+      
       const { access_token, user } = response.data;
+      console.log('[AUTH] Login successful for user:', user?.username);
 
       onLogin(user, access_token);
     } catch (error) {
+      console.error('[AUTH] Error:', error);
+      console.error('[AUTH] Error response:', error.response?.data);
       const message = error.response?.data?.detail || t('error');
       toast.error(message);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle button click/touch for iOS
+  const handleButtonClick = (e) => {
+    console.log('[AUTH] Button clicked/touched');
+    e.preventDefault();
+    e.stopPropagation();
+    handleSubmit(e);
   };
 
   return (
@@ -161,21 +183,33 @@ const AuthPage = ({ onLogin }) => {
               </div>
             </div>
 
-            <Button
+            {/* Native button for better iOS compatibility */}
+            <button
               data-testid="submit-auth-btn"
-              type="submit"
+              type="button"
               disabled={loading}
-              className="w-full bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold text-lg py-6 rounded-xl shadow-[0_0_30px_rgba(163,230,53,0.3)] transition-all active:scale-95 relative z-50"
+              onClick={handleButtonClick}
+              onTouchEnd={handleButtonClick}
+              className="w-full bg-lime-400 hover:bg-lime-300 active:bg-lime-500 text-slate-950 font-cairo font-bold text-lg py-4 rounded-xl shadow-[0_0_30px_rgba(163,230,53,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ 
                 WebkitTapHighlightColor: 'rgba(163,230,53,0.3)',
                 touchAction: 'manipulation',
                 cursor: 'pointer',
                 WebkitUserSelect: 'none',
-                userSelect: 'none'
+                userSelect: 'none',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+                minHeight: '56px'
               }}
             >
               {loading ? (
-                t('loading')
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  </svg>
+                  {t('loading')}
+                </span>
               ) : isLogin ? (
                 <span className="flex items-center justify-center gap-2">
                   <LogIn className="w-5 h-5" strokeWidth={2} />
@@ -187,7 +221,7 @@ const AuthPage = ({ onLogin }) => {
                   {t('registerBtn')}
                 </span>
               )}
-            </Button>
+            </button>
           </form>
 
           {/* Forgot Password Link */}
