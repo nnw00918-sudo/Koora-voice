@@ -11,8 +11,7 @@ import {
 import BottomNavigation from '../components/BottomNavigation';
 import { GlowingAvatar, FRAME_COLORS, ProfileTabs } from '../components/profile';
 import { useSettings } from '../contexts/SettingsContext';
-
-const API = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL as API } from '../config/api';
 
 // Animated cover background
 const AnimatedCover = () => (

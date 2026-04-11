@@ -5,6 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
+import { BACKEND_URL, API } from '../config/api';
 import {
   Crown,
   ArrowRight,
@@ -15,9 +16,6 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 const StorePage = () => {
   const navigate = useNavigate();

@@ -8,9 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Mail, Lock, User, LogIn, UserPlus } from 'lucide-react';
 import { useLanguage, LanguageToggle } from '../contexts/LanguageContext';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { API } from '../config/api';
 
 const AuthPage = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -167,7 +165,14 @@ const AuthPage = ({ onLogin }) => {
               data-testid="submit-auth-btn"
               type="submit"
               disabled={loading}
-              className="w-full bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold text-lg py-6 rounded-xl shadow-[0_0_30px_rgba(163,230,53,0.3)] transition-all active:scale-95"
+              className="w-full bg-lime-400 hover:bg-lime-300 text-slate-950 font-cairo font-bold text-lg py-6 rounded-xl shadow-[0_0_30px_rgba(163,230,53,0.3)] transition-all active:scale-95 relative z-50"
+              style={{ 
+                WebkitTapHighlightColor: 'rgba(163,230,53,0.3)',
+                touchAction: 'manipulation',
+                cursor: 'pointer',
+                WebkitUserSelect: 'none',
+                userSelect: 'none'
+              }}
             >
               {loading ? (
                 t('loading')

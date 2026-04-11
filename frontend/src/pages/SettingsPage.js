@@ -9,6 +9,7 @@ import { usePushNotifications } from '../hooks/usePushNotifications';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import BottomNavigation from '../components/BottomNavigation';
+import { BACKEND_URL, API } from '../config/api';
 import { 
   ArrowLeft, ArrowRight, Home, Trophy, Settings, Bell, Moon, Sun, Volume2, VolumeX,
   Shield, LogOut, ChevronLeft, ChevronRight, User, Lock, Eye, EyeOff, Globe, Palette,
@@ -18,9 +19,6 @@ import {
   UserX, Ban, AlertTriangle, Trash2, Download, FileText, Key, Verified,
   Clock, MapPin, Wifi, WifiOff, Vibrate, Volume1, Zap, Sparkles, SunMoon
 } from 'lucide-react';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 const SettingsPage = ({ user, onLogout }) => {
   const navigate = useNavigate();

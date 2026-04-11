@@ -23,6 +23,7 @@ import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
+import { BACKEND_URL, API, AGORA_APP_ID } from '../config/api';
 import {
   Mic,
   MicOff,
@@ -67,10 +68,6 @@ import {
   ZoomOut
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-const AGORA_APP_ID = process.env.REACT_APP_AGORA_APP_ID;
 
 // Remote Video Circle Component for stage avatars
 const RemoteVideoCircle = ({ remoteUser }) => {

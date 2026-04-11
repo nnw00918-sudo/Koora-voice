@@ -6,12 +6,11 @@ import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
+import { API, BACKEND_URL } from '../config/api';
 import { 
   ArrowRight, Search, Send, Check, CheckCheck, X, MessageCircle,
   Trash2, UserPlus, Sparkles
 } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Animated background orbs for messages
 const ChatBackground = ({ isDarkMode }) => (
@@ -270,7 +269,6 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!token) return;
     
-    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
     const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
     
     const connectWebSocket = () => {

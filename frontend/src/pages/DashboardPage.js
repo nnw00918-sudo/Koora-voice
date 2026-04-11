@@ -8,6 +8,7 @@ import { Input } from '../components/ui/input';
 import { useLanguage, LanguageToggle } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
+import { BACKEND_URL, API } from '../config/api';
 import { 
   Users, 
   LogOut, 
@@ -34,9 +35,6 @@ import {
   Mail,
   Star
 } from 'lucide-react';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 // Memoized Room Card for better performance
 const RoomCard = memo(({ room, user, membershipStatus, favoriteLoading, onEnterRoom, onToggleFavorite, isRTL, t }) => {
