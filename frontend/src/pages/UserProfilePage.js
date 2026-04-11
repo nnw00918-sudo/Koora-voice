@@ -342,7 +342,7 @@ const UserProfilePage = ({ currentUser }) => {
 
   const handleNavigateToThread = (threadId) => {
     if (threadId) {
-      navigate(`/threads/${threadId}`);
+      navigate(`/thread/${threadId}`);
     }
   };
 

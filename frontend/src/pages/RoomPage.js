@@ -3714,14 +3714,33 @@ const YallaLiveRoom = ({ user }) => {
                 enterKeyHint="send"
                 autoComplete="off"
                 autoCorrect="off"
+                style={{
+                  WebkitUserSelect: 'text',
+                  userSelect: 'text',
+                  touchAction: 'manipulation'
+                }}
               />
-              <Button
+              <button
                 type="submit"
                 disabled={!newMessage.trim() && !selectedImage}
-                className="bg-lime-500 hover:bg-lime-400 text-slate-900 rounded-lg w-9 h-9 p-0"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSendMessage(e);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleSendMessage(e);
+                }}
+                className="bg-lime-500 hover:bg-lime-400 disabled:opacity-50 text-slate-900 rounded-lg w-9 h-9 p-0 flex items-center justify-center"
+                style={{
+                  WebkitTapHighlightColor: 'rgba(163,230,53,0.3)',
+                  touchAction: 'manipulation',
+                  minWidth: '36px',
+                  minHeight: '36px'
+                }}
               >
                 <Send className="w-4 h-4" />
-              </Button>
+              </button>
             </form>
           </div>
           </div>

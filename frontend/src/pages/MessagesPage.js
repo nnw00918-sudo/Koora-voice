@@ -224,20 +224,36 @@ const ChatView = memo(function ChatView({
             onKeyDown={handleKeyDown}
             placeholder={txt.typeMessage}
             className={`flex-1 ${theme.inputBg} ${theme.textPrimary} px-4 py-3 rounded-2xl outline-none text-right resize-none border ${theme.inputBorder} font-almarai`}
-            style={{ fontSize: '16px', minHeight: '44px', maxHeight: '120px' }}
+            style={{ 
+              fontSize: '16px', 
+              minHeight: '44px', 
+              maxHeight: '120px',
+              WebkitUserSelect: 'text',
+              userSelect: 'text',
+              touchAction: 'manipulation'
+            }}
             dir="rtl"
             rows={1}
           />
           
-          <motion.button
+          <button
             onClick={handleSend}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
             disabled={!inputValue.trim() || sending}
-            className="p-3 text-black rounded-full flex-shrink-0 disabled:opacity-50 shadow-[0_0_15px_rgba(204,255,0,0.3)]"
-            style={{ backgroundColor: theme.primary }}
-            whileTap={{ scale: 0.9 }}
+            className="p-3 text-black rounded-full flex-shrink-0 disabled:opacity-50 shadow-[0_0_15px_rgba(204,255,0,0.3)] active:scale-95"
+            style={{ 
+              backgroundColor: theme.primary,
+              WebkitTapHighlightColor: 'rgba(204,255,0,0.3)',
+              touchAction: 'manipulation',
+              minWidth: '48px',
+              minHeight: '48px'
+            }}
           >
             <Send className="w-5 h-5" />
-          </motion.button>
+          </button>
         </div>
       </div>
     </div>

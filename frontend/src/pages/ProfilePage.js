@@ -320,7 +320,7 @@ const ProfilePage = ({ user }) => {
   // Navigate to thread
   const handleNavigateToThread = (threadId) => {
     if (threadId) {
-      navigate(`/threads/${threadId}`);
+      navigate(`/thread/${threadId}`);
     }
   };
 
