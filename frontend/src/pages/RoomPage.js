@@ -233,6 +233,7 @@ const YallaLiveRoom = ({ user }) => {
   const [watchParty, setWatchParty] = useState(null);
   const [showWatchPartyModal, setShowWatchPartyModal] = useState(false);
   const [showUserRolesModal, setShowUserRolesModal] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const reactionIdRef = useRef(0);
   const reactionsPollingRef = useRef(null);
   const pollPollingRef = useRef(null);
@@ -250,6 +251,21 @@ const YallaLiveRoom = ({ user }) => {
   const roomInitializedRef = useRef(false); // Track if room has been initialized
 
   const token = localStorage.getItem('token');
+
+  // Keyboard visibility detection for iOS
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport) {
+        const isKeyboard = window.visualViewport.height < window.innerHeight * 0.75;
+        setKeyboardVisible(isKeyboard);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -3588,8 +3604,11 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Reaction Bar - Playback Feature - REMOVED */}
 
-          {/* Message Input - Compact */}
-          <div className="relative mt-2">
+          {/* Message Input - Compact - Fixed at bottom on iOS when keyboard is open */}
+          <div 
+            className={`relative mt-2 ${keyboardVisible ? 'fixed bottom-0 left-0 right-0 bg-slate-900 p-3 border-t border-slate-800 z-50' : ''}`}
+            style={keyboardVisible ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}}
+          >
             {/* Mention List Popup */}
             <AnimatePresence>
               {showMentionList && filteredMentionUsers.length > 0 && (
