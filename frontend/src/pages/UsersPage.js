@@ -5,9 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, UserPlus, UserCheck } from 'lucide-react';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '../config/api';
 
 const UsersPage = ({ user }) => {
   const navigate = useNavigate();

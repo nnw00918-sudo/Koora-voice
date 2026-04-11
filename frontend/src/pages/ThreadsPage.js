@@ -7,14 +7,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import Stories from '../components/Stories';
 import BottomNavigation from '../components/BottomNavigation';
+import { BACKEND_URL, API } from '../config/api';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
   Share2, MoreHorizontal, Image, X, Video, MapPin, Smile, CalendarDays,
   Repeat2, Bookmark, Twitter, ExternalLink, Trash2, Globe, User, Bell, Mail
 } from 'lucide-react';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 const ThreadsPage = ({ user }) => {
   const navigate = useNavigate();

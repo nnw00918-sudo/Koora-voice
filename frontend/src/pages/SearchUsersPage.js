@@ -7,8 +7,7 @@ import {
 } from 'lucide-react';
 import BottomNavigation from '../components/BottomNavigation';
 import debounce from 'lodash/debounce';
-
-const API = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL as API } from '../config/api';
 
 const SearchUsersPage = ({ user }) => {
   const navigate = useNavigate();

@@ -5,9 +5,7 @@ import { toast } from 'sonner';
 import { X, Coins, Gift, Send, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { playGiftSound, playStadiumCheer } from '../../utils/soundManager';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '../../config/api';
 
 /**
  * Gift Panel Component

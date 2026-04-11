@@ -7,8 +7,7 @@ import {
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
-
-const API = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL as API } from '../config/api';
 
 const FollowListPage = ({ user }) => {
   const navigate = useNavigate();

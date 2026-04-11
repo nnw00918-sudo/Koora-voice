@@ -3,8 +3,7 @@
  * Handles subscribing/unsubscribing to web push notifications
  */
 import { useState, useEffect, useCallback } from 'react';
-
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
+import { API } from '../config/api';
 
 // Convert base64 string to Uint8Array for applicationServerKey
 function urlBase64ToUint8Array(base64String) {

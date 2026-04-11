@@ -5,15 +5,13 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { BACKEND_URL, API } from '../config/api';
 import { 
   ArrowRight, ArrowLeft, UserPlus, UserMinus, 
   MessageSquare, MoreHorizontal, Heart, MessageCircle,
   Repeat2, FileText, Ban, Flag, Share2
 } from 'lucide-react';
 import { GlowingAvatar, ProfileTabs } from '../components/profile';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 // Animated cover background
 const AnimatedCover = () => (

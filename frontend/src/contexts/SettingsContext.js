@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { API } from '../config/api';
 
 const SettingsContext = createContext();
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const defaultSettings = {
   // Privacy
