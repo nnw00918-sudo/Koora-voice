@@ -9,7 +9,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.kooravoice.app
+        bundle_identifier: app.kooravoice.voice
       vars:
         XCODE_WORKSPACE: "frontend/ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
