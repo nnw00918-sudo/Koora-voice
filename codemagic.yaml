@@ -1,0 +1,64 @@
+workflows:
+  ios-release:
+    name: iOS Release
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.kooravoice.app
+      vars:
+        XCODE_WORKSPACE: "frontend/ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: 18.17.0
+    
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd frontend
+          npm install
+          
+      - name: Build React app
+        script: |
+          cd frontend
+          npm run build
+          
+      - name: Sync Capacitor
+        script: |
+          cd frontend
+          npx cap sync ios
+          
+      - name: Install CocoaPods
+        script: |
+          cd frontend/ios/App
+          pod install
+          
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+          
+      - name: Build iOS app
+        script: |
+          cd frontend/ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            archive
+            
+      - name: Export IPA
+        script: |
+          cd frontend/ios/App
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist exportOptions.plist
+    
+    artifacts:
+      - frontend/ios/App/build/ipa/*.ipa
+    
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
