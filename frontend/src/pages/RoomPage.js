@@ -24,6 +24,8 @@ import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
 import { BACKEND_URL, API, AGORA_APP_ID } from '../config/api';
+// Custom Hooks for Room Features
+import { useRoomPlayback } from '../hooks/useRoomPlayback';
 import {
   Mic,
   MicOff,

@@ -49,12 +49,25 @@ const PageLoader = () => (
   </div>
 );
 
-// Service Worker disabled for stability
-// Unregister any existing service workers
+// Register Push Notification Service Worker
 if ('serviceWorker' in navigator) {
+  // Keep sw-push.js for push notifications, unregister others
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     for (const registration of registrations) {
-      registration.unregister();
+      // Only unregister non-push service workers
+      if (!registration.active?.scriptURL?.includes('sw-push.js')) {
+        registration.unregister();
+      }
+    }
+  });
+  
+  // Listen for messages from service worker (deep linking)
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
+      // Handle notification click - navigate to URL
+      const { url, notificationType, action } = event.data;
+      console.log('Notification clicked:', notificationType, action, url);
+      // The service worker already navigates, this is for additional handling if needed
     }
   });
 }

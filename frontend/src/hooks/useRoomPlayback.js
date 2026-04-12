@@ -5,7 +5,7 @@
 import { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { API } from '../../config/api';
+import { API } from '../config/api';
 
 export const useRoomPlayback = ({ roomId, token, user }) => {
   const [floatingReactions, setFloatingReactions] = useState([]);

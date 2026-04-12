@@ -5,7 +5,7 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { API } from '../../config/api';
+import { API } from '../config/api';
 
 export const useRoomChat = ({ roomId, token, user, participants, isRTL, sendMessageViaWebSocket }) => {
   const [messages, setMessages] = useState([]);
