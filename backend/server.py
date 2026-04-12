@@ -63,6 +63,12 @@ app.add_middleware(GZipMiddleware, minimum_size=500)
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
+# Health check endpoint for Railway
+@app.get("/api/health")
+async def health_check():
+    return {"status": "healthy", "message": "صوت الكورة API is running"}
+
+
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
