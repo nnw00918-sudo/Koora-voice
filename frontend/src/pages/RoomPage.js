@@ -849,8 +849,8 @@ const YallaLiveRoom = ({ user }) => {
         setOnStage(false);
       }
       
-      // Fetch room news if دوانية room (by title containing "دوانية")
-      if (roomData.title?.includes('دوانية')) {
+      // Fetch room news if دوانية room (by title containing "دوانية" or "ديوانية")
+      if (roomData.title?.includes('دوانية') || roomData.title?.includes('ديوانية') || roomData.room_type === 'diwaniya') {
         try {
           const newsRes = await axios.get(`${API}/rooms/${roomId}/news`);
           setRoomNews(newsRes.data.news || []);
@@ -1493,7 +1493,7 @@ const YallaLiveRoom = ({ user }) => {
 
   // Fetch Room News (for دوانية rooms - by title) with new news detection
   const fetchRoomNews = async (showNewNewsToast = false) => {
-    if (!room?.title?.includes('دوانية')) return;
+    if (!room?.title?.includes('دوانية') && !room?.title?.includes('ديوانية') && room?.room_type !== 'diwaniya') return;
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/news`);
       const newNews = response.data.news || [];
@@ -2692,7 +2692,7 @@ const YallaLiveRoom = ({ user }) => {
         )}
 
         {/* Diwaniya Room News Ticker - شريط أخبار الدوانية */}
-        {room?.title?.includes('دوانية') && (
+        {(room?.title?.includes('دوانية') || room?.title?.includes('ديوانية') || room?.room_type === 'diwaniya') && (
           <div className="relative mx-4 mt-2 overflow-hidden">
             {/* News Ticker Container */}
             <div className="bg-gradient-to-r from-amber-900/40 via-amber-800/30 to-amber-900/40 rounded-xl border border-amber-500/30 py-2 px-3">
