@@ -828,6 +828,51 @@ async def get_user_profile(user_id: str, current_user: User = Depends(get_curren
 class ImageUpload(BaseModel):
     image_data: str  # Base64 encoded image
 
+@api_router.post("/upload")
+async def upload_general(data: ImageUpload, current_user: User = Depends(get_current_user)):
+    """Upload image (base64) - General endpoint"""
+    import base64
+    import os
+    from uuid import uuid4
+    
+    try:
+        # Parse base64 data
+        if ',' in data.image_data:
+            header, image_data = data.image_data.split(',', 1)
+        else:
+            image_data = data.image_data
+        
+        # Decode base64
+        image_bytes = base64.b64decode(image_data)
+        
+        # Check file size (max 2MB)
+        if len(image_bytes) > 2 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="حجم الصورة كبير جداً (الحد الأقصى 2MB)")
+        
+        # Save to static folder
+        static_dir = Path(__file__).parent / "static" / "avatars"
+        static_dir.mkdir(parents=True, exist_ok=True)
+        
+        filename = f"{current_user.id}_{uuid4().hex[:8]}.jpg"
+        filepath = static_dir / filename
+        
+        with open(filepath, 'wb') as f:
+            f.write(image_bytes)
+        
+        # Generate URL
+        avatar_url = f"{os.environ.get('BACKEND_URL', '')}/api/static/avatars/{filename}"
+        
+        # Update user avatar
+        await db.users.update_one(
+            {"id": current_user.id},
+            {"$set": {"avatar": avatar_url}}
+        )
+        
+        return {"avatar_url": avatar_url, "url": avatar_url, "message": "تم رفع الصورة بنجاح"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"فشل رفع الصورة: {str(e)}")
+
 @api_router.post("/upload/avatar")
 async def upload_avatar(data: ImageUpload, current_user: User = Depends(get_current_user)):
     """Upload avatar image (base64)"""
