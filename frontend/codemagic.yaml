@@ -15,10 +15,8 @@ workflows:
       - name: Set build number
         script: |
           cd frontend/ios/App
-          BUILD_NUM=$((12 + $PROJECT_BUILD_NUMBER))
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUM" App/Info.plist
-          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = $BUILD_NUM/g" App.xcodeproj/project.pbxproj
-          echo "Build number set to $BUILD_NUM"
+          agvtool new-version -all 60
+          echo "Build number set to 60"
       - name: Install dependencies
         script: |
           cd frontend
