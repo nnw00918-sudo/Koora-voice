@@ -12,6 +12,12 @@ workflows:
         XCODE_SCHEME: "App"
       node: 18.17.0
     scripts:
+      - name: Set build number
+        script: |
+          cd frontend/ios/App
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 68" App/Info.plist
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = 68/g" App.xcodeproj/project.pbxproj
+          echo "Build number set to 68"
       - name: Install dependencies
         script: |
           cd frontend
@@ -24,12 +30,6 @@ workflows:
         script: |
           cd frontend
           npx cap sync ios --deployment
-      - name: Set Build Number
-        script: |
-          cd frontend/ios/App/App.xcodeproj
-          sed -i '' 's/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = 68;/g' project.pbxproj
-          echo "Build number set to 68"
-          grep "CURRENT_PROJECT_VERSION" project.pbxproj
       - name: Install CocoaPods
         script: |
           cd frontend/ios/App
