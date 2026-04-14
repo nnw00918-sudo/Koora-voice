@@ -26,8 +26,10 @@ workflows:
           npx cap sync ios --deployment
       - name: Set Build Number
         script: |
-          cd frontend/ios/App
-          agvtool new-version -all 68
+          cd frontend/ios/App/App.xcodeproj
+          sed -i '' 's/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = 68;/g' project.pbxproj
+          echo "Build number set to 68"
+          grep "CURRENT_PROJECT_VERSION" project.pbxproj
       - name: Install CocoaPods
         script: |
           cd frontend/ios/App
