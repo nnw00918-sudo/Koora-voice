@@ -8,6 +8,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import asyncio
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional, Dict
@@ -19,9 +20,14 @@ import time
 import json
 import httpx
 import functools
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Initialize Resend
+resend.api_key = os.environ.get("RESEND_API_KEY")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 
 # Create static directories
 STATIC_DIR = ROOT_DIR / "static"
@@ -129,6 +135,57 @@ AGORA_APP_ID = os.environ.get("AGORA_APP_ID", "")
 AGORA_APP_CERTIFICATE = os.environ.get("AGORA_APP_CERTIFICATE", "")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Email sending function
+async def send_email(to_email: str, subject: str, html_content: str):
+    """Send email using Resend"""
+    try:
+        params = {
+            "from": f"صوت الكورة <{SENDER_EMAIL}>",
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content
+        }
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logging.info(f"Email sent to {to_email}: {result}")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send email to {to_email}: {str(e)}")
+        return False
+
+# Email templates
+def get_otp_email_template(code: str, username: str = ""):
+    return f"""
+    <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 15px;">
+            <h1 style="color: #22c55e; margin-bottom: 20px;">⚽ صوت الكورة</h1>
+            <h2 style="color: #ffffff;">مرحباً {username}!</h2>
+            <p style="color: #cccccc; font-size: 16px;">رمز التحقق الخاص بك هو:</p>
+            <div style="background: #22c55e; color: #000000; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 10px; text-align: center; letter-spacing: 8px; margin: 20px 0;">
+                {code}
+            </div>
+            <p style="color: #999999; font-size: 14px;">هذا الرمز صالح لمدة 10 دقائق فقط.</p>
+            <p style="color: #999999; font-size: 14px;">إذا لم تطلب هذا الرمز، يرجى تجاهل هذه الرسالة.</p>
+        </div>
+    </div>
+    """
+
+def get_password_reset_email_template(code: str, username: str = ""):
+    return f"""
+    <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 15px;">
+            <h1 style="color: #22c55e; margin-bottom: 20px;">⚽ صوت الكورة</h1>
+            <h2 style="color: #ffffff;">استعادة كلمة المرور</h2>
+            <p style="color: #cccccc; font-size: 16px;">مرحباً {username}،</p>
+            <p style="color: #cccccc; font-size: 16px;">لقد طلبت استعادة كلمة المرور. رمز التحقق هو:</p>
+            <div style="background: #ef4444; color: #ffffff; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 10px; text-align: center; letter-spacing: 8px; margin: 20px 0;">
+                {code}
+            </div>
+            <p style="color: #999999; font-size: 14px;">هذا الرمز صالح لمدة 10 دقائق فقط.</p>
+            <p style="color: #999999; font-size: 14px;">إذا لم تطلب استعادة كلمة المرور، يرجى تجاهل هذه الرسالة.</p>
+        </div>
+    </div>
+    """
 
 GIFTS = [
     {"id": "rose", "name": "وردة", "icon": "🌹", "coins": 10},
@@ -479,7 +536,7 @@ class ResetPasswordRequest(BaseModel):
 
 @api_router.post("/auth/forgot-password")
 async def forgot_password(data: ForgotPasswordRequest):
-    """Request password reset - sends a 6-digit code"""
+    """Request password reset - sends a 6-digit code via email"""
     email = data.email.strip().lower()
     
     user = await db.users.find_one({"email": email}, {"_id": 0})
@@ -500,13 +557,16 @@ async def forgot_password(data: ForgotPasswordRequest):
         "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
     })
     
-    # In production, send email here. For now, we'll return the code (for testing)
-    # TODO: Integrate email service
-    print(f"Password reset code for {email}: {reset_code}")
+    # Send email with reset code
+    username = user.get("username", user.get("name", ""))
+    email_html = get_password_reset_email_template(reset_code, username)
+    email_sent = await send_email(email, "استعادة كلمة المرور - صوت الكورة", email_html)
+    
+    if not email_sent:
+        logging.warning(f"Failed to send password reset email to {email}")
     
     return {
-        "message": "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
-        "code_hint": reset_code  # Remove this in production!
+        "message": "تم إرسال رمز التحقق إلى بريدك الإلكتروني"
     }
 
 @api_router.post("/auth/reset-password")
