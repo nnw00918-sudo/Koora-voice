@@ -3156,18 +3156,23 @@ const YallaLiveRoom = ({ user }) => {
                     // Make sure it's in embed format with enablejsapi
                     if (url.includes('youtube.com/watch')) {
                       const videoId = url.split('v=')[1]?.split('&')[0];
-                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`;
+                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0&origin=${window.location.origin}`;
                     } else if (url.includes('youtu.be/')) {
                       const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`;
+                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0&origin=${window.location.origin}`;
+                    } else if (url.includes('youtube.com/live/')) {
+                      const videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
+                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0&origin=${window.location.origin}`;
                     } else if (!url.includes('enablejsapi')) {
-                      url = url.includes('?') ? `${url}&enablejsapi=1` : `${url}?enablejsapi=1`;
+                      url = url.includes('?') ? `${url}&enablejsapi=1&origin=${window.location.origin}` : `${url}?enablejsapi=1&origin=${window.location.origin}`;
                     }
                     return url;
                   })()}
                   className="w-full h-full"
                   allowFullScreen
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
                 />
               </div>
               
