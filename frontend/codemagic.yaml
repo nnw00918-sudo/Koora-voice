@@ -24,6 +24,10 @@ workflows:
         script: |
           cd frontend
           npx cap sync ios --deployment
+      - name: Set Build Number
+        script: |
+          cd frontend/ios/App
+          agvtool new-version -all 68
       - name: Install CocoaPods
         script: |
           cd frontend/ios/App
