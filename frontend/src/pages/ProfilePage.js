@@ -271,7 +271,7 @@ const ProfilePage = ({ user }) => {
       const res = await axios.post(`${API}/api/upload/image`, formData, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
       });
-      setEditData(prev => ({ ...prev, avatar: res.data.url }));
+      setEditData(prev => ({ ...prev, avatar: `${res.data.url}?t=${Date.now()}` }));
       toast.success('تم رفع الصورة');
     } catch (err) {
       toast.error('فشل رفع الصورة');

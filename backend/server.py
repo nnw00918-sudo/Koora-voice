@@ -2742,8 +2742,19 @@ async def join_seat_direct(room_id: str, current_user: User = Depends(get_curren
         "user_id": current_user.id
     }, {"_id": 0})
     
+    # If not in participants, auto-add them since they have elevated permissions
     if not participant:
-        raise HTTPException(status_code=404, detail="يجب الانضمام للغرفة أولاً")
+        participant_doc = {
+            "room_id": room_id,
+            "user_id": current_user.id,
+            "username": current_user.username,
+            "avatar": current_user.avatar,
+            "joined_at": datetime.now(timezone.utc).isoformat(),
+            "seat_number": None,
+            "is_muted": False
+        }
+        await db.room_participants.insert_one(participant_doc)
+        participant = participant_doc
     
     if participant.get("seat_number") is not None:
         raise HTTPException(status_code=400, detail="أنت بالفعل على المنصة")
