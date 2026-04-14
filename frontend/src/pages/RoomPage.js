@@ -1359,7 +1359,7 @@ const YallaLiveRoom = ({ user }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const uploadResponse = await axios.post(`${API}/upload/image`, formData, {
+      const uploadResponse = await axios.post(`${API}/api/upload/image`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -1412,7 +1412,7 @@ const YallaLiveRoom = ({ user }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const uploadResponse = await axios.post(`${API}/upload/image`, formData, {
+      const uploadResponse = await axios.post(`${API}/api/upload/image`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -1422,7 +1422,7 @@ const YallaLiveRoom = ({ user }) => {
       const imageUrl = uploadResponse.data.url;
       
       // Update room chat background
-      await axios.put(`${API}/rooms/${roomId}/chat-background`, 
+      await axios.put(`${API}/api/rooms/${roomId}/chat-background`, 
         { background_url: imageUrl }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1443,7 +1443,7 @@ const YallaLiveRoom = ({ user }) => {
   // Remove chat background
   const removeBackground = async () => {
     try {
-      await axios.put(`${API}/rooms/${roomId}/chat-background`, 
+      await axios.put(`${API}/api/rooms/${roomId}/chat-background`, 
         { background_url: '' }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
