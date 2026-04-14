@@ -6,12 +6,11 @@ import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
+import { API } from '../config/api';
 import { 
   ArrowRight, Heart, MessageCircle, Repeat2, Share2, Bookmark,
   MoreHorizontal, Trash2, Send, Twitter, ExternalLink, Copy, Link, X
 } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const ThreadDetailPage = ({ user }) => {
   const { threadId } = useParams();

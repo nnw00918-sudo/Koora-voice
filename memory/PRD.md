@@ -3,12 +3,28 @@
 ## نظرة عامة
 تطبيق شبكة اجتماعية بموضوع كرة القدم يوفر غرف صوتية/فيديو، بث مباشر، والملف الشخصي.
 
-## 📱 إصدار iOS - جاهز للرفع (أبريل 2026)
+## 📱 إصدار iOS - TestFlight جاهز (أبريل 2026)
 - ✅ Capacitor 5.x مُثبت ومُعد
 - ✅ مشروع iOS جاهز في `/frontend/ios/`
 - ✅ الصلاحيات مُضافة (Microphone, Camera, Photos, Notifications)
-- ✅ Bundle ID: `com.kooravoice.app`
-- ✅ دليل الرفع: `/frontend/APP_STORE_GUIDE.md`
+- ✅ Bundle ID: `app.kooravoice.voice`
+- ✅ **Codemagic CI/CD**: بناء سحابي للـ iOS
+- ✅ **TestFlight**: التطبيق متاح للاختبار
+- ✅ **Build 2**: آخر إصدار مرفوع
+
+## 🔧 آخر التحديثات (11 أبريل 2026)
+- ✅ **إصلاح API URL Fallback**: جميع الملفات تستخدم الآن `/config/api.js` مع fallback URL
+- ✅ **إصلاح مشكلة لوحة المفاتيح**: تحسين modal إعدادات الغرفة للعمل مع لوحة المفاتيح على الموبايل
+- ✅ **إنشاء Hooks مخصصة**: لتقليل حجم RoomPage.js
+  - `useRoomChat.js`: وظائف الدردشة والإشارات
+  - `useRoomPlayback.js`: التفاعلات والاستطلاعات وWatch Party
+  - `useRoomRecording.js`: تسجيل الصوت/الفيديو
+- ✅ **تحسين Push Notifications**: إضافة Deep Linking للغرف والرسائل والمتابعين
+- ✅ **تحسين Watch Party**: 
+  - إضافة زر تكبير/تصغير الشاشة
+  - إضافة زر كتم/تشغيل الصوت
+  - إضافة زر تحديث البث
+  - تحسين استجابة الواجهة
 
 ## الميزات الأساسية
 

@@ -16,9 +16,15 @@
 }
 
 /* Fix for mobile keyboard causing viewport resize */
-html, body {
+html {
   height: 100%;
-  overflow: hidden;
+}
+
+body {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Prevent layout shift when keyboard appears on iOS/Android */
@@ -275,6 +281,8 @@ input, textarea, select {
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     min-height: 100vh;
     min-height: -webkit-fill-available;
     /* Prevent overscroll bounce */

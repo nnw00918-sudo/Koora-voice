@@ -7,14 +7,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import Stories from '../components/Stories';
 import BottomNavigation from '../components/BottomNavigation';
+import { BACKEND_URL, API } from '../config/api';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
   Share2, MoreHorizontal, Image, X, Video, MapPin, Smile, CalendarDays,
   Repeat2, Bookmark, Twitter, ExternalLink, Trash2, Globe, User, Bell, Mail
 } from 'lucide-react';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 const ThreadsPage = ({ user }) => {
   const navigate = useNavigate();
@@ -217,9 +215,16 @@ const ThreadsPage = ({ user }) => {
   };
 
   const handlePostThread = async () => {
-    // Read directly from input ref
-    const content = textareaRef.current?.value || '';
-    if (!content.trim() && !selectedMedia && !twitterUrl) return;
+    // Read directly from textarea ref for uncontrolled component
+    const content = textareaRef.current?.value || newThread || '';
+    console.log('[THREADS] Posting thread with content:', content);
+    console.log('[THREADS] Selected media:', selectedMedia);
+    console.log('[THREADS] Twitter URL:', twitterUrl);
+    
+    if (!content.trim() && !selectedMedia && !twitterUrl) {
+      console.log('[THREADS] Nothing to post');
+      return;
+    }
     setPosting(true);
     
     try {
@@ -863,15 +868,21 @@ const ThreadsPage = ({ user }) => {
                   <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-[#262626]" />
                   <div className="flex-1">
                     {/* Textarea */}
-                    <input
+                    <textarea
                       ref={textareaRef}
-                      type="text"
+                      value={newThread}
+                      onChange={(e) => setNewThread(e.target.value)}
                       placeholder={txt.whatsNew}
                       dir="auto"
                       maxLength={500}
                       autoComplete="off"
-                      autoFocus
-                      className="w-full bg-transparent text-white text-xl font-almarai outline-none py-4 placeholder:text-[#A3A3A3]"
+                      rows={3}
+                      className="w-full bg-transparent text-white text-xl font-almarai outline-none py-4 placeholder:text-[#A3A3A3] resize-none"
+                      style={{
+                        WebkitUserSelect: 'text',
+                        userSelect: 'text',
+                        touchAction: 'auto'
+                      }}
                       data-testid="thread-composer-input"
                     />
                     
@@ -1008,15 +1019,24 @@ const ThreadsPage = ({ user }) => {
                       </div>
                     )}
                     
-                    <motion.button
+                    <button
                       onClick={handlePostThread}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        handlePostThread();
+                      }}
                       disabled={(!newThread.trim() && !selectedMedia && !twitterUrl) || posting || isOverLimit}
-                      className="px-5 py-2 bg-[#CCFF00] text-black font-cairo font-bold rounded-full disabled:opacity-50 hover:shadow-[0_0_15px_rgba(204,255,0,0.4)] transition-shadow"
-                      whileTap={{ scale: 0.95 }}
+                      className="px-5 py-2 bg-[#CCFF00] text-black font-cairo font-bold rounded-full disabled:opacity-50 hover:shadow-[0_0_15px_rgba(204,255,0,0.4)] transition-shadow active:scale-95"
+                      style={{
+                        WebkitTapHighlightColor: 'rgba(204,255,0,0.3)',
+                        touchAction: 'manipulation',
+                        cursor: 'pointer',
+                        minHeight: '44px'
+                      }}
                       data-testid="post-thread-btn"
                     >
                       {posting ? (uploadingMedia ? '...' : '...') : txt.post}
-                    </motion.button>
+                    </button>
                   </div>
                 </div>
               </div>

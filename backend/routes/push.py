@@ -215,3 +215,61 @@ async def test_push_notification(
     )
     
     return {"message": "Test notification queued"}
+
+
+# Helper functions for sending specific notification types with deep links
+
+async def notify_room_invite(user_id: str, room_id: str, room_title: str, inviter_name: str):
+    """Send push notification for room invite with deep link"""
+    await send_push_notification(
+        user_id=user_id,
+        title="دعوة للانضمام لغرفة 🎙️",
+        body=f"{inviter_name} يدعوك للانضمام إلى غرفة {room_title}",
+        url=f"/room/{room_id}",
+        data={"type": "room_invite", "room_id": room_id}
+    )
+
+
+async def notify_new_message(user_id: str, sender_name: str, message_preview: str, conversation_id: str = None):
+    """Send push notification for new message with deep link"""
+    url = f"/messages/{conversation_id}" if conversation_id else "/messages"
+    await send_push_notification(
+        user_id=user_id,
+        title=f"رسالة جديدة من {sender_name} 💬",
+        body=message_preview[:100],
+        url=url,
+        data={"type": "message", "conversation_id": conversation_id}
+    )
+
+
+async def notify_new_follower(user_id: str, follower_name: str, follower_id: str):
+    """Send push notification for new follower with deep link"""
+    await send_push_notification(
+        user_id=user_id,
+        title="متابع جديد 👋",
+        body=f"{follower_name} بدأ بمتابعتك",
+        url=f"/user/{follower_id}",
+        data={"type": "follow", "follower_id": follower_id}
+    )
+
+
+async def notify_thread_reply(user_id: str, replier_name: str, reply_preview: str, thread_id: str):
+    """Send push notification for thread reply with deep link"""
+    await send_push_notification(
+        user_id=user_id,
+        title=f"رد جديد من {replier_name} 💬",
+        body=reply_preview[:100],
+        url=f"/thread/{thread_id}",
+        data={"type": "thread_reply", "thread_id": thread_id}
+    )
+
+
+async def notify_mention(user_id: str, mentioner_name: str, context: str, url: str):
+    """Send push notification when user is mentioned"""
+    await send_push_notification(
+        user_id=user_id,
+        title=f"{mentioner_name} أشار إليك 📢",
+        body=context[:100],
+        url=url,
+        data={"type": "mention"}
+    )

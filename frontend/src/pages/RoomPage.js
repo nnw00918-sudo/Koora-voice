@@ -23,6 +23,9 @@ import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
+import { BACKEND_URL, API, AGORA_APP_ID } from '../config/api';
+// Custom Hooks for Room Features
+import { useRoomPlayback } from '../hooks/useRoomPlayback';
 import {
   Mic,
   MicOff,
@@ -67,10 +70,6 @@ import {
   ZoomOut
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-const AGORA_APP_ID = process.env.REACT_APP_AGORA_APP_ID;
 
 // Remote Video Circle Component for stage avatars
 const RemoteVideoCircle = ({ remoteUser }) => {
@@ -236,6 +235,7 @@ const YallaLiveRoom = ({ user }) => {
   const [watchParty, setWatchParty] = useState(null);
   const [showWatchPartyModal, setShowWatchPartyModal] = useState(false);
   const [showUserRolesModal, setShowUserRolesModal] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const reactionIdRef = useRef(0);
   const reactionsPollingRef = useRef(null);
   const pollPollingRef = useRef(null);
@@ -253,6 +253,21 @@ const YallaLiveRoom = ({ user }) => {
   const roomInitializedRef = useRef(false); // Track if room has been initialized
 
   const token = localStorage.getItem('token');
+
+  // Keyboard visibility detection for iOS
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport) {
+        const isKeyboard = window.visualViewport.height < window.innerHeight * 0.75;
+        setKeyboardVisible(isKeyboard);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -834,8 +849,8 @@ const YallaLiveRoom = ({ user }) => {
         setOnStage(false);
       }
       
-      // Fetch room news if دوانية room (by title containing "دوانية")
-      if (roomData.title?.includes('دوانية')) {
+      // Fetch room news if دوانية room (by title containing "دوانية" or "ديوانية")
+      if (roomData.title?.includes('دوانية') || roomData.title?.includes('ديوانية') || roomData.room_type === 'diwaniya') {
         try {
           const newsRes = await axios.get(`${API}/rooms/${roomId}/news`);
           setRoomNews(newsRes.data.news || []);
@@ -1478,7 +1493,7 @@ const YallaLiveRoom = ({ user }) => {
 
   // Fetch Room News (for دوانية rooms - by title) with new news detection
   const fetchRoomNews = async (showNewNewsToast = false) => {
-    if (!room?.title?.includes('دوانية')) return;
+    if (!room?.title?.includes('دوانية') && !room?.title?.includes('ديوانية') && room?.room_type !== 'diwaniya') return;
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/news`);
       const newNews = response.data.news || [];
@@ -2677,7 +2692,7 @@ const YallaLiveRoom = ({ user }) => {
         )}
 
         {/* Diwaniya Room News Ticker - شريط أخبار الدوانية */}
-        {room?.title?.includes('دوانية') && (
+        {(room?.title?.includes('دوانية') || room?.title?.includes('ديوانية') || room?.room_type === 'diwaniya') && (
           <div className="relative mx-4 mt-2 overflow-hidden">
             {/* News Ticker Container */}
             <div className="bg-gradient-to-r from-amber-900/40 via-amber-800/30 to-amber-900/40 rounded-xl border border-amber-500/30 py-2 px-3">
@@ -3591,8 +3606,11 @@ const YallaLiveRoom = ({ user }) => {
 
           {/* Reaction Bar - Playback Feature - REMOVED */}
 
-          {/* Message Input - Compact */}
-          <div className="relative mt-2">
+          {/* Message Input - Compact - Fixed at bottom on iOS when keyboard is open */}
+          <div 
+            className={`relative mt-2 ${keyboardVisible ? 'fixed bottom-0 left-0 right-0 bg-slate-900 p-3 border-t border-slate-800 z-50' : ''}`}
+            style={keyboardVisible ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}}
+          >
             {/* Mention List Popup */}
             <AnimatePresence>
               {showMentionList && filteredMentionUsers.length > 0 && (
@@ -3717,14 +3735,33 @@ const YallaLiveRoom = ({ user }) => {
                 enterKeyHint="send"
                 autoComplete="off"
                 autoCorrect="off"
+                style={{
+                  WebkitUserSelect: 'text',
+                  userSelect: 'text',
+                  touchAction: 'manipulation'
+                }}
               />
-              <Button
+              <button
                 type="submit"
                 disabled={!newMessage.trim() && !selectedImage}
-                className="bg-lime-500 hover:bg-lime-400 text-slate-900 rounded-lg w-9 h-9 p-0"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSendMessage(e);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleSendMessage(e);
+                }}
+                className="bg-lime-500 hover:bg-lime-400 disabled:opacity-50 text-slate-900 rounded-lg w-9 h-9 p-0 flex items-center justify-center"
+                style={{
+                  WebkitTapHighlightColor: 'rgba(163,230,53,0.3)',
+                  touchAction: 'manipulation',
+                  minWidth: '36px',
+                  minHeight: '36px'
+                }}
               >
                 <Send className="w-4 h-4" />
-              </Button>
+              </button>
             </form>
           </div>
           </div>
@@ -3760,6 +3797,8 @@ const YallaLiveRoom = ({ user }) => {
             onShowCreatePollModal={() => setShowCreatePollModal(true)}
             onClosePoll={handleClosePoll}
             onShowUserRolesModal={() => setShowUserRolesModal(true)}
+            onBackgroundUpload={handleBackgroundUpload}
+            onRemoveBackground={removeBackground}
             fileInputRef={fileInputRef}
           />
         </AnimatePresence>

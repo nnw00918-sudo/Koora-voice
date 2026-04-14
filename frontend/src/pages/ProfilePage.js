@@ -11,8 +11,7 @@ import {
 import BottomNavigation from '../components/BottomNavigation';
 import { GlowingAvatar, FRAME_COLORS, ProfileTabs } from '../components/profile';
 import { useSettings } from '../contexts/SettingsContext';
-
-const API = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL as API } from '../config/api';
 
 // Animated cover background
 const AnimatedCover = () => (
@@ -269,8 +268,8 @@ const ProfilePage = ({ user }) => {
     
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(`${API}/api/upload`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await axios.post(`${API}/api/upload/image`, formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
       });
       setEditData(prev => ({ ...prev, avatar: res.data.url }));
       toast.success('تم رفع الصورة');
@@ -321,7 +320,7 @@ const ProfilePage = ({ user }) => {
   // Navigate to thread
   const handleNavigateToThread = (threadId) => {
     if (threadId) {
-      navigate(`/threads/${threadId}`);
+      navigate(`/thread/${threadId}`);
     }
   };
 

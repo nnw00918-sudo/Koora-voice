@@ -3,13 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
+import { BACKEND_URL, API } from '../config/api';
 import { 
   X, Plus, ChevronLeft, ChevronRight, Eye, Trash2, 
   Image as ImageIcon, Camera, Send, Pause, Play
 } from 'lucide-react';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 const Stories = ({ user }) => {
   const { language } = useLanguage();

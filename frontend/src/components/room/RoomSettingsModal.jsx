@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings,
@@ -51,13 +51,45 @@ export const RoomSettingsModal = ({
   onClosePoll,
   // User roles
   onShowUserRolesModal,
+  // Background
+  onBackgroundUpload,
+  onRemoveBackground,
   // File input ref
   fileInputRef
 }) => {
   const [currentPage, setCurrentPage] = useState('main'); // main, title, image, roles, poll, record, stream, lock, delete
   const [newTitle, setNewTitle] = useState(room?.title || '');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const localFileInputRef = useRef(null);
   const inputRef = fileInputRef || localFileInputRef;
+  const modalRef = useRef(null);
+
+  // Handle keyboard visibility on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      // Detect if keyboard is open by checking viewport height change
+      const isKeyboard = window.visualViewport && 
+        window.visualViewport.height < window.innerHeight * 0.75;
+      setKeyboardVisible(isKeyboard);
+    };
+
+    // Listen to visual viewport changes (better for mobile keyboards)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport.removeEventListener('resize', handleResize);
+    }
+
+    // Fallback for older browsers
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Scroll input into view when focused
+  const handleInputFocus = (e) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  };
 
   if (!show || !isOwner) return null;
 
@@ -107,6 +139,16 @@ export const RoomSettingsModal = ({
           <ImageIcon className="w-6 h-6 text-sky-400" />
           <span className="text-sky-400 font-cairo font-bold flex-1 text-right">تغيير صورة الغرفة</span>
           <ArrowRight className="w-5 h-5 text-sky-400 rotate-180" />
+        </button>
+
+        {/* Change Chat Background */}
+        <button 
+          onClick={() => setCurrentPage('background')}
+          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 transition-colors"
+        >
+          <ImageIcon className="w-6 h-6 text-purple-400" />
+          <span className="text-purple-400 font-cairo font-bold flex-1 text-right">تغيير خلفية الدردشة</span>
+          <ArrowRight className="w-5 h-5 text-purple-400 rotate-180" />
         </button>
         
         {/* Room Management Section */}
@@ -228,10 +270,12 @@ export const RoomSettingsModal = ({
             type="text"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
+            onFocus={handleInputFocus}
             placeholder="أدخل اسم الغرفة..."
             className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white font-cairo placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-500"
             dir="rtl"
             autoComplete="off"
+            enterKeyHint="done"
           />
         </div>
         <button 
@@ -304,10 +348,12 @@ export const RoomSettingsModal = ({
             type="text"
             value={roomImageUrl}
             onChange={(e) => setRoomImageUrl(e.target.value)}
+            onFocus={handleInputFocus}
             placeholder="أدخل رابط الصورة..."
             className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
             dir="ltr"
             autoComplete="off"
+            enterKeyHint="done"
           />
           <button 
             onClick={() => {
@@ -320,6 +366,53 @@ export const RoomSettingsModal = ({
             حفظ الرابط
           </button>
         </div>
+      </div>
+    </>
+  );
+
+  // Background Change Page
+  const BackgroundPage = () => (
+    <>
+      <PageHeader title="تغيير خلفية الدردشة" onBack={goBack} />
+      <div className="space-y-4">
+        {/* Hidden file input */}
+        <input
+          type="file"
+          id="background-file-input"
+          onChange={onBackgroundUpload}
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          className="hidden"
+        />
+        
+        {/* Upload from album button */}
+        <button
+          onClick={() => document.getElementById('background-file-input')?.click()}
+          disabled={uploadingImage}
+          className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white rounded-xl font-cairo font-bold transition-all disabled:opacity-50"
+        >
+          {uploadingImage ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>جاري الرفع...</span>
+            </>
+          ) : (
+            <>
+              <ImageIcon className="w-5 h-5" />
+              <span>اختر صورة من الألبوم</span>
+            </>
+          )}
+        </button>
+        
+        {/* Remove background button */}
+        <button
+          onClick={() => {
+            onRemoveBackground && onRemoveBackground();
+            handleClose();
+          }}
+          className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-cairo font-bold transition-colors"
+        >
+          إزالة الخلفية
+        </button>
       </div>
     </>
   );
@@ -542,6 +635,7 @@ export const RoomSettingsModal = ({
     switch (currentPage) {
       case 'title': return <TitlePage />;
       case 'image': return <ImagePage />;
+      case 'background': return <BackgroundPage />;
       case 'roles': return <RolesPage />;
       case 'poll': return <PollPage />;
       case 'record': return <RecordPage />;
@@ -557,14 +651,19 @@ export const RoomSettingsModal = ({
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex ${keyboardVisible ? 'items-start pt-4' : 'items-center'} justify-center p-4`}
       onClick={handleClose}
     >
       <motion.div 
+        ref={modalRef}
         initial={{ scale: 0.9, opacity: 0 }} 
         animate={{ scale: 1, opacity: 1 }} 
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-violet-500/30 max-h-[90vh] overflow-y-auto"
+        className={`bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-3xl p-6 border border-violet-500/30 overflow-y-auto ${keyboardVisible ? 'max-h-[50vh]' : 'max-h-[90vh]'}`}
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <AnimatePresence mode="wait">

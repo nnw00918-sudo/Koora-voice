@@ -8,9 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Mail, Lock, KeyRound, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useLanguage, LanguageToggle } from '../contexts/LanguageContext';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '../config/api';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
