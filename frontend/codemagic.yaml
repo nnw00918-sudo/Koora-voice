@@ -12,11 +12,6 @@ workflows:
         XCODE_SCHEME: "App"
       node: 18.17.0
     scripts:
-      - name: Set build number
-        script: |
-          cd frontend/ios/App
-          agvtool new-version -all 60
-          echo "Build number set to 60"
       - name: Install dependencies
         script: |
           cd frontend
