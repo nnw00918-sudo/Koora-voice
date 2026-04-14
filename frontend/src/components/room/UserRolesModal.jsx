@@ -63,7 +63,7 @@ export const UserRolesModal = ({
 
   const fetchRoomRoles = async () => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/roles`, {
+      const response = await axios.get(`${API}/api/rooms/${roomId}/roles`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -95,8 +95,8 @@ export const UserRolesModal = ({
     setLoading(true);
     try {
       const endpoint = isAdding 
-        ? `${API}/rooms/${roomId}/roles/${userId}/add`
-        : `${API}/rooms/${roomId}/roles/${userId}/remove`;
+        ? `${API}/api/rooms/${roomId}/roles/${userId}/add`
+        : `${API}/api/rooms/${roomId}/roles/${userId}/remove`;
       
       const response = await axios.post(endpoint, 
         { role },
@@ -128,7 +128,7 @@ export const UserRolesModal = ({
     }
 
     try {
-      await axios.post(`${API}/rooms/${roomId}/invite-stage/${userId}`, {}, {
+      await axios.post(`${API}/api/rooms/${roomId}/invite-stage/${userId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(`تم دعوة ${username} للمايك`);
@@ -145,7 +145,7 @@ export const UserRolesModal = ({
     }
 
     try {
-      await axios.post(`${API}/rooms/${roomId}/kick-stage/${userId}`, {}, {
+      await axios.post(`${API}/api/rooms/${roomId}/kick-stage/${userId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(`تم إنزال ${username} من المايك`);

@@ -148,7 +148,7 @@ const ThreadsPage = ({ user }) => {
 
   const fetchThreads = async () => {
     try {
-      const response = await axios.get(`${API}/threads`, {
+      const response = await axios.get(`${API}/api/threads`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { tab: activeTab },
         timeout: 15000 // 15 second timeout
@@ -236,7 +236,7 @@ const ThreadsPage = ({ user }) => {
         formData.append('file', selectedMedia);
         formData.append('type', mediaType);
         
-        const uploadRes = await axios.post(`${API}/upload/thread-media`, formData, {
+        const uploadRes = await axios.post(`${API}/api/upload/thread-media`, formData, {
           headers: { 
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -246,7 +246,7 @@ const ThreadsPage = ({ user }) => {
         setUploadingMedia(false);
       }
       
-      await axios.post(`${API}/threads`, {
+      await axios.post(`${API}/api/threads`, {
         content: content,
         media_url: mediaUrl,
         media_type: mediaType,
@@ -274,7 +274,7 @@ const ThreadsPage = ({ user }) => {
 
   const handleDeleteThread = async (threadId) => {
     try {
-      await axios.delete(`${API}/threads/${threadId}`, {
+      await axios.delete(`${API}/api/threads/${threadId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setThreads(prev => prev.filter(t => t.id !== threadId));
@@ -289,7 +289,7 @@ const ThreadsPage = ({ user }) => {
   const handleReplyDirect = async (threadId, content) => {
     if (!content.trim()) return;
     try {
-      await axios.post(`${API}/threads/${threadId}/reply`, {
+      await axios.post(`${API}/api/threads/${threadId}/reply`, {
         content: content
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -314,7 +314,7 @@ const ThreadsPage = ({ user }) => {
   const handleReply = async (threadId) => {
     if (!replyContent.trim()) return;
     try {
-      await axios.post(`${API}/threads/${threadId}/reply`, {
+      await axios.post(`${API}/api/threads/${threadId}/reply`, {
         content: replyContent
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -340,7 +340,7 @@ const ThreadsPage = ({ user }) => {
   const fetchReplies = async (threadId) => {
     setLoadingReplies(true);
     try {
-      const res = await axios.get(`${API}/threads/${threadId}/replies`, {
+      const res = await axios.get(`${API}/api/threads/${threadId}/replies`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setThreadReplies(prev => ({ ...prev, [threadId]: res.data.replies || [] }));
@@ -364,7 +364,7 @@ const ThreadsPage = ({ user }) => {
 
   const handleRepost = async (threadId) => {
     try {
-      const res = await axios.post(`${API}/threads/${threadId}/repost`, {}, {
+      const res = await axios.post(`${API}/api/threads/${threadId}/repost`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setThreads(prev => prev.map(t => 
@@ -380,7 +380,7 @@ const ThreadsPage = ({ user }) => {
 
   const handleLike = async (threadId) => {
     try {
-      await axios.post(`${API}/threads/${threadId}/like`, {}, {
+      await axios.post(`${API}/api/threads/${threadId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setThreads(prev => prev.map(t => 

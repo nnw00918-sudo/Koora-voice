@@ -30,7 +30,7 @@ const ForgotPasswordPage = () => {
     
     setLoading(true);
     try {
-      const response = await axios.post(`${API}/auth/forgot-password`, { email });
+      const response = await axios.post(`${API}/api/auth/forgot-password`, { email });
       toast.success(response.data.message);
       
       // For testing - show the code (remove in production)
@@ -66,7 +66,7 @@ const ForgotPasswordPage = () => {
     
     setLoading(true);
     try {
-      await axios.post(`${API}/auth/reset-password`, {
+      await axios.post(`${API}/api/auth/reset-password`, {
         email,
         code,
         new_password: newPassword

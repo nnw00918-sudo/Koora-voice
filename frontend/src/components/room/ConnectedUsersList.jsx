@@ -259,11 +259,11 @@ export const ConnectedUsersList = ({
                   <button
                     onClick={async () => {
                       try {
-                        await axios.post(`${API}/users/${odId}/follow`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                        await axios.post(`${API}/api/users/${odId}/follow`, {}, { headers: { Authorization: `Bearer ${token}` } });
                         toast.success(`تمت متابعة ${p.username}`);
                       } catch (error) {
                         if (error.response?.status === 400) {
-                          await axios.delete(`${API}/users/${odId}/follow`, { headers: { Authorization: `Bearer ${token}` } });
+                          await axios.delete(`${API}/api/users/${odId}/follow`, { headers: { Authorization: `Bearer ${token}` } });
                           toast.success(`تم إلغاء متابعة ${p.username}`);
                         } else {
                           toast.error('فشلت العملية');

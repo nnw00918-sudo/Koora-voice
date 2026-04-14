@@ -18,7 +18,7 @@ export const useRoomPlayback = ({ roomId, token, user }) => {
   // Send Reaction
   const handleSendReaction = useCallback(async (emoji) => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/reactions`, 
+      await axios.post(`${API}/api/rooms/${roomId}/reactions`, 
         { reaction: emoji },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -41,7 +41,7 @@ export const useRoomPlayback = ({ roomId, token, user }) => {
   // Create Poll
   const handleCreatePoll = useCallback(async (pollData) => {
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/polls`, pollData, {
+      const response = await axios.post(`${API}/api/rooms/${roomId}/polls`, pollData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setActivePoll(response.data.poll);
@@ -56,7 +56,7 @@ export const useRoomPlayback = ({ roomId, token, user }) => {
     if (!activePoll) return;
     try {
       const response = await axios.post(
-        `${API}/rooms/${roomId}/polls/${activePoll.id}/vote`,
+        `${API}/api/rooms/${roomId}/polls/${activePoll.id}/vote`,
         { option_id: optionId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -70,7 +70,7 @@ export const useRoomPlayback = ({ roomId, token, user }) => {
   const handleClosePoll = useCallback(async () => {
     if (!activePoll) return;
     try {
-      await axios.delete(`${API}/rooms/${roomId}/polls/${activePoll.id}`, {
+      await axios.delete(`${API}/api/rooms/${roomId}/polls/${activePoll.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setActivePoll(null);
@@ -83,7 +83,7 @@ export const useRoomPlayback = ({ roomId, token, user }) => {
   // Start Watch Party
   const handleStartWatchParty = useCallback(async (data) => {
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/watch-party`, data, {
+      const response = await axios.post(`${API}/api/rooms/${roomId}/watch-party`, data, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWatchParty(response.data.watch_party);
@@ -99,7 +99,7 @@ export const useRoomPlayback = ({ roomId, token, user }) => {
   const handleSyncWatchParty = useCallback(async (currentTime, isPlaying) => {
     if (!watchParty) return;
     try {
-      await axios.put(`${API}/rooms/${roomId}/watch-party/sync`, 
+      await axios.put(`${API}/api/rooms/${roomId}/watch-party/sync`, 
         { current_time: currentTime, is_playing: isPlaying },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -111,7 +111,7 @@ export const useRoomPlayback = ({ roomId, token, user }) => {
   // End Watch Party
   const handleEndWatchParty = useCallback(async () => {
     try {
-      await axios.delete(`${API}/rooms/${roomId}/watch-party`, {
+      await axios.delete(`${API}/api/rooms/${roomId}/watch-party`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWatchParty(null);
@@ -124,7 +124,7 @@ export const useRoomPlayback = ({ roomId, token, user }) => {
   // Change Watch Party Channel
   const handleChangeChannel = useCallback(async (channelId) => {
     try {
-      await axios.put(`${API}/rooms/${roomId}/watch-party/channel/${channelId}`, {}, {
+      await axios.put(`${API}/api/rooms/${roomId}/watch-party/channel/${channelId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (error) {

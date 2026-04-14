@@ -49,8 +49,8 @@ const GiftPanel = ({
       const headers = { Authorization: `Bearer ${token}` };
       
       const [giftsRes, balanceRes] = await Promise.all([
-        axios.get(`${API}/payments/gifts`),
-        axios.get(`${API}/payments/coins/balance`, { headers })
+        axios.get(`${API}/api/payments/gifts`),
+        axios.get(`${API}/api/payments/coins/balance`, { headers })
       ]);
       
       setGifts(giftsRes.data.gifts || []);
@@ -78,7 +78,7 @@ const GiftPanel = ({
       const headers = { Authorization: `Bearer ${token}` };
       
       const response = await axios.post(
-        `${API}/payments/gifts/send`,
+        `${API}/api/payments/gifts/send`,
         {
           gift_id: selectedGift.id,
           room_id: roomId

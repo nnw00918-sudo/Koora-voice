@@ -413,7 +413,7 @@ const YallaLiveRoom = ({ user }) => {
     // Start polling for reactions
     const fetchReactions = async () => {
       try {
-        const response = await axios.get(`${API}/rooms/${roomId}/reactions`, {
+        const response = await axios.get(`${API}/api/rooms/${roomId}/reactions`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (response.data.reactions?.length > 0) {
@@ -439,7 +439,7 @@ const YallaLiveRoom = ({ user }) => {
     // Start polling for active poll
     const fetchActivePoll = async () => {
       try {
-        const response = await axios.get(`${API}/rooms/${roomId}/polls/active`, {
+        const response = await axios.get(`${API}/api/rooms/${roomId}/polls/active`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setActivePoll(response.data.poll);
@@ -454,7 +454,7 @@ const YallaLiveRoom = ({ user }) => {
     // Start polling for watch party
     const fetchWatchParty = async () => {
       try {
-        const response = await axios.get(`${API}/rooms/${roomId}/watch-party`, {
+        const response = await axios.get(`${API}/api/rooms/${roomId}/watch-party`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setWatchParty(response.data.watch_party);
@@ -567,7 +567,7 @@ const YallaLiveRoom = ({ user }) => {
       agoraUid.current = generatedUid;
 
       const tokenResponse = await axios.post(
-        `${API}/agora/token`,
+        `${API}/api/agora/token`,
         { channel_name: roomId, uid: generatedUid },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -593,7 +593,7 @@ const YallaLiveRoom = ({ user }) => {
       // Send agora_uid to backend for video matching
       try {
         await axios.put(
-          `${API}/rooms/${roomId}/agora-uid`,
+          `${API}/api/rooms/${roomId}/agora-uid`,
           { agora_uid: generatedUid },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -632,11 +632,11 @@ const YallaLiveRoom = ({ user }) => {
       // Batch fetch essential data
       try {
         const [roomRes, seatsRes, messagesRes, participantsRes, myRequestRes] = await Promise.all([
-          axios.get(`${API}/rooms/${roomId}`),
-          axios.get(`${API}/rooms/${roomId}/seats`),
-          axios.get(`${API}/rooms/${roomId}/messages`),
-          axios.get(`${API}/rooms/${roomId}/participants`),
-          axios.get(`${API}/rooms/${roomId}/seat/my-request`, { headers: { Authorization: `Bearer ${token}` } })
+          axios.get(`${API}/api/rooms/${roomId}`),
+          axios.get(`${API}/api/rooms/${roomId}/seats`),
+          axios.get(`${API}/api/rooms/${roomId}/messages`),
+          axios.get(`${API}/api/rooms/${roomId}/participants`),
+          axios.get(`${API}/api/rooms/${roomId}/seat/my-request`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
         // Check if room was closed - kick user if not system owner
@@ -720,7 +720,7 @@ const YallaLiveRoom = ({ user }) => {
       // Fetch screen shares if in mirror mode
       if (viewMode === 'mirror') {
         try {
-          const sharesRes = await axios.get(`${API}/rooms/${roomId}/screen-shares`);
+          const sharesRes = await axios.get(`${API}/api/rooms/${roomId}/screen-shares`);
           setScreenShares(prev => {
             const serverShares = sharesRes.data.screen_shares || [];
             // Keep local streams, merge with server data
@@ -746,7 +746,7 @@ const YallaLiveRoom = ({ user }) => {
     // Send heartbeat every 10 seconds to keep connection alive
     const sendHeartbeat = async () => {
       try {
-        await axios.post(`${API}/rooms/${roomId}/heartbeat`, {}, { 
+        await axios.post(`${API}/api/rooms/${roomId}/heartbeat`, {}, { 
           headers: { Authorization: `Bearer ${token}` } 
         });
       } catch (error) {
@@ -765,7 +765,7 @@ const YallaLiveRoom = ({ user }) => {
   const fetchCurrentUserRole = async () => {
     try {
       // Fetch global role
-      const response = await axios.get(`${API}/auth/me`, {
+      const response = await axios.get(`${API}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data && response.data.role) {
@@ -776,7 +776,7 @@ const YallaLiveRoom = ({ user }) => {
       }
       
       // Fetch room-specific role (supports multiple roles)
-      const roomRoleRes = await axios.get(`${API}/rooms/${roomId}/user-role/${user.id}`);
+      const roomRoleRes = await axios.get(`${API}/api/rooms/${roomId}/user-role/${user.id}`);
       if (roomRoleRes.data) {
         setRoomRole(roomRoleRes.data.role || 'member');
         setRoomRoles(roomRoleRes.data.roles || []);
@@ -794,7 +794,7 @@ const YallaLiveRoom = ({ user }) => {
   const fetchRoomData = async (retryCount = 0) => {
     try {
       // Fetch main room data first
-      const roomRes = await axios.get(`${API}/rooms/${roomId}`);
+      const roomRes = await axios.get(`${API}/api/rooms/${roomId}`);
       const roomData = roomRes.data;
       setRoom(roomData);
       
@@ -813,14 +813,14 @@ const YallaLiveRoom = ({ user }) => {
       
       // Fetch other data in parallel with error handling for each
       const [seatsRes, messagesRes, participantsRes] = await Promise.all([
-        axios.get(`${API}/rooms/${roomId}/seats`).catch(() => ({ data: { seats: [] } })),
-        axios.get(`${API}/rooms/${roomId}/messages`).catch(() => ({ data: [] })),
-        axios.get(`${API}/rooms/${roomId}/participants`).catch(() => ({ data: [] }))
+        axios.get(`${API}/api/rooms/${roomId}/seats`).catch(() => ({ data: { seats: [] } })),
+        axios.get(`${API}/api/rooms/${roomId}/messages`).catch(() => ({ data: [] })),
+        axios.get(`${API}/api/rooms/${roomId}/participants`).catch(() => ({ data: [] }))
       ]);
       
       // Fetch members separately with token (optional, won't fail room load)
       try {
-        const membersRes = await axios.get(`${API}/rooms/${roomId}/members`, { 
+        const membersRes = await axios.get(`${API}/api/rooms/${roomId}/members`, { 
           headers: { Authorization: `Bearer ${token}` } 
         });
         if (membersRes.data?.members) {
@@ -852,7 +852,7 @@ const YallaLiveRoom = ({ user }) => {
       // Fetch room news if دوانية room (by title containing "دوانية" or "ديوانية")
       if (roomData.title?.includes('دوانية') || roomData.title?.includes('ديوانية') || roomData.room_type === 'diwaniya') {
         try {
-          const newsRes = await axios.get(`${API}/rooms/${roomId}/news`);
+          const newsRes = await axios.get(`${API}/api/rooms/${roomId}/news`);
           setRoomNews(newsRes.data.news || []);
         } catch (err) {
           // News fetch is optional
@@ -877,7 +877,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const fetchSeats = async () => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/seats`);
+      const response = await axios.get(`${API}/api/rooms/${roomId}/seats`);
       const newSeats = response.data.seats;
       if (JSON.stringify(newSeats) !== JSON.stringify(seats)) {
         setSeats(newSeats);
@@ -889,7 +889,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const fetchMessages = async () => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/messages`);
+      const response = await axios.get(`${API}/api/rooms/${roomId}/messages`);
       const filteredMessages = response.data.filter(msg => 
         !msg.content?.toLowerCase().includes('test message') &&
         !msg.content?.toLowerCase().includes('voice test') &&
@@ -981,7 +981,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const fetchParticipants = async () => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/participants`);
+      const response = await axios.get(`${API}/api/rooms/${roomId}/participants`);
       if (response.data.length !== participants.length) {
         setParticipants(response.data);
       }
@@ -999,7 +999,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const fetchSeatRequests = async () => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/seat/requests`, {
+      const response = await axios.get(`${API}/api/rooms/${roomId}/seat/requests`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSeatRequests(response.data.requests || []);
@@ -1010,7 +1010,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const checkMyRequestStatus = async () => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/seat/my-request`, {
+      const response = await axios.get(`${API}/api/rooms/${roomId}/seat/my-request`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // If request was approved or rejected, clear pending state
@@ -1026,7 +1026,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const fetchMyInvites = async () => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/seat/invites/me`, {
+      const response = await axios.get(`${API}/api/rooms/${roomId}/seat/invites/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const invites = response.data.invites;
@@ -1039,7 +1039,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const joinRoom = async () => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/join`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/rooms/${roomId}/join`, {}, { headers: { Authorization: `Bearer ${token}` } });
     } catch (error) {
       console.error('Failed to join room');
     }
@@ -1047,7 +1047,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const leaveRoom = async () => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/leave`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/rooms/${roomId}/leave`, {}, { headers: { Authorization: `Bearer ${token}` } });
       // Clear local messages when leaving (ephemeral chat like Snapchat)
       setMessages([]);
     } catch (error) {
@@ -1099,7 +1099,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleTakeSeat = async () => {
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/seat/request`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.post(`${API}/api/rooms/${roomId}/seat/request`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(response.data.message);
       setPendingRequest(true);
     } catch (error) {
@@ -1109,7 +1109,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleJoinStageDirect = async () => {
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/seat/join-direct`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.post(`${API}/api/rooms/${roomId}/seat/join-direct`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(response.data.message);
       setOnStage(true);
       fetchSeats();
@@ -1120,7 +1120,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleApproveSeat = async (userId) => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/seat/approve/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/rooms/${roomId}/seat/approve/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('تمت الموافقة على الطلب');
       // Immediately refresh all data
       await Promise.all([fetchSeats(), fetchSeatRequests(), fetchParticipants()]);
@@ -1131,7 +1131,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleRejectSeat = async (userId) => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/seat/reject/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/rooms/${roomId}/seat/reject/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.info('تم رفض الطلب');
       fetchSeatRequests();
     } catch (error) {
@@ -1142,7 +1142,7 @@ const YallaLiveRoom = ({ user }) => {
   const handleKickUser = async (userId) => {
     if (!window.confirm(t('confirmKick'))) return;
     try {
-      await axios.post(`${API}/rooms/${roomId}/kick/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/rooms/${roomId}/kick/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(t('memberKicked'));
       fetchSeats();
       fetchParticipants();
@@ -1155,7 +1155,7 @@ const YallaLiveRoom = ({ user }) => {
   const handleChangeRoomRole = async (userId, newRole, username) => {
     try {
       const response = await axios.put(
-        `${API}/rooms/${roomId}/user-role/${userId}`,
+        `${API}/api/rooms/${roomId}/user-role/${userId}`,
         { role: newRole },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1170,8 +1170,8 @@ const YallaLiveRoom = ({ user }) => {
   const handleToggleNewsReporter = async (userId, username, isAdding) => {
     try {
       const endpoint = isAdding 
-        ? `${API}/rooms/${roomId}/roles/${userId}/add`
-        : `${API}/rooms/${roomId}/roles/${userId}/remove`;
+        ? `${API}/api/rooms/${roomId}/roles/${userId}/add`
+        : `${API}/api/rooms/${roomId}/roles/${userId}/remove`;
       
       const response = await axios.post(
         endpoint,
@@ -1182,7 +1182,7 @@ const YallaLiveRoom = ({ user }) => {
       fetchParticipants();
       // Refresh room members to get updated roles
       try {
-        const membersRes = await axios.get(`${API}/rooms/${roomId}/members`, { headers: { Authorization: `Bearer ${token}` } });
+        const membersRes = await axios.get(`${API}/api/rooms/${roomId}/members`, { headers: { Authorization: `Bearer ${token}` } });
         setRoomMembers(membersRes.data.members || []);
       } catch {}
     } catch (error) {
@@ -1193,7 +1193,7 @@ const YallaLiveRoom = ({ user }) => {
   // Get user's room role for display
   const getUserRoomRole = async (userId) => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/user-role/${userId}`);
+      const response = await axios.get(`${API}/api/rooms/${roomId}/user-role/${userId}`);
       return response.data.role || 'member';
     } catch {
       return 'member';
@@ -1202,7 +1202,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleMuteUser = async (userId) => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/mute/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/rooms/${roomId}/mute/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(t('memberMuted'));
       fetchSeats();
       fetchParticipants();
@@ -1213,7 +1213,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleUnmuteUser = async (userId) => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/unmute/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/rooms/${roomId}/unmute/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(t('memberUnmuted'));
       fetchSeats();
       fetchParticipants();
@@ -1224,7 +1224,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleInviteUser = async (userId, username) => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/seat/invite/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/rooms/${roomId}/seat/invite/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(t('inviteSent'));
     } catch (error) {
       toast.error(error.response?.data?.detail || t('inviteFailed'));
@@ -1233,7 +1233,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleRemoveFromStage = async (userId) => {
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/remove-from-stage/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.post(`${API}/api/rooms/${roomId}/remove-from-stage/${userId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(response.data.message);
       fetchSeats();
       fetchParticipants();
@@ -1244,7 +1244,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleToggleRoom = async () => {
     try {
-      const response = await axios.post(`${API}/admin/rooms/${roomId}/toggle`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.post(`${API}/api/admin/rooms/${roomId}/toggle`, {}, { headers: { Authorization: `Bearer ${token}` } });
       
       // Show PIN if room is closed
       if (response.data.is_closed && response.data.pin) {
@@ -1271,7 +1271,7 @@ const YallaLiveRoom = ({ user }) => {
   const handleDeleteRoom = async () => {
     if (!window.confirm(t('confirmDeleteRoom'))) return;
     try {
-      await axios.delete(`${API}/admin/rooms/${roomId}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${API}/api/admin/rooms/${roomId}`, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(t('roomDeleted'));
       navigate('/dashboard');
     } catch (error) {
@@ -1282,7 +1282,7 @@ const YallaLiveRoom = ({ user }) => {
   const handleCloseAndKickAll = async () => {
     if (!window.confirm(t('confirmCloseRoom'))) return;
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/close-and-kick`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.post(`${API}/api/rooms/${roomId}/close-and-kick`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(response.data.message);
       navigate('/dashboard');
     } catch (error) {
@@ -1321,7 +1321,7 @@ const YallaLiveRoom = ({ user }) => {
     }
     setUpdatingTitle(true);
     try {
-      await axios.put(`${API}/rooms/${roomId}/title`, 
+      await axios.put(`${API}/api/rooms/${roomId}/title`, 
         { title: title.trim() }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1495,7 +1495,7 @@ const YallaLiveRoom = ({ user }) => {
   const fetchRoomNews = async (showNewNewsToast = false) => {
     if (!room?.title?.includes('دوانية') && !room?.title?.includes('ديوانية') && room?.room_type !== 'diwaniya') return;
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/news`);
+      const response = await axios.get(`${API}/api/rooms/${roomId}/news`);
       const newNews = response.data.news || [];
       
       // Check for new news items (compare with current news)
@@ -1527,7 +1527,7 @@ const YallaLiveRoom = ({ user }) => {
   // Fetch Room Announcements
   const fetchRoomAnnouncements = async () => {
     try {
-      const response = await axios.get(`${API}/announcements/room/${roomId}`);
+      const response = await axios.get(`${API}/api/announcements/room/${roomId}`);
       setRoomAnnouncements(response.data.announcements || []);
     } catch (error) {
       console.error('Failed to fetch announcements');
@@ -1542,7 +1542,7 @@ const YallaLiveRoom = ({ user }) => {
     }
     setAddingNews(true);
     try {
-      await axios.post(`${API}/rooms/${roomId}/news`, 
+      await axios.post(`${API}/api/rooms/${roomId}/news`, 
         { text: newNewsText, category: newNewsCategory },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1561,7 +1561,7 @@ const YallaLiveRoom = ({ user }) => {
   // Delete Room News
   const handleDeleteRoomNews = async (newsId) => {
     try {
-      await axios.delete(`${API}/rooms/${roomId}/news/${newsId}`, {
+      await axios.delete(`${API}/api/rooms/${roomId}/news/${newsId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('تم حذف الخبر');
@@ -1579,7 +1579,7 @@ const YallaLiveRoom = ({ user }) => {
     }
     setAddingNews(true);
     try {
-      await axios.put(`${API}/rooms/${roomId}/news/${editingNews.id}`, 
+      await axios.put(`${API}/api/rooms/${roomId}/news/${editingNews.id}`, 
         { text: editingNews.text, category: editingNews.category },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1606,7 +1606,7 @@ const YallaLiveRoom = ({ user }) => {
   // Stream functions
   const fetchStreamStatus = async () => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/stream`);
+      const response = await axios.get(`${API}/api/rooms/${roomId}/stream`);
       setStreamActive(response.data.stream_active);
       setStreamUrl(response.data.stream_url || '');
       setStreamSlots(response.data.stream_slots || {});
@@ -1623,7 +1623,7 @@ const YallaLiveRoom = ({ user }) => {
     }
     try {
       const newSlots = { ...streamSlots, [slot]: streamInputUrl };
-      await axios.post(`${API}/rooms/${roomId}/stream/slots`, 
+      await axios.post(`${API}/api/rooms/${roomId}/stream/slots`, 
         { slots: newSlots }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1721,7 +1721,7 @@ const YallaLiveRoom = ({ user }) => {
     
     // Sync to server
     try {
-      await axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
+      await axios.post(`${API}/api/rooms/${roomId}/stream/play/${slot}`, {}, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (error) {
@@ -1736,7 +1736,7 @@ const YallaLiveRoom = ({ user }) => {
       return;
     }
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/stream/start`, 
+      const response = await axios.post(`${API}/api/rooms/${roomId}/stream/start`, 
         { url: streamInputUrl, slot: editingSlot || 1 }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1753,7 +1753,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleStopStream = async () => {
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/stream/stop`, {}, 
+      const response = await axios.post(`${API}/api/rooms/${roomId}/stream/stop`, {}, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(response.data.message);
@@ -1778,7 +1778,7 @@ const YallaLiveRoom = ({ user }) => {
   // Camera Sharing Functions
   const fetchScreenShares = async () => {
     try {
-      const response = await axios.get(`${API}/rooms/${roomId}/screen-shares`);
+      const response = await axios.get(`${API}/api/rooms/${roomId}/screen-shares`);
       setScreenShares(response.data.screen_shares || []);
     } catch (error) {
       console.error('Failed to fetch screen shares');
@@ -1805,7 +1805,7 @@ const YallaLiveRoom = ({ user }) => {
       const peerId = `${user.id}-${Date.now()}`;
       
       // Register with server
-      await axios.post(`${API}/rooms/${roomId}/screen-share/start`, 
+      await axios.post(`${API}/api/rooms/${roomId}/screen-share/start`, 
         { peer_id: peerId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1869,7 +1869,7 @@ const YallaLiveRoom = ({ user }) => {
       
       const peerId = `${user.id}-${Date.now()}`;
       
-      await axios.post(`${API}/rooms/${roomId}/screen-share/start`, 
+      await axios.post(`${API}/api/rooms/${roomId}/screen-share/start`, 
         { peer_id: peerId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1918,7 +1918,7 @@ const YallaLiveRoom = ({ user }) => {
         setWatchingScreenShare(null);
       }
       
-      await axios.post(`${API}/rooms/${roomId}/screen-share/stop`, {},
+      await axios.post(`${API}/api/rooms/${roomId}/screen-share/stop`, {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -1935,7 +1935,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleAcceptInvite = async (inviteId) => {
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/seat/invites/${inviteId}/accept`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.post(`${API}/api/rooms/${roomId}/seat/invites/${inviteId}/accept`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(response.data.message);
       setOnStage(true);
       setShowInviteModal(false);
@@ -1948,7 +1948,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handleRejectInvite = async (inviteId) => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/seat/invites/${inviteId}/reject`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/rooms/${roomId}/seat/invites/${inviteId}/reject`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.info(t('declineInvite'));
       setShowInviteModal(false);
       fetchMyInvites();
@@ -1959,7 +1959,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const handlePromoteUser = async (userId, newRole) => {
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/promote/${userId}`, { role: newRole }, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.post(`${API}/api/rooms/${roomId}/promote/${userId}`, { role: newRole }, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(response.data.message);
       setShowPromoteModal(false);
       setSelectedPromoteUser(null);
@@ -1980,7 +1980,7 @@ const YallaLiveRoom = ({ user }) => {
         setLocalVideoTrack(null);
         setIsCameraOn(false);
       }
-      const response = await axios.post(`${API}/rooms/${roomId}/seat/leave`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.post(`${API}/api/rooms/${roomId}/seat/leave`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(response.data.message);
       setOnStage(false);
       fetchSeats();
@@ -2365,7 +2365,7 @@ const YallaLiveRoom = ({ user }) => {
     
     // Fallback to HTTP if WebSocket not available
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/messages`, { 
+      const response = await axios.post(`${API}/api/rooms/${roomId}/messages`, { 
         content: messageContent,
         ...replyData
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -2447,7 +2447,7 @@ const YallaLiveRoom = ({ user }) => {
       return;
     }
     try {
-      await axios.delete(`${API}/rooms/${roomId}/messages/${messageId}`, {
+      await axios.delete(`${API}/api/rooms/${roomId}/messages/${messageId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Remove message from local state immediately
@@ -2463,7 +2463,7 @@ const YallaLiveRoom = ({ user }) => {
   // Send Reaction
   const handleSendReaction = async (emoji) => {
     try {
-      await axios.post(`${API}/rooms/${roomId}/reactions`, 
+      await axios.post(`${API}/api/rooms/${roomId}/reactions`, 
         { reaction: emoji },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -2486,7 +2486,7 @@ const YallaLiveRoom = ({ user }) => {
   // Create Poll
   const handleCreatePoll = async (pollData) => {
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/polls`, pollData, {
+      const response = await axios.post(`${API}/api/rooms/${roomId}/polls`, pollData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setActivePoll(response.data.poll);
@@ -2501,7 +2501,7 @@ const YallaLiveRoom = ({ user }) => {
     if (!activePoll) return;
     try {
       const response = await axios.post(
-        `${API}/rooms/${roomId}/polls/${activePoll.id}/vote`,
+        `${API}/api/rooms/${roomId}/polls/${activePoll.id}/vote`,
         { option_id: optionId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -2515,7 +2515,7 @@ const YallaLiveRoom = ({ user }) => {
   const handleClosePoll = async () => {
     if (!activePoll) return;
     try {
-      await axios.delete(`${API}/rooms/${roomId}/polls/${activePoll.id}`, {
+      await axios.delete(`${API}/api/rooms/${roomId}/polls/${activePoll.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setActivePoll(null);
@@ -2529,7 +2529,7 @@ const YallaLiveRoom = ({ user }) => {
   const handleStartWatchParty = async (data) => {
     try {
       
-      const response = await axios.post(`${API}/rooms/${roomId}/watch-party`, data, {
+      const response = await axios.post(`${API}/api/rooms/${roomId}/watch-party`, data, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -2546,7 +2546,7 @@ const YallaLiveRoom = ({ user }) => {
   const handleSyncWatchParty = async (currentTime, isPlaying) => {
     if (!watchParty) return;
     try {
-      await axios.put(`${API}/rooms/${roomId}/watch-party/sync`, 
+      await axios.put(`${API}/api/rooms/${roomId}/watch-party/sync`, 
         { current_time: currentTime, is_playing: isPlaying },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -2558,7 +2558,7 @@ const YallaLiveRoom = ({ user }) => {
   // End Watch Party
   const handleEndWatchParty = async () => {
     try {
-      await axios.delete(`${API}/rooms/${roomId}/watch-party`, {
+      await axios.delete(`${API}/api/rooms/${roomId}/watch-party`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWatchParty(null);
@@ -2571,7 +2571,7 @@ const YallaLiveRoom = ({ user }) => {
   // Change Watch Party Channel
   const handleChangeChannel = async (channelId) => {
     try {
-      await axios.put(`${API}/rooms/${roomId}/watch-party/channel/${channelId}`, {}, {
+      await axios.put(`${API}/api/rooms/${roomId}/watch-party/channel/${channelId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (error) {

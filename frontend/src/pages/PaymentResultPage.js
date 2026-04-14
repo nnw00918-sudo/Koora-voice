@@ -31,7 +31,7 @@ const PaymentResultPage = ({ success = true }) => {
       const headers = { Authorization: `Bearer ${token}` };
       
       const response = await axios.post(
-        `${API}/payments/coins/confirm-purchase?session_id=${sessionId}`,
+        `${API}/api/payments/coins/confirm-purchase?session_id=${sessionId}`,
         {},
         { headers }
       );

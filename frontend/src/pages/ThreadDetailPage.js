@@ -169,7 +169,7 @@ const ThreadDetailPage = ({ user }) => {
 
   const fetchThread = async () => {
     try {
-      const response = await axios.get(`${API}/threads/${threadId}`, {
+      const response = await axios.get(`${API}/api/threads/${threadId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setThread(response.data);
@@ -183,7 +183,7 @@ const ThreadDetailPage = ({ user }) => {
 
   const fetchReplies = async () => {
     try {
-      const response = await axios.get(`${API}/threads/${threadId}/replies`, {
+      const response = await axios.get(`${API}/api/threads/${threadId}/replies`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = response.data;
@@ -197,7 +197,7 @@ const ThreadDetailPage = ({ user }) => {
   const handleLike = async () => {
     if (!thread) return;
     try {
-      await axios.post(`${API}/threads/${threadId}/like`, {}, {
+      await axios.post(`${API}/api/threads/${threadId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setThread(prev => ({
@@ -213,7 +213,7 @@ const ThreadDetailPage = ({ user }) => {
   const handleRepost = async () => {
     if (!thread) return;
     try {
-      await axios.post(`${API}/threads/${threadId}/repost`, {}, {
+      await axios.post(`${API}/api/threads/${threadId}/repost`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setThread(prev => ({
@@ -229,7 +229,7 @@ const ThreadDetailPage = ({ user }) => {
   const handleDelete = async () => {
     if (!thread || thread.author?.id !== user.id) return;
     try {
-      await axios.delete(`${API}/threads/${threadId}`, {
+      await axios.delete(`${API}/api/threads/${threadId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(txt.deleted);
@@ -245,7 +245,7 @@ const ThreadDetailPage = ({ user }) => {
     
     setSending(true);
     try {
-      await axios.post(`${API}/threads/${threadId}/reply`, {
+      await axios.post(`${API}/api/threads/${threadId}/reply`, {
         content: text
       }, {
         headers: { Authorization: `Bearer ${token}` }

@@ -29,7 +29,7 @@ const CreateRoomPage = ({ user }) => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${API}/categories`);
+      const response = await axios.get(`${API}/api/categories`);
       setCategories(response.data.categories);
       if (response.data.categories.length > 0) {
         setFormData(prev => ({ ...prev, category: response.data.categories[0] }));
@@ -45,7 +45,7 @@ const CreateRoomPage = ({ user }) => {
 
     try {
       const response = await axios.post(
-        `${API}/rooms/create`,
+        `${API}/api/rooms/create`,
         formData,
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -56,10 +56,10 @@ const AdminDashboard = ({ user }) => {
   const fetchAdminData = async () => {
     try {
       const [statsRes, usersRes] = await Promise.all([
-        axios.get(`${API}/admin/stats`, {
+        axios.get(`${API}/api/admin/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`${API}/users`, {
+        axios.get(`${API}/api/users`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -77,7 +77,7 @@ const AdminDashboard = ({ user }) => {
   const handleCreateRoom = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/admin/rooms`, newRoom, {
+      await axios.post(`${API}/api/admin/rooms`, newRoom, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('تم إنشاء الغرفة بنجاح');
@@ -91,7 +91,7 @@ const AdminDashboard = ({ user }) => {
   const handleToggleRoom = async (roomId) => {
     try {
       const response = await axios.post(
-        `${API}/admin/rooms/${roomId}/toggle`,
+        `${API}/api/admin/rooms/${roomId}/toggle`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -106,7 +106,7 @@ const AdminDashboard = ({ user }) => {
     if (!window.confirm('هل أنت متأكد من حذف هذه الغرفة؟')) return;
     
     try {
-      await axios.delete(`${API}/admin/rooms/${roomId}`, {
+      await axios.delete(`${API}/api/admin/rooms/${roomId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('تم حذف الغرفة بنجاح');
@@ -121,7 +121,7 @@ const AdminDashboard = ({ user }) => {
     
     try {
       await axios.post(
-        `${API}/admin/users/${userId}/ban`,
+        `${API}/api/admin/users/${userId}/ban`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -135,7 +135,7 @@ const AdminDashboard = ({ user }) => {
   const handleUnbanUser = async (userId) => {
     try {
       await axios.post(
-        `${API}/admin/users/${userId}/unban`,
+        `${API}/api/admin/users/${userId}/unban`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -149,7 +149,7 @@ const AdminDashboard = ({ user }) => {
   const handleChangeRole = async (userId, newRole) => {
     try {
       await axios.post(
-        `${API}/admin/users/${userId}/role`,
+        `${API}/api/admin/users/${userId}/role`,
         { role: newRole },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -166,7 +166,7 @@ const AdminDashboard = ({ user }) => {
 
     try {
       await axios.post(
-        `${API}/admin/broadcast`,
+        `${API}/api/admin/broadcast`,
         { message: broadcastMessage },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -230,7 +230,7 @@ const UserProfilePage = ({ currentUser }) => {
   const fetchUserProfile = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/users/${userId}/profile`, {
+      const res = await axios.get(`${API}/api/users/${userId}/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const userData = res.data.user || res.data;
@@ -250,19 +250,19 @@ const UserProfilePage = ({ currentUser }) => {
       let endpoint = '';
       switch (activeTab) {
         case 'posts':
-          endpoint = `${API}/users/${userId}/threads`;
+          endpoint = `${API}/api/users/${userId}/threads`;
           break;
         case 'likes':
-          endpoint = `${API}/users/${userId}/liked-threads`;
+          endpoint = `${API}/api/users/${userId}/liked-threads`;
           break;
         case 'reposts':
-          endpoint = `${API}/users/${userId}/reposts`;
+          endpoint = `${API}/api/users/${userId}/reposts`;
           break;
         case 'replies':
-          endpoint = `${API}/users/${userId}/replies`;
+          endpoint = `${API}/api/users/${userId}/replies`;
           break;
         default:
-          endpoint = `${API}/users/${userId}/threads`;
+          endpoint = `${API}/api/users/${userId}/threads`;
       }
       
       const res = await axios.get(endpoint, {
@@ -295,7 +295,7 @@ const UserProfilePage = ({ currentUser }) => {
   const handleFollow = async () => {
     setFollowLoading(true);
     try {
-      await axios.post(`${API}/users/${userId}/follow`, {}, {
+      await axios.post(`${API}/api/users/${userId}/follow`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsFollowing(!isFollowing);
@@ -313,7 +313,7 @@ const UserProfilePage = ({ currentUser }) => {
 
   const startConversation = async () => {
     try {
-      const res = await axios.post(`${API}/conversations/${userId}`, {}, {
+      const res = await axios.post(`${API}/api/conversations/${userId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       navigate(`/messages/${res.data.conversation_id}`);
@@ -324,7 +324,7 @@ const UserProfilePage = ({ currentUser }) => {
 
   const handleLike = async (threadId) => {
     try {
-      await axios.post(`${API}/threads/${threadId}/like`, {}, {
+      await axios.post(`${API}/api/threads/${threadId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const updateList = (list) => list.map(t => 
@@ -348,7 +348,7 @@ const UserProfilePage = ({ currentUser }) => {
 
   const handleBlock = async () => {
     try {
-      await axios.post(`${API}/users/${userId}/block`, {}, {
+      await axios.post(`${API}/api/users/${userId}/block`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(isRTL ? 'تم حظر المستخدم' : 'User blocked');

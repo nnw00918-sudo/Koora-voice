@@ -142,7 +142,7 @@ const DashboardPage = ({ user, onLogout }) => {
   // Memoized fetch functions
   const fetchRooms = useCallback(async (retryCount = 0) => {
     try {
-      const response = await axios.get(`${API}/rooms`, {
+      const response = await axios.get(`${API}/api/rooms`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       
@@ -160,7 +160,7 @@ const DashboardPage = ({ user, onLogout }) => {
       // Fetch membership status for all rooms in parallel
       if (token && response.data?.length > 0) {
         const membershipPromises = response.data.map(room => 
-          axios.get(`${API}/rooms/${room.id}/membership`, { 
+          axios.get(`${API}/api/rooms/${room.id}/membership`, { 
             headers: { Authorization: `Bearer ${token}` } 
           }).catch(() => ({ data: { is_member: false } }))
         );
@@ -186,7 +186,7 @@ const DashboardPage = ({ user, onLogout }) => {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await axios.get(`${API}/categories`);
+      const response = await axios.get(`${API}/api/categories`);
       setCategories(response.data);
     } catch (error) {
       console.error('Failed to fetch categories');
@@ -204,7 +204,7 @@ const DashboardPage = ({ user, onLogout }) => {
       setNewsLoading(true);
       try {
         // Fetch only local news (added by owner and news reporters)
-        const response = await axios.get(`${API}/news/ticker`).catch(() => ({ data: { news: [] } }));
+        const response = await axios.get(`${API}/api/news/ticker`).catch(() => ({ data: { news: [] } }));
         
         const localNews = (response.data?.news || []).map(item => ({
           type: item.type,
@@ -271,7 +271,7 @@ const DashboardPage = ({ user, onLogout }) => {
     e.stopPropagation();
     setJoiningRoom(roomId);
     try {
-      await axios.post(`${API}/rooms/${roomId}/membership/join`, {}, {
+      await axios.post(`${API}/api/rooms/${roomId}/membership/join`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(isRTL ? 'تم الانضمام للغرفة بنجاح!' : 'Joined room successfully!');
@@ -291,7 +291,7 @@ const DashboardPage = ({ user, onLogout }) => {
     e.stopPropagation();
     setFavoriteLoading(prev => ({ ...prev, [roomId]: true }));
     try {
-      const res = await axios.post(`${API}/rooms/${roomId}/favorite`, {}, {
+      const res = await axios.post(`${API}/api/rooms/${roomId}/favorite`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -317,7 +317,7 @@ const DashboardPage = ({ user, onLogout }) => {
     if (room?.is_closed) {
       if (user.role === 'owner') {
         try {
-          await axios.post(`${API}/rooms/${roomId}/join`, { pin: null }, { headers: { Authorization: `Bearer ${token}` } });
+          await axios.post(`${API}/api/rooms/${roomId}/join`, { pin: null }, { headers: { Authorization: `Bearer ${token}` } });
           navigate(`/room/${roomId}`);
           return;
         } catch (error) {
@@ -334,7 +334,7 @@ const DashboardPage = ({ user, onLogout }) => {
       }
       
       try {
-        await axios.post(`${API}/rooms/${roomId}/join`, { pin }, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.post(`${API}/api/rooms/${roomId}/join`, { pin }, { headers: { Authorization: `Bearer ${token}` } });
         setShowPinModal(false);
         setPinInput('');
         setSelectedRoomForPin(null);

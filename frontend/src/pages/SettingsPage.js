@@ -73,7 +73,7 @@ const SettingsPage = ({ user, onLogout }) => {
 
   const fetchUserStats = async () => {
     try {
-      const response = await axios.get(`${API}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.get(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
       setUserStats({ followers_count: response.data.followers_count || 0, following_count: response.data.following_count || 0 });
       setProfileData(prev => ({ ...prev, name: response.data.name || response.data.username || prev.name, bio: response.data.bio || prev.bio }));
     } catch (error) { console.error('Failed to fetch user stats'); }
@@ -82,7 +82,7 @@ const SettingsPage = ({ user, onLogout }) => {
   const fetchBlockedUsers = async () => {
     setLoadingBlocked(true);
     try {
-      const response = await axios.get(`${API}/users/blocked`, {
+      const response = await axios.get(`${API}/api/users/blocked`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBlockedUsers(response.data.blocked || []);
@@ -95,7 +95,7 @@ const SettingsPage = ({ user, onLogout }) => {
 
   const unblockUser = async (userId) => {
     try {
-      await axios.delete(`${API}/users/${userId}/block`, {
+      await axios.delete(`${API}/api/users/${userId}/block`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBlockedUsers(prev => prev.filter(u => u.id !== userId));
@@ -406,7 +406,7 @@ const SettingsPage = ({ user, onLogout }) => {
     if (!profileData.name.trim()) { toast.error(txt.fillAllFields); return; }
     setSavingProfile(true);
     try {
-      const response = await axios.put(`${API}/auth/profile`,
+      const response = await axios.put(`${API}/api/auth/profile`,
         { name: profileData.name, username: profileData.username, bio: profileData.bio, avatar: profileData.avatar },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -427,7 +427,7 @@ const SettingsPage = ({ user, onLogout }) => {
       toast.error(txt.passwordError); return;
     }
     try {
-      await axios.put(`${API}/auth/password`, {
+      await axios.put(`${API}/api/auth/password`, {
         current_password: passwordData.current,
         new_password: passwordData.new
       }, { headers: { Authorization: `Bearer ${token}` } });

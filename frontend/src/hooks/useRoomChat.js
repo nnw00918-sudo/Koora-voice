@@ -56,7 +56,7 @@ export const useRoomChat = ({ roomId, token, user, participants, isRTL, sendMess
       formData.append('file', selectedImage);
       formData.append('room_id', roomId);
       
-      const response = await axios.post(`${API}/rooms/${roomId}/messages/image`, formData, {
+      const response = await axios.post(`${API}/api/rooms/${roomId}/messages/image`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -99,7 +99,7 @@ export const useRoomChat = ({ roomId, token, user, participants, isRTL, sendMess
     }
     
     try {
-      const response = await axios.post(`${API}/rooms/${roomId}/messages`, { 
+      const response = await axios.post(`${API}/api/rooms/${roomId}/messages`, { 
         content: messageContent,
         ...replyData
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -178,7 +178,7 @@ export const useRoomChat = ({ roomId, token, user, participants, isRTL, sendMess
       return;
     }
     try {
-      await axios.delete(`${API}/rooms/${roomId}/messages/${messageId}`, {
+      await axios.delete(`${API}/api/rooms/${roomId}/messages/${messageId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(prev => prev.filter(m => m.id !== messageId));

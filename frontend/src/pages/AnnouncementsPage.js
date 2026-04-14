@@ -51,7 +51,7 @@ const AnnouncementsPage = ({ user }) => {
 
   const fetchAnnouncements = async () => {
     try {
-      const response = await axios.get(`${API}/announcements`, {
+      const response = await axios.get(`${API}/api/announcements`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAnnouncements(response.data.announcements || []);
@@ -64,7 +64,7 @@ const AnnouncementsPage = ({ user }) => {
 
   const fetchRooms = async () => {
     try {
-      const response = await axios.get(`${API}/announcements/rooms`, {
+      const response = await axios.get(`${API}/api/announcements/rooms`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRooms(response.data.rooms || []);
@@ -81,7 +81,7 @@ const AnnouncementsPage = ({ user }) => {
 
     setSubmitting(true);
     try {
-      await axios.post(`${API}/announcements`, {
+      await axios.post(`${API}/api/announcements`, {
         text: newText,
         room_ids: selectedRooms
       }, {
@@ -102,7 +102,7 @@ const AnnouncementsPage = ({ user }) => {
 
   const handleToggleAnnouncement = async (announcementId) => {
     try {
-      const response = await axios.post(`${API}/announcements/${announcementId}/toggle`, {}, {
+      const response = await axios.post(`${API}/api/announcements/${announcementId}/toggle`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(response.data.message);
@@ -118,7 +118,7 @@ const AnnouncementsPage = ({ user }) => {
     }
 
     try {
-      await axios.delete(`${API}/announcements/${announcementId}`, {
+      await axios.delete(`${API}/api/announcements/${announcementId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(isRTL ? 'تم حذف الإعلان' : 'Announcement deleted');

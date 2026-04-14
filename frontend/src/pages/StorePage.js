@@ -38,8 +38,8 @@ const StorePage = () => {
       const headers = { Authorization: `Bearer ${token}` };
       
       const [plansRes, vipRes] = await Promise.all([
-        axios.get(`${API}/payments/vip/plans`),
-        axios.get(`${API}/payments/vip/status`, { headers })
+        axios.get(`${API}/api/payments/vip/plans`),
+        axios.get(`${API}/api/payments/vip/status`, { headers })
       ]);
       
       setVipPlans(plansRes.data.plans || []);
@@ -57,7 +57,7 @@ const StorePage = () => {
       const headers = { Authorization: `Bearer ${token}` };
       
       const response = await axios.post(
-        `${API}/payments/vip/subscribe`,
+        `${API}/api/payments/vip/subscribe`,
         { plan_id: planId },
         { headers }
       );

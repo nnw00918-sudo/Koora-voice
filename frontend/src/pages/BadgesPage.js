@@ -80,10 +80,10 @@ const BadgesPage = ({ user: propUser }) => {
       const headers = { Authorization: `Bearer ${token}` };
       
       const [badgesRes, userBadgesRes, statsRes, leaderboardRes] = await Promise.all([
-        axios.get(`${API}/badges/all`),
-        axios.get(`${API}/badges/user/${user.id}`),
-        axios.get(`${API}/badges/stats/${user.id}`),
-        axios.get(`${API}/badges/leaderboard?limit=20`)
+        axios.get(`${API}/api/badges/all`),
+        axios.get(`${API}/api/badges/user/${user.id}`),
+        axios.get(`${API}/api/badges/stats/${user.id}`),
+        axios.get(`${API}/api/badges/leaderboard?limit=20`)
       ]);
       
       setAllBadges(badgesRes.data.badges);
@@ -103,7 +103,7 @@ const BadgesPage = ({ user: propUser }) => {
   const handleSelectTeam = async (badgeId) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      await axios.post(`${API}/badges/select-team`, { team_badge_id: badgeId }, { headers });
+      await axios.post(`${API}/api/badges/select-team`, { team_badge_id: badgeId }, { headers });
       toast.success(isRTL ? 'تم اختيار الفريق' : 'Team selected');
       fetchData();
     } catch (error) {

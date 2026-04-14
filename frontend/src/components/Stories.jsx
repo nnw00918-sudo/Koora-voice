@@ -59,7 +59,7 @@ const Stories = ({ user }) => {
 
   const fetchStories = async () => {
     try {
-      const res = await axios.get(`${API}/stories`, {
+      const res = await axios.get(`${API}/api/stories`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStoriesData(res.data.stories || []);
@@ -81,7 +81,7 @@ const Stories = ({ user }) => {
   const markStoryViewed = async (storyId) => {
     if (!storyId) return;
     try {
-      await axios.post(`${API}/stories/${storyId}/view`, {}, {
+      await axios.post(`${API}/api/stories/${storyId}/view`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (error) {
@@ -146,7 +146,7 @@ const Stories = ({ user }) => {
       const formData = new FormData();
       formData.append('file', file);
       
-      const uploadRes = await axios.post(`${API}/upload`, formData, {
+      const uploadRes = await axios.post(`${API}/api/upload`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -159,7 +159,7 @@ const Stories = ({ user }) => {
       storyFormData.append('media_type', isVideo ? 'video' : 'image');
       storyFormData.append('caption', '');
 
-      await axios.post(`${API}/stories`, storyFormData, {
+      await axios.post(`${API}/api/stories`, storyFormData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -175,7 +175,7 @@ const Stories = ({ user }) => {
 
   const deleteStory = async (storyId) => {
     try {
-      await axios.delete(`${API}/stories/${storyId}`, {
+      await axios.delete(`${API}/api/stories/${storyId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(txt.storyDeleted);
@@ -194,7 +194,7 @@ const Stories = ({ user }) => {
 
   const fetchViewers = async (storyId) => {
     try {
-      const res = await axios.get(`${API}/stories/${storyId}/viewers`, {
+      const res = await axios.get(`${API}/api/stories/${storyId}/viewers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setViewers(res.data.viewers || []);

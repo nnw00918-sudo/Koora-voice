@@ -60,7 +60,7 @@ const NewsManagementPage = ({ user }) => {
 
   const fetchNews = async () => {
     try {
-      const response = await axios.get(`${API}/news/admin`, {
+      const response = await axios.get(`${API}/api/news/admin`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNews(response.data.news || []);
@@ -83,13 +83,13 @@ const NewsManagementPage = ({ user }) => {
     try {
       if (editingNews) {
         // Update
-        await axios.put(`${API}/news/${editingNews.id}`, formData, {
+        await axios.put(`${API}/api/news/${editingNews.id}`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('تم تحديث الخبر بنجاح');
       } else {
         // Create
-        await axios.post(`${API}/news`, formData, {
+        await axios.post(`${API}/api/news`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('تم إضافة الخبر بنجاح');
@@ -106,7 +106,7 @@ const NewsManagementPage = ({ user }) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الخبر؟')) return;
     
     try {
-      await axios.delete(`${API}/news/${newsId}`, {
+      await axios.delete(`${API}/api/news/${newsId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('تم حذف الخبر بنجاح');
@@ -118,7 +118,7 @@ const NewsManagementPage = ({ user }) => {
 
   const handleToggle = async (newsId) => {
     try {
-      const response = await axios.post(`${API}/news/${newsId}/toggle`, {}, {
+      const response = await axios.post(`${API}/api/news/${newsId}/toggle`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(response.data.message);

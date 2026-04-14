@@ -128,7 +128,7 @@ export const SettingsProvider = ({ children }) => {
 
   const loadSettingsFromServer = async (token) => {
     try {
-      const response = await axios.get(`${API}/users/settings`, {
+      const response = await axios.get(`${API}/api/users/settings`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data) {
@@ -170,7 +170,7 @@ export const SettingsProvider = ({ children }) => {
     
     setIsLoading(true);
     try {
-      await axios.put(`${API}/users/settings`, {
+      await axios.put(`${API}/api/users/settings`, {
         [category]: data
       }, {
         headers: { Authorization: `Bearer ${token}` }

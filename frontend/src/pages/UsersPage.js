@@ -21,7 +21,7 @@ const UsersPage = ({ user }) => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get(`${API}/users`);
+      const response = await axios.get(`${API}/api/users`);
       const filteredUsers = response.data.filter(u => u.id !== user.id);
       setUsers(filteredUsers);
     } catch (error) {
@@ -37,7 +37,7 @@ const UsersPage = ({ user }) => {
     try {
       if (isFollowing) {
         await axios.delete(
-          `${API}/users/${userId}/follow`,
+          `${API}/api/users/${userId}/follow`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setFollowingIds(prev => {
@@ -48,7 +48,7 @@ const UsersPage = ({ user }) => {
         toast.success('تم إلغاء المتابعة');
       } else {
         await axios.post(
-          `${API}/users/${userId}/follow`,
+          `${API}/api/users/${userId}/follow`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );

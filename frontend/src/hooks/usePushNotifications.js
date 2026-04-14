@@ -111,7 +111,7 @@ export function usePushNotifications(token) {
       const registration = await registerServiceWorker();
 
       // Get VAPID public key
-      const keyResponse = await fetch(`${API}/push/vapid-key`);
+      const keyResponse = await fetch(`${API}/api/push/vapid-key`);
       const { public_key } = await keyResponse.json();
 
       if (!public_key) {
@@ -133,7 +133,7 @@ export function usePushNotifications(token) {
         }
       };
 
-      const response = await fetch(`${API}/push/subscribe`, {
+      const response = await fetch(`${API}/api/push/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ export function usePushNotifications(token) {
         await subscription.unsubscribe();
 
         // Remove from server
-        await fetch(`${API}/push/unsubscribe`, {
+        await fetch(`${API}/api/push/unsubscribe`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ export function usePushNotifications(token) {
     if (!token) return false;
 
     try {
-      const response = await fetch(`${API}/push/test`, {
+      const response = await fetch(`${API}/api/push/test`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -133,7 +133,7 @@ const NotificationsPage = ({ user }) => {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/notifications`, {
+      const res = await axios.get(`${API}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(res.data.notifications || []);
@@ -147,7 +147,7 @@ const NotificationsPage = ({ user }) => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.post(`${API}/notifications/read`, {}, {
+      await axios.post(`${API}/api/notifications/read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -161,7 +161,7 @@ const NotificationsPage = ({ user }) => {
     // Mark as read
     if (!notif.read) {
       try {
-        await axios.post(`${API}/notifications/${notif.id}/read`, {}, {
+        await axios.post(`${API}/api/notifications/${notif.id}/read`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setNotifications(prev => prev.map(n => 

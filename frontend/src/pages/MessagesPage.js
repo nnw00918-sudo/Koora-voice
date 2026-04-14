@@ -382,7 +382,7 @@ export default function MessagesPage() {
       return;
     }
     try {
-      const res = await axios.get(`${API}/conversations`, {
+      const res = await axios.get(`${API}/api/conversations`, {
         headers: { Authorization: `Bearer ${token}` },
         timeout: 10000 // 10 second timeout
       });
@@ -398,7 +398,7 @@ export default function MessagesPage() {
   const loadConversation = useCallback(async (convoId) => {
     if (!token) return;
     try {
-      const res = await axios.get(`${API}/conversations/${convoId}/messages`, {
+      const res = await axios.get(`${API}/api/conversations/${convoId}/messages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(res.data.messages || []);
@@ -414,7 +414,7 @@ export default function MessagesPage() {
     }
     setSearchLoading(true);
     try {
-      const res = await axios.get(`${API}/users/search?q=${encodeURIComponent(query)}`, {
+      const res = await axios.get(`${API}/api/users/search?q=${encodeURIComponent(query)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSearchResults(res.data.users || res.data || []);
@@ -428,7 +428,7 @@ export default function MessagesPage() {
   const startConversation = useCallback(async (userId, user) => {
     if (!token) return;
     try {
-      const res = await axios.post(`${API}/conversations/${userId}`, {}, {
+      const res = await axios.post(`${API}/api/conversations/${userId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const convoId = res.data.conversation_id;
@@ -470,7 +470,7 @@ export default function MessagesPage() {
       } else {
         // Fallback to HTTP
         await axios.post(
-          `${API}/conversations/${currentConversation.id}/messages`,
+          `${API}/api/conversations/${currentConversation.id}/messages`,
           { content },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -488,7 +488,7 @@ export default function MessagesPage() {
   const deleteConversation = useCallback(async () => {
     if (!currentConversation) return;
     try {
-      await axios.delete(`${API}/conversations/${currentConversation.id}`, {
+      await axios.delete(`${API}/api/conversations/${currentConversation.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('تم حذف المحادثة');
@@ -541,7 +541,7 @@ export default function MessagesPage() {
       
       // Try to fetch the conversation directly
       try {
-        const res = await axios.get(`${API}/conversations/${conversationId}`, {
+        const res = await axios.get(`${API}/api/conversations/${conversationId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data) {
