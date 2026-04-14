@@ -12,6 +12,11 @@ workflows:
         XCODE_SCHEME: "App"
       node: 18.17.0
     scripts:
+      - name: Set build number to 14
+        script: |
+          cd frontend/ios/App
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 14" App/Info.plist
+          echo "Build number set to 14"
       - name: Install dependencies
         script: |
           cd frontend
