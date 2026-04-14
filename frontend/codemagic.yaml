@@ -30,11 +30,12 @@ workflows:
       - name: Sync Capacitor
         script: |
           cd frontend
-          npx cap sync ios
+          npx cap sync ios --deployment
       - name: Install CocoaPods
         script: |
           cd frontend/ios/App
-          pod install
+          pod repo update
+          pod install --repo-update
       - name: Set up code signing
         script: |
           xcode-project use-profiles
