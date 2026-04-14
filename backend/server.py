@@ -920,7 +920,7 @@ async def upload_general(data: ImageUpload, current_user: User = Depends(get_cur
             f.write(image_bytes)
         
         # Generate URL
-        avatar_url = f"{os.environ.get('BACKEND_URL', '')}/api/static/avatars/{filename}"
+        avatar_url = f"http://165.245.209.28:8001/api/static/avatars/{filename}"
         
         # Update user avatar
         await db.users.update_one(
@@ -965,7 +965,7 @@ async def upload_avatar(data: ImageUpload, current_user: User = Depends(get_curr
             f.write(image_bytes)
         
         # Generate URL
-        avatar_url = f"{os.environ.get('BACKEND_URL', '')}/api/static/avatars/{filename}"
+        avatar_url = f"http://165.245.209.28:8001/api/static/avatars/{filename}"
         
         # Update user avatar
         await db.users.update_one(
@@ -1028,7 +1028,7 @@ async def upload_thread_media(
         f.write(file_content)
     
     # Generate URL
-    media_url = f"{os.environ.get('BACKEND_URL', '')}/api/static/thread_media/{filename}"
+    media_url = f"http://165.245.209.28:8001/api/static/thread_media/{filename}"
     
     return {"url": media_url, "type": type}
 
@@ -1310,7 +1310,7 @@ async def upload_image(file: UploadFile = File(...), current_user: User = Depend
             f.write(contents)
         
         # Return the URL to access the image
-        image_url = f"/api/uploads/{unique_filename}"
+        image_url = f"http://165.245.209.28:8001/api/uploads/{unique_filename}"
         return {"message": "تم رفع الصورة بنجاح", "url": image_url, "filename": unique_filename}
     
     except Exception as e:
@@ -3011,7 +3011,7 @@ async def send_image_message(
         f.write(content)
     
     # Create image URL
-    image_url = f"/api/static/chat_images/{image_filename}"
+    image_url = f"http://165.245.209.28:8001/api/static/chat_images/{image_filename}"
     
     # Create message
     message_id = str(uuid4())
