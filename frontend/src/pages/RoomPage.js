@@ -1296,7 +1296,7 @@ const YallaLiveRoom = ({ user }) => {
       return;
     }
     try {
-      await axios.put(`${API}/rooms/${roomId}/image`, 
+      await axios.put(`${API}/api/rooms/${roomId}/image`, 
         { image: roomImageUrl }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1369,7 +1369,7 @@ const YallaLiveRoom = ({ user }) => {
       const imageUrl = uploadResponse.data.url;
       
       // Update room image
-      await axios.put(`${API}/rooms/${roomId}/image`, 
+      await axios.put(`${API}/api/rooms/${roomId}/image`, 
         { image: imageUrl }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -2318,7 +2318,7 @@ const YallaLiveRoom = ({ user }) => {
       formData.append('file', selectedImage);
       formData.append('room_id', roomId);
       
-      const response = await axios.post(`${API}/rooms/${roomId}/messages/image`, formData, {
+      const response = await axios.post(`${API}/api/rooms/${roomId}/messages/image`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
