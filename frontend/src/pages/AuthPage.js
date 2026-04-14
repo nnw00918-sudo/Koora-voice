@@ -33,7 +33,7 @@ const AuthPage = ({ onLogin }) => {
     console.log('[AUTH] API URL:', API);
 
     try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/register';
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       const payload = isLogin
         ? { identifier: formData.identifier, password: formData.password }
         : { email: formData.email, password: formData.password, username: formData.username };
