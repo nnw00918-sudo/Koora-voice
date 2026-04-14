@@ -268,8 +268,8 @@ const ProfilePage = ({ user }) => {
     
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(`${API}/api/upload`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await axios.post(`${API}/api/upload/image`, formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
       });
       setEditData(prev => ({ ...prev, avatar: res.data.url }));
       toast.success('تم رفع الصورة');
