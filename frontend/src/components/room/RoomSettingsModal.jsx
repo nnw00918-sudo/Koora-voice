@@ -51,6 +51,9 @@ export const RoomSettingsModal = ({
   onClosePoll,
   // User roles
   onShowUserRolesModal,
+  // Background
+  onBackgroundUpload,
+  onRemoveBackground,
   // File input ref
   fileInputRef
 }) => {
@@ -136,6 +139,16 @@ export const RoomSettingsModal = ({
           <ImageIcon className="w-6 h-6 text-sky-400" />
           <span className="text-sky-400 font-cairo font-bold flex-1 text-right">تغيير صورة الغرفة</span>
           <ArrowRight className="w-5 h-5 text-sky-400 rotate-180" />
+        </button>
+
+        {/* Change Chat Background */}
+        <button 
+          onClick={() => setCurrentPage('background')}
+          className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 transition-colors"
+        >
+          <ImageIcon className="w-6 h-6 text-purple-400" />
+          <span className="text-purple-400 font-cairo font-bold flex-1 text-right">تغيير خلفية الدردشة</span>
+          <ArrowRight className="w-5 h-5 text-purple-400 rotate-180" />
         </button>
         
         {/* Room Management Section */}
@@ -353,6 +366,53 @@ export const RoomSettingsModal = ({
             حفظ الرابط
           </button>
         </div>
+      </div>
+    </>
+  );
+
+  // Background Change Page
+  const BackgroundPage = () => (
+    <>
+      <PageHeader title="تغيير خلفية الدردشة" onBack={goBack} />
+      <div className="space-y-4">
+        {/* Hidden file input */}
+        <input
+          type="file"
+          id="background-file-input"
+          onChange={onBackgroundUpload}
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          className="hidden"
+        />
+        
+        {/* Upload from album button */}
+        <button
+          onClick={() => document.getElementById('background-file-input')?.click()}
+          disabled={uploadingImage}
+          className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white rounded-xl font-cairo font-bold transition-all disabled:opacity-50"
+        >
+          {uploadingImage ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>جاري الرفع...</span>
+            </>
+          ) : (
+            <>
+              <ImageIcon className="w-5 h-5" />
+              <span>اختر صورة من الألبوم</span>
+            </>
+          )}
+        </button>
+        
+        {/* Remove background button */}
+        <button
+          onClick={() => {
+            onRemoveBackground && onRemoveBackground();
+            handleClose();
+          }}
+          className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-cairo font-bold transition-colors"
+        >
+          إزالة الخلفية
+        </button>
       </div>
     </>
   );
@@ -575,6 +635,7 @@ export const RoomSettingsModal = ({
     switch (currentPage) {
       case 'title': return <TitlePage />;
       case 'image': return <ImagePage />;
+      case 'background': return <BackgroundPage />;
       case 'roles': return <RolesPage />;
       case 'poll': return <PollPage />;
       case 'record': return <RecordPage />;

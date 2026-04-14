@@ -3797,6 +3797,8 @@ const YallaLiveRoom = ({ user }) => {
             onShowCreatePollModal={() => setShowCreatePollModal(true)}
             onClosePoll={handleClosePoll}
             onShowUserRolesModal={() => setShowUserRolesModal(true)}
+            onBackgroundUpload={handleBackgroundUpload}
+            onRemoveBackground={removeBackground}
             fileInputRef={fileInputRef}
           />
         </AnimatePresence>
