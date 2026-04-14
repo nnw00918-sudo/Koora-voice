@@ -1375,7 +1375,9 @@ const YallaLiveRoom = ({ user }) => {
       );
       
       toast.success('تم تحديث صورة الغرفة');
-      setRoom(prev => ({ ...prev, image: imageUrl }));
+      // Add timestamp to bypass cache
+      const cachedUrl = `${imageUrl}?t=${Date.now()}`;
+      setRoom(prev => ({ ...prev, image: cachedUrl }));
       setShowImagePicker(false);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل رفع الصورة');
@@ -1428,7 +1430,9 @@ const YallaLiveRoom = ({ user }) => {
       );
       
       toast.success('تم تحديث خلفية الدردشة');
-      setChatBackground(imageUrl);
+      // Add timestamp to bypass cache
+      const cachedUrl = `${imageUrl}?t=${Date.now()}`;
+      setChatBackground(cachedUrl);
       setShowBackgroundPicker(false);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل رفع الخلفية');
