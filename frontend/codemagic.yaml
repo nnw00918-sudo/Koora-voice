@@ -28,6 +28,10 @@ workflows:
         script: |
           cd frontend/ios/App
           pod install
+      - name: Increment build number
+        script: |
+          cd frontend/ios/App
+          agvtool new-version -all 13
       - name: Set up code signing
         script: |
           xcode-project use-profiles
