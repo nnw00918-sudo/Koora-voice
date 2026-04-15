@@ -2759,15 +2759,17 @@ async def join_seat_direct(room_id: str, current_user: User = Depends(get_curren
     if participant.get("seat_number") is not None:
         raise HTTPException(status_code=400, detail="أنت بالفعل على المنصة")
     
+    total_seats = room.get("total_seats", 8)
+    
     occupied_seats = await db.room_participants.find({
         "room_id": room_id,
         "seat_number": {"$ne": None}
-    }, {"_id": 0, "seat_number": 1}).to_list(room["total_seats"])
+    }, {"_id": 0, "seat_number": 1}).to_list(total_seats)
     
     occupied_numbers = [p["seat_number"] for p in occupied_seats]
     available_seat = None
     
-    for i in range(1, room["total_seats"] + 1):
+    for i in range(1, total_seats + 1):
         if i not in occupied_numbers:
             available_seat = i
             break
