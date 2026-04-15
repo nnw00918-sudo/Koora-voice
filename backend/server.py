@@ -3030,6 +3030,21 @@ async def send_image_message(
     
     await db.messages.insert_one(message_doc)
     
+    # Broadcast to room via WebSocket
+    await ws_manager.broadcast_to_room({
+        "type": "new_message",
+        "message": {
+            "id": message_id,
+            "room_id": room_id,
+            "user_id": current_user.id,
+            "username": current_user.username,
+            "avatar": current_user.avatar,
+            "content": "",
+            "image_url": image_url,
+            "timestamp": message_doc["timestamp"]
+        }
+    }, room_id, exclude_user=current_user.id)
+    
     return {
         "id": message_id,
         "room_id": room_id,
