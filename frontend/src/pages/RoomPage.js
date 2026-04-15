@@ -3160,20 +3160,19 @@ const YallaLiveRoom = ({ user }) => {
                     // Make sure it's in embed format with enablejsapi
                     if (url.includes('youtube.com/watch')) {
                       const videoId = url.split('v=')[1]?.split('&')[0];
-                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+                      url = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`;
                     } else if (url.includes('youtu.be/')) {
                       const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+                      url = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`;
                     } else if (url.includes('youtube.com/live/')) {
                       const videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
-                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+                      url = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`;
                     }
                     return url;
                   })()}
                   className="w-full h-full"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                  referrerPolicy="no-referrer-when-downgrade"
                 />
               </div>
               
