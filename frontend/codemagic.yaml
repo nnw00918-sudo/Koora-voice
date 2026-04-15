@@ -29,9 +29,9 @@ workflows:
       - name: Set build number
         script: |
           cd frontend/ios/App
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 100" App/Info.plist
-          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = 100/g" App.xcodeproj/project.pbxproj
-          echo "Build number set to 100"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 101" App/Info.plist
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = 101/g" App.xcodeproj/project.pbxproj
+          echo "Build number set to 101"
       - name: Install CocoaPods
         script: |
           cd frontend/ios/App
@@ -46,7 +46,7 @@ workflows:
           xcode-project build-ipa \
             --workspace App.xcworkspace \
             --scheme App \
-            --build-number 100
+            --build-number 101
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
       - frontend/ios/App/*.ipa
