@@ -68,7 +68,8 @@ import {
   Type,
   Download,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  Link
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -376,7 +377,7 @@ const YallaLiveRoom = ({ user }) => {
       setTwitchHlsError(null);
       
       try {
-        const response = await axios.get(`${API}/stream/twitch-hls`, {
+        const response = await axios.get(`${API}/api/stream/twitch-hls`, {
           params: { url },
           headers: { Authorization: `Bearer ${token}` }
         });
