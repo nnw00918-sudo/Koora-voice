@@ -33,7 +33,10 @@
   "ios": {
     "contentInset": "automatic",
     "preferredContentMode": "mobile",
-    "scheme": "KooraVoice"
+    "scheme": "KooraVoice",
+    "allowsLinkPreview": true,
+    "scrollEnabled": true,
+    "webContentsDebuggingEnabled": false
   },
   "android": {
     "allowMixedContent": true

@@ -3152,23 +3152,30 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' && (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative">
-                {/* YouTube - Open in Safari for iOS compatibility */}
-                <div 
-                  className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-800 to-slate-900 cursor-pointer"
-                  onClick={() => {
+                {/* YouTube embed with iOS compatibility settings */}
+                <iframe
+                  id="youtube-player"
+                  src={(() => {
                     let url = room.stream_url;
-                    // Open original YouTube URL in Safari
-                    window.open(url, '_blank');
-                  }}
-                >
-                  <div className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center mb-4 shadow-lg shadow-red-600/30">
-                    <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </div>
-                  <p className="text-white text-lg font-bold">اضغط لمشاهدة البث</p>
-                  <p className="text-slate-400 text-sm mt-1">سيفتح في Safari</p>
-                </div>
+                    let videoId = '';
+                    if (url.includes('youtube.com/watch')) {
+                      videoId = url.split('v=')[1]?.split('&')[0];
+                    } else if (url.includes('youtu.be/')) {
+                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                    } else if (url.includes('youtube.com/live/')) {
+                      videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
+                    }
+                    if (videoId) {
+                      return `https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0&modestbranding=1&fs=1&controls=1&showinfo=0&iv_load_policy=3`;
+                    }
+                    return url;
+                  })()}
+                  className="w-full h-full"
+                  style={{ border: 'none' }}
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                  frameBorder="0"
+                />
               </div>
               
               {/* Channel Switcher - TV Remote Style */}

@@ -62,5 +62,12 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>WKAppBoundDomains</key>
+	<array>
+		<string>youtube.com</string>
+		<string>www.youtube.com</string>
+		<string>youtube-nocookie.com</string>
+		<string>www.youtube-nocookie.com</string>
+	</array>
 </dict>
 </plist>
