@@ -3153,11 +3153,12 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' && (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative">
-                {/* Stream Player - YouTube, Twitch, or direct video */}
+                {/* Stream Player - YouTube, Twitch, Twitter, or direct video */}
                 {(() => {
                   const url = room.stream_url;
                   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
                   const isTwitch = url.includes('twitch.tv');
+                  const isTwitter = url.includes('twitter.com') || url.includes('x.com');
                   
                   if (isYouTube) {
                     // YouTube - Use button to open in In-App Browser
@@ -3196,6 +3197,33 @@ const YallaLiveRoom = ({ user }) => {
                         allowFullScreen
                         frameBorder="0"
                       />
+                    );
+                  } else if (isTwitter) {
+                    // Twitter/X - Use button to open in In-App Browser
+                    return (
+                      <div 
+                        className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 cursor-pointer group"
+                        onClick={async () => {
+                          try {
+                            await Browser.open({ url: url, presentationStyle: 'popover' });
+                          } catch (e) {
+                            window.open(url, '_blank');
+                          }
+                        }}
+                      >
+                        {/* Twitter/X Logo */}
+                        <div className="w-24 h-24 rounded-2xl bg-black border-2 border-white/20 flex items-center justify-center mb-4 shadow-2xl group-hover:scale-110 transition-transform">
+                          <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                          </svg>
+                        </div>
+                        <p className="text-white text-xl font-bold mb-1">X / Twitter</p>
+                        <p className="text-blue-400 text-sm font-medium">اضغط للمشاهدة</p>
+                        <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
+                          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                          بث مباشر
+                        </div>
+                      </div>
                     );
                   } else {
                     // Direct video URL (HLS/MP4/etc) - Use ReactPlayer
