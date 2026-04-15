@@ -3188,15 +3188,33 @@ const YallaLiveRoom = ({ user }) => {
                       </div>
                     );
                   } else if (isTwitch) {
-                    // Twitch embed
+                    // Twitch - Use button to open in In-App Browser (iframe doesn't work on iOS)
                     const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
                     return (
-                      <iframe
-                        src={`https://player.twitch.tv/?channel=${channelName}&parent=${window.location.hostname}&muted=false`}
-                        className="w-full h-full"
-                        allowFullScreen
-                        frameBorder="0"
-                      />
+                      <div 
+                        className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/30 via-slate-900 to-slate-950 cursor-pointer group"
+                        onClick={async () => {
+                          try {
+                            await Browser.open({ url: url, presentationStyle: 'popover' });
+                          } catch (e) {
+                            window.open(url, '_blank');
+                          }
+                        }}
+                      >
+                        {/* Twitch Logo */}
+                        <div className="w-24 h-24 rounded-2xl bg-purple-600 flex items-center justify-center mb-4 shadow-2xl shadow-purple-600/40 group-hover:scale-110 transition-transform">
+                          <svg className="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                          </svg>
+                        </div>
+                        <p className="text-white text-xl font-bold mb-1">Twitch Live</p>
+                        <p className="text-purple-400 text-sm font-medium">اضغط للمشاهدة</p>
+                        <p className="text-slate-500 text-xs mt-1">{channelName}</p>
+                        <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
+                          <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+                          بث مباشر
+                        </div>
+                      </div>
                     );
                   } else if (isTwitter) {
                     // Twitter/X - Use button to open in In-App Browser
