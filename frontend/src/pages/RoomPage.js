@@ -124,6 +124,8 @@ const YallaLiveRoom = ({ user }) => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [viewingImage, setViewingImage] = useState(null); // Full-screen image viewer
   const [imageZoom, setImageZoom] = useState(1); // Zoom level for image viewer
+  const [showImageUrlModal, setShowImageUrlModal] = useState(false); // Modal for image URL input
+  const [imageUrlInput, setImageUrlInput] = useState(''); // Image URL input value
   const [showMentionList, setShowMentionList] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionCursorPos, setMentionCursorPos] = useState(0);
@@ -2411,6 +2413,32 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Send image via URL
+  const handleSendImageUrl = async (url) => {
+    if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+      toast.error('الرابط غير صحيح');
+      return;
+    }
+    
+    setUploadingImage(true);
+    try {
+      const response = await axios.post(`${API}/api/rooms/${roomId}/messages/image-url`, 
+        { image_url: url },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Add message to local state
+      setMessages(prev => [...prev, response.data]);
+      setImageUrlInput('');
+      setShowImageUrlModal(false);
+      toast.success('تم إرسال الصورة');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل إرسال الصورة');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() && !selectedImage) return;
@@ -3940,6 +3968,15 @@ const YallaLiveRoom = ({ user }) => {
                       <ImageIcon className="w-4 h-4" />
                     )}
                   </label>
+                  {/* Image URL Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowImageUrlModal(true)}
+                    className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 hover:border-blue-500 text-slate-400 hover:text-blue-400 transition-colors"
+                    title="إرسال رابط صورة"
+                  >
+                    <Link className="w-4 h-4" />
+                  </button>
                 </>
               )}
               
@@ -4034,6 +4071,62 @@ const YallaLiveRoom = ({ user }) => {
             onRemoveBackground={removeBackground}
             onUrlSubmit={handleBackgroundUrl}
           />
+        </AnimatePresence>
+
+        {/* Image URL Modal for Chat */}
+        <AnimatePresence>
+          {showImageUrlModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-start pt-20 justify-center p-4"
+              onClick={() => setShowImageUrlModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-sm rounded-2xl p-5 border border-blue-500/30"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-cairo font-bold text-white mb-4 text-center">🔗 إرسال رابط صورة</h3>
+                
+                <input
+                  type="url"
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  placeholder="الصق رابط الصورة هنا..."
+                  className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-blue-500/50 text-white text-base font-almarai placeholder-slate-500 focus:outline-none focus:border-blue-400 mb-4"
+                  dir="ltr"
+                  autoFocus
+                />
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSendImageUrl(imageUrlInput)}
+                    disabled={!imageUrlInput.trim() || uploadingImage}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {uploadingImage ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 text-white" />
+                        <span className="text-white font-cairo font-bold">إرسال</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => { setShowImageUrlModal(false); setImageUrlInput(''); }}
+                    className="px-4 py-3 rounded-xl bg-slate-700 text-slate-300 font-cairo font-bold hover:bg-slate-600 transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Invite Modal */}

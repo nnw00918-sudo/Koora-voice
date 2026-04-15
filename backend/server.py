@@ -3056,6 +3056,83 @@ async def send_image_message(
         "timestamp": message_doc["timestamp"]
     }
 
+class ImageUrlMessage(BaseModel):
+    image_url: str
+
+@api_router.post("/rooms/{room_id}/messages/image-url")
+async def send_image_url_message(
+    room_id: str,
+    data: ImageUrlMessage,
+    current_user: User = Depends(get_current_user)
+):
+    """Send an image message using a URL directly"""
+    from uuid import uuid4
+    
+    # Check permissions: owner, admin, or room owner/admin
+    room = await db.rooms.find_one({"id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    is_app_owner = current_user.role == "owner"
+    is_app_admin = current_user.role == "admin"
+    is_room_owner = room.get("owner_id") == current_user.id
+    
+    # Check room role
+    room_role = await db.room_roles.find_one({
+        "room_id": room_id,
+        "user_id": current_user.id
+    })
+    is_room_admin = room_role and room_role.get("role") in ["admin", "mod"]
+    
+    if not (is_app_owner or is_app_admin or is_room_owner or is_room_admin):
+        raise HTTPException(status_code=403, detail="غير مصرح لك بإرسال الصور")
+    
+    # Validate URL
+    image_url = data.image_url.strip()
+    if not image_url.startswith(('http://', 'https://')):
+        raise HTTPException(status_code=400, detail="الرابط غير صحيح")
+    
+    # Create message
+    message_id = str(uuid4())
+    message_doc = {
+        "id": message_id,
+        "room_id": room_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "content": "",
+        "image_url": image_url,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.messages.insert_one(message_doc)
+    
+    # Broadcast to room via WebSocket
+    await ws_manager.broadcast_to_room({
+        "type": "new_message",
+        "message": {
+            "id": message_id,
+            "room_id": room_id,
+            "user_id": current_user.id,
+            "username": current_user.username,
+            "avatar": current_user.avatar,
+            "content": "",
+            "image_url": image_url,
+            "timestamp": message_doc["timestamp"]
+        }
+    }, room_id, exclude_user=current_user.id)
+    
+    return {
+        "id": message_id,
+        "room_id": room_id,
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "content": "",
+        "image_url": image_url,
+        "timestamp": message_doc["timestamp"]
+    }
+
 @api_router.get("/rooms/{room_id}/messages", response_model=List[Message])
 async def get_room_messages(room_id: str, limit: int = 50):
     messages = await db.messages.find(
