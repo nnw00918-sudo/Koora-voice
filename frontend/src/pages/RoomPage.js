@@ -3152,28 +3152,23 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' && (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative">
-                {/* YouTube iframe with postMessage volume control */}
-                <iframe
-                  id="youtube-player"
-                  src={(() => {
+                {/* YouTube - Open in Safari for iOS compatibility */}
+                <div 
+                  className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-800 to-slate-900 cursor-pointer"
+                  onClick={() => {
                     let url = room.stream_url;
-                    // Make sure it's in embed format with enablejsapi
-                    if (url.includes('youtube.com/watch')) {
-                      const videoId = url.split('v=')[1]?.split('&')[0];
-                      url = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`;
-                    } else if (url.includes('youtu.be/')) {
-                      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                      url = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`;
-                    } else if (url.includes('youtube.com/live/')) {
-                      const videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
-                      url = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`;
-                    }
-                    return url;
-                  })()}
-                  className="w-full h-full"
-                  allowFullScreen
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                />
+                    // Open original YouTube URL in Safari
+                    window.open(url, '_blank');
+                  }}
+                >
+                  <div className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center mb-4 shadow-lg shadow-red-600/30">
+                    <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                  <p className="text-white text-lg font-bold">اضغط لمشاهدة البث</p>
+                  <p className="text-slate-400 text-sm mt-1">سيفتح في Safari</p>
+                </div>
               </div>
               
               {/* Channel Switcher - TV Remote Style */}
