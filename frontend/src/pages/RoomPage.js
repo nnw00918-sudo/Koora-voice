@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import ReactPlayer from 'react-player';
+import { Browser } from '@capacitor/browser';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useRoomAudio } from '../contexts/RoomAudioContext';
@@ -3152,30 +3153,68 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' && (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative">
-                {/* YouTube embed with iOS compatibility settings */}
-                <iframe
-                  id="youtube-player"
-                  src={(() => {
-                    let url = room.stream_url;
-                    let videoId = '';
-                    if (url.includes('youtube.com/watch')) {
-                      videoId = url.split('v=')[1]?.split('&')[0];
-                    } else if (url.includes('youtu.be/')) {
-                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                    } else if (url.includes('youtube.com/live/')) {
-                      videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
-                    }
-                    if (videoId) {
-                      return `https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0&modestbranding=1&fs=1&controls=1&showinfo=0&iv_load_policy=3`;
-                    }
-                    return url;
-                  })()}
-                  className="w-full h-full"
-                  style={{ border: 'none' }}
-                  allowFullScreen
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                  frameBorder="0"
-                />
+                {/* Stream Player - YouTube, Twitch, or direct video */}
+                {(() => {
+                  const url = room.stream_url;
+                  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+                  const isTwitch = url.includes('twitch.tv');
+                  
+                  if (isYouTube) {
+                    // YouTube - Use button to open in In-App Browser
+                    return (
+                      <div 
+                        className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950 cursor-pointer group"
+                        onClick={async () => {
+                          try {
+                            await Browser.open({ url: url, presentationStyle: 'popover' });
+                          } catch (e) {
+                            window.open(url, '_blank');
+                          }
+                        }}
+                      >
+                        {/* YouTube Logo */}
+                        <div className="w-24 h-24 rounded-2xl bg-red-600 flex items-center justify-center mb-4 shadow-2xl shadow-red-600/40 group-hover:scale-110 transition-transform">
+                          <svg className="w-14 h-14 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                        <p className="text-white text-xl font-bold mb-1">YouTube Live</p>
+                        <p className="text-lime-400 text-sm font-medium">اضغط للمشاهدة</p>
+                        <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
+                          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                          بث مباشر
+                        </div>
+                      </div>
+                    );
+                  } else if (isTwitch) {
+                    // Twitch embed
+                    const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
+                    return (
+                      <iframe
+                        src={`https://player.twitch.tv/?channel=${channelName}&parent=${window.location.hostname}&muted=false`}
+                        className="w-full h-full"
+                        allowFullScreen
+                        frameBorder="0"
+                      />
+                    );
+                  } else {
+                    // Direct video URL (HLS/MP4/etc) - Use ReactPlayer
+                    return (
+                      <ReactPlayer
+                        url={url}
+                        playing
+                        controls
+                        width="100%"
+                        height="100%"
+                        config={{
+                          file: {
+                            forceHLS: url.includes('.m3u8'),
+                          }
+                        }}
+                      />
+                    );
+                  }
+                })()}
               </div>
               
               {/* Channel Switcher - TV Remote Style */}
