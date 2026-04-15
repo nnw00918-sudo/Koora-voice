@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ImageIcon, Trash2, Link, Check } from 'lucide-react';
 
@@ -15,6 +15,22 @@ export const BackgroundPickerModal = ({
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [urlLoading, setUrlLoading] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  // Detect keyboard open/close
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport) {
+        const isKeyboard = window.visualViewport.height < window.innerHeight * 0.75;
+        setKeyboardOpen(isKeyboard);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   const handleUrlSubmit = async () => {
     if (!imageUrl.trim()) return;
@@ -37,7 +53,7 @@ export const BackgroundPickerModal = ({
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex ${keyboardOpen ? 'items-start pt-10' : 'items-center'} justify-center p-4`}
       onClick={onClose}
     >
       <motion.div 
@@ -86,35 +102,39 @@ export const BackgroundPickerModal = ({
               <span className="text-blue-400 font-cairo font-bold">أضف رابط صورة</span>
             </button>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="الصق رابط الصورة هنا..."
+                className="w-full px-4 py-4 rounded-xl bg-slate-800 border border-blue-500/50 text-white text-base font-almarai placeholder-slate-500 focus:outline-none focus:border-blue-400"
+                dir="ltr"
+                disabled={urlLoading}
+                autoFocus
+              />
               <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="flex-1 px-3 py-3 rounded-xl bg-slate-800 border border-blue-500/50 text-white text-sm font-almarai placeholder-slate-500 focus:outline-none focus:border-blue-400"
-                  dir="ltr"
-                  disabled={urlLoading}
-                />
                 <button
                   onClick={handleUrlSubmit}
                   disabled={!imageUrl.trim() || urlLoading}
-                  className="px-4 py-3 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
                 >
                   {urlLoading ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    <Check className="w-5 h-5 text-white" />
+                    <>
+                      <Check className="w-5 h-5 text-white" />
+                      <span className="text-white font-cairo font-bold">تأكيد</span>
+                    </>
                   )}
                 </button>
+                <button
+                  onClick={() => { setShowUrlInput(false); setImageUrl(''); }}
+                  className="px-4 py-3 rounded-xl bg-slate-700 text-slate-300 font-cairo font-bold hover:bg-slate-600 transition-colors"
+                >
+                  إلغاء
+                </button>
               </div>
-              <button
-                onClick={() => { setShowUrlInput(false); setImageUrl(''); }}
-                className="text-slate-400 text-xs font-almarai hover:text-white transition-colors"
-              >
-                إلغاء
-              </button>
             </div>
           )}
           
