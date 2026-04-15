@@ -1505,6 +1505,31 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Set background from URL
+  const handleBackgroundUrl = async (url) => {
+    try {
+      // Validate URL
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        toast.error('الرابط غير صحيح');
+        return;
+      }
+      
+      // Update room chat background with URL directly
+      await axios.put(`${API}/api/rooms/${roomId}/chat-background`, 
+        { background_url: url }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('تم تحديث خلفية الدردشة');
+      // Add timestamp to bypass cache
+      const cachedUrl = `${url}?t=${Date.now()}`;
+      setChatBackground(cachedUrl);
+      setShowBackgroundPicker(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل تحديث الخلفية');
+    }
+  };
+
   // Play breaking news alert sound
   const playBreakingNewsSound = () => {
     try {
@@ -4007,6 +4032,7 @@ const YallaLiveRoom = ({ user }) => {
             backgroundInputRef={backgroundInputRef}
             onBackgroundUpload={handleBackgroundUpload}
             onRemoveBackground={removeBackground}
+            onUrlSubmit={handleBackgroundUrl}
           />
         </AnimatePresence>
 
