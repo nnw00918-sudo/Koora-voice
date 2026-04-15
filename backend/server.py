@@ -3762,6 +3762,75 @@ async def get_stream(room_id: str):
     }
 
 
+# ============== Twitch to HLS Converter ==============
+
+import subprocess
+import shutil
+
+# Cache for HLS URLs (they expire after some time)
+_twitch_hls_cache = {}
+_twitch_hls_cache_time = {}
+TWITCH_HLS_CACHE_TTL = 300  # 5 minutes
+
+# Find streamlink path
+STREAMLINK_PATH = shutil.which('streamlink') or '/root/.venv/bin/streamlink'
+
+@api_router.get("/stream/twitch-hls")
+async def get_twitch_hls(url: str):
+    """Convert Twitch URL to HLS stream URL for direct playback"""
+    if not url or 'twitch.tv' not in url:
+        raise HTTPException(status_code=400, detail="رابط Twitch غير صحيح")
+    
+    # Check cache first
+    current_time = time.time()
+    if url in _twitch_hls_cache:
+        cache_time = _twitch_hls_cache_time.get(url, 0)
+        if current_time - cache_time < TWITCH_HLS_CACHE_TTL:
+            return {"hls_url": _twitch_hls_cache[url], "cached": True}
+    
+    try:
+        # Use streamlink to get HLS URL
+        result = subprocess.run(
+            [STREAMLINK_PATH, url, "best", "--stream-url"],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+        
+        if result.returncode != 0:
+            # Try lower quality if best fails
+            result = subprocess.run(
+                [STREAMLINK_PATH, url, "720p60,720p,480p,360p,worst", "--stream-url"],
+                capture_output=True,
+                text=True,
+                timeout=15
+            )
+        
+        if result.returncode == 0 and result.stdout.strip():
+            hls_url = result.stdout.strip()
+            # Cache the result
+            _twitch_hls_cache[url] = hls_url
+            _twitch_hls_cache_time[url] = current_time
+            return {"hls_url": hls_url, "cached": False}
+        else:
+            # Check if stream is offline
+            check_result = subprocess.run(
+                [STREAMLINK_PATH, url],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            if "No playable streams" in check_result.stdout or "No playable streams" in check_result.stderr:
+                raise HTTPException(status_code=404, detail="البث غير متاح حالياً (أوفلاين)")
+            raise HTTPException(status_code=500, detail="فشل في استخراج رابط البث")
+            
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="انتهت مهلة الاتصال بـ Twitch")
+    except Exception as e:
+        logging.error(f"Error getting Twitch HLS: {e}")
+        raise HTTPException(status_code=500, detail=f"خطأ: {str(e)}")
+
+
 # ============== Room News (أخبار الغرفة/الدوانية) ==============
 
 class RoomNewsCreate(BaseModel):

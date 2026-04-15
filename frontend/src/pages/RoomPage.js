@@ -197,6 +197,11 @@ const YallaLiveRoom = ({ user }) => {
   const [editingSlot, setEditingSlot] = useState(null);
   const [streamKey, setStreamKey] = useState(0); // Force iframe reload
   
+  // Twitch HLS conversion state
+  const [twitchHlsUrl, setTwitchHlsUrl] = useState(null);
+  const [twitchHlsLoading, setTwitchHlsLoading] = useState(false);
+  const [twitchHlsError, setTwitchHlsError] = useState(null);
+  
   // Screen sharing states
   const [screenShares, setScreenShares] = useState([]);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -354,6 +359,46 @@ const YallaLiveRoom = ({ user }) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
+
+  // Auto-convert Twitch URLs to HLS for direct playback
+  useEffect(() => {
+    const convertTwitchToHls = async () => {
+      const url = room?.stream_url;
+      if (!url || !url.includes('twitch.tv')) {
+        setTwitchHlsUrl(null);
+        setTwitchHlsError(null);
+        return;
+      }
+      
+      setTwitchHlsLoading(true);
+      setTwitchHlsError(null);
+      
+      try {
+        const response = await axios.get(`${API}/stream/twitch-hls`, {
+          params: { url },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.hls_url) {
+          setTwitchHlsUrl(response.data.hls_url);
+          console.log('Twitch HLS URL obtained:', response.data.cached ? 'from cache' : 'fresh');
+        }
+      } catch (error) {
+        console.error('Failed to convert Twitch to HLS:', error);
+        setTwitchHlsError(error.response?.data?.detail || 'فشل في تحويل رابط Twitch');
+        setTwitchHlsUrl(null);
+      } finally {
+        setTwitchHlsLoading(false);
+      }
+    };
+    
+    convertTwitchToHls();
+    
+    // Refresh HLS URL every 4 minutes (before 5 min cache expires)
+    const refreshInterval = setInterval(convertTwitchToHls, 240000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [room?.stream_url, token]);
 
   // Separate polling for seat requests (for staff: owner, leader, admin, mod) - FAST
   useEffect(() => {
@@ -3188,8 +3233,61 @@ const YallaLiveRoom = ({ user }) => {
                       </div>
                     );
                   } else if (isTwitch) {
-                    // Twitch - Use button to open in In-App Browser (iframe doesn't work on iOS)
+                    // Twitch - Auto-play using HLS conversion
                     const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
+                    
+                    // If HLS URL is available, play directly
+                    if (twitchHlsUrl) {
+                      return (
+                        <div className="w-full h-full relative">
+                          <ReactPlayer
+                            url={twitchHlsUrl}
+                            playing
+                            controls
+                            width="100%"
+                            height="100%"
+                            config={{
+                              file: {
+                                forceHLS: true,
+                              }
+                            }}
+                            onError={(e) => {
+                              console.error('Twitch HLS playback error:', e);
+                              setTwitchHlsError('خطأ في تشغيل البث');
+                            }}
+                          />
+                          {/* Twitch channel badge */}
+                          <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-purple-600/90 px-2 py-1 rounded-lg">
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                            </svg>
+                            <span className="text-white text-xs font-medium">{channelName}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Loading state while converting
+                    if (twitchHlsLoading) {
+                      return (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/30 via-slate-900 to-slate-950">
+                          <div className="w-24 h-24 rounded-2xl bg-purple-600 flex items-center justify-center mb-4 shadow-2xl shadow-purple-600/40 animate-pulse">
+                            <svg className="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                            </svg>
+                          </div>
+                          <p className="text-white text-lg font-bold mb-1">جاري تحميل البث...</p>
+                          <p className="text-purple-400 text-sm">{channelName}</p>
+                          <div className="mt-3 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Error state or offline - fallback to browser
                     return (
                       <div 
                         className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/30 via-slate-900 to-slate-950 cursor-pointer group"
@@ -3208,7 +3306,11 @@ const YallaLiveRoom = ({ user }) => {
                           </svg>
                         </div>
                         <p className="text-white text-xl font-bold mb-1">Twitch Live</p>
-                        <p className="text-purple-400 text-sm font-medium">اضغط للمشاهدة</p>
+                        {twitchHlsError ? (
+                          <p className="text-red-400 text-sm font-medium">{twitchHlsError}</p>
+                        ) : (
+                          <p className="text-purple-400 text-sm font-medium">اضغط للمشاهدة</p>
+                        )}
                         <p className="text-slate-500 text-xs mt-1">{channelName}</p>
                         <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
                           <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
