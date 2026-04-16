@@ -3931,6 +3931,83 @@ async def get_twitch_hls(url: str):
         raise HTTPException(status_code=500, detail=f"خطأ: {str(e)}")
 
 
+# ============== YouTube to Direct URL Converter ==============
+
+# Cache for YouTube URLs
+_youtube_url_cache = {}
+_youtube_url_cache_time = {}
+YOUTUBE_URL_CACHE_TTL = 3600  # 1 hour (YouTube URLs last longer)
+
+@api_router.get("/stream/youtube-direct")
+async def get_youtube_direct(url: str):
+    """Extract direct video URL from YouTube for in-app playback"""
+    if not url or ('youtube.com' not in url and 'youtu.be' not in url):
+        raise HTTPException(status_code=400, detail="رابط YouTube غير صحيح")
+    
+    # Check cache first
+    current_time = time.time()
+    if url in _youtube_url_cache:
+        cache_time = _youtube_url_cache_time.get(url, 0)
+        if current_time - cache_time < YOUTUBE_URL_CACHE_TTL:
+            return _youtube_url_cache[url]
+    
+    try:
+        import yt_dlp
+        
+        ydl_opts = {
+            'format': 'best[ext=mp4][height<=720]/best[ext=mp4]/best',
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': False,
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            
+            if not info:
+                raise HTTPException(status_code=404, detail="الفيديو غير موجود")
+            
+            # Get the best URL
+            video_url = info.get('url')
+            
+            # If no direct URL, look in formats
+            if not video_url and info.get('formats'):
+                # Find best mp4 format
+                for fmt in reversed(info['formats']):
+                    if fmt.get('ext') == 'mp4' and fmt.get('url'):
+                        video_url = fmt['url']
+                        break
+                
+                # Fallback to any format with URL
+                if not video_url:
+                    for fmt in reversed(info['formats']):
+                        if fmt.get('url'):
+                            video_url = fmt['url']
+                            break
+            
+            if not video_url:
+                raise HTTPException(status_code=404, detail="لم يتم العثور على رابط الفيديو")
+            
+            result = {
+                "direct_url": video_url,
+                "title": info.get('title', 'Unknown'),
+                "duration": info.get('duration', 0),
+                "thumbnail": info.get('thumbnail'),
+                "is_live": info.get('is_live', False),
+                "cached": False
+            }
+            
+            # Cache the result
+            _youtube_url_cache[url] = {**result, "cached": True}
+            _youtube_url_cache_time[url] = current_time
+            
+            return result
+            
+    except Exception as e:
+        logging.error(f"Error extracting YouTube URL: {e}")
+        raise HTTPException(status_code=500, detail=f"فشل استخراج الرابط: {str(e)}")
+
+
 # ============== Room News (أخبار الغرفة/الدوانية) ==============
 
 class RoomNewsCreate(BaseModel):

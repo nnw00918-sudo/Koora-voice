@@ -205,6 +205,12 @@ const YallaLiveRoom = ({ user }) => {
   const [twitchHlsLoading, setTwitchHlsLoading] = useState(false);
   const [twitchHlsError, setTwitchHlsError] = useState(null);
   
+  // YouTube direct URL state
+  const [youtubeDirectUrl, setYoutubeDirectUrl] = useState(null);
+  const [youtubeLoading, setYoutubeLoading] = useState(false);
+  const [youtubeError, setYoutubeError] = useState(null);
+  const [youtubeInfo, setYoutubeInfo] = useState(null);
+  
   // Watch Party Sync states
   const [watchPartySync, setWatchPartySync] = useState({
     currentTime: 0,
@@ -408,6 +414,59 @@ const YallaLiveRoom = ({ user }) => {
     
     // Refresh HLS URL every 4 minutes (before 5 min cache expires)
     const refreshInterval = setInterval(convertTwitchToHls, 240000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [room?.stream_url, token]);
+
+  // Auto-extract YouTube direct URL for in-app playback
+  useEffect(() => {
+    const extractYoutubeUrl = async () => {
+      const url = room?.stream_url;
+      if (!url) {
+        setYoutubeDirectUrl(null);
+        setYoutubeError(null);
+        return;
+      }
+      
+      const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+      if (!isYouTube) {
+        setYoutubeDirectUrl(null);
+        setYoutubeError(null);
+        return;
+      }
+      
+      setYoutubeLoading(true);
+      setYoutubeError(null);
+      
+      try {
+        const response = await axios.get(`${API}/api/stream/youtube-direct`, {
+          params: { url },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.direct_url) {
+          setYoutubeDirectUrl(response.data.direct_url);
+          setYoutubeInfo({
+            title: response.data.title,
+            duration: response.data.duration,
+            thumbnail: response.data.thumbnail,
+            isLive: response.data.is_live
+          });
+          console.log('YouTube direct URL obtained:', response.data.cached ? 'from cache' : 'fresh');
+        }
+      } catch (error) {
+        console.error('Failed to extract YouTube URL:', error);
+        setYoutubeError(error.response?.data?.detail || 'فشل في استخراج رابط الفيديو');
+        setYoutubeDirectUrl(null);
+      } finally {
+        setYoutubeLoading(false);
+      }
+    };
+    
+    extractYoutubeUrl();
+    
+    // Refresh URL every 30 minutes (YouTube URLs last about 6 hours)
+    const refreshInterval = setInterval(extractYoutubeUrl, 1800000);
     
     return () => clearInterval(refreshInterval);
   }, [room?.stream_url, token]);
@@ -3305,39 +3364,82 @@ const YallaLiveRoom = ({ user }) => {
                   const isTwitter = url.includes('twitter.com') || url.includes('x.com');
                   
                   if (isYouTube) {
-                    // YouTube - Use TV mode for better compatibility
-                    let videoId = null;
-                    if (url.includes('youtu.be/')) {
-                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                    } else if (url.includes('v=')) {
-                      videoId = url.split('v=')[1]?.split('&')[0];
-                    } else if (url.includes('/live/')) {
-                      videoId = url.split('/live/')[1]?.split('?')[0];
-                    }
+                    // YouTube - Use extracted direct URL for in-app playback
                     
-                    if (videoId) {
-                      // Use YouTube TV mode - designed for embedded devices
+                    // If direct URL is available, play with ReactPlayer (supports sync!)
+                    if (youtubeDirectUrl) {
                       return (
                         <div className="w-full h-full relative bg-black">
-                          <iframe
-                            src={`https://www.youtube.com/tv#/watch?v=${videoId}`}
-                            className="w-full h-full"
-                            allowFullScreen
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          <ReactPlayer
+                            ref={streamPlayerRef}
+                            url={youtubeDirectUrl}
+                            playing={watchPartySync.isPlaying || true}
+                            controls
+                            width="100%"
+                            height="100%"
+                            onProgress={(state) => {
+                              if ((isOwner || isRoomLeader) && state.playedSeconds > 0) {
+                                if (Math.floor(state.playedSeconds) % 5 === 0) {
+                                  syncWatchParty(state.playedSeconds, true);
+                                }
+                              }
+                            }}
+                            onPause={() => {
+                              if (isOwner || isRoomLeader) {
+                                const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
+                                syncWatchParty(currentTime, false);
+                              }
+                            }}
+                            onPlay={() => {
+                              if (isOwner || isRoomLeader) {
+                                const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
+                                syncWatchParty(currentTime, true);
+                              }
+                            }}
+                            onSeek={(seconds) => {
+                              if (isOwner || isRoomLeader) {
+                                syncWatchParty(seconds, true);
+                              }
+                            }}
                           />
-                          {/* YouTube badge */}
+                          {/* YouTube badge with title */}
                           <div className="absolute top-2 right-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg pointer-events-none">
                             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z"/>
                             </svg>
-                            <span className="text-white text-xs font-medium">YouTube TV</span>
+                            <span className="text-white text-xs font-medium">
+                              {youtubeInfo?.isLive ? '🔴 LIVE' : 'YouTube'}
+                            </span>
+                          </div>
+                          {youtubeInfo?.title && (
+                            <div className="absolute bottom-2 left-2 right-2 bg-black/70 px-2 py-1 rounded-lg pointer-events-none">
+                              <p className="text-white text-xs truncate">{youtubeInfo.title}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    
+                    // Loading state while extracting
+                    if (youtubeLoading) {
+                      return (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950">
+                          <div className="w-24 h-24 rounded-2xl bg-red-600 flex items-center justify-center mb-4 animate-pulse">
+                            <svg className="w-14 h-14 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
+                          <p className="text-white text-lg font-bold mb-1">جاري تحميل الفيديو...</p>
+                          <div className="mt-3 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                           </div>
                         </div>
                       );
                     }
                     
-                    // Fallback
+                    // Error state - fallback to open externally
                     return (
                       <div 
                         className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950 cursor-pointer"
@@ -3349,7 +3451,11 @@ const YallaLiveRoom = ({ user }) => {
                           </svg>
                         </div>
                         <p className="text-white text-xl font-bold mb-1">YouTube</p>
-                        <p className="text-red-400 text-sm">اضغط للمشاهدة</p>
+                        {youtubeError ? (
+                          <p className="text-red-400 text-sm text-center px-4">{youtubeError}</p>
+                        ) : (
+                          <p className="text-red-400 text-sm">اضغط للمشاهدة</p>
+                        )}
                       </div>
                     );
                   } else if (isTwitch) {
