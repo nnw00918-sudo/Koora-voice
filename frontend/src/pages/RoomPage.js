@@ -3260,7 +3260,7 @@ const YallaLiveRoom = ({ user }) => {
                   const isTwitter = url.includes('twitter.com') || url.includes('x.com');
                   
                   if (isYouTube) {
-                    // YouTube - Try multiple embed methods
+                    // YouTube - Use TV mode for better compatibility
                     let videoId = null;
                     if (url.includes('youtu.be/')) {
                       videoId = url.split('youtu.be/')[1]?.split('?')[0];
@@ -3271,29 +3271,28 @@ const YallaLiveRoom = ({ user }) => {
                     }
                     
                     if (videoId) {
-                      // Use youtube-nocookie.com with specific parameters for iOS
+                      // Use YouTube TV mode - designed for embedded devices
                       return (
                         <div className="w-full h-full relative bg-black">
                           <iframe
-                            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`}
+                            src={`https://www.youtube.com/tv#/watch?v=${videoId}`}
                             className="w-full h-full"
                             allowFullScreen
                             frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            referrerPolicy="strict-origin-when-cross-origin"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           />
                           {/* YouTube badge */}
-                          <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg pointer-events-none">
+                          <div className="absolute top-2 right-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg pointer-events-none">
                             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z"/>
                             </svg>
-                            <span className="text-white text-xs font-medium">YouTube</span>
+                            <span className="text-white text-xs font-medium">YouTube TV</span>
                           </div>
                         </div>
                       );
                     }
                     
-                    // Fallback if no video ID
+                    // Fallback
                     return (
                       <div 
                         className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950 cursor-pointer"
