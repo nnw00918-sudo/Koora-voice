@@ -3260,8 +3260,7 @@ const YallaLiveRoom = ({ user }) => {
                   const isTwitter = url.includes('twitter.com') || url.includes('x.com');
                   
                   if (isYouTube) {
-                    // YouTube - Embed using Piped (open-source YouTube frontend)
-                    // This bypasses YouTube's WebView restrictions
+                    // YouTube - Try multiple embed methods
                     let videoId = null;
                     if (url.includes('youtu.be/')) {
                       videoId = url.split('youtu.be/')[1]?.split('?')[0];
@@ -3272,18 +3271,19 @@ const YallaLiveRoom = ({ user }) => {
                     }
                     
                     if (videoId) {
-                      // Use Piped embed - works on iOS WebViews!
+                      // Use youtube-nocookie.com with specific parameters for iOS
                       return (
-                        <div className="w-full h-full relative">
+                        <div className="w-full h-full relative bg-black">
                           <iframe
-                            src={`https://piped.video/embed/${videoId}?autoplay=1`}
+                            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`}
                             className="w-full h-full"
                             allowFullScreen
                             frameBorder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerPolicy="strict-origin-when-cross-origin"
                           />
                           {/* YouTube badge */}
-                          <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg">
+                          <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg pointer-events-none">
                             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z"/>
                             </svg>
@@ -3296,33 +3296,34 @@ const YallaLiveRoom = ({ user }) => {
                     // Fallback if no video ID
                     return (
                       <div 
-                        className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950 cursor-pointer group"
+                        className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950 cursor-pointer"
                         onClick={() => window.open(url, '_blank')}
                       >
-                        <div className="w-24 h-24 rounded-2xl bg-red-600 flex items-center justify-center mb-4 shadow-2xl shadow-red-600/40">
+                        <div className="w-24 h-24 rounded-2xl bg-red-600 flex items-center justify-center mb-4">
                           <svg className="w-14 h-14 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z"/>
                           </svg>
                         </div>
                         <p className="text-white text-xl font-bold mb-1">YouTube</p>
-                        <p className="text-red-400 text-sm font-medium">اضغط للمشاهدة</p>
+                        <p className="text-red-400 text-sm">اضغط للمشاهدة</p>
                       </div>
                     );
                   } else if (isTwitch) {
-                    // Twitch - Try embed directly first
+                    // Twitch - Embed with proper parent domains
                     const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
                     
                     return (
-                      <div className="w-full h-full relative">
+                      <div className="w-full h-full relative bg-black">
                         <iframe
-                          src={`https://player.twitch.tv/?channel=${channelName}&parent=localhost&parent=capacitor&parent=ionic&muted=false&autoplay=true`}
+                          src={`https://player.twitch.tv/?channel=${channelName}&parent=localhost&parent=127.0.0.1&parent=capacitor&parent=ionic&parent=koravoice.com&muted=false&autoplay=true`}
                           className="w-full h-full"
                           allowFullScreen
                           frameBorder="0"
                           allow="autoplay; fullscreen"
+                          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
                         />
                         {/* Twitch badge */}
-                        <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-purple-600/90 px-2 py-1 rounded-lg">
+                        <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-purple-600/90 px-2 py-1 rounded-lg pointer-events-none">
                           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
                           </svg>
