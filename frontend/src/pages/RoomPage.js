@@ -403,64 +403,6 @@ const YallaLiveRoom = ({ user }) => {
     return () => clearInterval(refreshInterval);
   }, [room?.stream_url, token]);
 
-  // Auto-open YouTube app when entering room with YouTube stream
-  useEffect(() => {
-    const url = room?.stream_url;
-    if (!url) return;
-    
-    const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
-    if (!isYouTube) return;
-    
-    // Only auto-open once per room session
-    const autoOpenKey = `youtube_opened_${roomId}`;
-    if (sessionStorage.getItem(autoOpenKey)) return;
-    
-    // Mark as opened
-    sessionStorage.setItem(autoOpenKey, 'true');
-    
-    // Extract video ID and open native YouTube app
-    let videoId = null;
-    if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-    } else if (url.includes('v=')) {
-      videoId = url.split('v=')[1]?.split('&')[0];
-    } else if (url.includes('/live/')) {
-      videoId = url.split('/live/')[1]?.split('?')[0];
-    }
-    
-    if (videoId) {
-      // Small delay to let the room load first
-      setTimeout(() => {
-        window.location.href = `youtube://www.youtube.com/watch?v=${videoId}`;
-      }, 500);
-    }
-  }, [room?.stream_url, roomId]);
-
-  // Auto-open Twitch app when entering room with Twitch stream
-  useEffect(() => {
-    const url = room?.stream_url;
-    if (!url) return;
-    
-    const isTwitch = url.includes('twitch.tv');
-    if (!isTwitch) return;
-    
-    // Only auto-open once per room session
-    const autoOpenKey = `twitch_opened_${roomId}`;
-    if (sessionStorage.getItem(autoOpenKey)) return;
-    
-    // Mark as opened
-    sessionStorage.setItem(autoOpenKey, 'true');
-    
-    // Extract channel name and open native Twitch app
-    const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
-    
-    if (channelName) {
-      setTimeout(() => {
-        window.location.href = `twitch://stream/${channelName}`;
-      }, 500);
-    }
-  }, [room?.stream_url, roomId]);
-
   // Separate polling for seat requests (for staff: owner, leader, admin, mod) - FAST
   useEffect(() => {
     if (canApproveSeatRequests) {
@@ -3318,80 +3260,73 @@ const YallaLiveRoom = ({ user }) => {
                   const isTwitter = url.includes('twitter.com') || url.includes('x.com');
                   
                   if (isYouTube) {
-                    // YouTube - Open in native YouTube app (not in-app browser to avoid Error 153)
-                    // Convert to youtube:// scheme for native app, fallback to https
-                    const getYouTubeNativeUrl = (youtubeUrl) => {
-                      // Extract video ID
-                      let videoId = null;
-                      if (youtubeUrl.includes('youtu.be/')) {
-                        videoId = youtubeUrl.split('youtu.be/')[1]?.split('?')[0];
-                      } else if (youtubeUrl.includes('v=')) {
-                        videoId = youtubeUrl.split('v=')[1]?.split('&')[0];
-                      } else if (youtubeUrl.includes('/live/')) {
-                        videoId = youtubeUrl.split('/live/')[1]?.split('?')[0];
-                      }
-                      return videoId ? `youtube://www.youtube.com/watch?v=${videoId}` : youtubeUrl;
-                    };
+                    // YouTube - Embed using Piped (open-source YouTube frontend)
+                    // This bypasses YouTube's WebView restrictions
+                    let videoId = null;
+                    if (url.includes('youtu.be/')) {
+                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                    } else if (url.includes('v=')) {
+                      videoId = url.split('v=')[1]?.split('&')[0];
+                    } else if (url.includes('/live/')) {
+                      videoId = url.split('/live/')[1]?.split('?')[0];
+                    }
                     
+                    if (videoId) {
+                      // Use Piped embed - works on iOS WebViews!
+                      return (
+                        <div className="w-full h-full relative">
+                          <iframe
+                            src={`https://piped.video/embed/${videoId}?autoplay=1`}
+                            className="w-full h-full"
+                            allowFullScreen
+                            frameBorder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                          />
+                          {/* YouTube badge */}
+                          <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg">
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span className="text-white text-xs font-medium">YouTube</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Fallback if no video ID
                     return (
                       <div 
                         className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950 cursor-pointer group"
-                        onClick={async () => {
-                          const nativeUrl = getYouTubeNativeUrl(url);
-                          try {
-                            // Try opening native YouTube app first
-                            window.location.href = nativeUrl;
-                            // Fallback to regular URL after a short delay if native didn't work
-                            setTimeout(() => {
-                              window.open(url, '_blank');
-                            }, 1500);
-                          } catch (e) {
-                            window.open(url, '_blank');
-                          }
-                        }}
+                        onClick={() => window.open(url, '_blank')}
                       >
-                        {/* YouTube Logo */}
-                        <div className="w-24 h-24 rounded-2xl bg-red-600 flex items-center justify-center mb-4 shadow-2xl shadow-red-600/40 group-hover:scale-110 transition-transform">
+                        <div className="w-24 h-24 rounded-2xl bg-red-600 flex items-center justify-center mb-4 shadow-2xl shadow-red-600/40">
                           <svg className="w-14 h-14 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z"/>
                           </svg>
                         </div>
                         <p className="text-white text-xl font-bold mb-1">YouTube</p>
-                        <p className="text-lime-400 text-sm font-medium">يفتح في تطبيق YouTube</p>
-                        <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
-                          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                          اضغط للفتح مرة أخرى
-                        </div>
+                        <p className="text-red-400 text-sm font-medium">اضغط للمشاهدة</p>
                       </div>
                     );
                   } else if (isTwitch) {
-                    // Twitch - Open in native Twitch app
+                    // Twitch - Try embed directly first
                     const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
                     
                     return (
-                      <div 
-                        className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/30 via-slate-900 to-slate-950 cursor-pointer group"
-                        onClick={() => {
-                          // Open in native Twitch app
-                          window.location.href = `twitch://stream/${channelName}`;
-                          // Fallback to browser after delay
-                          setTimeout(() => {
-                            window.open(url, '_blank');
-                          }, 1500);
-                        }}
-                      >
-                        {/* Twitch Logo */}
-                        <div className="w-24 h-24 rounded-2xl bg-purple-600 flex items-center justify-center mb-4 shadow-2xl shadow-purple-600/40 group-hover:scale-110 transition-transform">
-                          <svg className="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <div className="w-full h-full relative">
+                        <iframe
+                          src={`https://player.twitch.tv/?channel=${channelName}&parent=localhost&parent=capacitor&parent=ionic&muted=false&autoplay=true`}
+                          className="w-full h-full"
+                          allowFullScreen
+                          frameBorder="0"
+                          allow="autoplay; fullscreen"
+                        />
+                        {/* Twitch badge */}
+                        <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-purple-600/90 px-2 py-1 rounded-lg">
+                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
                           </svg>
-                        </div>
-                        <p className="text-white text-xl font-bold mb-1">Twitch</p>
-                        <p className="text-purple-400 text-sm font-medium">يفتح في تطبيق Twitch</p>
-                        <p className="text-slate-500 text-xs mt-1">{channelName}</p>
-                        <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
-                          <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-                          اضغط للفتح مرة أخرى
+                          <span className="text-white text-xs font-medium">{channelName}</span>
                         </div>
                       </div>
                     );
