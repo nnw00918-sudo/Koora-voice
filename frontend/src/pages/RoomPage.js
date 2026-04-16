@@ -403,6 +403,39 @@ const YallaLiveRoom = ({ user }) => {
     return () => clearInterval(refreshInterval);
   }, [room?.stream_url, token]);
 
+  // Auto-open YouTube app when entering room with YouTube stream
+  useEffect(() => {
+    const url = room?.stream_url;
+    if (!url) return;
+    
+    const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+    if (!isYouTube) return;
+    
+    // Only auto-open once per room session
+    const autoOpenKey = `youtube_opened_${roomId}`;
+    if (sessionStorage.getItem(autoOpenKey)) return;
+    
+    // Mark as opened
+    sessionStorage.setItem(autoOpenKey, 'true');
+    
+    // Extract video ID and open native YouTube app
+    let videoId = null;
+    if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1]?.split('?')[0];
+    } else if (url.includes('v=')) {
+      videoId = url.split('v=')[1]?.split('&')[0];
+    } else if (url.includes('/live/')) {
+      videoId = url.split('/live/')[1]?.split('?')[0];
+    }
+    
+    if (videoId) {
+      // Small delay to let the room load first
+      setTimeout(() => {
+        window.location.href = `youtube://www.youtube.com/watch?v=${videoId}`;
+      }, 500);
+    }
+  }, [room?.stream_url, roomId]);
+
   // Separate polling for seat requests (for staff: owner, leader, admin, mod) - FAST
   useEffect(() => {
     if (canApproveSeatRequests) {
@@ -3299,10 +3332,10 @@ const YallaLiveRoom = ({ user }) => {
                           </svg>
                         </div>
                         <p className="text-white text-xl font-bold mb-1">YouTube</p>
-                        <p className="text-lime-400 text-sm font-medium">اضغط لفتح تطبيق YouTube</p>
+                        <p className="text-lime-400 text-sm font-medium">يفتح في تطبيق YouTube</p>
                         <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
                           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                          يفتح في تطبيق YouTube
+                          اضغط للفتح مرة أخرى
                         </div>
                       </div>
                     );
