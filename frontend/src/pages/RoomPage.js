@@ -205,6 +205,15 @@ const YallaLiveRoom = ({ user }) => {
   const [twitchHlsLoading, setTwitchHlsLoading] = useState(false);
   const [twitchHlsError, setTwitchHlsError] = useState(null);
   
+  // Watch Party Sync states
+  const [watchPartySync, setWatchPartySync] = useState({
+    currentTime: 0,
+    isPlaying: false,
+    lastSync: null
+  });
+  const [isSyncEnabled, setIsSyncEnabled] = useState(true);
+  const lastSyncTime = useRef(0);
+  
   // Screen sharing states
   const [screenShares, setScreenShares] = useState([]);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -980,6 +989,23 @@ const YallaLiveRoom = ({ user }) => {
       // Handle message deletion broadcast
       if (data.type === 'message_deleted' && data.room_id === roomId) {
         setMessages(prev => prev.filter(m => m.id !== data.message_id));
+      }
+      
+      // Handle Watch Party sync from host
+      if (data.type === 'watch_party_sync') {
+        console.log('Watch Party Sync received:', data);
+        if (isSyncEnabled && streamPlayerRef.current) {
+          setWatchPartySync({
+            currentTime: data.current_time,
+            isPlaying: data.is_playing,
+            lastSync: Date.now()
+          });
+          // Seek to synced time if difference is more than 2 seconds
+          const currentTime = streamPlayerRef.current.getCurrentTime?.() || 0;
+          if (Math.abs(currentTime - data.current_time) > 2) {
+            streamPlayerRef.current.seekTo?.(data.current_time, 'seconds');
+          }
+        }
       }
     };
     
@@ -2482,6 +2508,25 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
+  // Sync video playback for Watch Party (host only)
+  const syncWatchParty = async (currentTime, isPlaying) => {
+    if (!isOwner && !isRoomLeader) return; // Only host can sync
+    
+    // Don't sync too frequently (max once per 2 seconds)
+    const now = Date.now();
+    if (now - lastSyncTime.current < 2000) return;
+    lastSyncTime.current = now;
+    
+    try {
+      await axios.put(`${API}/api/rooms/${roomId}/watch-party/sync`, {
+        current_time: currentTime,
+        is_playing: isPlaying
+      }, { headers: { Authorization: `Bearer ${token}` } });
+    } catch (error) {
+      console.error('Failed to sync watch party:', error);
+    }
+  };
+
   // Handle @ mention input
   const handleMessageChange = (e) => {
     const value = e.target.value;
@@ -3377,17 +3422,43 @@ const YallaLiveRoom = ({ user }) => {
                       </div>
                     );
                   } else {
-                    // Direct video URL (HLS/MP4/etc) - Use ReactPlayer
+                    // Direct video URL (HLS/MP4/etc) - Use ReactPlayer with sync
                     return (
                       <ReactPlayer
+                        ref={streamPlayerRef}
                         url={url}
-                        playing
+                        playing={watchPartySync.isPlaying || true}
                         controls
                         width="100%"
                         height="100%"
                         config={{
                           file: {
                             forceHLS: url.includes('.m3u8'),
+                          }
+                        }}
+                        onProgress={(state) => {
+                          // Host syncs every 5 seconds
+                          if ((isOwner || isRoomLeader) && state.playedSeconds > 0) {
+                            if (Math.floor(state.playedSeconds) % 5 === 0) {
+                              syncWatchParty(state.playedSeconds, true);
+                            }
+                          }
+                        }}
+                        onPause={() => {
+                          if (isOwner || isRoomLeader) {
+                            const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
+                            syncWatchParty(currentTime, false);
+                          }
+                        }}
+                        onPlay={() => {
+                          if (isOwner || isRoomLeader) {
+                            const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
+                            syncWatchParty(currentTime, true);
+                          }
+                        }}
+                        onSeek={(seconds) => {
+                          if (isOwner || isRoomLeader) {
+                            syncWatchParty(seconds, true);
                           }
                         }}
                       />

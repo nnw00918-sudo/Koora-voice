@@ -3500,6 +3500,14 @@ async def sync_watch_party(
         }}
     )
     
+    # Broadcast sync to all room participants via WebSocket
+    await ws_manager.broadcast_to_room({
+        "type": "watch_party_sync",
+        "current_time": sync_data.current_time,
+        "is_playing": sync_data.is_playing,
+        "synced_by": current_user.id
+    }, room_id, exclude_user=current_user.id)
+    
     return {"message": "تم المزامنة", "current_time": sync_data.current_time, "is_playing": sync_data.is_playing}
 
 
