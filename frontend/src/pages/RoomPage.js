@@ -3372,6 +3372,25 @@ const YallaLiveRoom = ({ user }) => {
                         </div>
                       </div>
                     );
+                  } else if (url.includes('kick.com')) {
+                    // Kick.com - Embed directly (supports iframe embedding)
+                    const channelName = url.split('kick.com/')[1]?.split('/')[0]?.split('?')[0];
+                    return (
+                      <div className="w-full h-full relative">
+                        <iframe
+                          src={`https://player.kick.com/${channelName}`}
+                          className="w-full h-full"
+                          allowFullScreen
+                          frameBorder="0"
+                          allow="autoplay; fullscreen"
+                        />
+                        {/* Kick channel badge */}
+                        <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-green-500/90 px-2 py-1 rounded-lg">
+                          <span className="text-white text-xs font-bold">KICK</span>
+                          <span className="text-white text-xs font-medium">{channelName}</span>
+                        </div>
+                      </div>
+                    );
                   } else if (isTwitter) {
                     // Twitter/X - Use button to open in In-App Browser
                     return (
