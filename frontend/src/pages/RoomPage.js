@@ -3260,13 +3260,33 @@ const YallaLiveRoom = ({ user }) => {
                   const isTwitter = url.includes('twitter.com') || url.includes('x.com');
                   
                   if (isYouTube) {
-                    // YouTube - Use button to open in In-App Browser
+                    // YouTube - Open in native YouTube app (not in-app browser to avoid Error 153)
+                    // Convert to youtube:// scheme for native app, fallback to https
+                    const getYouTubeNativeUrl = (youtubeUrl) => {
+                      // Extract video ID
+                      let videoId = null;
+                      if (youtubeUrl.includes('youtu.be/')) {
+                        videoId = youtubeUrl.split('youtu.be/')[1]?.split('?')[0];
+                      } else if (youtubeUrl.includes('v=')) {
+                        videoId = youtubeUrl.split('v=')[1]?.split('&')[0];
+                      } else if (youtubeUrl.includes('/live/')) {
+                        videoId = youtubeUrl.split('/live/')[1]?.split('?')[0];
+                      }
+                      return videoId ? `youtube://www.youtube.com/watch?v=${videoId}` : youtubeUrl;
+                    };
+                    
                     return (
                       <div 
                         className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950 cursor-pointer group"
                         onClick={async () => {
+                          const nativeUrl = getYouTubeNativeUrl(url);
                           try {
-                            await Browser.open({ url: url, presentationStyle: 'popover' });
+                            // Try opening native YouTube app first
+                            window.location.href = nativeUrl;
+                            // Fallback to regular URL after a short delay if native didn't work
+                            setTimeout(() => {
+                              window.open(url, '_blank');
+                            }, 1500);
                           } catch (e) {
                             window.open(url, '_blank');
                           }
@@ -3278,11 +3298,11 @@ const YallaLiveRoom = ({ user }) => {
                             <path d="M8 5v14l11-7z"/>
                           </svg>
                         </div>
-                        <p className="text-white text-xl font-bold mb-1">YouTube Live</p>
-                        <p className="text-lime-400 text-sm font-medium">اضغط للمشاهدة</p>
+                        <p className="text-white text-xl font-bold mb-1">YouTube</p>
+                        <p className="text-lime-400 text-sm font-medium">اضغط لفتح تطبيق YouTube</p>
                         <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
                           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                          بث مباشر
+                          يفتح في تطبيق YouTube
                         </div>
                       </div>
                     );
