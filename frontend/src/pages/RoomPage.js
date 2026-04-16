@@ -436,6 +436,31 @@ const YallaLiveRoom = ({ user }) => {
     }
   }, [room?.stream_url, roomId]);
 
+  // Auto-open Twitch app when entering room with Twitch stream
+  useEffect(() => {
+    const url = room?.stream_url;
+    if (!url) return;
+    
+    const isTwitch = url.includes('twitch.tv');
+    if (!isTwitch) return;
+    
+    // Only auto-open once per room session
+    const autoOpenKey = `twitch_opened_${roomId}`;
+    if (sessionStorage.getItem(autoOpenKey)) return;
+    
+    // Mark as opened
+    sessionStorage.setItem(autoOpenKey, 'true');
+    
+    // Extract channel name and open native Twitch app
+    const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
+    
+    if (channelName) {
+      setTimeout(() => {
+        window.location.href = `twitch://stream/${channelName}`;
+      }, 500);
+    }
+  }, [room?.stream_url, roomId]);
+
   // Separate polling for seat requests (for staff: owner, leader, admin, mod) - FAST
   useEffect(() => {
     if (canApproveSeatRequests) {
@@ -3340,70 +3365,19 @@ const YallaLiveRoom = ({ user }) => {
                       </div>
                     );
                   } else if (isTwitch) {
-                    // Twitch - Auto-play using HLS conversion
+                    // Twitch - Open in native Twitch app
                     const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
                     
-                    // If HLS URL is available, play directly
-                    if (twitchHlsUrl) {
-                      return (
-                        <div className="w-full h-full relative">
-                          <ReactPlayer
-                            url={twitchHlsUrl}
-                            playing
-                            controls
-                            width="100%"
-                            height="100%"
-                            config={{
-                              file: {
-                                forceHLS: true,
-                              }
-                            }}
-                            onError={(e) => {
-                              console.error('Twitch HLS playback error:', e);
-                              setTwitchHlsError('خطأ في تشغيل البث');
-                            }}
-                          />
-                          {/* Twitch channel badge */}
-                          <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-purple-600/90 px-2 py-1 rounded-lg">
-                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
-                            </svg>
-                            <span className="text-white text-xs font-medium">{channelName}</span>
-                          </div>
-                        </div>
-                      );
-                    }
-                    
-                    // Loading state while converting
-                    if (twitchHlsLoading) {
-                      return (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/30 via-slate-900 to-slate-950">
-                          <div className="w-24 h-24 rounded-2xl bg-purple-600 flex items-center justify-center mb-4 shadow-2xl shadow-purple-600/40 animate-pulse">
-                            <svg className="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
-                            </svg>
-                          </div>
-                          <p className="text-white text-lg font-bold mb-1">جاري تحميل البث...</p>
-                          <p className="text-purple-400 text-sm">{channelName}</p>
-                          <div className="mt-3 flex items-center gap-2">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                          </div>
-                        </div>
-                      );
-                    }
-                    
-                    // Error state or offline - fallback to browser
                     return (
                       <div 
                         className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/30 via-slate-900 to-slate-950 cursor-pointer group"
-                        onClick={async () => {
-                          try {
-                            await Browser.open({ url: url, presentationStyle: 'popover' });
-                          } catch (e) {
+                        onClick={() => {
+                          // Open in native Twitch app
+                          window.location.href = `twitch://stream/${channelName}`;
+                          // Fallback to browser after delay
+                          setTimeout(() => {
                             window.open(url, '_blank');
-                          }
+                          }, 1500);
                         }}
                       >
                         {/* Twitch Logo */}
@@ -3412,16 +3386,12 @@ const YallaLiveRoom = ({ user }) => {
                             <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
                           </svg>
                         </div>
-                        <p className="text-white text-xl font-bold mb-1">Twitch Live</p>
-                        {twitchHlsError ? (
-                          <p className="text-red-400 text-sm font-medium">{twitchHlsError}</p>
-                        ) : (
-                          <p className="text-purple-400 text-sm font-medium">اضغط للمشاهدة</p>
-                        )}
+                        <p className="text-white text-xl font-bold mb-1">Twitch</p>
+                        <p className="text-purple-400 text-sm font-medium">يفتح في تطبيق Twitch</p>
                         <p className="text-slate-500 text-xs mt-1">{channelName}</p>
                         <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
                           <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-                          بث مباشر
+                          اضغط للفتح مرة أخرى
                         </div>
                       </div>
                     );
