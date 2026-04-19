@@ -792,3 +792,29 @@ input[type="range"].volume-slider.stream-volume::-moz-range-thumb {
 }
 
 /* Fix mobile keyboard issues */
+
+
+/* News Ticker Marquee Animation - RTL (Right to Left for Arabic) */
+@keyframes marquee-rtl {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee-rtl {
+  display: inline-flex;
+  animation: marquee-rtl 25s linear infinite;
+}
+
+.animate-marquee-rtl:hover {
+  animation-play-state: paused;
+}
+
+/* Ensure news ticker text is fully visible */
+.news-ticker-container {
+  direction: rtl;
+  unicode-bidi: bidi-override;
+}

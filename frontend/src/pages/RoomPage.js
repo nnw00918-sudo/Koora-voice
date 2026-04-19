@@ -2930,41 +2930,39 @@ const YallaLiveRoom = ({ user }) => {
                   )}
                 </div>
                 
-                {/* Scrolling News */}
-                <div className="flex-1 overflow-hidden">
+                {/* Scrolling News - Fixed to show full text */}
+                <div className="flex-1 overflow-hidden relative">
                   {roomNews.length > 0 ? (
-                    <motion.div
-                      animate={{ x: ['0%', '-100%'] }}
-                      transition={{ 
-                        duration: roomNews.length * 8, 
-                        repeat: Infinity, 
-                        ease: 'linear' 
-                      }}
-                      className="flex items-center gap-8 whitespace-nowrap"
-                    >
-                      {roomNews.map((news, idx) => (
-                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-amber-100 text-sm font-cairo">
-                          <span>{news.icon || '📰'}</span>
-                          <span>{news.text}</span>
-                          {(isOwner || news.author_id === user.id) && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDeleteRoomNews(news.id); }}
-                              className="text-red-400 hover:text-red-300 text-xs"
-                              title="حذف"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </span>
-                      ))}
+                    <div className="inline-flex animate-marquee-rtl">
+                      <div className="flex items-center gap-12 whitespace-nowrap px-4">
+                        {roomNews.map((news, idx) => (
+                          <span key={news.id || idx} className="inline-flex items-center gap-2 text-amber-100 text-sm font-cairo">
+                            <span className="text-lg">{news.icon || '📰'}</span>
+                            <span className="font-medium">{news.text}</span>
+                            {(isOwner || news.author_id === user.id) && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteRoomNews(news.id); }}
+                                className="text-red-400 hover:text-red-300 text-xs ml-2"
+                                title="حذف"
+                              >
+                                ✕
+                              </button>
+                            )}
+                            <span className="text-amber-500/50 mx-4">●</span>
+                          </span>
+                        ))}
+                      </div>
                       {/* Duplicate for seamless loop */}
-                      {roomNews.map((news, idx) => (
-                        <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-amber-100 text-sm font-cairo">
-                          <span>{news.icon || '📰'}</span>
-                          <span>{news.text}</span>
-                        </span>
-                      ))}
-                    </motion.div>
+                      <div className="flex items-center gap-12 whitespace-nowrap px-4">
+                        {roomNews.map((news, idx) => (
+                          <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-amber-100 text-sm font-cairo">
+                            <span className="text-lg">{news.icon || '📰'}</span>
+                            <span className="font-medium">{news.text}</span>
+                            <span className="text-amber-500/50 mx-4">●</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   ) : (
                     <span className="text-amber-400/60 text-xs font-cairo">لا توجد أخبار - اضغط + لإضافة خبر</span>
                   )}
