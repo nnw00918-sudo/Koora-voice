@@ -2897,13 +2897,13 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         )}
 
-        {/* Room News Ticker - شريط الأخبار لجميع الغرف */}
+        {/* Room News Ticker - شريط الأخبار لجميع الغرف - نفس الرئيسية بالضبط */}
         {room && (
-          <div className="relative mx-4 mt-2 overflow-hidden">
+          <div className="px-4 mt-2">
             <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border border-lime-500/30 rounded-2xl">
-              {/* News Badge - Right Side */}
+              {/* Live Badge - Right Side */}
               <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center">
-                <div className="flex items-center gap-1.5 bg-gradient-to-l from-red-600 to-red-500 px-3 py-3 rounded-l-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)]">
+                <div className="flex items-center gap-1.5 bg-gradient-to-l from-red-600 to-red-500 px-3 py-4 rounded-l-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)]">
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                   <span className="text-white text-xs font-cairo font-bold">أخبار</span>
                 </div>
@@ -2929,50 +2929,30 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
               
-              {/* Scrolling News - CSS Animation for iOS compatibility */}
+              {/* Scrolling News - Using marquee exactly like Dashboard */}
               <div className={`py-3 pr-20 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
                 {roomNews.length > 0 ? (
-                  <div className="news-ticker-wrapper">
-                    <div 
-                      className="news-ticker-content"
-                      style={{
-                        animation: `scrollRTL ${Math.max(roomNews.length * 12, 20)}s linear infinite`
-                      }}
-                    >
-                      {/* First set of news */}
+                  <marquee behavior="scroll" direction="right" scrollamount="3">
+                    <div className="inline-flex gap-8">
                       {roomNews.map((news, idx) => (
-                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm whitespace-nowrap mx-6">
+                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm">
                           <span className="text-base">{news.icon || '📰'}</span>
                           <span className={`font-almarai ${
                             news.category === 'عاجل' ? 'text-red-400 font-bold' :
                             news.category === 'نتائج' ? 'text-lime-400' :
                             news.category === 'انتقالات' ? 'text-sky-400' :
-                            'text-amber-100'
+                            news.category === 'تصريحات' ? 'text-amber-400' :
+                            'text-purple-400'
                           }`}>
                             {news.text}
                           </span>
-                          <span className="text-lime-500/50 mx-4">●</span>
-                        </span>
-                      ))}
-                      {/* Duplicate for seamless loop */}
-                      {roomNews.map((news, idx) => (
-                        <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-sm whitespace-nowrap mx-6">
-                          <span className="text-base">{news.icon || '📰'}</span>
-                          <span className={`font-almarai ${
-                            news.category === 'عاجل' ? 'text-red-400 font-bold' :
-                            news.category === 'نتائج' ? 'text-lime-400' :
-                            news.category === 'انتقالات' ? 'text-sky-400' :
-                            'text-amber-100'
-                          }`}>
-                            {news.text}
-                          </span>
-                          <span className="text-lime-500/50 mx-4">●</span>
+                          <span className="text-lime-500/30 mx-4">|</span>
                         </span>
                       ))}
                     </div>
-                  </div>
+                  </marquee>
                 ) : (
-                  <span className="text-amber-400/60 text-sm font-cairo">لا توجد أخبار - اضغط + لإضافة خبر</span>
+                  <span className="text-slate-400 text-sm font-cairo">لا توجد أخبار - اضغط + لإضافة خبر</span>
                 )}
               </div>
             </div>
