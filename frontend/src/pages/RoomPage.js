@@ -2929,40 +2929,23 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
               
-              {/* Scrolling News - من اليمين لليسار مثل الرئيسية */}
-              <div className={`h-full flex items-center pr-24 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`} dir="rtl">
+              {/* Scrolling News - من اليمين لليسار */}
+              <div className={`h-full flex items-center pr-24 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
                 <motion.div
                   className="flex items-center gap-8 whitespace-nowrap"
-                  initial={{ x: '-100%' }}
-                  animate={{ x: '0%' }}
+                  animate={{ x: ['100%', '-100%'] }}
                   transition={{
                     x: {
                       repeat: Infinity,
                       repeatType: 'loop',
-                      duration: Math.max(roomNews.length * 10, 20),
+                      duration: Math.max(roomNews.length * 12, 25),
                       ease: 'linear'
                     }
                   }}
                 >
-                  {/* First set of news */}
+                  {/* News items */}
                   {roomNews.map((news, idx) => (
-                    <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm flex-shrink-0" dir="rtl">
-                      <span className="text-base">{news.icon || '📰'}</span>
-                      <span className={`font-almarai ${
-                        news.category === 'عاجل' ? 'text-red-400 font-bold' :
-                        news.category === 'انتقالات' ? 'text-sky-400' :
-                        news.category === 'نتائج' ? 'text-lime-400' :
-                        news.category === 'تصريحات' ? 'text-amber-400' :
-                        'text-purple-400'
-                      }`}>
-                        {news.text}
-                      </span>
-                      <span className="text-lime-500/30 mx-4">|</span>
-                    </span>
-                  ))}
-                  {/* Duplicate for seamless loop */}
-                  {roomNews.map((news, idx) => (
-                    <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-sm flex-shrink-0" dir="rtl">
+                    <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm flex-shrink-0">
                       <span className="text-base">{news.icon || '📰'}</span>
                       <span className={`font-almarai ${
                         news.category === 'عاجل' ? 'text-red-400 font-bold' :
