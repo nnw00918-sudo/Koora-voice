@@ -2929,23 +2929,24 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
               
-              {/* Scrolling News - Using Framer Motion for iOS */}
-              <div className={`h-full flex items-center pr-24 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
+              {/* Scrolling News - من اليمين لليسار مثل الرئيسية */}
+              <div className={`h-full flex items-center pr-24 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`} dir="rtl">
                 <motion.div
                   className="flex items-center gap-8 whitespace-nowrap"
-                  animate={{ x: ['0%', '-50%'] }}
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '0%' }}
                   transition={{
                     x: {
                       repeat: Infinity,
                       repeatType: 'loop',
-                      duration: Math.max(roomNews.length * 8, 15),
+                      duration: Math.max(roomNews.length * 10, 20),
                       ease: 'linear'
                     }
                   }}
                 >
                   {/* First set of news */}
                   {roomNews.map((news, idx) => (
-                    <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm flex-shrink-0">
+                    <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm flex-shrink-0" dir="rtl">
                       <span className="text-base">{news.icon || '📰'}</span>
                       <span className={`font-almarai ${
                         news.category === 'عاجل' ? 'text-red-400 font-bold' :
@@ -2961,7 +2962,7 @@ const YallaLiveRoom = ({ user }) => {
                   ))}
                   {/* Duplicate for seamless loop */}
                   {roomNews.map((news, idx) => (
-                    <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-sm flex-shrink-0">
+                    <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-sm flex-shrink-0" dir="rtl">
                       <span className="text-base">{news.icon || '📰'}</span>
                       <span className={`font-almarai ${
                         news.category === 'عاجل' ? 'text-red-400 font-bold' :
