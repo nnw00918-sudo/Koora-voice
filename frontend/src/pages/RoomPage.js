@@ -2929,23 +2929,23 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
               
-              {/* Scrolling News - من اليسار إلى اليمين - مرئي دائماً */}
+              {/* Scrolling News - من اليسار إلى اليمين - بطيء ومستمر */}
               <div className={`h-full flex items-center pr-24 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
                 <motion.div
                   className="flex items-center gap-8 whitespace-nowrap"
-                  animate={{ x: ['-100%', '100%'] }}
+                  animate={{ x: ['-50%', '0%'] }}
                   transition={{
                     x: {
                       repeat: Infinity,
                       repeatType: 'loop',
-                      duration: Math.max(roomNews.length * 15, 30),
+                      duration: Math.max(roomNews.length * 20, 40),
                       ease: 'linear'
                     }
                   }}
                   style={{ width: 'max-content' }}
                 >
-                  {/* News items - duplicated for seamless loop */}
-                  {[...roomNews, ...roomNews].map((news, idx) => (
+                  {/* News items - duplicated 3 times for seamless continuous loop */}
+                  {[...roomNews, ...roomNews, ...roomNews].map((news, idx) => (
                     <span key={`news-${idx}`} className="inline-flex items-center gap-2 text-sm flex-shrink-0">
                       <span className="text-base">{news.icon || '📰'}</span>
                       <span className={`font-almarai ${
@@ -2957,7 +2957,7 @@ const YallaLiveRoom = ({ user }) => {
                       }`}>
                         {news.text}
                       </span>
-                      <span className="text-lime-500/30 mx-6">|</span>
+                      <span className="text-lime-500/30 mx-8">|</span>
                     </span>
                   ))}
                 </motion.div>
