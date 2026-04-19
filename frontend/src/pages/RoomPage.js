@@ -2929,23 +2929,24 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
               
-              {/* Scrolling News - من اليمين لليسار */}
+              {/* Scrolling News - من اليسار إلى اليمين - مرئي دائماً */}
               <div className={`h-full flex items-center pr-24 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
                 <motion.div
                   className="flex items-center gap-8 whitespace-nowrap"
-                  animate={{ x: ['100%', '-100%'] }}
+                  animate={{ x: ['-100%', '100%'] }}
                   transition={{
                     x: {
                       repeat: Infinity,
                       repeatType: 'loop',
-                      duration: Math.max(roomNews.length * 12, 25),
+                      duration: Math.max(roomNews.length * 15, 30),
                       ease: 'linear'
                     }
                   }}
+                  style={{ width: 'max-content' }}
                 >
-                  {/* News items */}
-                  {roomNews.map((news, idx) => (
-                    <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm flex-shrink-0">
+                  {/* News items - duplicated for seamless loop */}
+                  {[...roomNews, ...roomNews].map((news, idx) => (
+                    <span key={`news-${idx}`} className="inline-flex items-center gap-2 text-sm flex-shrink-0">
                       <span className="text-base">{news.icon || '📰'}</span>
                       <span className={`font-almarai ${
                         news.category === 'عاجل' ? 'text-red-400 font-bold' :
@@ -2956,7 +2957,7 @@ const YallaLiveRoom = ({ user }) => {
                       }`}>
                         {news.text}
                       </span>
-                      <span className="text-lime-500/30 mx-4">|</span>
+                      <span className="text-lime-500/30 mx-6">|</span>
                     </span>
                   ))}
                 </motion.div>
