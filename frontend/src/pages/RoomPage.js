@@ -2897,11 +2897,11 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         )}
 
-        {/* Room News Ticker - شريط الأخبار لجميع الغرف */}
+        {/* Room News Ticker - نفس الرئيسية بالضبط */}
         {room && (
-          <div className="px-4 mt-2">
+          <div className="px-4 pb-3">
             <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border border-lime-500/30 rounded-2xl">
-              {/* Live Badge - Right Side */}
+              {/* Live Badge - نفس الرئيسية */}
               <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center">
                 <div className="flex items-center gap-1.5 bg-gradient-to-l from-red-600 to-red-500 px-3 py-4 rounded-l-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)]">
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
@@ -2911,58 +2911,36 @@ const YallaLiveRoom = ({ user }) => {
               
               {/* Add/Manage Buttons - Left Side */}
               {canAddRoomNews && (
-                <div className="absolute left-2 top-0 bottom-0 z-20 flex items-center gap-1 bg-slate-900/80 px-1 rounded-lg">
+                <div className="absolute left-2 top-0 bottom-0 z-20 flex items-center gap-1 bg-slate-900/90 px-1.5 py-1 rounded-lg">
                   <button
                     onClick={() => setShowAddNewsModal(true)}
-                    className="w-7 h-7 rounded-lg bg-lime-500/30 hover:bg-lime-500/50 flex items-center justify-center transition-colors border border-lime-500/50"
+                    className="w-6 h-6 rounded bg-lime-500/40 hover:bg-lime-500/60 flex items-center justify-center transition-colors"
                     title="إضافة خبر"
                   >
-                    <span className="text-lime-400 text-sm font-bold">+</span>
+                    <span className="text-lime-300 text-xs font-bold">+</span>
                   </button>
                   <button
                     onClick={() => setShowNewsManageModal(true)}
-                    className="w-7 h-7 rounded-lg bg-slate-600/50 hover:bg-slate-500/50 flex items-center justify-center transition-colors border border-slate-500/50"
+                    className="w-6 h-6 rounded bg-slate-600/50 hover:bg-slate-500/50 flex items-center justify-center transition-colors"
                     title="إدارة الأخبار"
                   >
-                    <Settings className="w-3.5 h-3.5 text-slate-300" />
+                    <Settings className="w-3 h-3 text-slate-300" />
                   </button>
                 </div>
               )}
               
-              {/* Scrolling News - CSS Animation for iOS */}
-              <div className={`py-3 pr-20 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
+              {/* Scrolling News - Using marquee style نفس الرئيسية بالضبط */}
+              <div className={`py-3 pr-20 ${canAddRoomNews ? 'pl-16' : 'pl-4'} overflow-hidden`}>
                 {roomNews.length > 0 ? (
-                  <div className="relative w-full overflow-hidden">
-                    <div 
-                      className="inline-flex whitespace-nowrap"
-                      style={{
-                        animation: `ticker ${Math.max(roomNews.length * 10, 15)}s linear infinite`,
-                        paddingRight: '100%'
-                      }}
-                    >
+                  <marquee behavior="scroll" direction="right" scrollamount="3">
+                    <div className="inline-flex gap-8">
                       {roomNews.map((news, idx) => (
-                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm mx-6">
+                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm">
                           <span className="text-base">{news.icon || '📰'}</span>
-                          <span className={`font-almarai whitespace-nowrap ${
+                          <span className={`font-almarai ${
                             news.category === 'عاجل' ? 'text-red-400 font-bold' :
-                            news.category === 'نتائج' ? 'text-lime-400' :
                             news.category === 'انتقالات' ? 'text-sky-400' :
-                            news.category === 'تصريحات' ? 'text-amber-400' :
-                            'text-purple-400'
-                          }`}>
-                            {news.text}
-                          </span>
-                          <span className="text-lime-500/30 mx-4">|</span>
-                        </span>
-                      ))}
-                      {/* Duplicate for seamless loop */}
-                      {roomNews.map((news, idx) => (
-                        <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-sm mx-6">
-                          <span className="text-base">{news.icon || '📰'}</span>
-                          <span className={`font-almarai whitespace-nowrap ${
-                            news.category === 'عاجل' ? 'text-red-400 font-bold' :
                             news.category === 'نتائج' ? 'text-lime-400' :
-                            news.category === 'انتقالات' ? 'text-sky-400' :
                             news.category === 'تصريحات' ? 'text-amber-400' :
                             'text-purple-400'
                           }`}>
@@ -2972,7 +2950,7 @@ const YallaLiveRoom = ({ user }) => {
                         </span>
                       ))}
                     </div>
-                  </div>
+                  </marquee>
                 ) : (
                   <span className="text-slate-400 text-sm font-cairo">لا توجد أخبار - اضغط + لإضافة خبر</span>
                 )}
