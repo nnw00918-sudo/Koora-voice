@@ -230,7 +230,7 @@ const YallaLiveRoom = ({ user }) => {
   const screenShareVideoRef = useRef(null);
   const streamPlayerRef = useRef(null); // Ref for ReactPlayer to control volume
   
-  // Room News states (for دوانية category)
+  // Room News states (for all rooms)
   const [roomNews, setRoomNews] = useState([]);
   const [showAddNewsModal, setShowAddNewsModal] = useState(false);
   const [newNewsText, setNewNewsText] = useState('');
@@ -342,7 +342,7 @@ const YallaLiveRoom = ({ user }) => {
     // Poll stream status every 10 seconds
     const streamPoll = setInterval(fetchStreamStatus, 10000);
     
-    // Poll room news every 8 seconds (for دوانية rooms)
+    // Poll room news every 8 seconds (for all rooms)
     const newsPoll = setInterval(() => fetchRoomNews(true), 8000);
     
     // Poll user roles every 15 seconds (to update if role changes)
@@ -966,14 +966,12 @@ const YallaLiveRoom = ({ user }) => {
         setOnStage(false);
       }
       
-      // Fetch room news if دوانية room (by title containing "دوانية" or "ديوانية")
-      if (roomData.title?.includes('دوانية') || roomData.title?.includes('ديوانية') || roomData.room_type === 'diwaniya') {
-        try {
-          const newsRes = await axios.get(`${API}/api/rooms/${roomId}/news`);
-          setRoomNews(newsRes.data.news || []);
-        } catch (err) {
-          // News fetch is optional
-        }
+      // Fetch room news for all rooms
+      try {
+        const newsRes = await axios.get(`${API}/api/rooms/${roomId}/news`);
+        setRoomNews(newsRes.data.news || []);
+      } catch (err) {
+        // News fetch is optional
       }
       
       // Fetch announcements for this room
@@ -1654,9 +1652,9 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  // Fetch Room News (for دوانية rooms - by title) with new news detection
+  // Fetch Room News (for all rooms) with new news detection
   const fetchRoomNews = async (showNewNewsToast = false) => {
-    if (!room?.title?.includes('دوانية') && !room?.title?.includes('ديوانية') && room?.room_type !== 'diwaniya') return;
+    if (!room) return;
     try {
       const response = await axios.get(`${API}/api/rooms/${roomId}/news`);
       const newNews = response.data.news || [];
@@ -2899,8 +2897,8 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         )}
 
-        {/* Diwaniya Room News Ticker - شريط أخبار الدوانية - نفس تصميم الرئيسية */}
-        {(room?.title?.includes('دوانية') || room?.title?.includes('ديوانية') || room?.room_type === 'diwaniya') && (
+        {/* Room News Ticker - شريط الأخبار لجميع الغرف */}
+        {room && (
           <div className="relative mx-4 mt-2 overflow-hidden">
             <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border border-lime-500/30 rounded-2xl">
               {/* News Badge - Right Side */}
