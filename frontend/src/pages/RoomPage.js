@@ -2897,13 +2897,13 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         )}
 
-        {/* Room News Ticker - شريط أخبار الغرفة */}
+        {/* Room News Ticker - نفس الرئيسية بالضبط */}
         {room && roomNews.length > 0 && (
           <div className="px-4 pb-3">
-            <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border border-lime-500/30 rounded-2xl h-12">
-              {/* Live Badge - نفس الرئيسية */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border border-lime-500/30 rounded-2xl">
+              {/* Live Badge - نفس الرئيسية بالضبط */}
               <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center">
-                <div className="flex items-center gap-1.5 bg-gradient-to-l from-red-600 to-red-500 px-3 h-full rounded-l-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)]">
+                <div className="flex items-center gap-1.5 bg-gradient-to-l from-red-600 to-red-500 px-3 py-4 rounded-l-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)]">
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                   <span className="text-white text-xs font-cairo font-bold">أخبار</span>
                 </div>
@@ -2929,38 +2929,27 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
               
-              {/* Scrolling News - من اليسار إلى اليمين - بطيء ومستمر */}
-              <div className={`h-full flex items-center pr-24 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
-                <motion.div
-                  className="flex items-center gap-8 whitespace-nowrap"
-                  animate={{ x: ['-50%', '0%'] }}
-                  transition={{
-                    x: {
-                      repeat: Infinity,
-                      repeatType: 'loop',
-                      duration: Math.max(roomNews.length * 20, 40),
-                      ease: 'linear'
-                    }
-                  }}
-                  style={{ width: 'max-content' }}
-                >
-                  {/* News items - duplicated 3 times for seamless continuous loop */}
-                  {[...roomNews, ...roomNews, ...roomNews].map((news, idx) => (
-                    <span key={`news-${idx}`} className="inline-flex items-center gap-2 text-sm flex-shrink-0">
-                      <span className="text-base">{news.icon || '📰'}</span>
-                      <span className={`font-almarai ${
-                        news.category === 'عاجل' ? 'text-red-400 font-bold' :
-                        news.category === 'انتقالات' ? 'text-sky-400' :
-                        news.category === 'نتائج' ? 'text-lime-400' :
-                        news.category === 'تصريحات' ? 'text-amber-400' :
-                        'text-purple-400'
-                      }`}>
-                        {news.text}
+              {/* Scrolling News - نفس الرئيسية بالضبط باستخدام marquee */}
+              <div className={`py-3 pr-20 ${canAddRoomNews ? 'pl-16' : 'pl-4'} overflow-hidden`}>
+                <marquee behavior="scroll" direction="right" scrollamount="3">
+                  <div className="inline-flex gap-8">
+                    {roomNews.map((news, idx) => (
+                      <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm">
+                        <span className="text-base">{news.icon || '📰'}</span>
+                        <span className={`font-almarai ${
+                          news.category === 'عاجل' ? 'text-red-400 font-bold' :
+                          news.category === 'انتقالات' ? 'text-sky-400' :
+                          news.category === 'نتائج' ? 'text-lime-400' :
+                          news.category === 'تصريحات' ? 'text-amber-400' :
+                          'text-purple-400'
+                        }`}>
+                          {news.text}
+                        </span>
+                        <span className="text-lime-500/30 mx-4">|</span>
                       </span>
-                      <span className="text-lime-500/30 mx-8">|</span>
-                    </span>
-                  ))}
-                </motion.div>
+                    ))}
+                  </div>
+                </marquee>
               </div>
             </div>
           </div>
