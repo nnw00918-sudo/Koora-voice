@@ -2931,13 +2931,19 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
               
-              {/* Scrolling News - Using marquee like Dashboard */}
+              {/* Scrolling News - CSS Animation for iOS compatibility */}
               <div className={`py-3 pr-20 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
                 {roomNews.length > 0 ? (
-                  <marquee behavior="scroll" direction="right" scrollamount="3">
-                    <div className="inline-flex gap-8">
+                  <div className="news-ticker-wrapper">
+                    <div 
+                      className="news-ticker-content"
+                      style={{
+                        animation: `scrollRTL ${Math.max(roomNews.length * 12, 20)}s linear infinite`
+                      }}
+                    >
+                      {/* First set of news */}
                       {roomNews.map((news, idx) => (
-                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm">
+                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm whitespace-nowrap mx-6">
                           <span className="text-base">{news.icon || '📰'}</span>
                           <span className={`font-almarai ${
                             news.category === 'عاجل' ? 'text-red-400 font-bold' :
@@ -2947,11 +2953,26 @@ const YallaLiveRoom = ({ user }) => {
                           }`}>
                             {news.text}
                           </span>
-                          <span className="text-lime-500/30 mx-4">|</span>
+                          <span className="text-lime-500/50 mx-4">●</span>
+                        </span>
+                      ))}
+                      {/* Duplicate for seamless loop */}
+                      {roomNews.map((news, idx) => (
+                        <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-sm whitespace-nowrap mx-6">
+                          <span className="text-base">{news.icon || '📰'}</span>
+                          <span className={`font-almarai ${
+                            news.category === 'عاجل' ? 'text-red-400 font-bold' :
+                            news.category === 'نتائج' ? 'text-lime-400' :
+                            news.category === 'انتقالات' ? 'text-sky-400' :
+                            'text-amber-100'
+                          }`}>
+                            {news.text}
+                          </span>
+                          <span className="text-lime-500/50 mx-4">●</span>
                         </span>
                       ))}
                     </div>
-                  </marquee>
+                  </div>
                 ) : (
                   <span className="text-amber-400/60 text-sm font-cairo">لا توجد أخبار - اضغط + لإضافة خبر</span>
                 )}

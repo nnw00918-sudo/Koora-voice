@@ -818,3 +818,26 @@ input[type="range"].volume-slider.stream-volume::-moz-range-thumb {
   direction: rtl;
   unicode-bidi: bidi-override;
 }
+
+/* News Ticker Animation - iOS Compatible */
+@keyframes scrollRTL {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+.news-ticker-wrapper {
+  overflow: hidden;
+  width: 100%;
+}
+
+.news-ticker-content {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+  -webkit-animation: scrollRTL 20s linear infinite;
+  animation: scrollRTL 20s linear infinite;
+}
