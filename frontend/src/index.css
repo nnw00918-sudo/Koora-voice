@@ -864,3 +864,30 @@ input[type="range"].volume-slider.stream-volume::-moz-range-thumb {
     transform: translateX(-50%);
   }
 }
+
+
+/* Room News Ticker Animation - RTL scroll for Arabic */
+@keyframes scroll-rtl {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(50%);
+  }
+}
+
+@-webkit-keyframes scroll-rtl {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+  100% {
+    -webkit-transform: translateX(50%);
+    transform: translateX(50%);
+  }
+}
+
+.animate-scroll-rtl {
+  animation: scroll-rtl linear infinite;
+  -webkit-animation: scroll-rtl linear infinite;
+}

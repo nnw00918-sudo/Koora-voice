@@ -2929,27 +2929,47 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
               
-              {/* Scrolling News - نفس الرئيسية بالضبط باستخدام marquee */}
+              {/* Scrolling News - جميع الأخبار تظهر كاملة من أولها لآخرها */}
               <div className={`py-3 pr-20 ${canAddRoomNews ? 'pl-16' : 'pl-4'} overflow-hidden`}>
-                <marquee behavior="scroll" direction="right" scrollamount="3">
-                  <div className="inline-flex gap-8">
-                    {roomNews.map((news, idx) => (
-                      <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm">
-                        <span className="text-base">{news.icon || '📰'}</span>
-                        <span className={`font-almarai ${
-                          news.category === 'عاجل' ? 'text-red-400 font-bold' :
-                          news.category === 'انتقالات' ? 'text-sky-400' :
-                          news.category === 'نتائج' ? 'text-lime-400' :
-                          news.category === 'تصريحات' ? 'text-amber-400' :
-                          'text-purple-400'
-                        }`}>
-                          {news.text}
-                        </span>
-                        <span className="text-lime-500/30 mx-4">|</span>
+                <div 
+                  className="inline-flex gap-8 animate-scroll-rtl"
+                  style={{
+                    animationDuration: `${Math.max(roomNews.length * 8, 20)}s`
+                  }}
+                >
+                  {/* All news items */}
+                  {roomNews.map((news, idx) => (
+                    <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm whitespace-nowrap">
+                      <span className="text-base">{news.icon || '📰'}</span>
+                      <span className={`font-almarai ${
+                        news.category === 'عاجل' ? 'text-red-400 font-bold' :
+                        news.category === 'انتقالات' ? 'text-sky-400' :
+                        news.category === 'نتائج' ? 'text-lime-400' :
+                        news.category === 'تصريحات' ? 'text-amber-400' :
+                        'text-purple-400'
+                      }`}>
+                        {news.text}
                       </span>
-                    ))}
-                  </div>
-                </marquee>
+                      <span className="text-lime-500/30 mx-4">|</span>
+                    </span>
+                  ))}
+                  {/* Duplicate for continuous loop */}
+                  {roomNews.map((news, idx) => (
+                    <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-sm whitespace-nowrap">
+                      <span className="text-base">{news.icon || '📰'}</span>
+                      <span className={`font-almarai ${
+                        news.category === 'عاجل' ? 'text-red-400 font-bold' :
+                        news.category === 'انتقالات' ? 'text-sky-400' :
+                        news.category === 'نتائج' ? 'text-lime-400' :
+                        news.category === 'تصريحات' ? 'text-amber-400' :
+                        'text-purple-400'
+                      }`}>
+                        {news.text}
+                      </span>
+                      <span className="text-lime-500/30 mx-4">|</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
