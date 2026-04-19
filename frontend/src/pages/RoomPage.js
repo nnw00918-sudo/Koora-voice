@@ -2899,74 +2899,62 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         )}
 
-        {/* Diwaniya Room News Ticker - شريط أخبار الدوانية */}
+        {/* Diwaniya Room News Ticker - شريط أخبار الدوانية - نفس تصميم الرئيسية */}
         {(room?.title?.includes('دوانية') || room?.title?.includes('ديوانية') || room?.room_type === 'diwaniya') && (
           <div className="relative mx-4 mt-2 overflow-hidden">
-            {/* News Ticker Container */}
-            <div className="bg-gradient-to-r from-amber-900/40 via-amber-800/30 to-amber-900/40 rounded-xl border border-amber-500/30 py-2 px-3">
-              <div className="flex items-center gap-3">
-                {/* News Icon & Add Button */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <div className="w-6 h-6 rounded-lg bg-amber-500/30 flex items-center justify-center">
-                    <Type className="w-3.5 h-3.5 text-amber-400" />
-                  </div>
-                  {canAddRoomNews && (
-                    <>
-                      <button
-                        onClick={() => setShowAddNewsModal(true)}
-                        className="w-6 h-6 rounded-lg bg-lime-500/30 hover:bg-lime-500/50 flex items-center justify-center transition-colors"
-                        title="إضافة خبر"
-                      >
-                        <span className="text-lime-400 text-sm font-bold">+</span>
-                      </button>
-                      <button
-                        onClick={() => setShowNewsManageModal(true)}
-                        className="w-6 h-6 rounded-lg bg-slate-500/30 hover:bg-slate-500/50 flex items-center justify-center transition-colors"
-                        title="إدارة الأخبار"
-                      >
-                        <Settings className="w-3.5 h-3.5 text-slate-400" />
-                      </button>
-                    </>
-                  )}
+            <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border border-lime-500/30 rounded-2xl">
+              {/* News Badge - Right Side */}
+              <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center">
+                <div className="flex items-center gap-1.5 bg-gradient-to-l from-red-600 to-red-500 px-3 py-3 rounded-l-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)]">
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  <span className="text-white text-xs font-cairo font-bold">أخبار</span>
                 </div>
-                
-                {/* Scrolling News - Fixed to show full text */}
-                <div className="flex-1 overflow-hidden relative">
-                  {roomNews.length > 0 ? (
-                    <div className="inline-flex animate-marquee-rtl">
-                      <div className="flex items-center gap-12 whitespace-nowrap px-4">
-                        {roomNews.map((news, idx) => (
-                          <span key={news.id || idx} className="inline-flex items-center gap-2 text-amber-100 text-sm font-cairo">
-                            <span className="text-lg">{news.icon || '📰'}</span>
-                            <span className="font-medium">{news.text}</span>
-                            {(isOwner || news.author_id === user.id) && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleDeleteRoomNews(news.id); }}
-                                className="text-red-400 hover:text-red-300 text-xs ml-2"
-                                title="حذف"
-                              >
-                                ✕
-                              </button>
-                            )}
-                            <span className="text-amber-500/50 mx-4">●</span>
+              </div>
+              
+              {/* Add/Manage Buttons - Left Side */}
+              {canAddRoomNews && (
+                <div className="absolute left-2 top-0 bottom-0 z-20 flex items-center gap-1">
+                  <button
+                    onClick={() => setShowAddNewsModal(true)}
+                    className="w-7 h-7 rounded-lg bg-lime-500/30 hover:bg-lime-500/50 flex items-center justify-center transition-colors border border-lime-500/50"
+                    title="إضافة خبر"
+                  >
+                    <span className="text-lime-400 text-sm font-bold">+</span>
+                  </button>
+                  <button
+                    onClick={() => setShowNewsManageModal(true)}
+                    className="w-7 h-7 rounded-lg bg-slate-600/50 hover:bg-slate-500/50 flex items-center justify-center transition-colors border border-slate-500/50"
+                    title="إدارة الأخبار"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-slate-300" />
+                  </button>
+                </div>
+              )}
+              
+              {/* Scrolling News - Using marquee like Dashboard */}
+              <div className={`py-3 pr-20 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
+                {roomNews.length > 0 ? (
+                  <marquee behavior="scroll" direction="right" scrollamount="3">
+                    <div className="inline-flex gap-8">
+                      {roomNews.map((news, idx) => (
+                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm">
+                          <span className="text-base">{news.icon || '📰'}</span>
+                          <span className={`font-almarai ${
+                            news.category === 'عاجل' ? 'text-red-400 font-bold' :
+                            news.category === 'نتائج' ? 'text-lime-400' :
+                            news.category === 'انتقالات' ? 'text-sky-400' :
+                            'text-amber-100'
+                          }`}>
+                            {news.text}
                           </span>
-                        ))}
-                      </div>
-                      {/* Duplicate for seamless loop */}
-                      <div className="flex items-center gap-12 whitespace-nowrap px-4">
-                        {roomNews.map((news, idx) => (
-                          <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-amber-100 text-sm font-cairo">
-                            <span className="text-lg">{news.icon || '📰'}</span>
-                            <span className="font-medium">{news.text}</span>
-                            <span className="text-amber-500/50 mx-4">●</span>
-                          </span>
-                        ))}
-                      </div>
+                          <span className="text-lime-500/30 mx-4">|</span>
+                        </span>
+                      ))}
                     </div>
-                  ) : (
-                    <span className="text-amber-400/60 text-xs font-cairo">لا توجد أخبار - اضغط + لإضافة خبر</span>
-                  )}
-                </div>
+                  </marquee>
+                ) : (
+                  <span className="text-amber-400/60 text-sm font-cairo">لا توجد أخبار - اضغط + لإضافة خبر</span>
+                )}
               </div>
             </div>
           </div>
