@@ -2897,7 +2897,7 @@ const YallaLiveRoom = ({ user }) => {
           </div>
         )}
 
-        {/* Room News Ticker - شريط الأخبار لجميع الغرف - نفس الرئيسية بالضبط */}
+        {/* Room News Ticker - شريط الأخبار لجميع الغرف */}
         {room && (
           <div className="px-4 mt-2">
             <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border border-lime-500/30 rounded-2xl">
@@ -2911,7 +2911,7 @@ const YallaLiveRoom = ({ user }) => {
               
               {/* Add/Manage Buttons - Left Side */}
               {canAddRoomNews && (
-                <div className="absolute left-2 top-0 bottom-0 z-20 flex items-center gap-1">
+                <div className="absolute left-2 top-0 bottom-0 z-20 flex items-center gap-1 bg-slate-900/80 px-1 rounded-lg">
                   <button
                     onClick={() => setShowAddNewsModal(true)}
                     className="w-7 h-7 rounded-lg bg-lime-500/30 hover:bg-lime-500/50 flex items-center justify-center transition-colors border border-lime-500/50"
@@ -2929,15 +2929,37 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
               
-              {/* Scrolling News - Using marquee exactly like Dashboard */}
+              {/* Scrolling News - CSS Animation for iOS */}
               <div className={`py-3 pr-20 ${canAddRoomNews ? 'pl-20' : 'pl-4'} overflow-hidden`}>
                 {roomNews.length > 0 ? (
-                  <marquee behavior="scroll" direction="right" scrollamount="3">
-                    <div className="inline-flex gap-8">
+                  <div className="relative w-full overflow-hidden">
+                    <div 
+                      className="inline-flex whitespace-nowrap"
+                      style={{
+                        animation: `ticker ${Math.max(roomNews.length * 10, 15)}s linear infinite`,
+                        paddingRight: '100%'
+                      }}
+                    >
                       {roomNews.map((news, idx) => (
-                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm">
+                        <span key={news.id || idx} className="inline-flex items-center gap-2 text-sm mx-6">
                           <span className="text-base">{news.icon || '📰'}</span>
-                          <span className={`font-almarai ${
+                          <span className={`font-almarai whitespace-nowrap ${
+                            news.category === 'عاجل' ? 'text-red-400 font-bold' :
+                            news.category === 'نتائج' ? 'text-lime-400' :
+                            news.category === 'انتقالات' ? 'text-sky-400' :
+                            news.category === 'تصريحات' ? 'text-amber-400' :
+                            'text-purple-400'
+                          }`}>
+                            {news.text}
+                          </span>
+                          <span className="text-lime-500/30 mx-4">|</span>
+                        </span>
+                      ))}
+                      {/* Duplicate for seamless loop */}
+                      {roomNews.map((news, idx) => (
+                        <span key={`dup-${news.id || idx}`} className="inline-flex items-center gap-2 text-sm mx-6">
+                          <span className="text-base">{news.icon || '📰'}</span>
+                          <span className={`font-almarai whitespace-nowrap ${
                             news.category === 'عاجل' ? 'text-red-400 font-bold' :
                             news.category === 'نتائج' ? 'text-lime-400' :
                             news.category === 'انتقالات' ? 'text-sky-400' :
@@ -2950,7 +2972,7 @@ const YallaLiveRoom = ({ user }) => {
                         </span>
                       ))}
                     </div>
-                  </marquee>
+                  </div>
                 ) : (
                   <span className="text-slate-400 text-sm font-cairo">لا توجد أخبار - اضغط + لإضافة خبر</span>
                 )}

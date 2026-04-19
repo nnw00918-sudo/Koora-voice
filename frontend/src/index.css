@@ -841,3 +841,26 @@ input[type="range"].volume-slider.stream-volume::-moz-range-thumb {
   -webkit-animation: scrollRTL 20s linear infinite;
   animation: scrollRTL 20s linear infinite;
 }
+
+
+/* Ticker Animation - RTL for Arabic (Right to Left scrolling) */
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Ensure ticker works on iOS Safari/WebKit */
+@-webkit-keyframes ticker {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+  100% {
+    -webkit-transform: translateX(-50%);
+    transform: translateX(-50%);
+  }
+}
