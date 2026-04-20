@@ -475,21 +475,36 @@ const ThreadsPage = ({ user }) => {
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
                 
-                {/* Delete Menu */}
-                {showDeleteMenu === thread.id && isOwner && (
+                {/* Thread Options Menu */}
+                {showDeleteMenu === thread.id && (
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className={`absolute top-8 ${isRTL ? 'left-0' : 'right-0'} bg-[#141414] border border-[#262626] rounded-xl shadow-xl z-20 overflow-hidden min-w-[150px]`}
                   >
+                    {/* Share Option - للجميع */}
                     <button
-                      onClick={() => handleDeleteThread(thread.id)}
-                      className={`w-full px-4 py-3 text-[#FF3B30] hover:bg-[#262626] flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
-                      data-testid={`delete-thread-${thread.id}`}
+                      onClick={() => {
+                        navigator.clipboard?.writeText(`${window.location.origin}/threads/${thread.id}`);
+                        setShowDeleteMenu(null);
+                      }}
+                      className={`w-full px-4 py-3 text-white hover:bg-[#262626] flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
                     >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="font-cairo font-medium">{txt.delete}</span>
+                      <Share2 className="w-4 h-4" />
+                      <span className="font-cairo font-medium">{isRTL ? 'نسخ الرابط' : 'Copy Link'}</span>
                     </button>
+                    
+                    {/* Delete Option - لصاحب المنشور فقط */}
+                    {isOwner && (
+                      <button
+                        onClick={() => handleDeleteThread(thread.id)}
+                        className={`w-full px-4 py-3 text-[#FF3B30] hover:bg-[#262626] flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                        data-testid={`delete-thread-${thread.id}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="font-cairo font-medium">{txt.delete}</span>
+                      </button>
+                    )}
                   </motion.div>
                 )}
               </div>

@@ -349,20 +349,33 @@ const ThreadDetailPage = ({ user }) => {
               >
                 {thread.author?.name || thread.author?.username}
               </span>
-              {thread.author?.id === user.id && (
-                <div className="relative">
-                  <button 
-                    onClick={() => setShowDeleteMenu(showDeleteMenu ? null : thread.id)}
-                    className={`p-1 rounded-full ${theme.textSecondary} hover:opacity-70`}
+              {/* Options Menu - للجميع */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowDeleteMenu(showDeleteMenu ? null : thread.id)}
+                  className={`p-1 rounded-full ${theme.textSecondary} hover:opacity-70`}
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                {showDeleteMenu === thread.id && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`absolute top-8 ${isRTL ? 'left-0' : 'right-0'} ${theme.cardBg} border ${theme.border} rounded-xl shadow-xl z-20 overflow-hidden min-w-[140px]`}
                   >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
-                  {showDeleteMenu === thread.id && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className={`absolute top-8 ${isRTL ? 'left-0' : 'right-0'} ${theme.cardBg} border ${theme.border} rounded-xl shadow-xl z-20 overflow-hidden min-w-[120px]`}
+                    {/* Copy Link - للجميع */}
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(window.location.href);
+                        setShowDeleteMenu(null);
+                      }}
+                      className={`w-full px-4 py-3 ${theme.textPrimary} hover:bg-white/5 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
                     >
+                      <Copy className="w-4 h-4" />
+                      <span className="font-cairo">{isRTL ? 'نسخ الرابط' : 'Copy Link'}</span>
+                    </button>
+                    {/* Delete - لصاحب المنشور فقط */}
+                    {thread.author?.id === user.id && (
                       <button
                         onClick={handleDelete}
                         className={`w-full px-4 py-3 text-red-500 hover:bg-red-500/10 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
@@ -370,10 +383,10 @@ const ThreadDetailPage = ({ user }) => {
                         <Trash2 className="w-4 h-4" />
                         <span className="font-cairo">{txt.delete}</span>
                       </button>
-                    </motion.div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </motion.div>
+                )}
+              </div>
             </div>
             <span 
               className={`${theme.textSecondary} text-sm cursor-pointer hover:underline`}
