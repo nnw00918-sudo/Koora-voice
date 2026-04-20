@@ -38,7 +38,8 @@ import {
 
 // Memoized Room Card for better performance
 const RoomCard = memo(({ room, user, membershipStatus, favoriteLoading, onEnterRoom, onToggleFavorite, isRTL, t }) => {
-  const isMember = membershipStatus[room.id];
+  const membership = membershipStatus[room.id];
+  const isMember = membership?.is_member || false;
   const isFavLoading = favoriteLoading[room.id];
   
   return (
@@ -99,13 +100,23 @@ const RoomCard = memo(({ room, user, membershipStatus, favoriteLoading, onEnterR
           {room.members_count || 0} {isRTL ? 'عضو' : 'members'}
         </p>
         
-        <Button
-          onClick={() => onEnterRoom(room)}
-          className="w-full bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-400 hover:to-green-400 text-slate-900 font-cairo font-bold rounded-xl py-2 text-sm"
-        >
-          <Play className="w-4 h-4 mr-1" />
-          {isRTL ? 'دخول' : 'Enter'}
-        </Button>
+        {isMember || room.owner_id === user?.id ? (
+          <Button
+            onClick={() => onEnterRoom(room)}
+            className="w-full bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-400 hover:to-green-400 text-slate-900 font-cairo font-bold rounded-xl py-2 text-sm"
+          >
+            <Play className="w-4 h-4 mr-1" />
+            {isRTL ? 'دخول' : 'Enter'}
+          </Button>
+        ) : (
+          <Button
+            onClick={(e) => onEnterRoom(room, e, true)}
+            className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white font-cairo font-bold rounded-xl py-2 text-sm"
+          >
+            <UserPlus className="w-4 h-4 mr-1" />
+            {isRTL ? 'انضمام' : 'Join'}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -168,7 +179,7 @@ const DashboardPage = ({ user, onLogout }) => {
         const membershipResults = await Promise.all(membershipPromises);
         const statusMap = {};
         response.data.forEach((room, index) => {
-          statusMap[room.id] = membershipResults[index]?.data?.is_member || false;
+          statusMap[room.id] = membershipResults[index]?.data || { is_member: false };
         });
         setMembershipStatus(statusMap);
       }
@@ -271,26 +282,26 @@ const DashboardPage = ({ user, onLogout }) => {
     e.stopPropagation();
     setJoiningRoom(roomId);
     try {
-      await axios.post(`${API}/api/rooms/${roomId}/membership/join`, {}, {
+      const response = await axios.post(`${API}/api/rooms/${roomId}/membership/join`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success(isRTL ? 'تم الانضمام للغرفة بنجاح!' : 'Joined room successfully!');
+      
+      // Check if already a member (backend now returns success for existing members)
+      if (response.data?.already_member) {
+        toast.success(isRTL ? 'أنت عضو بالفعل!' : 'You are already a member!');
+      } else {
+        toast.success(isRTL ? 'تم الانضمام للغرفة بنجاح!' : 'Joined room successfully!');
+      }
+      
       setMembershipStatus(prev => ({
         ...prev,
         [roomId]: { is_member: true, role: 'member' }
       }));
+      
+      // Navigate to room directly after joining
+      navigate(`/room/${roomId}`);
     } catch (error) {
-      // If already a member, just update the UI state and don't show error
-      if (error.response?.status === 400 && error.response?.data?.detail?.includes('عضو')) {
-        setMembershipStatus(prev => ({
-          ...prev,
-          [roomId]: { is_member: true, role: 'member' }
-        }));
-        // Navigate to room instead of showing error
-        navigate(`/room/${roomId}`);
-      } else {
-        toast.error(error.response?.data?.detail || (isRTL ? 'فشل الانضمام' : 'Failed to join'));
-      }
+      toast.error(error.response?.data?.detail || (isRTL ? 'فشل الانضمام' : 'Failed to join'));
     } finally {
       setJoiningRoom(null);
     }
