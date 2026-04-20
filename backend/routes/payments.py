@@ -1,14 +1,46 @@
 """
-Payment System for Koora Voice
+Payment System for Koora Voice - PayPal Integration
 نظام الدفع والعملات والهدايا والـ VIP
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 import os
+import httpx
+import base64
 
 router = APIRouter(prefix="/payments", tags=["payments"])
+
+# ============================================
+# PayPal Configuration
+# ============================================
+
+PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', '')
+PAYPAL_SECRET = os.environ.get('PAYPAL_SECRET', '')
+PAYPAL_MODE = os.environ.get('PAYPAL_MODE', 'live')  # 'sandbox' or 'live'
+
+# PayPal API URLs
+PAYPAL_API_URL = "https://api-m.paypal.com" if PAYPAL_MODE == 'live' else "https://api-m.sandbox.paypal.com"
+
+async def get_paypal_access_token():
+    """Get PayPal access token for API calls"""
+    auth = base64.b64encode(f"{PAYPAL_CLIENT_ID}:{PAYPAL_SECRET}".encode()).decode()
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{PAYPAL_API_URL}/v1/oauth2/token",
+            headers={
+                "Authorization": f"Basic {auth}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            data="grant_type=client_credentials"
+        )
+        
+        if response.status_code == 200:
+            return response.json().get("access_token")
+        else:
+            raise HTTPException(status_code=500, detail="فشل في الاتصال بـ PayPal")
 
 # ============================================
 # تعريف العملات والباقات
@@ -94,14 +126,17 @@ class CoinPurchase(BaseModel):
 
 class GiftSend(BaseModel):
     gift_id: str
-    room_id: str  # إرسال الهدية للغرفة
+    room_id: str
 
 class VIPSubscribe(BaseModel):
     plan_id: str
 
 class WithdrawRequest(BaseModel):
     amount: int
-    method: str  # paypal, bank_transfer
+    method: str
+
+class PayPalCapture(BaseModel):
+    order_id: str
 
 # ============================================
 # API Endpoints
@@ -109,9 +144,6 @@ class WithdrawRequest(BaseModel):
 
 def get_payments_router(db, get_current_user, stripe_key: str = None):
     """Create payments router with database dependency"""
-    
-    import stripe
-    stripe.api_key = stripe_key or os.environ.get('STRIPE_SECRET_KEY')
     
     # ----- العملات -----
     
@@ -125,7 +157,6 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         """الحصول على رصيد العملات"""
         user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "coins": 1, "total_earned": 1, "role": 1})
         
-        # Owner يحصل على رصيد غير محدود
         if user.get("role") == "owner":
             return {
                 "coins": 999999,
@@ -141,7 +172,7 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
     
     @router.post("/coins/purchase")
     async def purchase_coins(data: CoinPurchase, current_user = Depends(get_current_user)):
-        """شراء عملات - إنشاء جلسة Stripe"""
+        """شراء عملات - إنشاء طلب PayPal"""
         package = next((p for p in COIN_PACKAGES if p["id"] == data.package_id), None)
         if not package:
             raise HTTPException(status_code=400, detail="باقة غير موجودة")
@@ -163,163 +194,114 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
             return {"message": f"تم إضافة {coins} عملة مجاناً (Owner)", "coins": coins, "free": True}
         
         try:
-            # إنشاء جلسة Stripe Checkout
+            # إنشاء طلب PayPal
+            access_token = await get_paypal_access_token()
             frontend_url = os.environ.get('FRONTEND_URL', 'https://pitch-chat.preview.emergentagent.com')
             
-            checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'usd',
-                        'product_data': {
-                            'name': f'{package["coins"]} عملة',
-                            'description': f'باقة {package["coins"]} عملة لصوت الكورة',
-                        },
-                        'unit_amount': int(package["price"] * 100),
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{PAYPAL_API_URL}/v2/checkout/orders",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": "application/json"
                     },
-                    'quantity': 1,
-                }],
-                mode='payment',
-                success_url=f'{frontend_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}',
-                cancel_url=f'{frontend_url}/payment/cancel',
-                metadata={
-                    'user_id': current_user.id,
-                    'package_id': package["id"],
-                    'coins': str(package["coins"] + package.get("bonus", 0)),
-                    'type': 'coins'
-                }
-            )
-            
-            return {"checkout_url": checkout_session.url, "session_id": checkout_session.id}
-        
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"خطأ في إنشاء جلسة الدفع: {str(e)}")
-    
-    @router.post("/coins/webhook")
-    async def stripe_webhook(request_body: dict):
-        """Stripe Webhook لمعالجة الدفع"""
-        # This would be called by Stripe
-        event_type = request_body.get("type")
-        
-        if event_type == "checkout.session.completed":
-            session = request_body.get("data", {}).get("object", {})
-            metadata = session.get("metadata", {})
-            
-            user_id = metadata.get("user_id")
-            payment_type = metadata.get("type")
-            
-            if payment_type == "coins":
-                coins = int(metadata.get("coins", 0))
-                await db.users.update_one(
-                    {"id": user_id},
-                    {"$inc": {"coins": coins}}
-                )
-                
-                # سجل المعاملة
-                await db.transactions.insert_one({
-                    "user_id": user_id,
-                    "type": "purchase",
-                    "amount": coins,
-                    "session_id": session.get("id"),
-                    "created_at": datetime.now(timezone.utc).isoformat()
-                })
-            
-            elif payment_type == "vip":
-                days = int(metadata.get("duration_days", 30))
-                plan_id = metadata.get("plan_id")
-                
-                # تحديث حالة VIP
-                vip_until = datetime.now(timezone.utc) + timedelta(days=days)
-                await db.users.update_one(
-                    {"id": user_id},
-                    {
-                        "$set": {
-                            "is_vip": True,
-                            "vip_until": vip_until.isoformat(),
-                            "vip_plan": plan_id
+                    json={
+                        "intent": "CAPTURE",
+                        "purchase_units": [{
+                            "reference_id": f"coins_{current_user.id}_{package['id']}",
+                            "description": f"{package['coins']} عملة لصوت الكورة",
+                            "custom_id": f"{current_user.id}|{package['id']}|coins|{package['coins'] + package.get('bonus', 0)}",
+                            "amount": {
+                                "currency_code": "USD",
+                                "value": f"{package['price']:.2f}"
+                            }
+                        }],
+                        "application_context": {
+                            "return_url": f"{frontend_url}/payment/success",
+                            "cancel_url": f"{frontend_url}/payment/cancel",
+                            "brand_name": "صوت الكورة",
+                            "landing_page": "BILLING",
+                            "user_action": "PAY_NOW"
                         }
                     }
                 )
                 
-                # إضافة شارة VIP
-                await db.users.update_one(
-                    {"id": user_id},
-                    {"$addToSet": {"badges": "vip_member"}}
-                )
+                if response.status_code in [200, 201]:
+                    order_data = response.json()
+                    approval_url = next(
+                        (link["href"] for link in order_data.get("links", []) if link["rel"] == "approve"),
+                        None
+                    )
+                    return {
+                        "order_id": order_data["id"],
+                        "approval_url": approval_url,
+                        "checkout_url": approval_url
+                    }
+                else:
+                    raise HTTPException(status_code=500, detail=f"خطأ PayPal: {response.text}")
         
-        return {"received": True}
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=500, detail=f"خطأ في الاتصال بـ PayPal: {str(e)}")
     
-    # تأكيد الدفع يدوياً (للتطوير)
-    @router.post("/coins/confirm-purchase")
-    async def confirm_purchase(session_id: str, current_user = Depends(get_current_user)):
-        """تأكيد الدفع بعد نجاح Stripe"""
+    @router.post("/coins/capture")
+    async def capture_coins_payment(data: PayPalCapture, current_user = Depends(get_current_user)):
+        """تأكيد دفع العملات من PayPal"""
         try:
-            session = stripe.checkout.Session.retrieve(session_id)
+            access_token = await get_paypal_access_token()
             
-            if session.payment_status == "paid":
-                metadata = session.metadata
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{PAYPAL_API_URL}/v2/checkout/orders/{data.order_id}/capture",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": "application/json"
+                    }
+                )
                 
-                if metadata.get("type") == "coins":
-                    coins = int(metadata.get("coins", 0))
+                if response.status_code in [200, 201]:
+                    order_data = response.json()
                     
-                    # تحقق أن هذه الجلسة لم تُستخدم من قبل
-                    existing = await db.transactions.find_one({"session_id": session_id})
-                    if existing:
-                        return {"message": "تم إضافة العملات مسبقاً", "coins": coins}
+                    if order_data.get("status") == "COMPLETED":
+                        # استخراج معلومات الطلب
+                        purchase_unit = order_data.get("purchase_units", [{}])[0]
+                        custom_id = purchase_unit.get("payments", {}).get("captures", [{}])[0].get("custom_id", "")
+                        
+                        # Parse custom_id: user_id|package_id|type|coins
+                        parts = custom_id.split("|")
+                        if len(parts) >= 4:
+                            user_id = parts[0]
+                            package_id = parts[1]
+                            payment_type = parts[2]
+                            coins = int(parts[3])
+                            
+                            # تحقق من عدم استخدام هذا الطلب من قبل
+                            existing = await db.transactions.find_one({"paypal_order_id": data.order_id})
+                            if existing:
+                                return {"message": "تم إضافة العملات مسبقاً", "coins": coins}
+                            
+                            # إضافة العملات
+                            await db.users.update_one(
+                                {"id": current_user.id},
+                                {"$inc": {"coins": coins}}
+                            )
+                            
+                            # سجل المعاملة
+                            await db.transactions.insert_one({
+                                "user_id": current_user.id,
+                                "type": "purchase",
+                                "amount": coins,
+                                "paypal_order_id": data.order_id,
+                                "created_at": datetime.now(timezone.utc).isoformat()
+                            })
+                            
+                            return {"message": "تم إضافة العملات بنجاح!", "coins": coins, "success": True}
                     
-                    # إضافة العملات
-                    await db.users.update_one(
-                        {"id": current_user.id},
-                        {"$inc": {"coins": coins}}
-                    )
-                    
-                    # سجل المعاملة
-                    await db.transactions.insert_one({
-                        "user_id": current_user.id,
-                        "type": "purchase",
-                        "amount": coins,
-                        "session_id": session_id,
-                        "created_at": datetime.now(timezone.utc).isoformat()
-                    })
-                    
-                    return {"message": "تم إضافة العملات بنجاح", "coins": coins}
-                
-                elif metadata.get("type") == "vip":
-                    days = int(metadata.get("duration_days", 30))
-                    plan_id = metadata.get("plan_id")
-                    
-                    # تحقق من عدم الاستخدام المسبق
-                    existing = await db.transactions.find_one({"session_id": session_id})
-                    if existing:
-                        return {"message": "تم تفعيل VIP مسبقاً"}
-                    
-                    vip_until = datetime.now(timezone.utc) + timedelta(days=days)
-                    await db.users.update_one(
-                        {"id": current_user.id},
-                        {
-                            "$set": {
-                                "is_vip": True,
-                                "vip_until": vip_until.isoformat(),
-                                "vip_plan": plan_id
-                            },
-                            "$addToSet": {"badges": "vip_member"}
-                        }
-                    )
-                    
-                    await db.transactions.insert_one({
-                        "user_id": current_user.id,
-                        "type": "vip_subscription",
-                        "plan_id": plan_id,
-                        "session_id": session_id,
-                        "created_at": datetime.now(timezone.utc).isoformat()
-                    })
-                    
-                    return {"message": "تم تفعيل VIP بنجاح", "vip_until": vip_until.isoformat()}
-            
-            raise HTTPException(status_code=400, detail="الدفع لم يكتمل")
+                    raise HTTPException(status_code=400, detail="لم يكتمل الدفع")
+                else:
+                    raise HTTPException(status_code=400, detail=f"خطأ في تأكيد الدفع: {response.text}")
         
-        except stripe.error.StripeError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=500, detail=f"خطأ في الاتصال بـ PayPal: {str(e)}")
     
     # ----- الهدايا -----
     
@@ -330,33 +312,27 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
     
     @router.post("/gifts/send")
     async def send_gift(data: GiftSend, current_user = Depends(get_current_user)):
-        """إرسال هدية للغرفة - الأرباح تذهب للـ Owner فقط"""
+        """إرسال هدية للغرفة"""
         gift = next((g for g in GIFTS if g["id"] == data.gift_id), None)
         if not gift:
             raise HTTPException(status_code=400, detail="هدية غير موجودة")
         
-        # جلب معلومات الغرفة
         room = await db.rooms.find_one({"id": data.room_id})
         if not room:
             raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
         
-        # تحقق من المرسل
         sender = await db.users.find_one({"id": current_user.id})
         is_owner = sender.get("role") == "owner"
         
-        # Owner لا يحتاج رصيد
         if not is_owner and sender.get("coins", 0) < gift["price"]:
             raise HTTPException(status_code=400, detail="رصيد غير كافٍ")
         
-        # خصم من المرسل (إلا إذا كان Owner)
         if not is_owner:
             await db.users.update_one(
                 {"id": current_user.id},
                 {"$inc": {"coins": -gift["price"]}}
             )
         
-        # إضافة كل العملات للـ Owner فقط (100% من قيمة الهدية)
-        # جلب الـ Owner
         app_owner = await db.users.find_one({"role": "owner"})
         if app_owner and app_owner["id"] != current_user.id:
             await db.users.update_one(
@@ -364,7 +340,6 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
                 {"$inc": {"coins": gift["price"], "total_earned": gift["price"]}}
             )
         
-        # سجل الهدية
         gift_record = {
             "sender_id": current_user.id,
             "sender_username": current_user.username,
@@ -379,13 +354,11 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         }
         await db.gift_history.insert_one(gift_record)
         
-        # إضافة XP للمرسل
         await db.users.update_one(
             {"id": current_user.id},
             {"$inc": {"xp": 10}}
         )
         
-        # جلب الرصيد المحدث
         updated_sender = await db.users.find_one({"id": current_user.id})
         
         return {
@@ -398,7 +371,7 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
     
     @router.get("/gifts/history")
     async def get_gift_history(current_user = Depends(get_current_user)):
-        """سجل الهدايا المرسلة والمستلمة"""
+        """سجل الهدايا"""
         sent = await db.gift_history.find(
             {"sender_id": current_user.id}
         ).sort("created_at", -1).limit(50).to_list(length=50)
@@ -407,7 +380,6 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
             {"receiver_id": current_user.id}
         ).sort("created_at", -1).limit(50).to_list(length=50)
         
-        # إزالة _id
         for g in sent + received:
             g.pop("_id", None)
         
@@ -428,7 +400,6 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
             {"_id": 0, "is_vip": 1, "vip_until": 1, "vip_plan": 1, "role": 1}
         )
         
-        # Owner دائماً VIP
         if user.get("role") == "owner":
             return {
                 "is_vip": True,
@@ -440,11 +411,9 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         is_vip = user.get("is_vip", False)
         vip_until = user.get("vip_until")
         
-        # تحقق من انتهاء الاشتراك
         if is_vip and vip_until:
             vip_until_dt = datetime.fromisoformat(vip_until.replace('Z', '+00:00'))
             if vip_until_dt < datetime.now(timezone.utc):
-                # انتهى الاشتراك
                 await db.users.update_one(
                     {"id": current_user.id},
                     {"$set": {"is_vip": False}}
@@ -460,15 +429,14 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
     
     @router.post("/vip/subscribe")
     async def subscribe_vip(data: VIPSubscribe, current_user = Depends(get_current_user)):
-        """الاشتراك في VIP"""
+        """الاشتراك في VIP - PayPal"""
         plan = next((p for p in VIP_PLANS if p["id"] == data.plan_id), None)
         if not plan:
             raise HTTPException(status_code=400, detail="باقة غير موجودة")
         
-        # Owner يحصل على VIP مجاناً
         user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "role": 1})
         if user.get("role") == "owner":
-            vip_until = datetime.now(timezone.utc) + timedelta(days=365*10)  # 10 سنوات
+            vip_until = datetime.now(timezone.utc) + timedelta(days=365*10)
             await db.users.update_one(
                 {"id": current_user.id},
                 {
@@ -483,36 +451,123 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
             return {"message": "تم تفعيل VIP مجاناً (Owner)", "vip_until": vip_until.isoformat(), "free": True}
         
         try:
+            access_token = await get_paypal_access_token()
             frontend_url = os.environ.get('FRONTEND_URL', 'https://pitch-chat.preview.emergentagent.com')
             
-            checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'usd',
-                        'product_data': {
-                            'name': plan["name"],
-                            'description': ' | '.join(plan["features"][:3]),
-                        },
-                        'unit_amount': int(plan["price"] * 100),
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{PAYPAL_API_URL}/v2/checkout/orders",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": "application/json"
                     },
-                    'quantity': 1,
-                }],
-                mode='payment',
-                success_url=f'{frontend_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}',
-                cancel_url=f'{frontend_url}/payment/cancel',
-                metadata={
-                    'user_id': current_user.id,
-                    'plan_id': plan["id"],
-                    'duration_days': str(plan["duration_days"]),
-                    'type': 'vip'
-                }
-            )
-            
-            return {"checkout_url": checkout_session.url, "session_id": checkout_session.id}
+                    json={
+                        "intent": "CAPTURE",
+                        "purchase_units": [{
+                            "reference_id": f"vip_{current_user.id}_{plan['id']}",
+                            "description": plan["name"],
+                            "custom_id": f"{current_user.id}|{plan['id']}|vip|{plan['duration_days']}",
+                            "amount": {
+                                "currency_code": "USD",
+                                "value": f"{plan['price']:.2f}"
+                            }
+                        }],
+                        "application_context": {
+                            "return_url": f"{frontend_url}/payment/success",
+                            "cancel_url": f"{frontend_url}/payment/cancel",
+                            "brand_name": "صوت الكورة VIP",
+                            "landing_page": "BILLING",
+                            "user_action": "PAY_NOW"
+                        }
+                    }
+                )
+                
+                if response.status_code in [200, 201]:
+                    order_data = response.json()
+                    approval_url = next(
+                        (link["href"] for link in order_data.get("links", []) if link["rel"] == "approve"),
+                        None
+                    )
+                    return {
+                        "order_id": order_data["id"],
+                        "approval_url": approval_url,
+                        "checkout_url": approval_url
+                    }
+                else:
+                    raise HTTPException(status_code=500, detail=f"خطأ PayPal: {response.text}")
         
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"خطأ في إنشاء جلسة الدفع: {str(e)}")
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=500, detail=f"خطأ في الاتصال بـ PayPal: {str(e)}")
+    
+    @router.post("/vip/capture")
+    async def capture_vip_payment(data: PayPalCapture, current_user = Depends(get_current_user)):
+        """تأكيد دفع VIP من PayPal"""
+        try:
+            access_token = await get_paypal_access_token()
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{PAYPAL_API_URL}/v2/checkout/orders/{data.order_id}/capture",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                
+                if response.status_code in [200, 201]:
+                    order_data = response.json()
+                    
+                    if order_data.get("status") == "COMPLETED":
+                        purchase_unit = order_data.get("purchase_units", [{}])[0]
+                        custom_id = purchase_unit.get("payments", {}).get("captures", [{}])[0].get("custom_id", "")
+                        
+                        parts = custom_id.split("|")
+                        if len(parts) >= 4:
+                            user_id = parts[0]
+                            plan_id = parts[1]
+                            payment_type = parts[2]
+                            duration_days = int(parts[3])
+                            
+                            existing = await db.transactions.find_one({"paypal_order_id": data.order_id})
+                            if existing:
+                                return {"message": "تم تفعيل VIP مسبقاً"}
+                            
+                            vip_until = datetime.now(timezone.utc) + timedelta(days=duration_days)
+                            await db.users.update_one(
+                                {"id": current_user.id},
+                                {
+                                    "$set": {
+                                        "is_vip": True,
+                                        "vip_until": vip_until.isoformat(),
+                                        "vip_plan": plan_id
+                                    },
+                                    "$addToSet": {"badges": "vip_member"}
+                                }
+                            )
+                            
+                            await db.transactions.insert_one({
+                                "user_id": current_user.id,
+                                "type": "vip_subscription",
+                                "plan_id": plan_id,
+                                "paypal_order_id": data.order_id,
+                                "created_at": datetime.now(timezone.utc).isoformat()
+                            })
+                            
+                            return {"message": "تم تفعيل VIP بنجاح!", "vip_until": vip_until.isoformat(), "success": True}
+                    
+                    raise HTTPException(status_code=400, detail="لم يكتمل الدفع")
+                else:
+                    raise HTTPException(status_code=400, detail=f"خطأ في تأكيد الدفع: {response.text}")
+        
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=500, detail=f"خطأ في الاتصال بـ PayPal: {str(e)}")
+    
+    # ----- PayPal Client ID للـ Frontend -----
+    
+    @router.get("/paypal/client-id")
+    async def get_paypal_client_id():
+        """إرجاع PayPal Client ID للـ Frontend"""
+        return {"client_id": PAYPAL_CLIENT_ID, "mode": PAYPAL_MODE}
     
     # ----- السحب -----
     
@@ -522,13 +577,12 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         user = await db.users.find_one({"id": current_user.id})
         total_earned = user.get("total_earned", 0)
         
-        # الحد الأدنى للسحب: 1000 عملة = $7
         min_withdraw = 1000
         can_withdraw = total_earned >= min_withdraw
         
         return {
             "total_earned": total_earned,
-            "usd_value": round(total_earned * 0.007, 2),  # كل 1000 عملة = $7
+            "usd_value": round(total_earned * 0.007, 2),
             "min_withdraw": min_withdraw,
             "can_withdraw": can_withdraw
         }
@@ -547,7 +601,6 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         
         usd_amount = round(data.amount * 0.007, 2)
         
-        # إنشاء طلب السحب
         withdraw_request = {
             "user_id": current_user.id,
             "amount": data.amount,
@@ -558,7 +611,6 @@ def get_payments_router(db, get_current_user, stripe_key: str = None):
         }
         await db.withdraw_requests.insert_one(withdraw_request)
         
-        # خصم من الرصيد
         await db.users.update_one(
             {"id": current_user.id},
             {"$inc": {"total_earned": -data.amount}}
