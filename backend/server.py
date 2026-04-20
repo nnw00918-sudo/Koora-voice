@@ -1429,7 +1429,9 @@ async def join_room_membership(room_id: str, current_user: User = Depends(get_cu
     }, {"_id": 0})
     
     if existing:
-        raise HTTPException(status_code=400, detail="أنت عضو في هذه الغرفة بالفعل")
+        # Already a member - return success instead of error (better UX)
+        member_count = await db.room_members.count_documents({"room_id": room_id})
+        return {"message": "أنت عضو في هذه الغرفة بالفعل", "member_count": member_count, "already_member": True}
     
     # Add as member
     member_doc = {
@@ -1445,7 +1447,7 @@ async def join_room_membership(room_id: str, current_user: User = Depends(get_cu
     # Update member count
     member_count = await db.room_members.count_documents({"room_id": room_id})
     
-    return {"message": "تم الانضمام للغرفة بنجاح", "member_count": member_count}
+    return {"message": "تم الانضمام للغرفة بنجاح", "member_count": member_count, "already_member": False}
 
 @api_router.post("/rooms/{room_id}/membership/leave")
 async def leave_room_membership(room_id: str, current_user: User = Depends(get_current_user)):

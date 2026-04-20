@@ -280,7 +280,17 @@ const DashboardPage = ({ user, onLogout }) => {
         [roomId]: { is_member: true, role: 'member' }
       }));
     } catch (error) {
-      toast.error(error.response?.data?.detail || (isRTL ? 'فشل الانضمام' : 'Failed to join'));
+      // If already a member, just update the UI state and don't show error
+      if (error.response?.status === 400 && error.response?.data?.detail?.includes('عضو')) {
+        setMembershipStatus(prev => ({
+          ...prev,
+          [roomId]: { is_member: true, role: 'member' }
+        }));
+        // Navigate to room instead of showing error
+        navigate(`/room/${roomId}`);
+      } else {
+        toast.error(error.response?.data?.detail || (isRTL ? 'فشل الانضمام' : 'Failed to join'));
+      }
     } finally {
       setJoiningRoom(null);
     }
