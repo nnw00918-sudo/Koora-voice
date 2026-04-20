@@ -32,6 +32,7 @@ import {
   MicOff,
   Send,
   Volume2,
+  Volume1,
   VolumeX,
   Hand,
   Star,
@@ -229,6 +230,8 @@ const YallaLiveRoom = ({ user }) => {
   const screenShareStream = useRef(null);
   const screenShareVideoRef = useRef(null);
   const streamPlayerRef = useRef(null); // Ref for ReactPlayer to control volume
+  const [videoVolume, setVideoVolume] = useState(1); // Video volume state (0-1)
+  const [isVideoMuted, setIsVideoMuted] = useState(false); // Video mute state
   
   // Room News states (for all rooms)
   const [roomNews, setRoomNews] = useState([]);
@@ -3388,6 +3391,8 @@ const YallaLiveRoom = ({ user }) => {
                             url={youtubeDirectUrl}
                             playing={watchPartySync.isPlaying || true}
                             controls
+                            volume={videoVolume}
+                            muted={isVideoMuted}
                             width="100%"
                             height="100%"
                             onProgress={(state) => {
@@ -3415,6 +3420,40 @@ const YallaLiveRoom = ({ user }) => {
                               }
                             }}
                           />
+                          {/* Volume Control Slider */}
+                          <div className="absolute bottom-14 left-2 right-2 flex items-center gap-2 bg-black/80 px-3 py-2 rounded-xl backdrop-blur-sm">
+                            <button 
+                              onClick={() => setIsVideoMuted(!isVideoMuted)}
+                              className="text-white hover:text-lime-400 transition-colors"
+                            >
+                              {isVideoMuted || videoVolume === 0 ? (
+                                <VolumeX className="w-5 h-5" />
+                              ) : videoVolume < 0.5 ? (
+                                <Volume1 className="w-5 h-5" />
+                              ) : (
+                                <Volume2 className="w-5 h-5" />
+                              )}
+                            </button>
+                            <input
+                              type="range"
+                              min="0"
+                              max="1"
+                              step="0.05"
+                              value={isVideoMuted ? 0 : videoVolume}
+                              onChange={(e) => {
+                                const newVolume = parseFloat(e.target.value);
+                                setVideoVolume(newVolume);
+                                if (newVolume > 0) setIsVideoMuted(false);
+                              }}
+                              className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer accent-lime-500"
+                              style={{
+                                background: `linear-gradient(to right, #84cc16 0%, #84cc16 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 100%)`
+                              }}
+                            />
+                            <span className="text-white text-xs font-bold min-w-[35px] text-center">
+                              {Math.round((isVideoMuted ? 0 : videoVolume) * 100)}%
+                            </span>
+                          </div>
                           {/* YouTube badge with title */}
                           <div className="absolute top-2 right-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg pointer-events-none">
                             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -3425,7 +3464,7 @@ const YallaLiveRoom = ({ user }) => {
                             </span>
                           </div>
                           {youtubeInfo?.title && (
-                            <div className="absolute bottom-2 left-2 right-2 bg-black/70 px-2 py-1 rounded-lg pointer-events-none">
+                            <div className="absolute bottom-28 left-2 right-2 bg-black/70 px-2 py-1 rounded-lg pointer-events-none">
                               <p className="text-white text-xs truncate">{youtubeInfo.title}</p>
                             </div>
                           )}
@@ -3543,44 +3582,82 @@ const YallaLiveRoom = ({ user }) => {
                   } else {
                     // Direct video URL (HLS/MP4/etc) - Use ReactPlayer with sync
                     return (
-                      <ReactPlayer
-                        ref={streamPlayerRef}
-                        url={url}
-                        playing={watchPartySync.isPlaying || true}
-                        controls
-                        width="100%"
-                        height="100%"
-                        config={{
-                          file: {
-                            forceHLS: url.includes('.m3u8'),
-                          }
-                        }}
-                        onProgress={(state) => {
-                          // Host syncs every 5 seconds
-                          if ((isOwner || isRoomLeader) && state.playedSeconds > 0) {
-                            if (Math.floor(state.playedSeconds) % 5 === 0) {
-                              syncWatchParty(state.playedSeconds, true);
+                      <div className="w-full h-full relative">
+                        <ReactPlayer
+                          ref={streamPlayerRef}
+                          url={url}
+                          playing={watchPartySync.isPlaying || true}
+                          controls
+                          volume={videoVolume}
+                          muted={isVideoMuted}
+                          width="100%"
+                          height="100%"
+                          config={{
+                            file: {
+                              forceHLS: url.includes('.m3u8'),
                             }
-                          }
-                        }}
-                        onPause={() => {
-                          if (isOwner || isRoomLeader) {
-                            const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
-                            syncWatchParty(currentTime, false);
-                          }
-                        }}
-                        onPlay={() => {
-                          if (isOwner || isRoomLeader) {
-                            const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
-                            syncWatchParty(currentTime, true);
-                          }
-                        }}
-                        onSeek={(seconds) => {
-                          if (isOwner || isRoomLeader) {
-                            syncWatchParty(seconds, true);
-                          }
-                        }}
-                      />
+                          }}
+                          onProgress={(state) => {
+                            // Host syncs every 5 seconds
+                            if ((isOwner || isRoomLeader) && state.playedSeconds > 0) {
+                              if (Math.floor(state.playedSeconds) % 5 === 0) {
+                                syncWatchParty(state.playedSeconds, true);
+                              }
+                            }
+                          }}
+                          onPause={() => {
+                            if (isOwner || isRoomLeader) {
+                              const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
+                              syncWatchParty(currentTime, false);
+                            }
+                          }}
+                          onPlay={() => {
+                            if (isOwner || isRoomLeader) {
+                              const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
+                              syncWatchParty(currentTime, true);
+                            }
+                          }}
+                          onSeek={(seconds) => {
+                            if (isOwner || isRoomLeader) {
+                              syncWatchParty(seconds, true);
+                            }
+                          }}
+                        />
+                        {/* Volume Control Slider */}
+                        <div className="absolute bottom-14 left-2 right-2 flex items-center gap-2 bg-black/80 px-3 py-2 rounded-xl backdrop-blur-sm">
+                          <button 
+                            onClick={() => setIsVideoMuted(!isVideoMuted)}
+                            className="text-white hover:text-lime-400 transition-colors"
+                          >
+                            {isVideoMuted || videoVolume === 0 ? (
+                              <VolumeX className="w-5 h-5" />
+                            ) : videoVolume < 0.5 ? (
+                              <Volume1 className="w-5 h-5" />
+                            ) : (
+                              <Volume2 className="w-5 h-5" />
+                            )}
+                          </button>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={isVideoMuted ? 0 : videoVolume}
+                            onChange={(e) => {
+                              const newVolume = parseFloat(e.target.value);
+                              setVideoVolume(newVolume);
+                              if (newVolume > 0) setIsVideoMuted(false);
+                            }}
+                            className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer accent-lime-500"
+                            style={{
+                              background: `linear-gradient(to right, #84cc16 0%, #84cc16 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 100%)`
+                            }}
+                          />
+                          <span className="text-white text-xs font-bold min-w-[35px] text-center">
+                            {Math.round((isVideoMuted ? 0 : videoVolume) * 100)}%
+                          </span>
+                        </div>
+                      </div>
                     );
                   }
                 })()}
