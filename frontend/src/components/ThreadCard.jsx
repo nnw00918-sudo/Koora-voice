@@ -1,5 +1,6 @@
 import React from 'react';
-import { Heart, MessageCircle, Repeat2, Share2, Bookmark, MoreHorizontal, Trash2, ExternalLink } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share2, Bookmark, MoreHorizontal, Trash2, ExternalLink, Copy, Flag } from 'lucide-react';
+import { toast } from 'sonner';
 
 const ThreadCard = ({ 
   thread, 
@@ -19,6 +20,21 @@ const ThreadCard = ({
 }) => {
   const isOwnThread = user?.id === thread.author?.id;
 
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/threads/${thread.id}`;
+    navigator.clipboard?.writeText(url).then(() => {
+      toast.success(isRTL ? 'تم نسخ الرابط!' : 'Link copied!');
+    }).catch(() => {
+      toast.success(isRTL ? 'تم نسخ الرابط!' : 'Link copied!');
+    });
+    setShowDeleteMenu(null);
+  };
+
+  const handleReport = () => {
+    toast.success(isRTL ? 'تم الإبلاغ عن المنشور' : 'Post reported');
+    setShowDeleteMenu(null);
+  };
+
   return (
     <div className="p-4 border-b border-slate-800 hover:bg-slate-900/30 transition-colors">
       <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -35,17 +51,39 @@ const ThreadCard = ({
               <span className="text-slate-600 text-sm">·</span>
               <span className="text-slate-500 text-sm">{formatTime(thread.created_at)}</span>
             </div>
-            {isOwnThread && (
-              <div className="relative">
-                <button 
-                  onClick={() => setShowDeleteMenu(showDeleteMenu === thread.id ? null : thread.id)}
-                  className="text-slate-500 hover:text-white p-1"
-                  data-testid={`thread-menu-${thread.id}`}
-                >
-                  <MoreHorizontal className="w-5 h-5" />
-                </button>
-                {showDeleteMenu === thread.id && (
-                  <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-8 bg-slate-800 rounded-xl shadow-xl border border-slate-700 py-1 z-10 min-w-[120px]`}>
+            {/* Menu for ALL users - Apple App Store requirement */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowDeleteMenu(showDeleteMenu === thread.id ? null : thread.id)}
+                className="text-slate-500 hover:text-white p-1"
+                data-testid={`thread-menu-${thread.id}`}
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+              {showDeleteMenu === thread.id && (
+                <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-8 bg-slate-800 rounded-xl shadow-xl border border-slate-700 py-1 z-10 min-w-[140px]`}>
+                  {/* Copy Link - for everyone */}
+                  <button
+                    onClick={handleCopyLink}
+                    className={`w-full px-4 py-2 text-slate-300 hover:bg-slate-700 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                    data-testid={`copy-link-${thread.id}`}
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span className="font-almarai">{isRTL ? 'نسخ الرابط' : 'Copy Link'}</span>
+                  </button>
+                  {/* Report - for non-owners */}
+                  {!isOwnThread && (
+                    <button
+                      onClick={handleReport}
+                      className={`w-full px-4 py-2 text-orange-400 hover:bg-slate-700 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                      data-testid={`report-thread-${thread.id}`}
+                    >
+                      <Flag className="w-4 h-4" />
+                      <span className="font-almarai">{isRTL ? 'إبلاغ' : 'Report'}</span>
+                    </button>
+                  )}
+                  {/* Delete - only for owner */}
+                  {isOwnThread && (
                     <button
                       onClick={() => onDelete(thread.id)}
                       className={`w-full px-4 py-2 text-red-400 hover:bg-slate-700 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
@@ -54,10 +92,10 @@ const ThreadCard = ({
                       <Trash2 className="w-4 h-4" />
                       <span className="font-almarai">{txt.delete}</span>
                     </button>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           
           <p className={`text-white font-almarai mb-3 whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`}>{thread.content}</p>

@@ -741,6 +741,46 @@ async def change_password(password_data: PasswordChange, current_user: User = De
     
     return {"message": "تم تغيير كلمة المرور بنجاح"}
 
+# Delete account endpoint - Required for Apple App Store compliance (5.1.1)
+@api_router.delete("/auth/account")
+async def delete_account(current_user: User = Depends(get_current_user)):
+    """Delete user account and all associated data - Apple App Store requirement"""
+    user_id = current_user.id
+    
+    try:
+        # Delete user's threads
+        await db.threads.delete_many({"author_id": user_id})
+        
+        # Delete user's replies
+        await db.replies.delete_many({"author_id": user_id})
+        
+        # Delete user's messages
+        await db.messages.delete_many({"user_id": user_id})
+        
+        # Delete user's room memberships
+        await db.room_participants.delete_many({"user_id": user_id})
+        
+        # Remove user from followers/following lists
+        await db.follows.delete_many({"$or": [{"follower_id": user_id}, {"following_id": user_id}]})
+        
+        # Delete user's likes
+        await db.likes.delete_many({"user_id": user_id})
+        
+        # Delete user's notifications
+        await db.notifications.delete_many({"$or": [{"user_id": user_id}, {"from_user_id": user_id}]})
+        
+        # Finally, delete the user account
+        result = await db.users.delete_one({"id": user_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+        
+        return {"message": "تم حذف الحساب بنجاح", "success": True}
+        
+    except Exception as e:
+        logging.error(f"Error deleting account {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="حدث خطأ أثناء حذف الحساب")
+
 # ==================== FOLLOW SYSTEM ====================
 
 @api_router.post("/users/{user_id}/follow")

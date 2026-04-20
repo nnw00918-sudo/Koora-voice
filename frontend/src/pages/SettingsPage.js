@@ -1082,6 +1082,140 @@ const SettingsPage = ({ user, onLogout }) => {
     </div>
   );
 
+  // Privacy Policy View - Apple App Store Requirement (5.1.1)
+  const PrivacyPolicyView = () => (
+    <div className="space-y-6">
+      <div className={`p-6 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'text-right' : 'text-left'}`}>
+        <h3 className={`text-lg font-cairo font-bold text-lime-400 mb-4`}>
+          {isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}
+        </h3>
+        <div className="space-y-4 text-slate-300 font-almarai text-sm leading-relaxed">
+          <p>
+            {isRTL 
+              ? 'مرحباً بك في صوت الكورة. نحن نقدر خصوصيتك ونلتزم بحماية بياناتك الشخصية.'
+              : 'Welcome to Koora Voice. We value your privacy and are committed to protecting your personal data.'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '١. البيانات التي نجمعها' : '1. Data We Collect'}
+          </h4>
+          <p>
+            {isRTL
+              ? '• معلومات الحساب: الاسم، البريد الإلكتروني، اسم المستخدم\n• المحتوى: المنشورات، التعليقات، الرسائل\n• بيانات الاستخدام: سجلات الدخول، تفاعلاتك مع التطبيق'
+              : '• Account info: Name, email, username\n• Content: Posts, comments, messages\n• Usage data: Login logs, your interactions with the app'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '٢. كيف نستخدم بياناتك' : '2. How We Use Your Data'}
+          </h4>
+          <p>
+            {isRTL
+              ? '• تقديم خدمات التطبيق\n• تحسين تجربة المستخدم\n• إرسال إشعارات مهمة\n• حماية المجتمع من المحتوى الضار'
+              : '• Provide app services\n• Improve user experience\n• Send important notifications\n• Protect community from harmful content'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '٣. مشاركة البيانات' : '3. Data Sharing'}
+          </h4>
+          <p>
+            {isRTL
+              ? 'لا نبيع بياناتك الشخصية. قد نشارك معلومات محدودة مع مزودي الخدمات الموثوقين لتشغيل التطبيق.'
+              : 'We do not sell your personal data. We may share limited information with trusted service providers to operate the app.'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '٤. حذف البيانات' : '4. Data Deletion'}
+          </h4>
+          <p>
+            {isRTL
+              ? 'يمكنك حذف حسابك في أي وقت من الإعدادات > الأمان > حذف الحساب. سيتم حذف جميع بياناتك نهائياً.'
+              : 'You can delete your account anytime from Settings > Security > Delete Account. All your data will be permanently deleted.'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '٥. التواصل' : '5. Contact'}
+          </h4>
+          <p>
+            {isRTL
+              ? 'للاستفسارات حول الخصوصية: support@kooravoice.com'
+              : 'For privacy inquiries: support@kooravoice.com'}
+          </p>
+          
+          <p className="text-slate-500 mt-6 text-xs">
+            {isRTL ? 'آخر تحديث: ديسمبر 2025' : 'Last updated: December 2025'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Terms of Service View - Apple App Store Requirement (1.5.0)
+  const TermsView = () => (
+    <div className="space-y-6">
+      <div className={`p-6 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'text-right' : 'text-left'}`}>
+        <h3 className={`text-lg font-cairo font-bold text-lime-400 mb-4`}>
+          {isRTL ? 'شروط الاستخدام' : 'Terms of Service'}
+        </h3>
+        <div className="space-y-4 text-slate-300 font-almarai text-sm leading-relaxed">
+          <p>
+            {isRTL 
+              ? 'باستخدامك لتطبيق صوت الكورة، فإنك توافق على الشروط التالية:'
+              : 'By using Koora Voice, you agree to the following terms:'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '١. الاستخدام المقبول' : '1. Acceptable Use'}
+          </h4>
+          <p>
+            {isRTL
+              ? '• يجب أن يكون عمرك 13 سنة أو أكثر\n• يجب استخدام التطبيق للأغراض المشروعة فقط\n• يحظر نشر محتوى مسيء أو غير قانوني\n• يجب احترام المستخدمين الآخرين'
+              : '• You must be 13 years or older\n• Use the app for lawful purposes only\n• No offensive or illegal content\n• Respect other users'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '٢. المحتوى' : '2. Content'}
+          </h4>
+          <p>
+            {isRTL
+              ? '• أنت مسؤول عن المحتوى الذي تنشره\n• نحتفظ بحق إزالة أي محتوى مخالف\n• يحظر انتهاك حقوق الملكية الفكرية'
+              : '• You are responsible for your posted content\n• We reserve the right to remove violating content\n• No intellectual property infringement'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '٣. الحساب' : '3. Account'}
+          </h4>
+          <p>
+            {isRTL
+              ? '• أنت مسؤول عن أمان حسابك\n• يحظر مشاركة بيانات الدخول\n• يمكننا تعليق أو إنهاء الحسابات المخالفة'
+              : '• You are responsible for account security\n• Do not share login credentials\n• We may suspend or terminate violating accounts'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '٤. إخلاء المسؤولية' : '4. Disclaimer'}
+          </h4>
+          <p>
+            {isRTL
+              ? 'التطبيق مقدم "كما هو". لا نضمن عدم انقطاع الخدمة أو خلوها من الأخطاء.'
+              : 'The app is provided "as is". We do not guarantee uninterrupted or error-free service.'}
+          </p>
+          
+          <h4 className="text-white font-bold mt-4">
+            {isRTL ? '٥. التعديلات' : '5. Changes'}
+          </h4>
+          <p>
+            {isRTL
+              ? 'نحتفظ بحق تعديل هذه الشروط. سنخطرك بالتغييرات الجوهرية.'
+              : 'We reserve the right to modify these terms. We will notify you of significant changes.'}
+          </p>
+          
+          <p className="text-slate-500 mt-6 text-xs">
+            {isRTL ? 'آخر تحديث: ديسمبر 2025' : 'Last updated: December 2025'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   // About View
   const AboutView = () => (
     <div className="space-y-6">
@@ -1106,6 +1240,23 @@ const SettingsPage = ({ user, onLogout }) => {
           <span className="text-slate-400 font-almarai">{txt.developer}</span>
           <span className="text-white font-cairo">Koora Voice Team</span>
         </div>
+      </div>
+
+      {/* Legal Section - Apple App Store Requirement */}
+      <SectionHeader title={isRTL ? 'القانونية' : 'Legal'} icon={FileText} />
+      <div className="space-y-3">
+        <SettingItem 
+          icon={ShieldCheck}
+          title={isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}
+          description={isRTL ? 'كيف نحمي بياناتك' : 'How we protect your data'}
+          onClick={() => setCurrentView('privacy-policy')}
+        />
+        <SettingItem 
+          icon={FileText}
+          title={isRTL ? 'شروط الاستخدام' : 'Terms of Service'}
+          description={isRTL ? 'شروط استخدام التطبيق' : 'Terms for using the app'}
+          onClick={() => setCurrentView('terms')}
+        />
       </div>
 
       <div className="pt-4">
@@ -1245,6 +1396,8 @@ const SettingsPage = ({ user, onLogout }) => {
               {currentView === 'display' && txt.display}
               {currentView === 'language' && txt.language}
               {currentView === 'about' && txt.about}
+              {currentView === 'privacy-policy' && (isRTL ? 'سياسة الخصوصية' : 'Privacy Policy')}
+              {currentView === 'terms' && (isRTL ? 'شروط الاستخدام' : 'Terms of Service')}
             </h1>
           </div>
         </div>
@@ -1268,6 +1421,8 @@ const SettingsPage = ({ user, onLogout }) => {
               {currentView === 'display' && <DisplayView />}
               {currentView === 'language' && <LanguageView />}
               {currentView === 'about' && <AboutView />}
+              {currentView === 'privacy-policy' && <PrivacyPolicyView />}
+              {currentView === 'terms' && <TermsView />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -1349,8 +1504,17 @@ const SettingsPage = ({ user, onLogout }) => {
                   {txt.cancel}
                 </Button>
                 <Button
-                  onClick={() => {
-                    toast.error(isRTL ? 'تم تعطيل هذه الميزة' : 'This feature is disabled');
+                  onClick={async () => {
+                    try {
+                      await axios.delete(`${API}/api/auth/account`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                      });
+                      toast.success(isRTL ? 'تم حذف الحساب بنجاح' : 'Account deleted successfully');
+                      localStorage.clear();
+                      window.location.href = '/';
+                    } catch (error) {
+                      toast.error(error.response?.data?.detail || (isRTL ? 'حدث خطأ' : 'An error occurred'));
+                    }
                     setShowDeleteConfirm(false);
                   }}
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white"
