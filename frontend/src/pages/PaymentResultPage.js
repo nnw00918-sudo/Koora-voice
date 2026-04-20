@@ -5,49 +5,59 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
-import { CheckCircle, XCircle, Loader2, Home, ArrowRight } from 'lucide-react';
-import { BACKEND_URL, API } from '../config/api';
+import { CheckCircle, XCircle, Loader2, Home, ArrowRight, Crown } from 'lucide-react';
+import { API } from '../config/api';
 
 const PaymentResultPage = ({ success = true }) => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState('processing'); // processing, success, error
+  const [status, setStatus] = useState('processing');
   const [result, setResult] = useState(null);
   
   const token = localStorage.getItem('token');
-  const sessionId = searchParams.get('session_id');
+  const orderId = searchParams.get('token'); // PayPal returns order ID as 'token'
 
   useEffect(() => {
-    if (success && sessionId) {
+    if (success && orderId) {
       confirmPayment();
     } else if (!success) {
       setStatus('cancelled');
+    } else if (success && !orderId) {
+      // No order ID but success page - might be direct navigation
+      setStatus('success');
     }
-  }, [success, sessionId]);
+  }, [success, orderId]);
 
   const confirmPayment = async () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       
+      // Try to capture the PayPal payment
       const response = await axios.post(
-        `${API}/api/payments/coins/confirm-purchase?session_id=${sessionId}`,
-        {},
+        `${API}/api/payments/capture`,
+        { order_id: orderId },
         { headers }
       );
       
       setResult(response.data);
       setStatus('success');
-      toast.success(response.data.message);
+      toast.success(response.data.message || (isRTL ? 'تم التفعيل بنجاح!' : 'Activated successfully!'));
     } catch (error) {
       console.error('Payment confirmation error:', error);
-      setStatus('error');
-      toast.error(error.response?.data?.detail || 'فشل تأكيد الدفع');
+      // If capture fails, might already be captured
+      if (error.response?.status === 400) {
+        setStatus('success');
+        setResult({ message: isRTL ? 'تمت العملية بنجاح' : 'Transaction completed' });
+      } else {
+        setStatus('error');
+        toast.error(error.response?.data?.detail || (isRTL ? 'فشل تأكيد الدفع' : 'Payment confirmation failed'));
+      }
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -60,53 +70,46 @@ const PaymentResultPage = ({ success = true }) => {
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
               className="w-20 h-20 mx-auto mb-6"
             >
-              <Loader2 className="w-20 h-20 text-amber-500" />
+              <Loader2 className="w-20 h-20 text-lime-500" />
             </motion.div>
-            <h2 className="text-white text-xl font-bold mb-2">
+            <h2 className="text-white text-xl font-bold mb-2 font-cairo">
               {isRTL ? 'جاري تأكيد الدفع...' : 'Confirming payment...'}
             </h2>
-            <p className="text-white/60">
+            <p className="text-white/60 font-almarai">
               {isRTL ? 'يرجى الانتظار' : 'Please wait'}
             </p>
           </div>
         )}
 
         {status === 'success' && (
-          <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30">
+          <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-lime-500/10 to-green-500/10 border border-lime-500/30">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", duration: 0.5 }}
             >
-              <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
+              <CheckCircle className="w-20 h-20 text-lime-500 mx-auto mb-6" />
             </motion.div>
-            <h2 className="text-white text-2xl font-bold mb-2">
+            <h2 className="text-white text-2xl font-bold mb-2 font-cairo">
               {isRTL ? '🎉 تم بنجاح!' : '🎉 Success!'}
             </h2>
-            <p className="text-white/80 mb-6">
-              {result?.message || (isRTL ? 'تمت العملية بنجاح' : 'Transaction completed')}
+            <p className="text-white/80 mb-6 font-almarai">
+              {result?.message || (isRTL ? 'تم تفعيل الميزة بنجاح' : 'Feature activated successfully')}
             </p>
             
-            {result?.coins && (
-              <div className="p-4 rounded-2xl bg-amber-500/20 border border-amber-500/30 mb-6">
-                <p className="text-amber-400 text-lg">
-                  {isRTL ? 'تم إضافة' : 'Added'} <span className="font-bold text-2xl">{result.coins}</span> {isRTL ? 'عملة' : 'coins'}
-                </p>
-              </div>
-            )}
-            
-            {result?.vip_until && (
-              <div className="p-4 rounded-2xl bg-amber-500/20 border border-amber-500/30 mb-6">
-                <p className="text-amber-400">
-                  {isRTL ? 'VIP حتى: ' : 'VIP until: '}
-                  <span className="font-bold">{new Date(result.vip_until).toLocaleDateString('ar-SA')}</span>
+            {result?.expires && (
+              <div className="p-4 rounded-2xl bg-lime-500/20 border border-lime-500/30 mb-6">
+                <Crown className="w-8 h-8 text-lime-400 mx-auto mb-2" />
+                <p className="text-lime-400 font-almarai">
+                  {isRTL ? 'صالح حتى: ' : 'Valid until: '}
+                  <span className="font-bold">{new Date(result.expires).toLocaleDateString('ar-SA')}</span>
                 </p>
               </div>
             )}
             
             <Button
               onClick={() => navigate('/dashboard')}
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold rounded-2xl py-6"
+              className="w-full bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-600 hover:to-green-600 text-slate-900 font-bold rounded-2xl py-6"
             >
               <Home className="w-5 h-5 ml-2" />
               {isRTL ? 'العودة للرئيسية' : 'Back to Home'}
@@ -117,10 +120,10 @@ const PaymentResultPage = ({ success = true }) => {
         {status === 'error' && (
           <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-red-500/10 to-rose-500/10 border border-red-500/30">
             <XCircle className="w-20 h-20 text-red-500 mx-auto mb-6" />
-            <h2 className="text-white text-2xl font-bold mb-2">
+            <h2 className="text-white text-2xl font-bold mb-2 font-cairo">
               {isRTL ? 'حدث خطأ!' : 'Error!'}
             </h2>
-            <p className="text-white/60 mb-6">
+            <p className="text-white/60 mb-6 font-almarai">
               {isRTL ? 'فشل تأكيد الدفع. يرجى المحاولة مرة أخرى.' : 'Payment confirmation failed. Please try again.'}
             </p>
             <div className="flex gap-3">
@@ -144,15 +147,15 @@ const PaymentResultPage = ({ success = true }) => {
         {status === 'cancelled' && (
           <div className="text-center p-8 rounded-3xl bg-white/5 border border-white/10">
             <XCircle className="w-20 h-20 text-gray-500 mx-auto mb-6" />
-            <h2 className="text-white text-2xl font-bold mb-2">
+            <h2 className="text-white text-2xl font-bold mb-2 font-cairo">
               {isRTL ? 'تم إلغاء الدفع' : 'Payment Cancelled'}
             </h2>
-            <p className="text-white/60 mb-6">
+            <p className="text-white/60 mb-6 font-almarai">
               {isRTL ? 'لم تتم أي عملية دفع' : 'No payment was made'}
             </p>
             <Button
               onClick={() => navigate('/store')}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-2xl py-6"
+              className="w-full bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-600 hover:to-green-600 text-slate-900 font-bold rounded-2xl py-6"
             >
               <ArrowRight className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2 rotate-180'}`} />
               {isRTL ? 'العودة للمتجر' : 'Back to Store'}

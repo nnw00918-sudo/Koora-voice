@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import {
   Crown,
   ArrowRight,
@@ -14,19 +14,57 @@ import {
   Star,
   Zap,
   ChevronRight,
-  Loader2
+  Loader2,
+  Image,
+  MessageSquare,
+  Frame,
+  Package
 } from 'lucide-react';
 
 const StorePage = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
-  const [vipPlans, setVipPlans] = useState([]);
-  const [vipStatus, setVipStatus] = useState({ is_vip: false });
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [featuresStatus, setFeaturesStatus] = useState({});
   const [loading, setLoading] = useState(true);
-  const [purchasing, setPurchasing] = useState(false);
+  const [purchasing, setPurchasing] = useState(null);
+  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  const FEATURES_INFO = {
+    photos: {
+      icon: Image,
+      name: isRTL ? 'إرسال صور' : 'Send Photos',
+      description: isRTL ? 'أرسل صور في غرف الدردشة' : 'Send photos in chat rooms',
+      color: 'from-blue-500 to-cyan-500'
+    },
+    vip_badge: {
+      icon: Crown,
+      name: isRTL ? 'شارة VIP' : 'VIP Badge',
+      description: isRTL ? 'شارة ذهبية مميزة بجانب اسمك' : 'Gold badge next to your name',
+      color: 'from-amber-500 to-yellow-500'
+    },
+    colored_messages: {
+      icon: MessageSquare,
+      name: isRTL ? 'رسائل ملونة' : 'Colored Messages',
+      description: isRTL ? 'رسائلك تظهر بألوان مميزة' : 'Your messages appear in special colors',
+      color: 'from-pink-500 to-rose-500'
+    },
+    profile_frame: {
+      icon: Frame,
+      name: isRTL ? 'إطار مميز' : 'Profile Frame',
+      description: isRTL ? 'إطار ذهبي حول صورتك الشخصية' : 'Gold frame around your profile picture',
+      color: 'from-purple-500 to-violet-500'
+    },
+    all: {
+      icon: Package,
+      name: isRTL ? 'جميع المميزات' : 'All Features',
+      description: isRTL ? 'احصل على كل المميزات بسعر مخفض' : 'Get all features at a discounted price',
+      color: 'from-emerald-500 to-green-500'
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -37,13 +75,13 @@ const StorePage = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [plansRes, vipRes] = await Promise.all([
-        axios.get(`${API}/api/payments/vip/plans`),
-        axios.get(`${API}/api/payments/vip/status`, { headers })
+      const [subsRes, statusRes] = await Promise.all([
+        axios.get(`${API}/api/payments/subscriptions`),
+        axios.get(`${API}/api/payments/features/status`, { headers })
       ]);
       
-      setVipPlans(plansRes.data.plans || []);
-      setVipStatus(vipRes.data);
+      setSubscriptions(subsRes.data.subscriptions || []);
+      setFeaturesStatus(statusRes.data);
     } catch (error) {
       console.error('Error fetching store data:', error);
     } finally {
@@ -51,36 +89,47 @@ const StorePage = () => {
     }
   };
 
-  const handlePurchaseVIP = async (planId) => {
+  const handleSubscribe = async (subscriptionId) => {
     try {
-      setPurchasing(true);
+      setPurchasing(subscriptionId);
       const headers = { Authorization: `Bearer ${token}` };
       
       const response = await axios.post(
-        `${API}/api/payments/vip/subscribe`,
-        { plan_id: planId },
+        `${API}/api/payments/subscribe`,
+        { subscription_id: subscriptionId },
         { headers }
       );
       
       if (response.data.checkout_url) {
         window.location.href = response.data.checkout_url;
-      } else {
-        toast.success(isRTL ? 'تم تفعيل VIP بنجاح!' : 'VIP activated successfully!');
+      } else if (response.data.free) {
+        toast.success(isRTL ? 'تم التفعيل مجاناً!' : 'Activated for free!');
         fetchData();
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || (isRTL ? 'فشل في الاشتراك' : 'Subscription failed'));
     } finally {
-      setPurchasing(false);
+      setPurchasing(null);
     }
   };
 
   const isOwner = user.role === 'owner';
 
+  // Group subscriptions by feature
+  const groupedSubs = subscriptions.reduce((acc, sub) => {
+    if (!acc[sub.feature]) {
+      acc[sub.feature] = { monthly: null, yearly: null };
+    }
+    acc[sub.feature][sub.period] = sub;
+    return acc;
+  }, {});
+
+  const featureOrder = ['all', 'photos', 'vip_badge', 'colored_messages', 'profile_frame'];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-lime-500 animate-spin" />
       </div>
     );
   }
@@ -96,174 +145,173 @@ const StorePage = () => {
           >
             <ArrowRight className={`w-5 h-5 text-white ${isRTL ? '' : 'rotate-180'}`} />
           </button>
-          <h1 className="text-white font-bold text-lg">VIP</h1>
+          <h1 className="text-white font-bold text-lg font-cairo">
+            {isRTL ? 'المتجر' : 'Store'}
+          </h1>
           <div className="w-10" />
         </div>
       </div>
 
       <div className="max-w-lg mx-auto px-4 pb-24">
-        {/* VIP Status Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-6 p-6 rounded-3xl bg-gradient-to-br from-purple-600/20 via-purple-500/10 to-pink-500/20 border border-purple-500/30"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <Crown className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <p className="text-white/60 text-sm">{isRTL ? 'حالة VIP' : 'VIP Status'}</p>
-                <p className="text-white font-bold text-xl">
-                  {isOwner ? (
-                    <span className="text-amber-400">OWNER</span>
-                  ) : vipStatus.is_vip ? (
-                    <span className="text-purple-400">VIP</span>
-                  ) : (
-                    <span className="text-white/50">{isRTL ? 'غير مشترك' : 'Not subscribed'}</span>
-                  )}
-                </p>
-              </div>
-            </div>
-            {(vipStatus.is_vip || isOwner) && (
-              <div className="px-3 py-1 bg-purple-500/20 rounded-full">
-                <span className="text-purple-300 text-xs">
-                  {isOwner ? '∞' : vipStatus.days_remaining + (isRTL ? ' يوم' : ' days')}
-                </span>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* VIP Benefits */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mt-6"
-        >
-          <h2 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-400" />
-            {isRTL ? 'مميزات VIP' : 'VIP Benefits'}
-          </h2>
-          
-          <div className="space-y-3">
-            {[
-              { icon: '👑', text: isRTL ? 'شارة VIP مميزة' : 'Exclusive VIP Badge' },
-              { icon: '🎨', text: isRTL ? 'رسائل ملونة في الدردشة' : 'Colored chat messages' },
-              { icon: '🖼️', text: isRTL ? 'إرسال صور في الدردشة' : 'Send images in chat' },
-              { icon: '⭐', text: isRTL ? 'إطار مميز للصورة الشخصية' : 'Special profile frame' },
-              { icon: '🚀', text: isRTL ? 'أولوية في الدعم الفني' : 'Priority support' },
-            ].map((benefit, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + index * 0.05 }}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/5"
-              >
-                <span className="text-xl">{benefit.icon}</span>
-                <span className="text-white/80 text-sm">{benefit.text}</span>
-                <Check className="w-4 h-4 text-green-400 mr-auto" />
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* VIP Plans */}
-        {!isOwner && !vipStatus.is_vip && (
+        {/* Owner Badge */}
+        {isOwner && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-8"
+            className="mt-6 p-6 rounded-3xl bg-gradient-to-br from-amber-600/20 via-amber-500/10 to-yellow-500/20 border border-amber-500/30 text-center"
           >
-            <h2 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-400" />
-              {isRTL ? 'اختر خطتك' : 'Choose Your Plan'}
-            </h2>
-            
-            <div className="space-y-4">
-              {vipPlans.map((plan, index) => (
-                <motion.div
-                  key={plan.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  className={`relative p-5 rounded-2xl border transition-all ${
-                    plan.popular 
-                      ? 'bg-gradient-to-br from-purple-600/20 to-pink-600/20 border-purple-500/50' 
-                      : 'bg-white/5 border-white/10 hover:border-purple-500/30'
-                  }`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
-                      <span className="text-white text-xs font-bold">
-                        {isRTL ? 'الأكثر شعبية' : 'Most Popular'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-white font-bold text-lg">{plan.name}</h3>
-                      <p className="text-white/60 text-sm">
-                        {plan.duration_days} {isRTL ? 'يوم' : 'days'}
-                      </p>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-2xl font-bold text-white">
-                        ${plan.price}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    onClick={() => handlePurchaseVIP(plan.id)}
-                    disabled={purchasing}
-                    className={`w-full mt-4 ${
-                      plan.popular
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
-                        : 'bg-white/10 hover:bg-white/20'
-                    } text-white font-bold`}
-                  >
-                    {purchasing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        {isRTL ? 'اشترك الآن' : 'Subscribe Now'}
-                        <ChevronRight className={`w-4 h-4 ${isRTL ? 'rotate-180 mr-2' : 'ml-2'}`} />
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Already VIP or Owner */}
-        {(isOwner || vipStatus.is_vip) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-center"
-          >
-            <Crown className="w-12 h-12 text-purple-400 mx-auto mb-3" />
-            <h3 className="text-white font-bold text-lg">
-              {isOwner 
-                ? (isRTL ? 'أنت مالك التطبيق!' : "You're the App Owner!") 
-                : (isRTL ? 'أنت عضو VIP!' : "You're a VIP Member!")}
+            <Crown className="w-12 h-12 text-amber-400 mx-auto mb-3" />
+            <h3 className="text-white font-bold text-lg font-cairo">
+              {isRTL ? 'أنت مالك التطبيق!' : "You're the App Owner!"}
             </h3>
-            <p className="text-white/60 text-sm mt-2">
-              {isOwner
-                ? (isRTL ? 'لديك جميع الصلاحيات بدون حدود' : 'You have all privileges without limits')
-                : (isRTL ? 'استمتع بجميع مميزات VIP الحصرية' : 'Enjoy all exclusive VIP benefits')}
+            <p className="text-white/60 text-sm mt-2 font-almarai">
+              {isRTL ? 'لديك جميع المميزات مفعلة بدون حدود' : 'All features are activated without limits'}
             </p>
           </motion.div>
         )}
+
+        {/* Period Toggle */}
+        {!isOwner && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 flex justify-center"
+          >
+            <div className="bg-white/5 p-1 rounded-2xl flex gap-1">
+              <button
+                onClick={() => setSelectedPeriod('monthly')}
+                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+                  selectedPeriod === 'monthly'
+                    ? 'bg-lime-500 text-slate-900'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                {isRTL ? 'شهري' : 'Monthly'}
+              </button>
+              <button
+                onClick={() => setSelectedPeriod('yearly')}
+                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                  selectedPeriod === 'yearly'
+                    ? 'bg-lime-500 text-slate-900'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                {isRTL ? 'سنوي' : 'Yearly'}
+                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                  {isRTL ? 'وفر أكثر!' : 'Save!'}
+                </span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Features List */}
+        <div className="mt-8 space-y-4">
+          {featureOrder.map((featureKey, index) => {
+            const feature = FEATURES_INFO[featureKey];
+            const subs = groupedSubs[featureKey];
+            const currentSub = subs?.[selectedPeriod];
+            const isActive = featuresStatus[featureKey] || isOwner;
+            const Icon = feature?.icon || Star;
+
+            if (!feature || !currentSub) return null;
+
+            return (
+              <motion.div
+                key={featureKey}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={`relative p-5 rounded-2xl border transition-all ${
+                  featureKey === 'all'
+                    ? 'bg-gradient-to-br from-emerald-600/20 to-green-600/20 border-emerald-500/50'
+                    : isActive
+                    ? 'bg-gradient-to-br from-lime-600/10 to-green-600/10 border-lime-500/30'
+                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                }`}
+              >
+                {featureKey === 'all' && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full">
+                    <span className="text-white text-xs font-bold">
+                      {isRTL ? 'الأفضل قيمة' : 'Best Value'}
+                    </span>
+                  </div>
+                )}
+
+                <div className={`flex items-start gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center flex-shrink-0`}>
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  
+                  <div className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-white font-bold text-lg font-cairo">{feature.name}</h3>
+                      {isActive && (
+                        <span className="px-2 py-0.5 bg-lime-500/20 text-lime-400 text-xs rounded-full">
+                          {isRTL ? 'مفعّل' : 'Active'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-white/60 text-sm mt-1 font-almarai">{feature.description}</p>
+                    
+                    {!isOwner && (
+                      <div className={`flex items-center justify-between mt-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className={isRTL ? 'text-right' : 'text-left'}>
+                          <p className="text-2xl font-bold text-white">
+                            ${currentSub.price}
+                            <span className="text-sm text-white/50 font-normal">
+                              /{selectedPeriod === 'monthly' ? (isRTL ? 'شهر' : 'mo') : (isRTL ? 'سنة' : 'yr')}
+                            </span>
+                          </p>
+                        </div>
+                        
+                        <Button
+                          onClick={() => handleSubscribe(currentSub.id)}
+                          disabled={purchasing === currentSub.id || isActive}
+                          className={`${
+                            isActive
+                              ? 'bg-lime-500/20 text-lime-400'
+                              : featureKey === 'all'
+                              ? 'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white'
+                              : 'bg-white/10 hover:bg-white/20 text-white'
+                          } font-bold px-6`}
+                        >
+                          {purchasing === currentSub.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : isActive ? (
+                            <>
+                              <Check className="w-4 h-4" />
+                              <span className="mr-1">{isRTL ? 'مفعّل' : 'Active'}</span>
+                            </>
+                          ) : (
+                            <>
+                              {isRTL ? 'اشترك' : 'Subscribe'}
+                              <ChevronRight className={`w-4 h-4 ${isRTL ? 'rotate-180 mr-1' : 'ml-1'}`} />
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Payment Info */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-8 text-center"
+        >
+          <p className="text-white/40 text-xs font-almarai">
+            {isRTL 
+              ? 'الدفع الآمن عبر PayPal • يمكنك الإلغاء في أي وقت'
+              : 'Secure payment via PayPal • Cancel anytime'}
+          </p>
+        </motion.div>
       </div>
     </div>
   );
