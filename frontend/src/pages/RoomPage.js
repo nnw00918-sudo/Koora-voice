@@ -232,6 +232,8 @@ const YallaLiveRoom = ({ user }) => {
   const streamPlayerRef = useRef(null); // Ref for ReactPlayer to control volume
   const [videoVolume, setVideoVolume] = useState(1); // Video volume state (0-1)
   const [isVideoMuted, setIsVideoMuted] = useState(false); // Video mute state
+  const [micVolume, setMicVolume] = useState(100); // Microphones volume (0-100)
+  const [isMicMuted, setIsMicMuted] = useState(false); // Mute all microphones
   
   // Room News states (for all rooms)
   const [roomNews, setRoomNews] = useState([]);
@@ -527,6 +529,18 @@ const YallaLiveRoom = ({ user }) => {
       } catch (e) {}
     }
   }, [isAudioMuted, remoteUsers]);
+
+  // Control microphone volume separately from video
+  useEffect(() => {
+    remoteUsersRef.current.forEach(remoteUser => {
+      if (remoteUser.audioTrack) {
+        try {
+          const effectiveVolume = isMicMuted ? 0 : micVolume;
+          remoteUser.audioTrack.setVolume(effectiveVolume);
+        } catch (e) {}
+      }
+    });
+  }, [isMicMuted, micVolume]);
 
   // Playback features polling (Reactions, Polls, Watch Party)
   useEffect(() => {
@@ -3420,39 +3434,74 @@ const YallaLiveRoom = ({ user }) => {
                               }
                             }}
                           />
-                          {/* Volume Control Slider */}
-                          <div className="absolute bottom-14 left-2 right-2 flex items-center gap-2 bg-black/80 px-3 py-2 rounded-xl backdrop-blur-sm">
-                            <button 
-                              onClick={() => setIsVideoMuted(!isVideoMuted)}
-                              className="text-white hover:text-lime-400 transition-colors"
-                            >
-                              {isVideoMuted || videoVolume === 0 ? (
-                                <VolumeX className="w-5 h-5" />
-                              ) : videoVolume < 0.5 ? (
-                                <Volume1 className="w-5 h-5" />
-                              ) : (
-                                <Volume2 className="w-5 h-5" />
-                              )}
-                            </button>
-                            <input
-                              type="range"
-                              min="0"
-                              max="1"
-                              step="0.05"
-                              value={isVideoMuted ? 0 : videoVolume}
-                              onChange={(e) => {
-                                const newVolume = parseFloat(e.target.value);
-                                setVideoVolume(newVolume);
-                                if (newVolume > 0) setIsVideoMuted(false);
-                              }}
-                              className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer accent-lime-500"
-                              style={{
-                                background: `linear-gradient(to right, #84cc16 0%, #84cc16 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 100%)`
-                              }}
-                            />
-                            <span className="text-white text-xs font-bold min-w-[35px] text-center">
-                              {Math.round((isVideoMuted ? 0 : videoVolume) * 100)}%
-                            </span>
+                          {/* Audio Controls Panel - Video + Microphones */}
+                          <div className="absolute bottom-14 left-2 right-2 bg-black/90 px-3 py-3 rounded-xl backdrop-blur-sm space-y-2">
+                            {/* Video Volume */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-white/60 text-xs w-12">البث</span>
+                              <button 
+                                onClick={() => setIsVideoMuted(!isVideoMuted)}
+                                className="text-white hover:text-lime-400 transition-colors"
+                              >
+                                {isVideoMuted || videoVolume === 0 ? (
+                                  <VolumeX className="w-5 h-5" />
+                                ) : (
+                                  <Volume2 className="w-5 h-5" />
+                                )}
+                              </button>
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.05"
+                                value={isVideoMuted ? 0 : videoVolume}
+                                onChange={(e) => {
+                                  const newVolume = parseFloat(e.target.value);
+                                  setVideoVolume(newVolume);
+                                  if (newVolume > 0) setIsVideoMuted(false);
+                                }}
+                                className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer"
+                                style={{
+                                  background: `linear-gradient(to right, #84cc16 0%, #84cc16 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 100%)`
+                                }}
+                              />
+                              <span className="text-white text-xs font-bold min-w-[35px] text-center">
+                                {Math.round((isVideoMuted ? 0 : videoVolume) * 100)}%
+                              </span>
+                            </div>
+                            {/* Microphones Volume */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-white/60 text-xs w-12">المايك</span>
+                              <button 
+                                onClick={() => setIsMicMuted(!isMicMuted)}
+                                className="text-white hover:text-amber-400 transition-colors"
+                              >
+                                {isMicMuted || micVolume === 0 ? (
+                                  <MicOff className="w-5 h-5" />
+                                ) : (
+                                  <Mic className="w-5 h-5" />
+                                )}
+                              </button>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="5"
+                                value={isMicMuted ? 0 : micVolume}
+                                onChange={(e) => {
+                                  const newVolume = parseInt(e.target.value);
+                                  setMicVolume(newVolume);
+                                  if (newVolume > 0) setIsMicMuted(false);
+                                }}
+                                className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer"
+                                style={{
+                                  background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${isMicMuted ? 0 : micVolume}%, #475569 ${isMicMuted ? 0 : micVolume}%, #475569 100%)`
+                                }}
+                              />
+                              <span className="text-amber-400 text-xs font-bold min-w-[35px] text-center">
+                                {isMicMuted ? 0 : micVolume}%
+                              </span>
+                            </div>
                           </div>
                           {/* YouTube badge with title */}
                           <div className="absolute top-2 right-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg pointer-events-none">
@@ -3623,39 +3672,74 @@ const YallaLiveRoom = ({ user }) => {
                             }
                           }}
                         />
-                        {/* Volume Control Slider */}
-                        <div className="absolute bottom-14 left-2 right-2 flex items-center gap-2 bg-black/80 px-3 py-2 rounded-xl backdrop-blur-sm">
-                          <button 
-                            onClick={() => setIsVideoMuted(!isVideoMuted)}
-                            className="text-white hover:text-lime-400 transition-colors"
-                          >
-                            {isVideoMuted || videoVolume === 0 ? (
-                              <VolumeX className="w-5 h-5" />
-                            ) : videoVolume < 0.5 ? (
-                              <Volume1 className="w-5 h-5" />
-                            ) : (
-                              <Volume2 className="w-5 h-5" />
-                            )}
-                          </button>
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={isVideoMuted ? 0 : videoVolume}
-                            onChange={(e) => {
-                              const newVolume = parseFloat(e.target.value);
-                              setVideoVolume(newVolume);
-                              if (newVolume > 0) setIsVideoMuted(false);
-                            }}
-                            className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer accent-lime-500"
-                            style={{
-                              background: `linear-gradient(to right, #84cc16 0%, #84cc16 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 100%)`
-                            }}
-                          />
-                          <span className="text-white text-xs font-bold min-w-[35px] text-center">
-                            {Math.round((isVideoMuted ? 0 : videoVolume) * 100)}%
-                          </span>
+                        {/* Audio Controls Panel - Video + Microphones */}
+                        <div className="absolute bottom-14 left-2 right-2 bg-black/90 px-3 py-3 rounded-xl backdrop-blur-sm space-y-2">
+                          {/* Video Volume */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-white/60 text-xs w-12">البث</span>
+                            <button 
+                              onClick={() => setIsVideoMuted(!isVideoMuted)}
+                              className="text-white hover:text-lime-400 transition-colors"
+                            >
+                              {isVideoMuted || videoVolume === 0 ? (
+                                <VolumeX className="w-5 h-5" />
+                              ) : (
+                                <Volume2 className="w-5 h-5" />
+                              )}
+                            </button>
+                            <input
+                              type="range"
+                              min="0"
+                              max="1"
+                              step="0.05"
+                              value={isVideoMuted ? 0 : videoVolume}
+                              onChange={(e) => {
+                                const newVolume = parseFloat(e.target.value);
+                                setVideoVolume(newVolume);
+                                if (newVolume > 0) setIsVideoMuted(false);
+                              }}
+                              className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer"
+                              style={{
+                                background: `linear-gradient(to right, #84cc16 0%, #84cc16 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 100%)`
+                              }}
+                            />
+                            <span className="text-white text-xs font-bold min-w-[35px] text-center">
+                              {Math.round((isVideoMuted ? 0 : videoVolume) * 100)}%
+                            </span>
+                          </div>
+                          {/* Microphones Volume */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-white/60 text-xs w-12">المايك</span>
+                            <button 
+                              onClick={() => setIsMicMuted(!isMicMuted)}
+                              className="text-white hover:text-amber-400 transition-colors"
+                            >
+                              {isMicMuted || micVolume === 0 ? (
+                                <MicOff className="w-5 h-5" />
+                              ) : (
+                                <Mic className="w-5 h-5" />
+                              )}
+                            </button>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="5"
+                              value={isMicMuted ? 0 : micVolume}
+                              onChange={(e) => {
+                                const newVolume = parseInt(e.target.value);
+                                setMicVolume(newVolume);
+                                if (newVolume > 0) setIsMicMuted(false);
+                              }}
+                              className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer"
+                              style={{
+                                background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${isMicMuted ? 0 : micVolume}%, #475569 ${isMicMuted ? 0 : micVolume}%, #475569 100%)`
+                              }}
+                            />
+                            <span className="text-amber-400 text-xs font-bold min-w-[35px] text-center">
+                              {isMicMuted ? 0 : micVolume}%
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
