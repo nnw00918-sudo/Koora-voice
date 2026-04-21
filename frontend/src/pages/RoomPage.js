@@ -3383,6 +3383,7 @@ const YallaLiveRoom = ({ user }) => {
                   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
                   const isTwitch = url.includes('twitch.tv');
                   const isTwitter = url.includes('twitter.com') || url.includes('x.com');
+                  const isTikTok = url.includes('tiktok.com');
                   
                   if (isYouTube) {
                     // YouTube - Extract video ID for iframe embed
@@ -3640,6 +3641,34 @@ const YallaLiveRoom = ({ user }) => {
                         <p className="text-blue-400 text-sm font-medium">اضغط للمشاهدة</p>
                         <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
                           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                          بث مباشر
+                        </div>
+                      </div>
+                    );
+                  } else if (isTikTok) {
+                    // TikTok - Use button to open in In-App Browser
+                    return (
+                      <div 
+                        className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-black via-slate-900 to-black cursor-pointer group"
+                        onClick={async () => {
+                          try {
+                            await Browser.open({ url: url, presentationStyle: 'popover' });
+                          } catch (e) {
+                            window.open(url, '_blank');
+                          }
+                        }}
+                      >
+                        {/* TikTok Logo */}
+                        <div className="w-24 h-24 rounded-2xl bg-black border-2 border-cyan-400/50 flex items-center justify-center mb-4 shadow-2xl group-hover:scale-110 transition-transform relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/20 via-transparent to-pink-500/20"></div>
+                          <svg className="w-12 h-12 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                          </svg>
+                        </div>
+                        <p className="text-white text-xl font-bold mb-1">TikTok</p>
+                        <p className="text-cyan-400 text-sm font-medium">اضغط للمشاهدة</p>
+                        <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs">
+                          <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
                           بث مباشر
                         </div>
                       </div>
