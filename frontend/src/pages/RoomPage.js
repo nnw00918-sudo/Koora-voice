@@ -501,18 +501,9 @@ const YallaLiveRoom = ({ user }) => {
     remoteUsersRef.current = remoteUsers;
   }, [remoteUsers]);
 
-  // Audio mute/unmute control - applies to speakers and stream
+  // Audio mute/unmute control - applies ONLY to stream (ReactPlayer), NOT to Agora microphones
   useEffect(() => {
-    // Apply mute state to Agora remote users
-    remoteUsers.forEach(remoteUser => {
-      if (remoteUser.audioTrack) {
-        try {
-          remoteUser.audioTrack.setVolume(isAudioMuted ? 0 : 100);
-        } catch (e) {}
-      }
-    });
-    
-    // Apply to all audio elements
+    // Apply to all audio elements (stream audio)
     document.querySelectorAll('audio').forEach(audio => {
       audio.muted = isAudioMuted;
     });
@@ -528,9 +519,9 @@ const YallaLiveRoom = ({ user }) => {
         }), '*');
       } catch (e) {}
     }
-  }, [isAudioMuted, remoteUsers]);
+  }, [isAudioMuted]);
 
-  // Control microphone volume separately from video
+  // Control microphone volume separately - applies ONLY to Agora remote users
   useEffect(() => {
     remoteUsersRef.current.forEach(remoteUser => {
       if (remoteUser.audioTrack) {
@@ -4067,16 +4058,7 @@ const YallaLiveRoom = ({ user }) => {
                 const newMuted = !isAudioMuted;
                 setIsAudioMuted(newMuted);
                 
-                // Apply to Agora users
-                remoteUsersRef.current.forEach(remoteUser => {
-                  if (remoteUser.audioTrack) {
-                    try {
-                      remoteUser.audioTrack.setVolume(newMuted ? 0 : 100);
-                    } catch (e) {}
-                  }
-                });
-                
-                // Apply to all audio elements
+                // Apply ONLY to stream audio elements - NOT to Agora microphones
                 document.querySelectorAll('audio').forEach(audio => {
                   audio.muted = newMuted;
                 });
