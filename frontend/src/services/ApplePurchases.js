@@ -1,6 +1,6 @@
 /**
  * Apple In-App Purchases Service
- * Using @capgo/capacitor-purchases for iOS StoreKit integration
+ * Using @capgo/native-purchases for iOS StoreKit 2 integration (iOS 15+)
  * Product IDs: com.kooravoice.all.monthly ($4.99), com.kooravoice.all.yearly ($49.99)
  */
 
@@ -45,15 +45,8 @@ export const initializePurchases = async () => {
   }
 
   try {
-    const { CapacitorPurchases } = await import('@capgo/capacitor-purchases');
-    
-    // Note: For StoreKit 2 / Capacitor Purchases, setup may vary
-    // If using direct StoreKit integration, API key might not be needed
-    await CapacitorPurchases.setup({
-      apiKey: '', // Empty for direct StoreKit integration
-    });
-    
-    console.log('StoreKit initialized successfully');
+    const { NativePurchases } = await import('@capgo/native-purchases');
+    console.log('StoreKit 2 initialized successfully');
     return true;
   } catch (error) {
     console.error('Failed to initialize StoreKit:', error);
@@ -84,31 +77,59 @@ export const getProducts = async () => {
   }
 
   try {
-    const { CapacitorPurchases } = await import('@capgo/capacitor-purchases');
-    const offerings = await CapacitorPurchases.getOfferings();
+    const { NativePurchases } = await import('@capgo/native-purchases');
+    const productIds = [PRODUCT_IDS.ALL_MONTHLY, PRODUCT_IDS.ALL_YEARLY];
+    const result = await NativePurchases.getProducts({ productIds });
     
-    if (offerings.current) {
-      return offerings.current.availablePackages.map(pkg => ({
-        identifier: pkg.product.identifier,
-        title: pkg.product.title,
-        description: pkg.product.description,
-        priceString: pkg.product.priceString,
-        price: pkg.product.price,
-        packageType: pkg.packageType,
+    if (result.products && result.products.length > 0) {
+      return result.products.map(product => ({
+        identifier: product.productId,
+        title: product.displayName || product.title,
+        description: product.description,
+        priceString: product.displayPrice || `$${product.price}`,
+        price: product.price,
       }));
     }
     
-    return [];
+    // Fallback to mock data if no products returned
+    return [
+      {
+        identifier: PRODUCT_IDS.ALL_MONTHLY,
+        title: 'جميع المميزات - شهري',
+        description: 'احصل على جميع مميزات التطبيق',
+        priceString: '$4.99',
+        price: 4.99,
+      },
+      {
+        identifier: PRODUCT_IDS.ALL_YEARLY,
+        title: 'جميع المميزات - سنوي',
+        description: 'احصل على جميع المميزات لمدة سنة كاملة',
+        priceString: '$49.99',
+        price: 49.99,
+      },
+    ];
   } catch (error) {
     console.error('Failed to get products:', error);
-    return [];
+    return [
+      {
+        identifier: PRODUCT_IDS.ALL_MONTHLY,
+        title: 'جميع المميزات - شهري',
+        priceString: '$4.99',
+        price: 4.99,
+      },
+      {
+        identifier: PRODUCT_IDS.ALL_YEARLY,
+        title: 'جميع المميزات - سنوي',
+        priceString: '$49.99',
+        price: 49.99,
+      },
+    ];
   }
 };
 
 // Purchase a product
 export const purchaseProduct = async (productId) => {
   if (!isNativeIOS()) {
-    // For web/testing, redirect to a message
     return {
       success: false,
       error: 'In-App Purchases are only available on iOS devices',
@@ -117,43 +138,25 @@ export const purchaseProduct = async (productId) => {
   }
 
   try {
-    const { CapacitorPurchases } = await import('@capgo/capacitor-purchases');
+    const { NativePurchases } = await import('@capgo/native-purchases');
     
-    // Get the package
-    const offerings = await CapacitorPurchases.getOfferings();
-    const pkg = offerings.current?.availablePackages.find(
-      p => p.product.identifier === productId
-    );
-    
-    if (!pkg) {
-      return { success: false, error: 'Product not found' };
-    }
-
     // Make the purchase
-    const result = await CapacitorPurchases.purchasePackage({ aPackage: pkg });
+    const result = await NativePurchases.purchaseProduct({ productId });
     
-    if (result.customerInfo) {
-      // Check if the entitlement is active
-      const isActive = result.customerInfo.entitlements.active['premium'] !== undefined ||
-                       result.customerInfo.entitlements.active['all'] !== undefined;
-      
+    if (result.transactionId) {
       // Sync with backend
-      const transactionId = result.customerInfo.originalAppUserId || 
-                           result.customerInfo.originalPurchaseDate;
-      await syncPurchaseWithBackend(productId, transactionId);
+      await syncPurchaseWithBackend(productId, result.transactionId);
       
       return {
         success: true,
-        customerInfo: result.customerInfo,
-        isActive,
+        transactionId: result.transactionId,
         message: 'تم الشراء بنجاح!',
       };
     }
     
     return { success: false, error: 'Purchase failed' };
   } catch (error) {
-    if (error.code === '1' || error.code === 1 || error.message?.includes('cancelled')) {
-      // User cancelled
+    if (error.message?.includes('cancelled') || error.code === 'USER_CANCELLED') {
       return { success: false, cancelled: true, message: 'تم إلغاء الشراء' };
     }
     console.error('Purchase error:', error);
@@ -168,28 +171,24 @@ export const restorePurchases = async () => {
   }
 
   try {
-    const { CapacitorPurchases } = await import('@capgo/capacitor-purchases');
-    const result = await CapacitorPurchases.restorePurchases();
+    const { NativePurchases } = await import('@capgo/native-purchases');
+    const result = await NativePurchases.restorePurchases();
     
-    // Check for active subscriptions after restore
-    const customerInfo = result.customerInfo;
-    const hasActiveSubscription = customerInfo?.entitlements?.active && 
-      Object.keys(customerInfo.entitlements.active).length > 0;
+    const hasActiveSubscription = result.transactions && result.transactions.length > 0;
     
     if (hasActiveSubscription) {
-      // Find the product ID and sync with backend
-      const activeEntitlement = Object.values(customerInfo.entitlements.active)[0];
-      if (activeEntitlement?.productIdentifier) {
+      // Find the most recent transaction and sync
+      const latestTransaction = result.transactions[result.transactions.length - 1];
+      if (latestTransaction?.productId) {
         await syncPurchaseWithBackend(
-          activeEntitlement.productIdentifier,
-          customerInfo.originalAppUserId
+          latestTransaction.productId,
+          latestTransaction.transactionId
         );
       }
     }
     
     return {
       success: true,
-      customerInfo: result.customerInfo,
       hasActiveSubscription,
       message: hasActiveSubscription ? 'تم استعادة المشتريات' : 'لا توجد مشتريات سابقة',
     };
@@ -202,19 +201,18 @@ export const restorePurchases = async () => {
 // Check subscription status
 export const checkSubscriptionStatus = async () => {
   if (!isNativeIOS()) {
-    // Return from API for web
     return { isSubscribed: false, source: 'web' };
   }
 
   try {
-    const { CapacitorPurchases } = await import('@capgo/capacitor-purchases');
-    const customerInfo = await CapacitorPurchases.getCustomerInfo();
+    const { NativePurchases } = await import('@capgo/native-purchases');
+    const result = await NativePurchases.getActiveTransactions();
     
-    const isSubscribed = customerInfo.customerInfo.entitlements.active['premium'] !== undefined;
+    const isSubscribed = result.transactions && result.transactions.length > 0;
     
     return {
       isSubscribed,
-      customerInfo: customerInfo.customerInfo,
+      transactions: result.transactions,
       source: 'storekit',
     };
   } catch (error) {
@@ -223,28 +221,11 @@ export const checkSubscriptionStatus = async () => {
   }
 };
 
-// Listen for purchase updates
+// Listen for purchase updates (not available in native-purchases, use polling or backend)
 export const addPurchaseListener = (callback) => {
-  if (!isNativeIOS()) return () => {};
-
-  let listener = null;
-  
-  (async () => {
-    try {
-      const { CapacitorPurchases } = await import('@capgo/capacitor-purchases');
-      listener = await CapacitorPurchases.addListener('purchasesUpdate', (data) => {
-        callback(data);
-      });
-    } catch (error) {
-      console.error('Failed to add listener:', error);
-    }
-  })();
-
-  return () => {
-    if (listener) {
-      listener.remove();
-    }
-  };
+  // Native purchases doesn't have real-time listeners
+  // Use backend polling or check on app resume
+  return () => {};
 };
 
 export default {
