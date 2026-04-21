@@ -12,6 +12,7 @@
     "@capacitor/push-notifications": "5",
     "@capacitor/splash-screen": "5",
     "@capacitor/status-bar": "5",
+    "@capgo/capacitor-purchases": "^5.0.8",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-accordion": "^1.2.8",
     "@radix-ui/react-alert-dialog": "^1.1.11",

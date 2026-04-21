@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -12,119 +12,163 @@ import {
   Sparkles,
   Check,
   Star,
-  Zap,
   ChevronRight,
   Loader2,
   Image,
   MessageSquare,
   Frame,
-  Package
+  Package,
+  RefreshCw,
+  Apple
 } from 'lucide-react';
+import ApplePurchases, { isNativeIOS, PRODUCT_IDS } from '../services/ApplePurchases';
 
 const StorePage = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
-  const [subscriptions, setSubscriptions] = useState([]);
+  const [products, setProducts] = useState([]);
   const [featuresStatus, setFeaturesStatus] = useState({});
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(null);
+  const [restoring, setRestoring] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isIOS = isNativeIOS();
 
   const FEATURES_INFO = {
-    photos: {
-      icon: Image,
-      name: isRTL ? 'إرسال صور' : 'Send Photos',
-      description: isRTL ? 'أرسل صور في غرف الدردشة' : 'Send photos in chat rooms',
-      color: 'from-blue-500 to-cyan-500'
-    },
-    vip_badge: {
-      icon: Crown,
-      name: isRTL ? 'شارة VIP' : 'VIP Badge',
-      description: isRTL ? 'شارة ذهبية مميزة بجانب اسمك' : 'Gold badge next to your name',
-      color: 'from-amber-500 to-yellow-500'
-    },
-    colored_messages: {
-      icon: MessageSquare,
-      name: isRTL ? 'رسائل ملونة' : 'Colored Messages',
-      description: isRTL ? 'رسائلك تظهر بألوان مميزة' : 'Your messages appear in special colors',
-      color: 'from-pink-500 to-rose-500'
-    },
-    profile_frame: {
-      icon: Frame,
-      name: isRTL ? 'إطار مميز' : 'Profile Frame',
-      description: isRTL ? 'إطار ذهبي حول صورتك الشخصية' : 'Gold frame around your profile picture',
-      color: 'from-purple-500 to-violet-500'
-    },
     all: {
       icon: Package,
       name: isRTL ? 'جميع المميزات' : 'All Features',
-      description: isRTL ? 'احصل على كل المميزات بسعر مخفض' : 'Get all features at a discounted price',
-      color: 'from-emerald-500 to-green-500'
+      description: isRTL ? 'إرسال صور، شارة VIP، رسائل ملونة، إطار مميز' : 'Send photos, VIP badge, colored messages, profile frame',
+      color: 'from-emerald-500 to-green-500',
+      features: [
+        isRTL ? 'إرسال صور في الغرف' : 'Send photos in rooms',
+        isRTL ? 'شارة VIP ذهبية' : 'Gold VIP badge',
+        isRTL ? 'رسائل ملونة مميزة' : 'Colored messages',
+        isRTL ? 'إطار مميز للصورة الشخصية' : 'Profile frame',
+      ]
     }
   };
 
   useEffect(() => {
-    fetchData();
+    initializeStore();
   }, []);
 
-  const fetchData = async () => {
+  const initializeStore = async () => {
     try {
       setLoading(true);
+      
+      // Initialize Apple purchases if on iOS
+      if (isIOS) {
+        await ApplePurchases.initializePurchases();
+      }
+      
+      // Get products
+      const storeProducts = await ApplePurchases.getProducts();
+      setProducts(storeProducts);
+      
+      // Get features status from backend
       const headers = { Authorization: `Bearer ${token}` };
-      
-      const [subsRes, statusRes] = await Promise.all([
-        axios.get(`${API}/api/payments/subscriptions`),
-        axios.get(`${API}/api/payments/features/status`, { headers })
-      ]);
-      
-      setSubscriptions(subsRes.data.subscriptions || []);
+      const statusRes = await axios.get(`${API}/api/payments/features/status`, { headers });
       setFeaturesStatus(statusRes.data);
+      
+      // Check iOS subscription status
+      if (isIOS) {
+        const subStatus = await ApplePurchases.checkSubscriptionStatus();
+        if (subStatus.isSubscribed) {
+          setFeaturesStatus(prev => ({
+            ...prev,
+            photos: true,
+            vip_badge: true,
+            colored_messages: true,
+            profile_frame: true,
+          }));
+        }
+      }
     } catch (error) {
-      console.error('Error fetching store data:', error);
+      console.error('Error initializing store:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubscribe = async (subscriptionId) => {
+  const handlePurchase = async (productId) => {
+    if (!isIOS) {
+      toast.error(isRTL ? 'الشراء متاح فقط على iPhone' : 'Purchases only available on iPhone');
+      return;
+    }
+
     try {
-      setPurchasing(subscriptionId);
-      const headers = { Authorization: `Bearer ${token}` };
+      setPurchasing(productId);
       
-      const response = await axios.post(
-        `${API}/api/payments/subscribe`,
-        { subscription_id: subscriptionId },
-        { headers }
-      );
+      const result = await ApplePurchases.purchaseProduct(productId);
       
-      if (response.data.checkout_url) {
-        window.location.href = response.data.checkout_url;
-      } else if (response.data.free) {
-        toast.success(isRTL ? 'تم التفعيل مجاناً!' : 'Activated for free!');
-        fetchData();
+      if (result.success) {
+        toast.success(result.message || (isRTL ? 'تم الشراء بنجاح!' : 'Purchase successful!'));
+        
+        // Update features status
+        setFeaturesStatus(prev => ({
+          ...prev,
+          photos: true,
+          vip_badge: true,
+          colored_messages: true,
+          profile_frame: true,
+        }));
+        
+        // Sync with backend
+        try {
+          const headers = { Authorization: `Bearer ${token}` };
+          await axios.post(`${API}/api/payments/sync-apple-purchase`, {
+            productId,
+            transactionId: result.customerInfo?.originalAppUserId,
+          }, { headers });
+        } catch (e) {
+          console.log('Backend sync will happen later');
+        }
+      } else if (result.cancelled) {
+        toast.info(result.message || (isRTL ? 'تم إلغاء الشراء' : 'Purchase cancelled'));
+      } else {
+        toast.error(result.error || (isRTL ? 'فشل الشراء' : 'Purchase failed'));
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || (isRTL ? 'فشل في الاشتراك' : 'Subscription failed'));
+      toast.error(isRTL ? 'حدث خطأ' : 'An error occurred');
     } finally {
       setPurchasing(null);
     }
   };
 
-  const isOwner = user.role === 'owner';
-
-  // Group subscriptions by feature
-  const groupedSubs = subscriptions.reduce((acc, sub) => {
-    if (!acc[sub.feature]) {
-      acc[sub.feature] = { monthly: null, yearly: null };
+  const handleRestore = async () => {
+    if (!isIOS) {
+      toast.error(isRTL ? 'متاح فقط على iPhone' : 'Only available on iPhone');
+      return;
     }
-    acc[sub.feature][sub.period] = sub;
-    return acc;
-  }, {});
 
-  const featureOrder = ['all', 'photos', 'vip_badge', 'colored_messages', 'profile_frame'];
+    try {
+      setRestoring(true);
+      const result = await ApplePurchases.restorePurchases();
+      
+      if (result.success) {
+        toast.success(result.message || (isRTL ? 'تم استعادة المشتريات' : 'Purchases restored'));
+        initializeStore(); // Refresh status
+      } else {
+        toast.error(result.error || (isRTL ? 'فشل الاستعادة' : 'Restore failed'));
+      }
+    } catch (error) {
+      toast.error(isRTL ? 'حدث خطأ' : 'An error occurred');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const isOwner = user.role === 'owner';
+  const isAllFeaturesActive = featuresStatus.photos && featuresStatus.vip_badge && 
+                              featuresStatus.colored_messages && featuresStatus.profile_frame;
+
+  const monthlyProduct = products.find(p => p.identifier === PRODUCT_IDS.ALL_MONTHLY);
+  const yearlyProduct = products.find(p => p.identifier === PRODUCT_IDS.ALL_YEARLY);
+  const currentProduct = selectedPeriod === 'monthly' ? monthlyProduct : yearlyProduct;
 
   if (loading) {
     return (
@@ -146,7 +190,7 @@ const StorePage = () => {
             <ArrowRight className={`w-5 h-5 text-white ${isRTL ? '' : 'rotate-180'}`} />
           </button>
           <h1 className="text-white font-bold text-lg font-cairo">
-            {isRTL ? 'المتجر' : 'Store'}
+            {isRTL ? 'الاشتراك المميز' : 'Premium Subscription'}
           </h1>
           <div className="w-10" />
         </div>
@@ -165,152 +209,176 @@ const StorePage = () => {
               {isRTL ? 'أنت مالك التطبيق!' : "You're the App Owner!"}
             </h3>
             <p className="text-white/60 text-sm mt-2 font-almarai">
-              {isRTL ? 'لديك جميع المميزات مفعلة بدون حدود' : 'All features are activated without limits'}
+              {isRTL ? 'لديك جميع المميزات مفعلة' : 'All features are activated'}
             </p>
           </motion.div>
         )}
 
-        {/* Period Toggle */}
+        {/* Premium Card */}
         {!isOwner && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 flex justify-center"
-          >
-            <div className="bg-white/5 p-1 rounded-2xl flex gap-1">
-              <button
-                onClick={() => setSelectedPeriod('monthly')}
-                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
-                  selectedPeriod === 'monthly'
-                    ? 'bg-lime-500 text-slate-900'
-                    : 'text-white/60 hover:text-white'
-                }`}
-              >
-                {isRTL ? 'شهري' : 'Monthly'}
-              </button>
-              <button
-                onClick={() => setSelectedPeriod('yearly')}
-                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
-                  selectedPeriod === 'yearly'
-                    ? 'bg-lime-500 text-slate-900'
-                    : 'text-white/60 hover:text-white'
-                }`}
-              >
-                {isRTL ? 'سنوي' : 'Yearly'}
-                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                  {isRTL ? 'وفر أكثر!' : 'Save!'}
+          <>
+            {/* Period Toggle */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 flex justify-center"
+            >
+              <div className="bg-white/5 p-1 rounded-2xl flex gap-1">
+                <button
+                  onClick={() => setSelectedPeriod('monthly')}
+                  className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+                    selectedPeriod === 'monthly'
+                      ? 'bg-lime-500 text-slate-900'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  {isRTL ? 'شهري' : 'Monthly'}
+                </button>
+                <button
+                  onClick={() => setSelectedPeriod('yearly')}
+                  className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                    selectedPeriod === 'yearly'
+                      ? 'bg-lime-500 text-slate-900'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  {isRTL ? 'سنوي' : 'Yearly'}
+                  <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                    {isRTL ? 'وفر 17%' : 'Save 17%'}
+                  </span>
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Main Subscription Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-6 relative overflow-hidden"
+            >
+              {/* Best Value Badge */}
+              <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-b-xl z-10">
+                <span className="text-slate-900 text-xs font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  {isRTL ? 'الأفضل' : 'Best Value'}
                 </span>
-              </button>
-            </div>
-          </motion.div>
-        )}
+              </div>
 
-        {/* Features List */}
-        <div className="mt-8 space-y-4">
-          {featureOrder.map((featureKey, index) => {
-            const feature = FEATURES_INFO[featureKey];
-            const subs = groupedSubs[featureKey];
-            const currentSub = subs?.[selectedPeriod];
-            const isActive = featuresStatus[featureKey] || isOwner;
-            const Icon = feature?.icon || Star;
-
-            if (!feature || !currentSub) return null;
-
-            return (
-              <motion.div
-                key={featureKey}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`relative p-5 rounded-2xl border transition-all ${
-                  featureKey === 'all'
-                    ? 'bg-gradient-to-br from-emerald-600/20 to-green-600/20 border-emerald-500/50'
-                    : isActive
-                    ? 'bg-gradient-to-br from-lime-600/10 to-green-600/10 border-lime-500/30'
-                    : 'bg-white/5 border-white/10 hover:border-white/20'
-                }`}
-              >
-                {featureKey === 'all' && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full">
-                    <span className="text-white text-xs font-bold">
-                      {isRTL ? 'الأفضل قيمة' : 'Best Value'}
-                    </span>
-                  </div>
-                )}
-
-                <div className={`flex items-start gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center flex-shrink-0`}>
-                    <Icon className="w-7 h-7 text-white" />
-                  </div>
-                  
-                  <div className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-white font-bold text-lg font-cairo">{feature.name}</h3>
-                      {isActive && (
-                        <span className="px-2 py-0.5 bg-lime-500/20 text-lime-400 text-xs rounded-full">
-                          {isRTL ? 'مفعّل' : 'Active'}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-white/60 text-sm mt-1 font-almarai">{feature.description}</p>
-                    
-                    {!isOwner && (
-                      <div className={`flex items-center justify-between mt-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className={isRTL ? 'text-right' : 'text-left'}>
-                          <p className="text-2xl font-bold text-white">
-                            ${currentSub.price}
-                            <span className="text-sm text-white/50 font-normal">
-                              /{selectedPeriod === 'monthly' ? (isRTL ? 'شهر' : 'mo') : (isRTL ? 'سنة' : 'yr')}
-                            </span>
-                          </p>
-                        </div>
-                        
-                        <Button
-                          onClick={() => handleSubscribe(currentSub.id)}
-                          disabled={purchasing === currentSub.id || isActive}
-                          className={`${
-                            isActive
-                              ? 'bg-lime-500/20 text-lime-400'
-                              : featureKey === 'all'
-                              ? 'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white'
-                              : 'bg-white/10 hover:bg-white/20 text-white'
-                          } font-bold px-6`}
-                        >
-                          {purchasing === currentSub.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : isActive ? (
-                            <>
-                              <Check className="w-4 h-4" />
-                              <span className="mr-1">{isRTL ? 'مفعّل' : 'Active'}</span>
-                            </>
-                          ) : (
-                            <>
-                              {isRTL ? 'اشترك' : 'Subscribe'}
-                              <ChevronRight className={`w-4 h-4 ${isRTL ? 'rotate-180 mr-1' : 'ml-1'}`} />
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+              <div className="p-6 rounded-3xl bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-lime-500/30 pt-10">
+                {/* Icon */}
+                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-lime-500 to-green-500 flex items-center justify-center mb-4">
+                  <Crown className="w-10 h-10 text-white" />
                 </div>
+
+                {/* Title */}
+                <h2 className="text-2xl font-bold text-white text-center font-cairo mb-2">
+                  {FEATURES_INFO.all.name}
+                </h2>
+
+                {/* Price */}
+                <div className="text-center mb-6">
+                  <span className="text-4xl font-black text-lime-400">
+                    {currentProduct?.priceString || (selectedPeriod === 'monthly' ? '$4.99' : '$49.99')}
+                  </span>
+                  <span className="text-white/50 text-lg">
+                    /{selectedPeriod === 'monthly' ? (isRTL ? 'شهر' : 'mo') : (isRTL ? 'سنة' : 'yr')}
+                  </span>
+                </div>
+
+                {/* Features List */}
+                <div className="space-y-3 mb-6">
+                  {FEATURES_INFO.all.features.map((feature, index) => (
+                    <div key={index} className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className="w-6 h-6 rounded-full bg-lime-500/20 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-4 h-4 text-lime-400" />
+                      </div>
+                      <span className="text-white/80 text-sm font-almarai">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Subscribe Button */}
+                {isAllFeaturesActive || isOwner ? (
+                  <div className="p-4 rounded-2xl bg-lime-500/20 border border-lime-500/30 text-center">
+                    <Check className="w-8 h-8 text-lime-400 mx-auto mb-2" />
+                    <p className="text-lime-400 font-bold font-cairo">
+                      {isRTL ? 'الاشتراك مفعّل' : 'Subscription Active'}
+                    </p>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => handlePurchase(currentProduct?.identifier || 
+                      (selectedPeriod === 'monthly' ? PRODUCT_IDS.ALL_MONTHLY : PRODUCT_IDS.ALL_YEARLY))}
+                    disabled={purchasing !== null}
+                    className="w-full bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-600 hover:to-green-600 text-slate-900 font-bold rounded-2xl py-6 text-lg"
+                  >
+                    {purchasing ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <>
+                        {isIOS && <Apple className="w-5 h-5 mr-2" />}
+                        {isRTL ? 'اشترك الآن' : 'Subscribe Now'}
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Restore Purchases */}
+            {isIOS && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mt-4 text-center"
+              >
+                <button
+                  onClick={handleRestore}
+                  disabled={restoring}
+                  className="text-white/50 hover:text-white text-sm font-almarai flex items-center gap-2 mx-auto"
+                >
+                  {restoring ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  {isRTL ? 'استعادة المشتريات' : 'Restore Purchases'}
+                </button>
               </motion.div>
-            );
-          })}
-        </div>
+            )}
+          </>
+        )}
 
         {/* Payment Info */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-8 text-center"
+          transition={{ delay: 0.4 }}
+          className="mt-8 text-center space-y-2"
         >
-          <p className="text-white/40 text-xs font-almarai">
-            {isRTL 
-              ? 'الدفع الآمن عبر PayPal • يمكنك الإلغاء في أي وقت'
-              : 'Secure payment via PayPal • Cancel anytime'}
-          </p>
+          {isIOS ? (
+            <>
+              <div className="flex items-center justify-center gap-2 text-white/40">
+                <Apple className="w-4 h-4" />
+                <span className="text-xs font-almarai">
+                  {isRTL ? 'الدفع عبر iTunes' : 'Payment via iTunes'}
+                </span>
+              </div>
+              <p className="text-white/30 text-xs font-almarai px-8">
+                {isRTL 
+                  ? 'سيتم تجديد الاشتراك تلقائياً. يمكنك إلغاؤه من إعدادات iTunes في أي وقت.'
+                  : 'Subscription renews automatically. Cancel anytime from iTunes settings.'}
+              </p>
+            </>
+          ) : (
+            <p className="text-white/40 text-xs font-almarai">
+              {isRTL 
+                ? 'للاشتراك، استخدم التطبيق على iPhone'
+                : 'To subscribe, use the app on iPhone'}
+            </p>
+          )}
         </motion.div>
       </div>
     </div>
