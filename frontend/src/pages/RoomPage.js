@@ -3398,13 +3398,25 @@ const YallaLiveRoom = ({ user }) => {
                       videoId = url.split('youtube.com/shorts/')[1]?.split('?')[0];
                     }
                     
-                    // Always use iframe embed for YouTube - works everywhere
+                    // Always use iframe embed for YouTube with IFrame Player API
                     if (videoId) {
+                      // Control YouTube player via postMessage
+                      const controlYouTube = (command, args = []) => {
+                        const iframe = document.getElementById('youtube-player');
+                        if (iframe && iframe.contentWindow) {
+                          iframe.contentWindow.postMessage(JSON.stringify({
+                            event: 'command',
+                            func: command,
+                            args: args
+                          }), '*');
+                        }
+                      };
+                      
                       return (
                         <div className="w-full h-full relative bg-black">
                           <iframe
                             id="youtube-player"
-                            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&modestbranding=1&rel=0&enablejsapi=1`}
+                            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&modestbranding=1&rel=0&enablejsapi=1&origin=${window.location.origin}`}
                             className="w-full h-full"
                             allowFullScreen
                             frameBorder="0"
@@ -3412,16 +3424,38 @@ const YallaLiveRoom = ({ user }) => {
                           />
                           {/* Audio Controls Panel */}
                           <div className="absolute bottom-2 left-2 right-2 bg-black/80 px-3 py-2 rounded-xl backdrop-blur-sm">
-                            {/* Stream Volume */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
+                              {/* Mute/Unmute Button */}
                               <motion.button
                                 whileTap={{ scale: 0.9 }}
-                                onClick={() => setIsAudioMuted(!isAudioMuted)}
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center ${isAudioMuted ? 'bg-red-500' : 'bg-slate-700'}`}
+                                onClick={() => {
+                                  const newMuted = !isAudioMuted;
+                                  setIsAudioMuted(newMuted);
+                                  controlYouTube(newMuted ? 'mute' : 'unMute');
+                                }}
+                                className={`w-10 h-10 rounded-lg flex items-center justify-center ${isAudioMuted ? 'bg-red-500' : 'bg-slate-700'}`}
                               >
-                                {isAudioMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+                                {isAudioMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
                               </motion.button>
-                              <span className="text-slate-400 text-xs">صوت البث</span>
+                              
+                              {/* Volume Slider */}
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={isAudioMuted ? 0 : streamVolume}
+                                onChange={(e) => {
+                                  const vol = parseInt(e.target.value);
+                                  setStreamVolume(vol);
+                                  if (vol > 0) {
+                                    setIsAudioMuted(false);
+                                    controlYouTube('unMute');
+                                  }
+                                  controlYouTube('setVolume', [vol]);
+                                }}
+                                className="flex-1 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-lime-500"
+                              />
+                              <span className="text-white text-xs min-w-[3ch]">{isAudioMuted ? 0 : streamVolume}%</span>
                             </div>
                           </div>
                           {/* YouTube Live badge */}
