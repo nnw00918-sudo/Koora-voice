@@ -3531,7 +3531,41 @@ const YallaLiveRoom = ({ user }) => {
                       );
                     }
                     
-                    // Error state - fallback to open externally
+                    // Error state - fallback to iframe embed
+                    // Extract video ID for iframe
+                    let videoId = '';
+                    if (url.includes('youtube.com/watch')) {
+                      videoId = new URL(url).searchParams.get('v');
+                    } else if (url.includes('youtu.be/')) {
+                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                    } else if (url.includes('youtube.com/live/')) {
+                      videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
+                    }
+                    
+                    if (videoId) {
+                      // Use iframe embed as fallback
+                      return (
+                        <div className="w-full h-full relative bg-black">
+                          <iframe
+                            id="youtube-player"
+                            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&modestbranding=1&rel=0`}
+                            className="w-full h-full"
+                            allowFullScreen
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          />
+                          {/* YouTube badge */}
+                          <div className="absolute top-2 right-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg pointer-events-none">
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span className="text-white text-xs font-medium">YouTube</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // No video ID found - show open button
                     return (
                       <div 
                         className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950 cursor-pointer"
@@ -3553,11 +3587,12 @@ const YallaLiveRoom = ({ user }) => {
                   } else if (isTwitch) {
                     // Twitch - Embed with proper parent domains
                     const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
+                    const hostname = window.location.hostname || 'localhost';
                     
                     return (
                       <div className="w-full h-full relative bg-black">
                         <iframe
-                          src={`https://player.twitch.tv/?channel=${channelName}&parent=localhost&parent=127.0.0.1&parent=capacitor&parent=ionic&parent=koravoice.com&muted=false&autoplay=true`}
+                          src={`https://player.twitch.tv/?channel=${channelName}&parent=${hostname}&parent=localhost&parent=127.0.0.1&parent=capacitor&parent=ionic&parent=koravoice.com&parent=kooravoice.com&muted=false&autoplay=true`}
                           className="w-full h-full"
                           allowFullScreen
                           frameBorder="0"
