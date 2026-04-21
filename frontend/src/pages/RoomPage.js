@@ -3800,7 +3800,7 @@ const YallaLiveRoom = ({ user }) => {
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                       مباشر
                     </span>
-                    {[1, 2, 3, 4, 5].map(slot => {
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(slot => {
                       const hasChannel = streamSlots[slot];
                       if (!hasChannel) return null;
                       const isActive = activeSlot === slot;
@@ -4526,11 +4526,11 @@ const YallaLiveRoom = ({ user }) => {
                     <Tv className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-cairo font-bold text-white mb-2">روابط البث</h3>
-                  <p className="text-slate-400 font-almarai text-sm">5 روابط ثابتة - اضغط للتشغيل أو التعديل</p>
+                  <p className="text-slate-400 font-almarai text-sm">10 روابط ثابتة - اضغط للتشغيل أو التعديل</p>
                 </div>
                 
                 <div className="space-y-3">
-                  {[1, 2, 3, 4, 5].map((slot) => (
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((slot) => (
                     <div key={slot} className={`p-3 rounded-xl border ${activeSlot === slot && streamActive ? 'bg-violet-500/20 border-violet-500' : 'bg-white/5 border-white/10'}`}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-white font-cairo font-bold">رابط {slot}</span>
