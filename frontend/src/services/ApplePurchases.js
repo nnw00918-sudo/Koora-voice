@@ -77,13 +77,18 @@ export const getProducts = async () => {
   }
 
   try {
-    const { NativePurchases } = await import('@capgo/native-purchases');
-    const productIds = [PRODUCT_IDS.ALL_MONTHLY, PRODUCT_IDS.ALL_YEARLY];
-    const result = await NativePurchases.getProducts({ productIds });
+    const { NativePurchases, PURCHASE_TYPE } = await import('@capgo/native-purchases');
+    const productIdentifiers = [PRODUCT_IDS.ALL_MONTHLY, PRODUCT_IDS.ALL_YEARLY];
+    const result = await NativePurchases.getProducts({ 
+      productIdentifiers: productIdentifiers,
+      productType: PURCHASE_TYPE.SUBS  // For subscriptions
+    });
+    
+    console.log('getProducts result:', result);
     
     if (result.products && result.products.length > 0) {
       return result.products.map(product => ({
-        identifier: product.productId,
+        identifier: product.productIdentifier || product.productId,
         title: product.displayName || product.title,
         description: product.description,
         priceString: product.displayPrice || `$${product.price}`,
@@ -149,12 +154,16 @@ export const purchaseProduct = async (productId) => {
   }
 
   try {
-    const { NativePurchases } = await import('@capgo/native-purchases');
+    const { NativePurchases, PURCHASE_TYPE } = await import('@capgo/native-purchases');
     
     console.log('Calling NativePurchases.purchaseProduct with:', productId);
     
-    // Make the purchase
-    const result = await NativePurchases.purchaseProduct({ productId: productId });
+    // Make the purchase - use productIdentifier not productId
+    const result = await NativePurchases.purchaseProduct({ 
+      productIdentifier: productId,
+      productType: PURCHASE_TYPE.SUBS,  // For subscriptions
+      quantity: 1
+    });
     
     if (result.transactionId) {
       // Sync with backend
