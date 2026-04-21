@@ -3385,9 +3385,56 @@ const YallaLiveRoom = ({ user }) => {
                   const isTwitter = url.includes('twitter.com') || url.includes('x.com');
                   
                   if (isYouTube) {
-                    // YouTube - Use extracted direct URL for in-app playback
+                    // YouTube - Extract video ID for iframe embed
+                    let videoId = '';
+                    if (url.includes('youtube.com/watch')) {
+                      try { videoId = new URL(url).searchParams.get('v'); } catch(e) {}
+                    } else if (url.includes('youtu.be/')) {
+                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                    } else if (url.includes('youtube.com/live/')) {
+                      videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
+                    } else if (url.includes('youtube.com/shorts/')) {
+                      videoId = url.split('youtube.com/shorts/')[1]?.split('?')[0];
+                    }
                     
-                    // If direct URL is available, play with ReactPlayer (supports sync!)
+                    // Always use iframe embed for YouTube - works everywhere
+                    if (videoId) {
+                      return (
+                        <div className="w-full h-full relative bg-black">
+                          <iframe
+                            id="youtube-player"
+                            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&modestbranding=1&rel=0&enablejsapi=1`}
+                            className="w-full h-full"
+                            allowFullScreen
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          />
+                          {/* Audio Controls Panel */}
+                          <div className="absolute bottom-2 left-2 right-2 bg-black/80 px-3 py-2 rounded-xl backdrop-blur-sm">
+                            {/* Stream Volume */}
+                            <div className="flex items-center gap-2">
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => setIsAudioMuted(!isAudioMuted)}
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center ${isAudioMuted ? 'bg-red-500' : 'bg-slate-700'}`}
+                              >
+                                {isAudioMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+                              </motion.button>
+                              <span className="text-slate-400 text-xs">صوت البث</span>
+                            </div>
+                          </div>
+                          {/* YouTube Live badge */}
+                          {youtubeInfo?.isLive && (
+                            <div className="absolute top-2 right-2 flex items-center gap-1 bg-red-600 px-2 py-1 rounded-lg pointer-events-none">
+                              <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                              <span className="text-white text-xs font-bold">LIVE</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    
+                    // Fallback: If direct URL is available, play with ReactPlayer
                     if (youtubeDirectUrl) {
                       return (
                         <div className="w-full h-full relative bg-black">
@@ -3512,59 +3559,6 @@ const YallaLiveRoom = ({ user }) => {
                       );
                     }
                     
-                    // Loading state while extracting
-                    if (youtubeLoading) {
-                      return (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950">
-                          <div className="w-24 h-24 rounded-2xl bg-red-600 flex items-center justify-center mb-4 animate-pulse">
-                            <svg className="w-14 h-14 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z"/>
-                            </svg>
-                          </div>
-                          <p className="text-white text-lg font-bold mb-1">جاري تحميل الفيديو...</p>
-                          <div className="mt-3 flex items-center gap-2">
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                          </div>
-                        </div>
-                      );
-                    }
-                    
-                    // Error state - fallback to iframe embed
-                    // Extract video ID for iframe
-                    let videoId = '';
-                    if (url.includes('youtube.com/watch')) {
-                      videoId = new URL(url).searchParams.get('v');
-                    } else if (url.includes('youtu.be/')) {
-                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                    } else if (url.includes('youtube.com/live/')) {
-                      videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
-                    }
-                    
-                    if (videoId) {
-                      // Use iframe embed as fallback
-                      return (
-                        <div className="w-full h-full relative bg-black">
-                          <iframe
-                            id="youtube-player"
-                            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&modestbranding=1&rel=0`}
-                            className="w-full h-full"
-                            allowFullScreen
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          />
-                          {/* YouTube badge */}
-                          <div className="absolute top-2 right-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg pointer-events-none">
-                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            <span className="text-white text-xs font-medium">YouTube</span>
-                          </div>
-                        </div>
-                      );
-                    }
-                    
                     // No video ID found - show open button
                     return (
                       <div 
@@ -3577,11 +3571,7 @@ const YallaLiveRoom = ({ user }) => {
                           </svg>
                         </div>
                         <p className="text-white text-xl font-bold mb-1">YouTube</p>
-                        {youtubeError ? (
-                          <p className="text-red-400 text-sm text-center px-4">{youtubeError}</p>
-                        ) : (
-                          <p className="text-red-400 text-sm">اضغط للمشاهدة</p>
-                        )}
+                        <p className="text-blue-400 text-sm">اضغط للمشاهدة</p>
                       </div>
                     );
                   } else if (isTwitch) {
