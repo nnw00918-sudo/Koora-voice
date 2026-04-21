@@ -1,9 +1,12 @@
 /**
  * Apple In-App Purchases Service
  * Using @capgo/capacitor-purchases for iOS StoreKit integration
+ * Product IDs: com.kooravoice.all.monthly ($4.99), com.kooravoice.all.yearly ($49.99)
  */
 
 import { Capacitor } from '@capacitor/core';
+import axios from 'axios';
+import { API } from '../config/api';
 
 // Product IDs from App Store Connect
 export const PRODUCT_IDS = {
@@ -16,6 +19,24 @@ export const isNativeIOS = () => {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
 };
 
+// Sync purchase with backend
+export const syncPurchaseWithBackend = async (productId, transactionId) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return { success: false, error: 'Not authenticated' };
+
+    const response = await axios.post(
+      `${API}/api/payments/sync-apple-purchase`,
+      { productId, transactionId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error('Backend sync error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Initialize purchases (call on app start)
 export const initializePurchases = async () => {
   if (!isNativeIOS()) {
@@ -26,9 +47,10 @@ export const initializePurchases = async () => {
   try {
     const { CapacitorPurchases } = await import('@capgo/capacitor-purchases');
     
-    // Setup with your Apple API key (you'll get this from App Store Connect)
+    // Note: For StoreKit 2 / Capacitor Purchases, setup may vary
+    // If using direct StoreKit integration, API key might not be needed
     await CapacitorPurchases.setup({
-      apiKey: 'appl_YOUR_API_KEY', // Will be configured later
+      apiKey: '', // Empty for direct StoreKit integration
     });
     
     console.log('StoreKit initialized successfully');
@@ -112,7 +134,13 @@ export const purchaseProduct = async (productId) => {
     
     if (result.customerInfo) {
       // Check if the entitlement is active
-      const isActive = result.customerInfo.entitlements.active['premium'] !== undefined;
+      const isActive = result.customerInfo.entitlements.active['premium'] !== undefined ||
+                       result.customerInfo.entitlements.active['all'] !== undefined;
+      
+      // Sync with backend
+      const transactionId = result.customerInfo.originalAppUserId || 
+                           result.customerInfo.originalPurchaseDate;
+      await syncPurchaseWithBackend(productId, transactionId);
       
       return {
         success: true,
@@ -124,7 +152,7 @@ export const purchaseProduct = async (productId) => {
     
     return { success: false, error: 'Purchase failed' };
   } catch (error) {
-    if (error.code === '1') {
+    if (error.code === '1' || error.code === 1 || error.message?.includes('cancelled')) {
       // User cancelled
       return { success: false, cancelled: true, message: 'تم إلغاء الشراء' };
     }
@@ -143,10 +171,27 @@ export const restorePurchases = async () => {
     const { CapacitorPurchases } = await import('@capgo/capacitor-purchases');
     const result = await CapacitorPurchases.restorePurchases();
     
+    // Check for active subscriptions after restore
+    const customerInfo = result.customerInfo;
+    const hasActiveSubscription = customerInfo?.entitlements?.active && 
+      Object.keys(customerInfo.entitlements.active).length > 0;
+    
+    if (hasActiveSubscription) {
+      // Find the product ID and sync with backend
+      const activeEntitlement = Object.values(customerInfo.entitlements.active)[0];
+      if (activeEntitlement?.productIdentifier) {
+        await syncPurchaseWithBackend(
+          activeEntitlement.productIdentifier,
+          customerInfo.originalAppUserId
+        );
+      }
+    }
+    
     return {
       success: true,
       customerInfo: result.customerInfo,
-      message: 'تم استعادة المشتريات',
+      hasActiveSubscription,
+      message: hasActiveSubscription ? 'تم استعادة المشتريات' : 'لا توجد مشتريات سابقة',
     };
   } catch (error) {
     console.error('Restore error:', error);
@@ -211,4 +256,5 @@ export default {
   restorePurchases,
   checkSubscriptionStatus,
   addPurchaseListener,
+  syncPurchaseWithBackend,
 };

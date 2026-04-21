@@ -499,3 +499,42 @@ owner > admin > news_editor > mod > user
 - ✅ **إضافة endpoint `/api/rooms/{room_id}/membership`** - لإصلاح أخطاء 404 في Dashboard
 - ✅ **إزالة نظام الهدايا والذهب بالكامل** - VIP فقط للمونتايزيشن
 - ✅ **تفكيك Backend monolith** - routes منفصلة في `/app/backend/routes/`
+
+### 21 أبريل 2026 - Apple In-App Purchases
+- ✅ **تحويل نظام الدفع من PayPal إلى Apple iTunes IAP**
+- ✅ **منتجات App Store Connect**:
+  - `com.kooravoice.all.monthly` - جميع المميزات شهرياً ($4.99)
+  - `com.kooravoice.all.yearly` - جميع المميزات سنوياً ($49.99)
+- ✅ **Backend APIs جديدة** (`/app/backend/routes/payments.py`):
+  - `GET /api/payments/subscriptions` - قائمة الاشتراكات
+  - `GET /api/payments/features/status` - حالة المميزات للمستخدم
+  - `POST /api/payments/sync-apple-purchase` - مزامنة الشراء من iOS
+  - `POST /api/payments/apple/validate-receipt` - التحقق من إيصال Apple
+  - `POST /api/payments/apple/restore` - استعادة المشتريات
+  - `GET /api/payments/apple/subscription-status` - حالة الاشتراك
+- ✅ **Frontend Service** (`/app/frontend/src/services/ApplePurchases.js`):
+  - يستخدم `@capgo/capacitor-purchases` للـ StoreKit
+  - دعم الشراء واستعادة المشتريات
+  - مزامنة تلقائية مع Backend
+- ✅ **StorePage.js محدّث** للدفع عبر iTunes فقط
+- ✅ **Capacitor sync iOS** - تم بنجاح
+
+---
+
+## ⚠️ تحديثات مطلوبة على Droplet (165.245.209.28)
+
+لتطبيق تحديثات Apple IAP على السيرفر الحقيقي:
+
+```bash
+# 1. الاتصال بالسيرفر
+ssh root@165.245.209.28
+
+# 2. تحديث ملف payments.py
+cd /path/to/backend/routes
+# استبدل محتوى payments.py بالكود الجديد من Emergent
+
+# 3. إعادة تشغيل الخدمة
+sudo systemctl restart backend
+# أو
+pm2 restart all
+```
