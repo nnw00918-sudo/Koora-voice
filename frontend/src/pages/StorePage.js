@@ -308,8 +308,13 @@ const StorePage = () => {
                   </div>
                 ) : (
                   <Button
-                    onClick={() => handlePurchase(currentProduct?.identifier || 
-                      (selectedPeriod === 'monthly' ? PRODUCT_IDS.ALL_MONTHLY : PRODUCT_IDS.ALL_YEARLY))}
+                    onClick={() => {
+                      const productId = selectedPeriod === 'monthly' 
+                        ? PRODUCT_IDS.ALL_MONTHLY 
+                        : PRODUCT_IDS.ALL_YEARLY;
+                      console.log('Purchasing product:', productId);
+                      handlePurchase(productId);
+                    }}
                     disabled={purchasing !== null}
                     className="w-full bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-600 hover:to-green-600 text-slate-900 font-bold rounded-2xl py-6 text-lg"
                   >

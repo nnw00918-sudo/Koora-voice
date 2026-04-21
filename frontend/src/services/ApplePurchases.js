@@ -129,6 +129,17 @@ export const getProducts = async () => {
 
 // Purchase a product
 export const purchaseProduct = async (productId) => {
+  console.log('purchaseProduct called with productId:', productId);
+  
+  if (!productId) {
+    console.error('Product ID is empty!');
+    return {
+      success: false,
+      error: 'Product ID is required',
+      message: 'معرف المنتج مطلوب',
+    };
+  }
+
   if (!isNativeIOS()) {
     return {
       success: false,
@@ -140,8 +151,10 @@ export const purchaseProduct = async (productId) => {
   try {
     const { NativePurchases } = await import('@capgo/native-purchases');
     
+    console.log('Calling NativePurchases.purchaseProduct with:', productId);
+    
     // Make the purchase
-    const result = await NativePurchases.purchaseProduct({ productId });
+    const result = await NativePurchases.purchaseProduct({ productId: productId });
     
     if (result.transactionId) {
       // Sync with backend
