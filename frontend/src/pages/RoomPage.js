@@ -3380,23 +3380,33 @@ const YallaLiveRoom = ({ user }) => {
                 {/* Stream Player - YouTube, Twitch, Twitter, or direct video */}
                 {(() => {
                   const url = room.stream_url;
+                  console.log('Stream URL:', url);
                   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
                   const isTwitch = url.includes('twitch.tv');
                   const isTwitter = url.includes('twitter.com') || url.includes('x.com');
                   const isTikTok = url.includes('tiktok.com');
+                  console.log('isYouTube:', isYouTube, 'isTwitch:', isTwitch);
                   
                   if (isYouTube) {
                     // YouTube - Extract video ID for iframe embed
                     let videoId = '';
+                    console.log('YouTube URL:', url);
+                    
                     if (url.includes('youtube.com/watch')) {
-                      try { videoId = new URL(url).searchParams.get('v'); } catch(e) {}
+                      try { videoId = new URL(url).searchParams.get('v'); } catch(e) { console.log('Error parsing watch URL:', e); }
                     } else if (url.includes('youtu.be/')) {
                       videoId = url.split('youtu.be/')[1]?.split('?')[0];
                     } else if (url.includes('youtube.com/live/')) {
                       videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
                     } else if (url.includes('youtube.com/shorts/')) {
                       videoId = url.split('youtube.com/shorts/')[1]?.split('?')[0];
+                    } else if (url.includes('youtube.com')) {
+                      // Try to extract video ID from any YouTube URL
+                      const match = url.match(/(?:v=|\/embed\/|\/v\/|youtu\.be\/|\/watch\?v=|&v=)([^&\n?#]+)/);
+                      if (match) videoId = match[1];
                     }
+                    
+                    console.log('Extracted videoId:', videoId);
                     
                     // Always use iframe embed for YouTube with IFrame Player API
                     if (videoId) {
