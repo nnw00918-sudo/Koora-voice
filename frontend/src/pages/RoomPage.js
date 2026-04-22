@@ -3415,7 +3415,7 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' ? (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative" key={streamKey}>
-                {/* Stream Player - YouTube opens in In-App Browser on iOS */}
+                {/* Stream Player - ReactPlayer for better iOS compatibility */}
                 {(() => {
                   const url = room.stream_url;
                   const isCapacitor = window.Capacitor?.isNativePlatform?.() || false;
@@ -3442,74 +3442,39 @@ const YallaLiveRoom = ({ user }) => {
                     }
                   }
                   
-                  // For iOS - YouTube must open in In-App Browser (Error 153 fix)
-                  if (isCapacitor && isYouTube && youtubeVideoId) {
-                    const thumbnailUrl = `https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`;
-                    const youtubeWatchUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
-                    
+                  // Use ReactPlayer for YouTube (works better on iOS)
+                  if (isYouTube && youtubeVideoId) {
+                    const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
                     return (
-                      <div 
-                        className="w-full h-full relative cursor-pointer group"
-                        onClick={async () => {
-                          try {
-                            // Open in In-App Browser (stays inside app)
-                            await Browser.open({ 
-                              url: youtubeWatchUrl,
+                      <ReactPlayer
+                        key={streamKey}
+                        url={youtubeUrl}
+                        width="100%"
+                        height="100%"
+                        playing={false}
+                        controls={true}
+                        playsinline={true}
+                        config={{
+                          youtube: {
+                            playerVars: {
+                              modestbranding: 1,
+                              rel: 0,
+                              playsinline: 1,
+                              origin: window.location.origin
+                            }
+                          }
+                        }}
+                        onError={(e) => {
+                          console.error('ReactPlayer error:', e);
+                          // Fallback: open in browser
+                          if (isCapacitor) {
+                            Browser.open({ 
+                              url: youtubeUrl,
                               presentationStyle: 'popover',
                               toolbarColor: '#000000'
                             });
-                          } catch (e) {
-                            window.open(youtubeWatchUrl, '_blank');
                           }
                         }}
-                      >
-                        <img 
-                          src={thumbnailUrl} 
-                          alt="YouTube Video" 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.src = `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`;
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-active:bg-black/50 transition-all">
-                          <div className="bg-red-600 rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-3">
-                            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            <span className="text-white font-bold text-lg font-cairo">تشغيل</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  // For Web browsers - use embed directly
-                  if (isYouTube && youtubeVideoId && !isCapacitor) {
-                    const embedSrc = `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?playsinline=1&autoplay=0&rel=0&modestbranding=1`;
-                    return (
-                      <iframe
-                        key={streamKey}
-                        id="youtube-player"
-                        src={embedSrc}
-                        className="w-full h-full"
-                        allowFullScreen
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                        style={{ border: 'none' }}
-                      />
-                    );
-                  }
-                  
-                  // Non-YouTube embed URLs
-                  if (isEmbed && !isYouTube) {
-                    return (
-                      <iframe
-                        key={streamKey}
-                        src={url}
-                        className="w-full h-full"
-                        allowFullScreen
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       />
                     );
                   }
@@ -3518,12 +3483,13 @@ const YallaLiveRoom = ({ user }) => {
                   if (isTwitch) {
                     const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
                     return (
-                      <iframe
+                      <ReactPlayer
                         key={streamKey}
-                        src={`https://player.twitch.tv/?channel=${channelName}&parent=${window.location.hostname}&parent=localhost&muted=false&autoplay=true`}
-                        className="w-full h-full"
-                        allowFullScreen
-                        frameBorder="0"
+                        url={url}
+                        width="100%"
+                        height="100%"
+                        playing={false}
+                        controls={true}
                       />
                     );
                   }
@@ -3538,6 +3504,20 @@ const YallaLiveRoom = ({ user }) => {
                         className="w-full h-full"
                         allowFullScreen
                         frameBorder="0"
+                      />
+                    );
+                  }
+                  
+                  // Other embed URLs
+                  if (isEmbed) {
+                    return (
+                      <iframe
+                        key={streamKey}
+                        src={url}
+                        className="w-full h-full"
+                        allowFullScreen
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       />
                     );
                   }
