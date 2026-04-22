@@ -12,6 +12,7 @@
     "@capacitor/push-notifications": "5",
     "@capacitor/splash-screen": "5",
     "@capacitor/status-bar": "5",
+    "@capgo/capacitor-youtube-player": "^8.2.1",
     "@capgo/native-purchases": "^8.3.4",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-accordion": "^1.2.8",
