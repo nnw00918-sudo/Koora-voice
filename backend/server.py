@@ -3786,13 +3786,14 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
 
 @api_router.post("/rooms/{room_id}/stream/slots")
 async def update_stream_slots(room_id: str, slots_data: StreamSlotsUpdate, current_user: User = Depends(get_current_user)):
-    """Update saved stream slots - System Owner only"""
-    if current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="فقط الأونر يمكنه تعديل الروابط")
-    
+    """Update saved stream slots - System Owner or Room Owner"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    is_room_owner = room.get("owner_id") == current_user.id
+    if current_user.role != "owner" and not is_room_owner:
+        raise HTTPException(status_code=403, detail="فقط الأونر أو صاحب الغرفة يمكنه تعديل الروابط")
     
     await db.rooms.update_one(
         {"id": room_id},
@@ -3804,15 +3805,16 @@ async def update_stream_slots(room_id: str, slots_data: StreamSlotsUpdate, curre
 @api_router.post("/rooms/{room_id}/stream/play/{slot}")
 async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends(get_current_user)):
     """Play a saved stream slot - Anyone can switch channels when stream is active"""
-    if slot < 1 or slot > 5:
-        raise HTTPException(status_code=400, detail="رقم الرابط يجب أن يكون من 1 إلى 5")
+    if slot < 1 or slot > 10:
+        raise HTTPException(status_code=400, detail="رقم الرابط يجب أن يكون من 1 إلى 10")
     
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    # Check if stream is active (only switch if already streaming, unless owner)
-    if not room.get("stream_active", False) and current_user.role != "owner":
+    # Check if stream is active (only switch if already streaming, unless owner/room_owner)
+    is_room_owner = room.get("owner_id") == current_user.id
+    if not room.get("stream_active", False) and current_user.role != "owner" and not is_room_owner:
         raise HTTPException(status_code=403, detail="البث غير مفعل")
     
     stream_slots = room.get("stream_slots", {})
