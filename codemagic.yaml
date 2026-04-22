@@ -25,7 +25,7 @@ workflows:
       - name: Sync Capacitor
         script: |
           cd frontend
-          npx cap sync ios --deployment
+          npx cap sync ios
       - name: Set build number
         script: |
           cd frontend/ios/App
