@@ -2810,6 +2810,21 @@ const YallaLiveRoom = ({ user }) => {
     );
   }
 
+  // If room is not loaded yet, show loading
+  if (!room) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-violet-950/20 to-slate-950 flex items-center justify-center">
+        <motion.div 
+          animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="w-16 h-16 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center"
+        >
+          <Sparkles className="w-8 h-8 text-white" />
+        </motion.div>
+      </div>
+    );
+  }
+
   const speakers = seats.filter(s => s.occupied);
   const listeners = participants.filter(p => p.seat_number === null);
 
