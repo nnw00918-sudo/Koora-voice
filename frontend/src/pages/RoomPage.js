@@ -1875,26 +1875,31 @@ const YallaLiveRoom = ({ user }) => {
     return url;
   };
 
-  // TV Receiver Style - Instant channel switch
+  // TV Receiver Style - Instant channel switch with Embed URL
   const handlePlaySlot = async (slot) => {
     const rawUrl = streamSlots[slot];
     if (!rawUrl) return;
     
-    console.log('Playing slot:', slot, 'URL:', rawUrl);
+    // Convert to embed URL for proper iframe display
+    const embedUrl = convertToEmbedUrl(rawUrl);
+    console.log('Playing slot:', slot, 'Raw URL:', rawUrl, 'Embed URL:', embedUrl);
     
+    // Force refresh by updating key
     setStreamKey(Date.now());
     setActiveSlot(slot);
-    setStreamUrl(rawUrl);
+    setStreamUrl(embedUrl);
     setStreamActive(true);
     
-    // Update room state with ORIGINAL URL for proper detection
-    setRoom(prev => {
-      console.log('Updating room.stream_url to:', rawUrl);
-      return { ...prev, stream_url: rawUrl };
-    });
+    // Update room state with EMBED URL for immediate display
+    setRoom(prev => ({
+      ...prev,
+      stream_url: embedUrl,
+      stream_url_raw: rawUrl // Keep original for reference
+    }));
     
-    // Close any open modals
+    // Close modals
     setShowStreamSettingsModal(false);
+    setShowStreamModal(false);
     setEditingSlot(null);
     
     // Sync to server
@@ -1903,7 +1908,7 @@ const YallaLiveRoom = ({ user }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (error) {
-      // Still works locally even if server sync fails
+      console.log('Server sync failed, but local playback continues');
     }
   };
 
@@ -3409,17 +3414,32 @@ const YallaLiveRoom = ({ user }) => {
           {/* ===== STREAM/BROADCAST AREA ===== */}
           {room?.stream_url && room.stream_url.trim() !== '' ? (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
-              <div className="aspect-video w-full bg-black relative">
-                {/* Stream Player */}
+              <div className="aspect-video w-full bg-black relative" key={streamKey}>
+                {/* Stream Player - YouTube IFrame API */}
                 {(() => {
                   const url = room.stream_url;
-                  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+                  
+                  // Check if it's already an embed URL or needs conversion
+                  const isEmbed = url.includes('/embed/') || url.includes('player.twitch.tv') || url.includes('player.kick.com');
+                  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be') || url.includes('youtube-nocookie.com');
                   const isTwitch = url.includes('twitch.tv');
                   const isKick = url.includes('kick.com');
-                  const isTwitter = url.includes('twitter.com') || url.includes('x.com');
-                  const isTikTok = url.includes('tiktok.com');
                   
-                  // YouTube
+                  // If already embed URL, use directly
+                  if (isEmbed) {
+                    return (
+                      <iframe
+                        key={streamKey}
+                        src={url}
+                        className="w-full h-full"
+                        allowFullScreen
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      />
+                    );
+                  }
+                  
+                  // YouTube - Convert to embed
                   if (isYouTube) {
                     let videoId = '';
                     if (url.includes('youtube.com/watch')) {
@@ -3433,10 +3453,12 @@ const YallaLiveRoom = ({ user }) => {
                     }
                     
                     if (videoId) {
+                      const embedSrc = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&rel=0&enablejsapi=1`;
                       return (
                         <iframe
+                          key={streamKey}
                           id="youtube-player"
-                          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&rel=0&enablejsapi=1`}
+                          src={embedSrc}
                           className="w-full h-full"
                           allowFullScreen
                           frameBorder="0"
@@ -3451,6 +3473,7 @@ const YallaLiveRoom = ({ user }) => {
                     const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
                     return (
                       <iframe
+                        key={streamKey}
                         src={`https://player.twitch.tv/?channel=${channelName}&parent=${window.location.hostname}&parent=localhost&muted=false&autoplay=true`}
                         className="w-full h-full"
                         allowFullScreen
@@ -3464,6 +3487,7 @@ const YallaLiveRoom = ({ user }) => {
                     const channelName = url.split('kick.com/')[1]?.split('/')[0]?.split('?')[0];
                     return (
                       <iframe
+                        key={streamKey}
                         src={`https://player.kick.com/${channelName}`}
                         className="w-full h-full"
                         allowFullScreen
@@ -3472,42 +3496,15 @@ const YallaLiveRoom = ({ user }) => {
                     );
                   }
                   
-                  // Twitter/X
-                  if (isTwitter) {
-                    return (
-                      <iframe
-                        src={url}
-                        className="w-full h-full"
-                        allowFullScreen
-                        frameBorder="0"
-                        sandbox="allow-scripts allow-same-origin allow-popups"
-                      />
-                    );
-                  }
-                  
-                  // TikTok
-                  if (isTikTok) {
-                    return (
-                      <iframe
-                        src={url}
-                        className="w-full h-full"
-                        allowFullScreen
-                        frameBorder="0"
-                        sandbox="allow-scripts allow-same-origin allow-popups"
-                      />
-                    );
-                  }
-                  
-                  // Default: ReactPlayer for direct URLs
+                  // Default: Use iframe for any URL
                   return (
-                    <ReactPlayer
-                      url={url}
-                      playing={true}
-                      controls={true}
-                      width="100%"
-                      height="100%"
-                      volume={streamVolume / 100}
-                      muted={isAudioMuted}
+                    <iframe
+                      key={streamKey}
+                      src={url}
+                      className="w-full h-full"
+                      allowFullScreen
+                      frameBorder="0"
+                      allow="autoplay; fullscreen"
                     />
                   );
                 })()}
