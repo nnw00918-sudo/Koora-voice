@@ -3374,7 +3374,7 @@ const YallaLiveRoom = ({ user }) => {
         {/* Combined Stage + Chat Section */}
         <div className="px-4 pb-32 flex-1 overflow-y-auto">
           {/* ===== STREAM/BROADCAST AREA ===== */}
-          {room?.stream_url && room.stream_url.trim() !== '' && (
+          {room?.stream_url && room.stream_url.trim() !== '' ? (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative">
                 {/* Stream Player - YouTube, Twitch, Twitter, or direct video */}
@@ -3890,8 +3890,44 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
             </div>
+          ) : (
+            /* No Stream - Show placeholder */
+            <div className="mb-4 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950">
+              <div className="aspect-video w-full flex flex-col items-center justify-center">
+                <div className="w-20 h-20 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
+                  <svg className="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-slate-500 text-sm font-cairo">لا يوجد بث حالياً</p>
+                <p className="text-slate-600 text-xs font-cairo mt-1">استخدم القنوات أدناه لإضافة بث</p>
+              </div>
+              
+              {/* Channel Switcher when no active stream */}
+              {Object.keys(streamSlots).filter(k => streamSlots[k]).length > 0 && (
+                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-3 border-t border-white/10">
+                  <div className="flex items-center justify-center gap-2 overflow-x-auto hide-scrollbar" dir="ltr">
+                    <span className="text-slate-500 text-xs font-bold flex items-center gap-1 px-2">
+                      📺 قنوات
+                    </span>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(slot => {
+                      const hasChannel = streamSlots[slot];
+                      if (!hasChannel) return null;
+                      return (
+                        <button
+                          key={slot}
+                          onClick={() => handlePlaySlot(slot)}
+                          className="min-w-[45px] h-10 rounded-xl font-bold text-lg transition-all flex items-center justify-center bg-slate-800 text-slate-400 hover:bg-[#CCFF00] hover:text-black"
+                        >
+                          {slot}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
-          
           {/* ===== SPEAKERS STRIP ===== */}
           <div className="mb-4 p-3 rounded-2xl bg-[#141414] border border-white/10">
             
