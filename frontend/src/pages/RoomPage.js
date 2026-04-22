@@ -3415,12 +3415,12 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' ? (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative" key={streamKey}>
-                {/* Stream Player - with iOS proxy for YouTube */}
+                {/* Stream Player - YouTube opens in In-App Browser on iOS */}
                 {(() => {
                   const url = room.stream_url;
                   const isCapacitor = window.Capacitor?.isNativePlatform?.() || false;
                   
-                  // Check if it's already an embed URL or needs conversion
+                  // Check platform types
                   const isEmbed = url.includes('/embed/') || url.includes('player.twitch.tv') || url.includes('player.kick.com');
                   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be') || url.includes('youtube-nocookie.com');
                   const isTwitch = url.includes('twitch.tv');
@@ -3442,13 +3442,50 @@ const YallaLiveRoom = ({ user }) => {
                     }
                   }
                   
-                  // YouTube - use local proxy for iOS, direct embed for web
-                  if (isYouTube && youtubeVideoId) {
-                    // For iOS native app - use local youtube.html proxy
-                    const embedSrc = isCapacitor 
-                      ? `/youtube.html?v=${youtubeVideoId}`
-                      : `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?playsinline=1&autoplay=0&rel=0&modestbranding=1`;
+                  // For iOS - YouTube must open in In-App Browser (Error 153 fix)
+                  if (isCapacitor && isYouTube && youtubeVideoId) {
+                    const thumbnailUrl = `https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`;
+                    const youtubeWatchUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
                     
+                    return (
+                      <div 
+                        className="w-full h-full relative cursor-pointer group"
+                        onClick={async () => {
+                          try {
+                            // Open in In-App Browser (stays inside app)
+                            await Browser.open({ 
+                              url: youtubeWatchUrl,
+                              presentationStyle: 'popover',
+                              toolbarColor: '#000000'
+                            });
+                          } catch (e) {
+                            window.open(youtubeWatchUrl, '_blank');
+                          }
+                        }}
+                      >
+                        <img 
+                          src={thumbnailUrl} 
+                          alt="YouTube Video" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src = `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`;
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-active:bg-black/50 transition-all">
+                          <div className="bg-red-600 rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-3">
+                            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span className="text-white font-bold text-lg font-cairo">تشغيل</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // For Web browsers - use embed directly
+                  if (isYouTube && youtubeVideoId && !isCapacitor) {
+                    const embedSrc = `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?playsinline=1&autoplay=0&rel=0&modestbranding=1`;
                     return (
                       <iframe
                         key={streamKey}
@@ -3458,13 +3495,12 @@ const YallaLiveRoom = ({ user }) => {
                         allowFullScreen
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                        referrerPolicy="strict-origin-when-cross-origin"
                         style={{ border: 'none' }}
                       />
                     );
                   }
                   
-                  // If already embed URL (non-YouTube), use directly
+                  // Non-YouTube embed URLs
                   if (isEmbed && !isYouTube) {
                     return (
                       <iframe
