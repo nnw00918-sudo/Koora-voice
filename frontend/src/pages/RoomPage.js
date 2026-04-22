@@ -988,8 +988,10 @@ const YallaLiveRoom = ({ user }) => {
       setLoading(false);
     } catch (error) {
       console.error('Room load error:', error);
+      setLoading(false);
       // Retry up to 2 times with delay
       if (retryCount < 2) {
+        setLoading(true);
         setTimeout(() => fetchRoomData(retryCount + 1), 1000);
         return;
       }
@@ -3377,547 +3379,156 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' ? (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative">
-                {/* Stream Player - YouTube, Twitch, Twitter, or direct video */}
+                {/* Stream Player */}
                 {(() => {
                   const url = room.stream_url;
-                  console.log('Stream URL:', url);
                   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
                   const isTwitch = url.includes('twitch.tv');
+                  const isKick = url.includes('kick.com');
                   const isTwitter = url.includes('twitter.com') || url.includes('x.com');
                   const isTikTok = url.includes('tiktok.com');
-                  console.log('isYouTube:', isYouTube, 'isTwitch:', isTwitch);
                   
+                  // YouTube
                   if (isYouTube) {
-                    // YouTube - Extract video ID for iframe embed
                     let videoId = '';
-                    console.log('YouTube URL:', url);
-                    
                     if (url.includes('youtube.com/watch')) {
-                      try { videoId = new URL(url).searchParams.get('v'); } catch(e) { console.log('Error parsing watch URL:', e); }
+                      try { videoId = new URL(url).searchParams.get('v'); } catch(e) {}
                     } else if (url.includes('youtu.be/')) {
                       videoId = url.split('youtu.be/')[1]?.split('?')[0];
                     } else if (url.includes('youtube.com/live/')) {
                       videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
                     } else if (url.includes('youtube.com/shorts/')) {
                       videoId = url.split('youtube.com/shorts/')[1]?.split('?')[0];
-                    } else if (url.includes('youtube.com')) {
-                      // Try to extract video ID from any YouTube URL
-                      const match = url.match(/(?:v=|\/embed\/|\/v\/|youtu\.be\/|\/watch\?v=|&v=)([^&\n?#]+)/);
-                      if (match) videoId = match[1];
                     }
                     
-                    console.log('Extracted videoId:', videoId);
-                    
-                    // Always use iframe embed for YouTube with IFrame Player API
                     if (videoId) {
-                      // Control YouTube player via postMessage
-                      const controlYouTube = (command, args = []) => {
-                        const iframe = document.getElementById('youtube-player');
-                        if (iframe && iframe.contentWindow) {
-                          iframe.contentWindow.postMessage(JSON.stringify({
-                            event: 'command',
-                            func: command,
-                            args: args
-                          }), '*');
-                        }
-                      };
-                      
                       return (
-                        <div className="w-full h-full relative bg-black">
-                          <iframe
-                            id="youtube-player"
-                            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&modestbranding=1&rel=0&enablejsapi=1&origin=${window.location.origin}`}
-                            className="w-full h-full"
-                            allowFullScreen
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          />
-                          {/* Audio Controls Panel */}
-                          <div className="absolute bottom-2 left-2 right-2 bg-black/80 px-3 py-2 rounded-xl backdrop-blur-sm">
-                            <div className="flex items-center gap-3">
-                              {/* Mute/Unmute Button */}
-                              <motion.button
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => {
-                                  const newMuted = !isAudioMuted;
-                                  setIsAudioMuted(newMuted);
-                                  controlYouTube(newMuted ? 'mute' : 'unMute');
-                                }}
-                                className={`w-10 h-10 rounded-lg flex items-center justify-center ${isAudioMuted ? 'bg-red-500' : 'bg-slate-700'}`}
-                              >
-                                {isAudioMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
-                              </motion.button>
-                              
-                              {/* Volume Slider */}
-                              <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={isAudioMuted ? 0 : streamVolume}
-                                onChange={(e) => {
-                                  const vol = parseInt(e.target.value);
-                                  setStreamVolume(vol);
-                                  if (vol > 0) {
-                                    setIsAudioMuted(false);
-                                    controlYouTube('unMute');
-                                  }
-                                  controlYouTube('setVolume', [vol]);
-                                }}
-                                className="flex-1 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-lime-500"
-                              />
-                              <span className="text-white text-xs min-w-[3ch]">{isAudioMuted ? 0 : streamVolume}%</span>
-                            </div>
-                          </div>
-                          {/* YouTube Live badge */}
-                          {youtubeInfo?.isLive && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1 bg-red-600 px-2 py-1 rounded-lg pointer-events-none">
-                              <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                              <span className="text-white text-xs font-bold">LIVE</span>
-                            </div>
-                          )}
-                        </div>
+                        <iframe
+                          id="youtube-player"
+                          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&rel=0&enablejsapi=1`}
+                          className="w-full h-full"
+                          allowFullScreen
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        />
                       );
                     }
-                    
-                    // Fallback: If direct URL is available, play with ReactPlayer
-                    if (youtubeDirectUrl) {
-                      return (
-                        <div className="w-full h-full relative bg-black">
-                          <ReactPlayer
-                            ref={streamPlayerRef}
-                            url={youtubeDirectUrl}
-                            playing={watchPartySync.isPlaying || true}
-                            controls
-                            volume={videoVolume}
-                            muted={isVideoMuted}
-                            width="100%"
-                            height="100%"
-                            onProgress={(state) => {
-                              if ((isOwner || isRoomLeader) && state.playedSeconds > 0) {
-                                if (Math.floor(state.playedSeconds) % 5 === 0) {
-                                  syncWatchParty(state.playedSeconds, true);
-                                }
-                              }
-                            }}
-                            onPause={() => {
-                              if (isOwner || isRoomLeader) {
-                                const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
-                                syncWatchParty(currentTime, false);
-                              }
-                            }}
-                            onPlay={() => {
-                              if (isOwner || isRoomLeader) {
-                                const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
-                                syncWatchParty(currentTime, true);
-                              }
-                            }}
-                            onSeek={(seconds) => {
-                              if (isOwner || isRoomLeader) {
-                                syncWatchParty(seconds, true);
-                              }
-                            }}
-                          />
-                          {/* Audio Controls Panel - Video + Microphones */}
-                          <div className="absolute bottom-14 left-2 right-2 bg-black/90 px-3 py-3 rounded-xl backdrop-blur-sm space-y-2">
-                            {/* Video Volume */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-white/60 text-xs w-12">البث</span>
-                              <button 
-                                onClick={() => setIsVideoMuted(!isVideoMuted)}
-                                className="text-white hover:text-lime-400 transition-colors"
-                              >
-                                {isVideoMuted || videoVolume === 0 ? (
-                                  <VolumeX className="w-5 h-5" />
-                                ) : (
-                                  <Volume2 className="w-5 h-5" />
-                                )}
-                              </button>
-                              <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.05"
-                                value={isVideoMuted ? 0 : videoVolume}
-                                onChange={(e) => {
-                                  const newVolume = parseFloat(e.target.value);
-                                  setVideoVolume(newVolume);
-                                  if (newVolume > 0) setIsVideoMuted(false);
-                                }}
-                                className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer"
-                                style={{
-                                  background: `linear-gradient(to right, #84cc16 0%, #84cc16 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 100%)`
-                                }}
-                              />
-                              <span className="text-white text-xs font-bold min-w-[35px] text-center">
-                                {Math.round((isVideoMuted ? 0 : videoVolume) * 100)}%
-                              </span>
-                            </div>
-                            {/* Microphones Volume */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-white/60 text-xs w-12">المايك</span>
-                              <button 
-                                onClick={() => setIsMicMuted(!isMicMuted)}
-                                className="text-white hover:text-amber-400 transition-colors"
-                              >
-                                {isMicMuted || micVolume === 0 ? (
-                                  <MicOff className="w-5 h-5" />
-                                ) : (
-                                  <Mic className="w-5 h-5" />
-                                )}
-                              </button>
-                              <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                step="5"
-                                value={isMicMuted ? 0 : micVolume}
-                                onChange={(e) => {
-                                  const newVolume = parseInt(e.target.value);
-                                  setMicVolume(newVolume);
-                                  if (newVolume > 0) setIsMicMuted(false);
-                                }}
-                                className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer"
-                                style={{
-                                  background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${isMicMuted ? 0 : micVolume}%, #475569 ${isMicMuted ? 0 : micVolume}%, #475569 100%)`
-                                }}
-                              />
-                              <span className="text-amber-400 text-xs font-bold min-w-[35px] text-center">
-                                {isMicMuted ? 0 : micVolume}%
-                              </span>
-                            </div>
-                          </div>
-                          {/* YouTube badge with title */}
-                          <div className="absolute top-2 right-2 flex items-center gap-2 bg-red-600/90 px-2 py-1 rounded-lg pointer-events-none">
-                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            <span className="text-white text-xs font-medium">
-                              {youtubeInfo?.isLive ? '🔴 LIVE' : 'YouTube'}
-                            </span>
-                          </div>
-                          {youtubeInfo?.title && (
-                            <div className="absolute bottom-28 left-2 right-2 bg-black/70 px-2 py-1 rounded-lg pointer-events-none">
-                              <p className="text-white text-xs truncate">{youtubeInfo.title}</p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-                    
-                    // No video ID found - show open button
-                    return (
-                      <div 
-                        className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/30 via-slate-900 to-slate-950 cursor-pointer"
-                        onClick={() => window.open(url, '_blank')}
-                      >
-                        <div className="w-24 h-24 rounded-2xl bg-red-600 flex items-center justify-center mb-4">
-                          <svg className="w-14 h-14 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        </div>
-                        <p className="text-white text-xl font-bold mb-1">YouTube</p>
-                        <p className="text-blue-400 text-sm">اضغط للمشاهدة</p>
-                      </div>
-                    );
-                  } else if (isTwitch) {
-                    // Twitch - Embed with proper parent domains
+                  }
+                  
+                  // Twitch
+                  if (isTwitch) {
                     const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
-                    const hostname = window.location.hostname || 'localhost';
-                    
                     return (
-                      <div className="w-full h-full relative bg-black">
-                        <iframe
-                          src={`https://player.twitch.tv/?channel=${channelName}&parent=${hostname}&parent=localhost&parent=127.0.0.1&parent=capacitor&parent=ionic&parent=koravoice.com&parent=kooravoice.com&muted=false&autoplay=true`}
-                          className="w-full h-full"
-                          allowFullScreen
-                          frameBorder="0"
-                          allow="autoplay; fullscreen"
-                          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
-                        />
-                        {/* Twitch badge */}
-                        <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-purple-600/90 px-2 py-1 rounded-lg pointer-events-none">
-                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
-                          </svg>
-                          <span className="text-white text-xs font-medium">{channelName}</span>
-                        </div>
-                      </div>
-                    );
-                  } else if (url.includes('kick.com')) {
-                    // Kick.com - Embed directly (supports iframe embedding)
-                    const channelName = url.split('kick.com/')[1]?.split('/')[0]?.split('?')[0];
-                    return (
-                      <div className="w-full h-full relative">
-                        <iframe
-                          src={`https://player.kick.com/${channelName}`}
-                          className="w-full h-full"
-                          allowFullScreen
-                          frameBorder="0"
-                          allow="autoplay; fullscreen"
-                        />
-                        {/* Kick channel badge */}
-                        <div className="absolute bottom-2 left-2 flex items-center gap-2 bg-green-500/90 px-2 py-1 rounded-lg">
-                          <span className="text-white text-xs font-bold">KICK</span>
-                          <span className="text-white text-xs font-medium">{channelName}</span>
-                        </div>
-                      </div>
-                    );
-                  } else if (isTwitter) {
-                    // Twitter/X - Embed using WebView iframe
-                    return (
-                      <div className="w-full h-full relative bg-black">
-                        <iframe
-                          src={url}
-                          className="w-full h-full border-0"
-                          allowFullScreen
-                          allow="autoplay; fullscreen; encrypted-media"
-                          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-                          referrerPolicy="no-referrer-when-downgrade"
-                        />
-                        {/* Twitter badge */}
-                        <div className="absolute top-2 right-2 flex items-center gap-2 bg-black/80 px-2 py-1 rounded-lg pointer-events-none">
-                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                          </svg>
-                          <span className="text-white text-xs font-medium">X</span>
-                        </div>
-                        {/* Open externally button */}
-                        <button
-                          onClick={async () => {
-                            try {
-                              await Browser.open({ url: url, presentationStyle: 'fullscreen' });
-                            } catch (e) {
-                              window.open(url, '_blank');
-                            }
-                          }}
-                          className="absolute bottom-2 right-2 bg-blue-500 text-white text-xs px-3 py-1 rounded-lg"
-                        >
-                          فتح خارجياً
-                        </button>
-                      </div>
-                    );
-                  } else if (isTikTok) {
-                    // TikTok - Embed using WebView iframe
-                    return (
-                      <div className="w-full h-full relative bg-black">
-                        <iframe
-                          src={url}
-                          className="w-full h-full border-0"
-                          allowFullScreen
-                          allow="autoplay; fullscreen; encrypted-media"
-                          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-                          referrerPolicy="no-referrer-when-downgrade"
-                        />
-                        {/* TikTok badge */}
-                        <div className="absolute top-2 right-2 flex items-center gap-2 bg-black/80 px-2 py-1 rounded-lg pointer-events-none">
-                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                          </svg>
-                          <span className="text-white text-xs font-medium">TikTok</span>
-                        </div>
-                        {/* Open externally button */}
-                        <button
-                          onClick={async () => {
-                            try {
-                              await Browser.open({ url: url, presentationStyle: 'fullscreen' });
-                            } catch (e) {
-                              window.open(url, '_blank');
-                            }
-                          }}
-                          className="absolute bottom-2 right-2 bg-pink-500 text-white text-xs px-3 py-1 rounded-lg"
-                        >
-                          فتح خارجياً
-                        </button>
-                      </div>
-                    );
-                  } else {
-                    // Direct video URL (HLS/MP4/etc) - Use ReactPlayer with sync
-                    return (
-                      <div className="w-full h-full relative">
-                        <ReactPlayer
-                          ref={streamPlayerRef}
-                          url={url}
-                          playing={watchPartySync.isPlaying || true}
-                          controls
-                          volume={videoVolume}
-                          muted={isVideoMuted}
-                          width="100%"
-                          height="100%"
-                          config={{
-                            file: {
-                              forceHLS: url.includes('.m3u8'),
-                            }
-                          }}
-                          onProgress={(state) => {
-                            // Host syncs every 5 seconds
-                            if ((isOwner || isRoomLeader) && state.playedSeconds > 0) {
-                              if (Math.floor(state.playedSeconds) % 5 === 0) {
-                                syncWatchParty(state.playedSeconds, true);
-                              }
-                            }
-                          }}
-                          onPause={() => {
-                            if (isOwner || isRoomLeader) {
-                              const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
-                              syncWatchParty(currentTime, false);
-                            }
-                          }}
-                          onPlay={() => {
-                            if (isOwner || isRoomLeader) {
-                              const currentTime = streamPlayerRef.current?.getCurrentTime() || 0;
-                              syncWatchParty(currentTime, true);
-                            }
-                          }}
-                          onSeek={(seconds) => {
-                            if (isOwner || isRoomLeader) {
-                              syncWatchParty(seconds, true);
-                            }
-                          }}
-                        />
-                        {/* Audio Controls Panel - Video + Microphones */}
-                        <div className="absolute bottom-14 left-2 right-2 bg-black/90 px-3 py-3 rounded-xl backdrop-blur-sm space-y-2">
-                          {/* Video Volume */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-white/60 text-xs w-12">البث</span>
-                            <button 
-                              onClick={() => setIsVideoMuted(!isVideoMuted)}
-                              className="text-white hover:text-lime-400 transition-colors"
-                            >
-                              {isVideoMuted || videoVolume === 0 ? (
-                                <VolumeX className="w-5 h-5" />
-                              ) : (
-                                <Volume2 className="w-5 h-5" />
-                              )}
-                            </button>
-                            <input
-                              type="range"
-                              min="0"
-                              max="1"
-                              step="0.05"
-                              value={isVideoMuted ? 0 : videoVolume}
-                              onChange={(e) => {
-                                const newVolume = parseFloat(e.target.value);
-                                setVideoVolume(newVolume);
-                                if (newVolume > 0) setIsVideoMuted(false);
-                              }}
-                              className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer"
-                              style={{
-                                background: `linear-gradient(to right, #84cc16 0%, #84cc16 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 ${(isVideoMuted ? 0 : videoVolume) * 100}%, #475569 100%)`
-                              }}
-                            />
-                            <span className="text-white text-xs font-bold min-w-[35px] text-center">
-                              {Math.round((isVideoMuted ? 0 : videoVolume) * 100)}%
-                            </span>
-                          </div>
-                          {/* Microphones Volume */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-white/60 text-xs w-12">المايك</span>
-                            <button 
-                              onClick={() => setIsMicMuted(!isMicMuted)}
-                              className="text-white hover:text-amber-400 transition-colors"
-                            >
-                              {isMicMuted || micVolume === 0 ? (
-                                <MicOff className="w-5 h-5" />
-                              ) : (
-                                <Mic className="w-5 h-5" />
-                              )}
-                            </button>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              step="5"
-                              value={isMicMuted ? 0 : micVolume}
-                              onChange={(e) => {
-                                const newVolume = parseInt(e.target.value);
-                                setMicVolume(newVolume);
-                                if (newVolume > 0) setIsMicMuted(false);
-                              }}
-                              className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer"
-                              style={{
-                                background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${isMicMuted ? 0 : micVolume}%, #475569 ${isMicMuted ? 0 : micVolume}%, #475569 100%)`
-                              }}
-                            />
-                            <span className="text-amber-400 text-xs font-bold min-w-[35px] text-center">
-                              {isMicMuted ? 0 : micVolume}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                      <iframe
+                        src={`https://player.twitch.tv/?channel=${channelName}&parent=${window.location.hostname}&parent=localhost&muted=false&autoplay=true`}
+                        className="w-full h-full"
+                        allowFullScreen
+                        frameBorder="0"
+                      />
                     );
                   }
+                  
+                  // Kick
+                  if (isKick) {
+                    const channelName = url.split('kick.com/')[1]?.split('/')[0]?.split('?')[0];
+                    return (
+                      <iframe
+                        src={`https://player.kick.com/${channelName}`}
+                        className="w-full h-full"
+                        allowFullScreen
+                        frameBorder="0"
+                      />
+                    );
+                  }
+                  
+                  // Twitter/X
+                  if (isTwitter) {
+                    return (
+                      <iframe
+                        src={url}
+                        className="w-full h-full"
+                        allowFullScreen
+                        frameBorder="0"
+                        sandbox="allow-scripts allow-same-origin allow-popups"
+                      />
+                    );
+                  }
+                  
+                  // TikTok
+                  if (isTikTok) {
+                    return (
+                      <iframe
+                        src={url}
+                        className="w-full h-full"
+                        allowFullScreen
+                        frameBorder="0"
+                        sandbox="allow-scripts allow-same-origin allow-popups"
+                      />
+                    );
+                  }
+                  
+                  // Default: ReactPlayer for direct URLs
+                  return (
+                    <ReactPlayer
+                      url={url}
+                      playing={true}
+                      controls={true}
+                      width="100%"
+                      height="100%"
+                      volume={streamVolume / 100}
+                      muted={isAudioMuted}
+                    />
+                  );
                 })()}
               </div>
               
-              {/* Channel Switcher - TV Remote Style */}
+              {/* Channel Switcher */}
               {Object.keys(streamSlots).filter(k => streamSlots[k]).length > 0 && (
-                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-3 border-t border-white/10">
-                  <div className="flex items-center justify-center gap-2 overflow-x-auto hide-scrollbar" dir="ltr">
-                    <span className="text-red-500 text-xs font-bold flex items-center gap-1 px-2">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                      مباشر
-                    </span>
+                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-2 border-t border-white/10">
+                  <div className="flex items-center justify-center gap-2 overflow-x-auto" dir="ltr">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(slot => {
                       const hasChannel = streamSlots[slot];
+                      const isActive = room.stream_url === streamSlots[slot];
                       if (!hasChannel) return null;
-                      const isActive = activeSlot === slot;
                       return (
                         <button
                           key={slot}
                           onClick={() => handlePlaySlot(slot)}
-                          className={`min-w-[45px] h-10 rounded-xl font-bold text-lg transition-all flex items-center justify-center ${
-                            isActive
-                              ? 'bg-[#CCFF00] text-black shadow-[0_0_15px_rgba(204,255,0,0.5)] scale-110'
-                              : 'bg-white/10 text-white hover:bg-white/20 hover:scale-105'
+                          className={`min-w-[40px] h-9 rounded-xl font-bold text-sm transition-all flex items-center justify-center ${
+                            isActive ? 'bg-[#CCFF00] text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                           }`}
                         >
                           {slot}
                         </button>
                       );
                     })}
-                    {isOwner && (
-                      <button
-                        onClick={handleStopStream}
-                        className="min-w-[50px] h-10 rounded-xl font-bold text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all flex items-center justify-center"
-                      >
-                        إنهاء
-                      </button>
-                    )}
-                  </div>
-                  <div className="text-center mt-2 text-[10px] text-slate-500 font-cairo">
-                    📺 اختر القناة
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            /* No Stream - Show placeholder */
+            /* No Stream */
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950">
               <div className="aspect-video w-full flex flex-col items-center justify-center">
-                <div className="w-20 h-20 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
-                  <svg className="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center mb-3">
+                  <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <p className="text-slate-500 text-sm font-cairo">لا يوجد بث حالياً</p>
-                <p className="text-slate-600 text-xs font-cairo mt-1">استخدم القنوات أدناه لإضافة بث</p>
+                <p className="text-slate-500 text-sm">لا يوجد بث</p>
               </div>
               
-              {/* Channel Switcher when no active stream */}
+              {/* Channel Switcher */}
               {Object.keys(streamSlots).filter(k => streamSlots[k]).length > 0 && (
-                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-3 border-t border-white/10">
-                  <div className="flex items-center justify-center gap-2 overflow-x-auto hide-scrollbar" dir="ltr">
-                    <span className="text-slate-500 text-xs font-bold flex items-center gap-1 px-2">
-                      📺 قنوات
-                    </span>
+                <div className="bg-slate-900 p-2 border-t border-white/10">
+                  <div className="flex items-center justify-center gap-2 overflow-x-auto" dir="ltr">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(slot => {
-                      const hasChannel = streamSlots[slot];
-                      if (!hasChannel) return null;
+                      if (!streamSlots[slot]) return null;
                       return (
                         <button
                           key={slot}
                           onClick={() => handlePlaySlot(slot)}
-                          className="min-w-[45px] h-10 rounded-xl font-bold text-lg transition-all flex items-center justify-center bg-slate-800 text-slate-400 hover:bg-[#CCFF00] hover:text-black"
+                          className="min-w-[40px] h-9 rounded-xl font-bold text-sm bg-slate-800 text-slate-400 hover:bg-[#CCFF00] hover:text-black"
                         >
                           {slot}
                         </button>
