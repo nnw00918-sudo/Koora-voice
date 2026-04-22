@@ -3420,16 +3420,21 @@ const YallaLiveRoom = ({ user }) => {
                   const url = room.stream_url;
                   const isCapacitor = window.Capacitor?.isNativePlatform?.() || false;
                   
+                  console.log('Stream URL:', url, 'isCapacitor:', isCapacitor);
+                  
                   // Check platform types
                   const isEmbed = url.includes('/embed/') || url.includes('player.twitch.tv') || url.includes('player.kick.com');
                   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be') || url.includes('youtube-nocookie.com');
                   const isTwitch = url.includes('twitch.tv');
                   const isKick = url.includes('kick.com');
                   
-                  // Extract YouTube video ID
+                  // Extract YouTube video ID from various URL formats
                   let youtubeVideoId = '';
                   if (isYouTube) {
-                    if (url.includes('youtube.com/watch')) {
+                    // Handle embed URLs first
+                    if (url.includes('/embed/')) {
+                      youtubeVideoId = url.split('/embed/')[1]?.split('?')[0]?.split('/')[0];
+                    } else if (url.includes('youtube.com/watch')) {
                       try { youtubeVideoId = new URL(url).searchParams.get('v'); } catch(e) {}
                     } else if (url.includes('youtu.be/')) {
                       youtubeVideoId = url.split('youtu.be/')[1]?.split('?')[0];
@@ -3437,14 +3442,15 @@ const YallaLiveRoom = ({ user }) => {
                       youtubeVideoId = url.split('youtube.com/live/')[1]?.split('?')[0];
                     } else if (url.includes('youtube.com/shorts/')) {
                       youtubeVideoId = url.split('youtube.com/shorts/')[1]?.split('?')[0];
-                    } else if (url.includes('/embed/')) {
-                      youtubeVideoId = url.split('/embed/')[1]?.split('?')[0];
                     }
                   }
+                  
+                  console.log('YouTube Video ID:', youtubeVideoId, 'isYouTube:', isYouTube);
                   
                   // Use ReactPlayer for YouTube (works better on iOS)
                   if (isYouTube && youtubeVideoId) {
                     const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+                    console.log('Playing YouTube URL:', youtubeUrl);
                     return (
                       <div 
                         className="w-full h-full"
