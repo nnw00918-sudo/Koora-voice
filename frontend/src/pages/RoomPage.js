@@ -2814,14 +2814,21 @@ const YallaLiveRoom = ({ user }) => {
   // If room is not loaded yet, show loading
   if (!room) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-violet-950/20 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-violet-950/20 to-slate-950 flex flex-col items-center justify-center">
         <motion.div 
           animate={{ rotate: 360, scale: [1, 1.2, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="w-16 h-16 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center"
+          className="w-16 h-16 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center mb-4"
         >
           <Sparkles className="w-8 h-8 text-white" />
         </motion.div>
+        <p className="text-white/60 text-sm">جاري تحميل الغرفة...</p>
+        <button 
+          onClick={() => navigate('/dashboard')}
+          className="mt-4 text-red-400 text-xs underline"
+        >
+          رجوع للقائمة
+        </button>
       </div>
     );
   }
