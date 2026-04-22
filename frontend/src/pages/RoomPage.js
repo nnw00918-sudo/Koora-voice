@@ -1911,7 +1911,10 @@ const YallaLiveRoom = ({ user }) => {
       );
       toast.success(response.data.message);
       setStreamActive(true);
-      setStreamUrl(response.data.stream_url);
+      const newStreamUrl = response.data.stream_url || streamInputUrl;
+      setStreamUrl(newStreamUrl);
+      // Update room.stream_url so the player shows the stream
+      setRoom(prev => ({ ...prev, stream_url: newStreamUrl }));
       setShowStreamModal(false);
       setStreamInputUrl('');
       setEditingSlot(null);
