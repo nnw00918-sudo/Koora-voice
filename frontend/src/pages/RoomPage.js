@@ -1881,14 +1881,13 @@ const YallaLiveRoom = ({ user }) => {
     if (!rawUrl) return;
     
     setStreamKey(Date.now());
-    const embedUrl = convertToEmbedUrl(rawUrl);
     setActiveSlot(slot);
-    setStreamUrl(embedUrl);
+    setStreamUrl(rawUrl);
     setStreamActive(true);
     setViewMode('stream');
     
-    // Update room state to show the new stream
-    setRoom(prev => ({ ...prev, stream_url: embedUrl }));
+    // Update room state with ORIGINAL URL (not embed) for proper detection
+    setRoom(prev => ({ ...prev, stream_url: rawUrl }));
     
     // Sync to server
     try {
@@ -1897,7 +1896,6 @@ const YallaLiveRoom = ({ user }) => {
       );
     } catch (error) {
       // Still works locally even if server sync fails
-      
     }
   };
 
