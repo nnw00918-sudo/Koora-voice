@@ -1880,14 +1880,22 @@ const YallaLiveRoom = ({ user }) => {
     const rawUrl = streamSlots[slot];
     if (!rawUrl) return;
     
+    console.log('Playing slot:', slot, 'URL:', rawUrl);
+    
     setStreamKey(Date.now());
     setActiveSlot(slot);
     setStreamUrl(rawUrl);
     setStreamActive(true);
-    setViewMode('stream');
     
-    // Update room state with ORIGINAL URL (not embed) for proper detection
-    setRoom(prev => ({ ...prev, stream_url: rawUrl }));
+    // Update room state with ORIGINAL URL for proper detection
+    setRoom(prev => {
+      console.log('Updating room.stream_url to:', rawUrl);
+      return { ...prev, stream_url: rawUrl };
+    });
+    
+    // Close any open modals
+    setShowStreamSettingsModal(false);
+    setEditingSlot(null);
     
     // Sync to server
     try {
