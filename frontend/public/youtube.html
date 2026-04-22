@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>YouTube Player</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { 
+      width: 100%; 
+      height: 100%; 
+      background: #000; 
+      overflow: hidden;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="video-container">
+    <iframe 
+      id="player"
+      allowfullscreen
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+      webkitallowfullscreen
+      mozallowfullscreen
+    ></iframe>
+  </div>
+  <script>
+    // Get video ID from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('v');
+    
+    if (videoId) {
+      const iframe = document.getElementById('player');
+      // Use youtube-nocookie for privacy and better iOS compatibility
+      iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1&autoplay=0&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+    }
+  </script>
+</body>
+</html>

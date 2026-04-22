@@ -3415,9 +3415,10 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' ? (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative" key={streamKey}>
-                {/* Stream Player - with iOS inline playback */}
+                {/* Stream Player - with iOS proxy for YouTube */}
                 {(() => {
                   const url = room.stream_url;
+                  const isCapacitor = window.Capacitor?.isNativePlatform?.() || false;
                   
                   // Check if it's already an embed URL or needs conversion
                   const isEmbed = url.includes('/embed/') || url.includes('player.twitch.tv') || url.includes('player.kick.com');
@@ -3441,10 +3442,13 @@ const YallaLiveRoom = ({ user }) => {
                     }
                   }
                   
-                  // YouTube - use embed with iOS-friendly settings
+                  // YouTube - use local proxy for iOS, direct embed for web
                   if (isYouTube && youtubeVideoId) {
-                    // Use youtube-nocookie for better iOS compatibility
-                    const embedSrc = `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?playsinline=1&autoplay=0&rel=0&modestbranding=1&fs=1&origin=${window.location.origin}`;
+                    // For iOS native app - use local youtube.html proxy
+                    const embedSrc = isCapacitor 
+                      ? `/youtube.html?v=${youtubeVideoId}`
+                      : `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?playsinline=1&autoplay=0&rel=0&modestbranding=1`;
+                    
                     return (
                       <iframe
                         key={streamKey}
@@ -3454,8 +3458,7 @@ const YallaLiveRoom = ({ user }) => {
                         allowFullScreen
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                        webkitallowfullscreen="true"
-                        mozallowfullscreen="true"
+                        referrerPolicy="strict-origin-when-cross-origin"
                         style={{ border: 'none' }}
                       />
                     );
