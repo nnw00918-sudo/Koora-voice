@@ -45,8 +45,7 @@ workflows:
           cd frontend/ios/App
           xcode-project build-ipa \
             --workspace App.xcworkspace \
-            --scheme App \
-            --build-number 150
+            --scheme App
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
       - frontend/ios/App/*.ipa
