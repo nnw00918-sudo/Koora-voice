@@ -11,6 +11,8 @@ workflows:
         XCODE_WORKSPACE: "frontend/ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
       node: 18.17.0
+      groups:
+        - MAIN
     scripts:
       - name: Install dependencies
         script: |
@@ -23,11 +25,18 @@ workflows:
       - name: Sync Capacitor
         script: |
           cd frontend
-          npx cap sync ios
+          npx cap sync ios --deployment
+      - name: Set build number
+        script: |
+          cd frontend/ios/App
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 150" App/Info.plist
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = 150/g" App.xcodeproj/project.pbxproj
+          echo "Build number set to 150"
       - name: Install CocoaPods
         script: |
           cd frontend/ios/App
-          pod install
+          pod repo update
+          pod install --repo-update
       - name: Set up code signing
         script: |
           xcode-project use-profiles
@@ -36,7 +45,8 @@ workflows:
           cd frontend/ios/App
           xcode-project build-ipa \
             --workspace App.xcworkspace \
-            --scheme App
+            --scheme App \
+            --build-number 150
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
       - frontend/ios/App/*.ipa
