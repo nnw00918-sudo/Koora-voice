@@ -5,7 +5,6 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import ReactPlayer from 'react-player';
 import { Browser } from '@capacitor/browser';
-import { YoutubePlayer } from '@capgo/capacitor-youtube-player';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useRoomAudio } from '../contexts/RoomAudioContext';
@@ -3416,7 +3415,7 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' ? (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative" key={streamKey}>
-                {/* Stream Player - Native YouTube Player for iOS */}
+                {/* Stream Player - YouTube opens in In-App Browser on iOS */}
                 {(() => {
                   const url = room.stream_url;
                   const isCapacitor = window.Capacitor?.isNativePlatform?.() || false;
@@ -3443,40 +3442,43 @@ const YallaLiveRoom = ({ user }) => {
                     }
                   }
                   
-                  // For iOS - Use Native YouTube Player
+                  // For iOS - YouTube must open in In-App Browser (Error 153 fix)
                   if (isCapacitor && isYouTube && youtubeVideoId) {
+                    const thumbnailUrl = `https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`;
+                    const youtubeWatchUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+                    
                     return (
-                      <div className="w-full h-full relative">
-                        {/* YouTube Player Container */}
-                        <div 
-                          id={`youtube-player-${youtubeVideoId}`}
-                          className="w-full h-full bg-black"
-                          ref={(el) => {
-                            if (el && !el.dataset.initialized) {
-                              el.dataset.initialized = 'true';
-                              // Initialize native YouTube player
-                              YoutubePlayer.initialize({
-                                playerId: `youtube-player-${youtubeVideoId}`,
-                                playerSize: { width: 640, height: 360 },
-                                videoId: youtubeVideoId,
-                                fullscreen: false,
-                                playerVars: {
-                                  autoplay: 1,
-                                  controls: 1,
-                                  playsinline: 1,
-                                  rel: 0,
-                                  modestbranding: 1
-                                }
-                              }).then(() => {
-                                console.log('YouTube player initialized');
-                              }).catch((err) => {
-                                console.error('YouTube player error:', err);
-                                // Fallback to browser if native fails
-                                el.dataset.initialized = 'false';
-                              });
-                            }
+                      <div 
+                        className="w-full h-full relative cursor-pointer group"
+                        onClick={async () => {
+                          try {
+                            // Open in In-App Browser (stays inside app)
+                            await Browser.open({ 
+                              url: youtubeWatchUrl,
+                              presentationStyle: 'popover',
+                              toolbarColor: '#000000'
+                            });
+                          } catch (e) {
+                            window.open(youtubeWatchUrl, '_blank');
+                          }
+                        }}
+                      >
+                        <img 
+                          src={thumbnailUrl} 
+                          alt="YouTube Video" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src = `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`;
                           }}
                         />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-active:bg-black/50 transition-all">
+                          <div className="bg-red-600 rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-3">
+                            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span className="text-white font-bold text-lg font-cairo">تشغيل</span>
+                          </div>
+                        </div>
                       </div>
                     );
                   }
