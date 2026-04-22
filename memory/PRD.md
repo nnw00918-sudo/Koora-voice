@@ -519,22 +519,43 @@ owner > admin > news_editor > mod > user
 - ✅ **StorePage.js محدّث** للدفع عبر iTunes فقط
 - ✅ **Capacitor sync iOS** - تم بنجاح
 
+### 22 أبريل 2026 - إصلاح مشغل الفيديو (YouTube)
+- ✅ **إصلاح مشكلة الشاشة السوداء** عند إضافة رابط YouTube
+- ✅ **إصلاح API URL** - تغيير من hardcoded Droplet IP إلى `REACT_APP_BACKEND_URL`
+- ✅ **توسيع نطاق stream slots** من 5 إلى 10 روابط
+- ✅ **إضافة صلاحية room owner** لحفظ وتشغيل البث (بالإضافة للـ system owner)
+- ✅ **تحويل تلقائي للروابط** إلى embed format (YouTube, Twitch, Kick, Dailymotion, Facebook)
+- ✅ **اختبار شامل** - 100% نجاح في Backend و Frontend
+
+#### الملفات المُحدّثة:
+- `/app/frontend/src/config/api.js` - استخدام environment variable
+- `/app/backend/server.py` - توسيع slots وإضافة صلاحية room owner
+
 ---
 
 ## ⚠️ تحديثات مطلوبة على Droplet (165.245.209.28)
 
-لتطبيق تحديثات Apple IAP على السيرفر الحقيقي:
+لتطبيق تحديثات Apple IAP ومشغل الفيديو على السيرفر الحقيقي:
 
 ```bash
 # 1. الاتصال بالسيرفر
 ssh root@165.245.209.28
 
-# 2. تحديث ملف payments.py
-cd /path/to/backend/routes
-# استبدل محتوى payments.py بالكود الجديد من Emergent
+# 2. تحديث ملفات Backend
+cd /path/to/backend
+# استبدل server.py بالنسخة الجديدة من Emergent
 
-# 3. إعادة تشغيل الخدمة
+# 3. تحديث ملفات Frontend
+cd /path/to/frontend/src/config
+# استبدل api.js بالنسخة الجديدة
+
+# 4. إعادة تشغيل الخدمات
 sudo systemctl restart backend
 # أو
 pm2 restart all
 ```
+
+### ملفات يجب تحديثها:
+1. `/app/backend/server.py` - stream slots 1-10 + room owner permissions
+2. `/app/frontend/src/config/api.js` - dynamic API URL
+3. `/app/backend/routes/payments.py` - Apple IAP
