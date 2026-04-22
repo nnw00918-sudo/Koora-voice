@@ -3415,9 +3415,10 @@ const YallaLiveRoom = ({ user }) => {
           {room?.stream_url && room.stream_url.trim() !== '' ? (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative" key={streamKey}>
-                {/* Stream Player - YouTube IFrame API */}
+                {/* Stream Player - with iOS fallback */}
                 {(() => {
                   const url = room.stream_url;
+                  const isCapacitor = window.Capacitor?.isNativePlatform?.() || false;
                   
                   // Check if it's already an embed URL or needs conversion
                   const isEmbed = url.includes('/embed/') || url.includes('player.twitch.tv') || url.includes('player.kick.com');
@@ -3425,8 +3426,59 @@ const YallaLiveRoom = ({ user }) => {
                   const isTwitch = url.includes('twitch.tv');
                   const isKick = url.includes('kick.com');
                   
-                  // If already embed URL, use directly
-                  if (isEmbed) {
+                  // Extract YouTube video ID
+                  let youtubeVideoId = '';
+                  if (isYouTube) {
+                    if (url.includes('youtube.com/watch')) {
+                      try { youtubeVideoId = new URL(url).searchParams.get('v'); } catch(e) {}
+                    } else if (url.includes('youtu.be/')) {
+                      youtubeVideoId = url.split('youtu.be/')[1]?.split('?')[0];
+                    } else if (url.includes('youtube.com/live/')) {
+                      youtubeVideoId = url.split('youtube.com/live/')[1]?.split('?')[0];
+                    } else if (url.includes('youtube.com/shorts/')) {
+                      youtubeVideoId = url.split('youtube.com/shorts/')[1]?.split('?')[0];
+                    } else if (url.includes('/embed/')) {
+                      youtubeVideoId = url.split('/embed/')[1]?.split('?')[0];
+                    }
+                  }
+                  
+                  // For iOS native app - show thumbnail with click to open in browser
+                  if (isCapacitor && isYouTube && youtubeVideoId) {
+                    const thumbnailUrl = `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`;
+                    const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+                    
+                    return (
+                      <div 
+                        className="w-full h-full relative cursor-pointer group"
+                        onClick={async () => {
+                          try {
+                            await Browser.open({ url: youtubeUrl });
+                          } catch (e) {
+                            window.open(youtubeUrl, '_blank');
+                          }
+                        }}
+                      >
+                        <img 
+                          src={thumbnailUrl} 
+                          alt="YouTube Video" 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/50 transition-all">
+                          <div className="bg-red-600 rounded-full p-4 shadow-lg">
+                            <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="absolute bottom-2 left-2 right-2 bg-black/70 rounded-lg px-3 py-2 text-center">
+                          <p className="text-white text-sm font-cairo">اضغط لمشاهدة الفيديو على YouTube</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // If already embed URL, use directly (for web)
+                  if (isEmbed && !isYouTube) {
                     return (
                       <iframe
                         key={streamKey}
@@ -3439,33 +3491,20 @@ const YallaLiveRoom = ({ user }) => {
                     );
                   }
                   
-                  // YouTube - Convert to embed
-                  if (isYouTube) {
-                    let videoId = '';
-                    if (url.includes('youtube.com/watch')) {
-                      try { videoId = new URL(url).searchParams.get('v'); } catch(e) {}
-                    } else if (url.includes('youtu.be/')) {
-                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                    } else if (url.includes('youtube.com/live/')) {
-                      videoId = url.split('youtube.com/live/')[1]?.split('?')[0];
-                    } else if (url.includes('youtube.com/shorts/')) {
-                      videoId = url.split('youtube.com/shorts/')[1]?.split('?')[0];
-                    }
-                    
-                    if (videoId) {
-                      const embedSrc = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1&rel=0&enablejsapi=1`;
-                      return (
-                        <iframe
-                          key={streamKey}
-                          id="youtube-player"
-                          src={embedSrc}
-                          className="w-full h-full"
-                          allowFullScreen
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        />
-                      );
-                    }
+                  // YouTube for Web (non-native) - use embed
+                  if (isYouTube && youtubeVideoId && !isCapacitor) {
+                    const embedSrc = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=0&playsinline=1&rel=0&enablejsapi=1`;
+                    return (
+                      <iframe
+                        key={streamKey}
+                        id="youtube-player"
+                        src={embedSrc}
+                        className="w-full h-full"
+                        allowFullScreen
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    );
                   }
                   
                   // Twitch
