@@ -3446,36 +3446,36 @@ const YallaLiveRoom = ({ user }) => {
                   if (isYouTube && youtubeVideoId) {
                     const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
                     return (
-                      <ReactPlayer
-                        key={streamKey}
-                        url={youtubeUrl}
-                        width="100%"
-                        height="100%"
-                        playing={false}
-                        controls={true}
-                        playsinline={true}
-                        config={{
-                          youtube: {
-                            playerVars: {
-                              modestbranding: 1,
-                              rel: 0,
-                              playsinline: 1,
-                              origin: window.location.origin
+                      <div 
+                        className="w-full h-full"
+                        onClick={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                      >
+                        <ReactPlayer
+                          key={streamKey}
+                          url={youtubeUrl}
+                          width="100%"
+                          height="100%"
+                          playing={false}
+                          controls={true}
+                          playsinline={true}
+                          style={{ pointerEvents: 'auto' }}
+                          config={{
+                            youtube: {
+                              playerVars: {
+                                modestbranding: 1,
+                                rel: 0,
+                                playsinline: 1,
+                                fs: 1,
+                                origin: window.location.origin
+                              }
                             }
-                          }
-                        }}
-                        onError={(e) => {
-                          console.error('ReactPlayer error:', e);
-                          // Fallback: open in browser
-                          if (isCapacitor) {
-                            Browser.open({ 
-                              url: youtubeUrl,
-                              presentationStyle: 'popover',
-                              toolbarColor: '#000000'
-                            });
-                          }
-                        }}
-                      />
+                          }}
+                          onError={(e) => {
+                            console.error('ReactPlayer error:', e);
+                          }}
+                        />
+                      </div>
                     );
                   }
                   
