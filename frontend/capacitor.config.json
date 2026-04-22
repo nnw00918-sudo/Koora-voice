@@ -36,7 +36,9 @@
     "scheme": "KooraVoice",
     "allowsLinkPreview": true,
     "scrollEnabled": true,
-    "webContentsDebuggingEnabled": false
+    "webContentsDebuggingEnabled": false,
+    "allowsInlineMediaPlayback": true,
+    "mediaTypesRequiringUserActionForPlayback": "none"
   },
   "android": {
     "allowMixedContent": true
