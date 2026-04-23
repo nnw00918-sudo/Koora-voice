@@ -3459,6 +3459,7 @@ const YallaLiveRoom = ({ user }) => {
                   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
                   const isTwitch = url.includes('twitch.tv');
                   const isKick = url.includes('kick.com');
+                  const isLiverpoolFC = url.includes('liverpoolfc.com');
                   
                   // Extract YouTube video ID
                   let youtubeVideoId = '';
@@ -3548,6 +3549,22 @@ const YallaLiveRoom = ({ user }) => {
                         />
                       );
                     }
+                  }
+                  
+                  // Liverpool FC TV - Direct embed
+                  if (isLiverpoolFC) {
+                    console.log('📺 Liverpool FC TV URL:', url);
+                    return (
+                      <iframe
+                        key={streamKey}
+                        src={url}
+                        className="w-full h-full"
+                        allowFullScreen
+                        frameBorder="0"
+                        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                        sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                      />
+                    );
                   }
                   
                   // Other URLs - use iframe directly
