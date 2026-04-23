@@ -201,6 +201,9 @@ const YallaLiveRoom = ({ user }) => {
   const [editingSlot, setEditingSlot] = useState(null);
   const [streamKey, setStreamKey] = useState(0); // Force iframe reload
   
+  // Local active stream (independent from server polling)
+  const [localActiveStream, setLocalActiveStream] = useState(null); // {url: '', slot: null}
+  
   // Twitch HLS conversion state
   const [twitchHlsUrl, setTwitchHlsUrl] = useState(null);
   const [twitchHlsLoading, setTwitchHlsLoading] = useState(false);
@@ -1885,48 +1888,44 @@ const YallaLiveRoom = ({ user }) => {
     return url;
   };
 
-  // TV Receiver Style - Instant channel switch with Embed URL
+  // TV Receiver Style - Instant channel switch
   const handlePlaySlot = async (slot) => {
     const rawUrl = streamSlots[slot];
     if (!rawUrl) return;
     
-    // Use raw URL for ReactPlayer (not embed URL)
-    console.log('Playing slot:', slot, 'Raw URL:', rawUrl);
+    console.log('📺 Playing Channel:', slot, 'URL:', rawUrl);
     
-    // Force refresh by updating key
-    const newKey = Date.now();
-    setStreamKey(newKey);
-    setActiveSlot(slot);
-    setStreamUrl(rawUrl);
-    setStreamActive(true);
-    
-    // Update room state with RAW URL for ReactPlayer
-    setRoom(prev => {
-      const updated = {
-        ...prev,
-        stream_url: rawUrl,
-        stream_active: true,
-        active_slot: slot
-      };
-      console.log('Updated room state:', updated.stream_url);
-      return updated;
+    // Set LOCAL active stream (this won't be overwritten by polling)
+    setLocalActiveStream({
+      url: rawUrl,
+      slot: slot
     });
     
-    // Close modals AFTER state update with small delay
-    setTimeout(() => {
-      setShowStreamSettingsModal(false);
-      setShowStreamModal(false);
-      setEditingSlot(null);
-    }, 100);
+    // Force refresh
+    setStreamKey(Date.now());
+    setActiveSlot(slot);
     
-    // Sync to server (optional, won't affect local playback)
+    // Close all modals
+    setShowStreamSettingsModal(false);
+    setShowStreamModal(false);
+    setEditingSlot(null);
+    
+    // Sync to server (background, won't affect local playback)
     try {
       await axios.post(`${API}/api/rooms/${roomId}/stream/play/${slot}`, {}, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log('✅ Server synced');
     } catch (error) {
-      console.log('Server sync failed, but local playback continues');
+      console.log('⚠️ Server sync failed, but local playback continues');
     }
+  };
+  
+  // Stop stream
+  const handleStopStream = () => {
+    setLocalActiveStream(null);
+    setActiveSlot(null);
+    setStreamKey(Date.now());
   };
 
   const handleStartStream = async () => {
@@ -1953,17 +1952,22 @@ const YallaLiveRoom = ({ user }) => {
     }
   };
 
-  const handleStopStream = async () => {
+  const handleStopStreamLocal = async () => {
+    // Stop local stream first
+    setLocalActiveStream(null);
+    setActiveSlot(null);
+    setStreamKey(Date.now());
+    
+    // Then sync with server
     try {
       const response = await axios.post(`${API}/api/rooms/${roomId}/stream/stop`, {}, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success(response.data.message);
+      toast.success(response.data.message || 'تم إيقاف البث');
       setStreamActive(false);
       setStreamUrl('');
-      setActiveSlot(null);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل إيقاف البث');
+      console.log('Server stop failed, but local stopped');
     }
   };
 
@@ -3429,7 +3433,93 @@ const YallaLiveRoom = ({ user }) => {
         {/* Combined Stage + Chat Section */}
         <div className="px-4 pb-32 flex-1 overflow-y-auto">
           {/* ===== STREAM/BROADCAST AREA ===== */}
-          {room?.stream_url && room.stream_url.trim() !== '' ? (
+          {/* Stream Player - TV Receiver Style */}
+          {localActiveStream?.url ? (
+            <div className="mb-4 rounded-2xl overflow-hidden border border-white/10 relative">
+              <div className="aspect-video w-full bg-black relative" key={streamKey}>
+                {/* Channel indicator */}
+                <div className="absolute top-2 right-2 z-20 bg-black/70 px-3 py-1 rounded-lg">
+                  <span className="text-green-400 font-bold">CH {localActiveStream.slot}</span>
+                </div>
+                
+                {/* Stop button */}
+                <button
+                  onClick={handleStopStream}
+                  className="absolute top-2 left-2 z-20 bg-red-600/80 hover:bg-red-600 px-3 py-1 rounded-lg text-white text-sm"
+                >
+                  إيقاف
+                </button>
+                
+                {/* Video Player */}
+                {(() => {
+                  const url = localActiveStream.url;
+                  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+                  
+                  // Extract YouTube video ID
+                  let youtubeVideoId = '';
+                  if (isYouTube) {
+                    if (url.includes('/embed/')) {
+                      youtubeVideoId = url.split('/embed/')[1]?.split('?')[0]?.split('/')[0];
+                    } else if (url.includes('youtube.com/watch')) {
+                      try { youtubeVideoId = new URL(url).searchParams.get('v'); } catch(e) {}
+                    } else if (url.includes('youtu.be/')) {
+                      youtubeVideoId = url.split('youtu.be/')[1]?.split('?')[0];
+                    } else if (url.includes('youtube.com/live/')) {
+                      youtubeVideoId = url.split('youtube.com/live/')[1]?.split('?')[0];
+                    } else if (url.includes('youtube.com/shorts/')) {
+                      youtubeVideoId = url.split('youtube.com/shorts/')[1]?.split('?')[0];
+                    }
+                  }
+                  
+                  console.log('📺 Rendering video - URL:', url, 'YouTube ID:', youtubeVideoId);
+                  
+                  if (isYouTube && youtubeVideoId) {
+                    return (
+                      <div 
+                        className="w-full h-full"
+                        onClick={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                      >
+                        <ReactPlayer
+                          key={streamKey}
+                          url={`https://www.youtube.com/watch?v=${youtubeVideoId}`}
+                          width="100%"
+                          height="100%"
+                          playing={false}
+                          controls={true}
+                          playsinline={true}
+                          style={{ pointerEvents: 'auto' }}
+                          config={{
+                            youtube: {
+                              playerVars: {
+                                modestbranding: 1,
+                                rel: 0,
+                                playsinline: 1,
+                                fs: 1
+                              }
+                            }
+                          }}
+                          onError={(e) => console.error('ReactPlayer error:', e)}
+                        />
+                      </div>
+                    );
+                  }
+                  
+                  // Other URLs - use iframe
+                  return (
+                    <iframe
+                      key={streamKey}
+                      src={url}
+                      className="w-full h-full"
+                      allowFullScreen
+                      frameBorder="0"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                    />
+                  );
+                })()}
+              </div>
+            </div>
+          ) : room?.stream_url && room.stream_url.trim() !== '' ? (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative" key={streamKey}>
                 {/* Stream Player - ReactPlayer for better iOS compatibility */}
