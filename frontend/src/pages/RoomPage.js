@@ -255,6 +255,7 @@ const YallaLiveRoom = ({ user }) => {
   // Room background state
   const [roomBackground, setRoomBackground] = useState(null);
   const [showRoomBackgroundModal, setShowRoomBackgroundModal] = useState(false);
+  const [roomBackgroundUrlInput, setRoomBackgroundUrlInput] = useState('');
   
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -3930,7 +3931,7 @@ const YallaLiveRoom = ({ user }) => {
               <span className="text-slate-400 text-xs font-cairo">💬 {isRTL ? 'الدردشة' : 'Chat'}</span>
               <div className="flex items-center gap-2">
                 <span className="text-slate-500 text-[10px]">{messages.length} {isRTL ? 'رسالة' : 'messages'}</span>
-                {room?.owner_id === user.id && (
+                {(room?.owner_id === user.id || isRoomLeader) && (
                   <>
                     <button
                       onClick={() => setShowRoomBackgroundModal(true)}
@@ -4470,18 +4471,39 @@ const YallaLiveRoom = ({ user }) => {
                   {/* URL input */}
                   <div>
                     <label className="text-white/60 text-sm font-cairo mb-2 block">رابط الصورة</label>
-                    <input
-                      type="text"
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-3 text-white font-cairo text-sm"
-                      dir="ltr"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.target.value) {
-                          handleRoomBackgroundChange(e.target.value);
-                        }
-                      }}
-                    />
-                    <p className="text-white/40 text-xs font-cairo mt-1">اضغط Enter لتطبيق الخلفية</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={roomBackgroundUrlInput}
+                        onChange={(e) => setRoomBackgroundUrlInput(e.target.value)}
+                        placeholder="https://example.com/image.jpg"
+                        className="flex-1 bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-3 text-white font-cairo text-sm"
+                        dir="ltr"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && roomBackgroundUrlInput.trim()) {
+                            handleRoomBackgroundChange(roomBackgroundUrlInput.trim());
+                            setRoomBackgroundUrlInput('');
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          if (roomBackgroundUrlInput.trim()) {
+                            handleRoomBackgroundChange(roomBackgroundUrlInput.trim());
+                            setRoomBackgroundUrlInput('');
+                          }
+                        }}
+                        disabled={!roomBackgroundUrlInput.trim()}
+                        className={`px-4 py-3 rounded-xl font-cairo font-bold text-sm transition-all ${
+                          roomBackgroundUrlInput.trim() 
+                            ? 'bg-[#CCFF00] text-black hover:bg-[#b8e600]' 
+                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        تطبيق
+                      </button>
+                    </div>
+                    <p className="text-white/40 text-xs font-cairo mt-1">الصق الرابط واضغط تطبيق</p>
                   </div>
                   
                   {/* Preset backgrounds - Football themed */}

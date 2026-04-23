@@ -1318,14 +1318,26 @@ async def update_room_chat_background(room_id: str, data: dict, current_user: Us
 
 @api_router.put("/rooms/{room_id}/room-background")
 async def update_room_background(room_id: str, data: dict, current_user: User = Depends(get_current_user)):
-    """Update full room background image - Owner only"""
+    """Update full room background image - Owner or Leader only"""
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    # Only room owner or system owner can change background
-    if room["owner_id"] != current_user.id and current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه تغيير الخلفية")
+    # Check if user is owner, system owner, or room leader
+    is_owner = room["owner_id"] == current_user.id or current_user.role == "owner"
+    
+    # Check if user is room leader
+    is_leader = False
+    if not is_owner:
+        user_role = await db.room_roles.find_one({
+            "room_id": room_id,
+            "user_id": current_user.id
+        }, {"_id": 0})
+        if user_role and "leader" in user_role.get("roles", []):
+            is_leader = True
+    
+    if not is_owner and not is_leader:
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة أو رئيس الغرفة يمكنه تغيير الخلفية")
     
     background_url = data.get("background_url", "")
     
