@@ -3363,19 +3363,20 @@ const YallaLiveRoom = ({ user }) => {
                 <Mic className="w-4 h-4" />
                 المايكات
               </button>
-              {streamActive && streamUrl && (
-                <button
-                  onClick={() => setViewMode('stream')}
-                  className={`flex items-center gap-2 px-5 py-2 rounded-full font-cairo font-semibold text-sm transition-all ${
-                    viewMode === 'stream' 
-                      ? 'bg-[#CCFF00] text-black shadow-[0_0_12px_rgba(204,255,0,0.3)]' 
-                      : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  <Tv className="w-4 h-4" />
-                  المباشر
-                </button>
-              )}
+              
+              {/* Always show Stream button */}
+              <button
+                onClick={() => setViewMode('stream')}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-cairo font-semibold text-sm transition-all ${
+                  viewMode === 'stream' 
+                    ? 'bg-[#CCFF00] text-black shadow-[0_0_12px_rgba(204,255,0,0.3)]' 
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <Tv className="w-4 h-4" />
+                البث
+                {localActiveStream && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
+              </button>
             </div>
           </div>
           
@@ -3432,15 +3433,17 @@ const YallaLiveRoom = ({ user }) => {
         </div>
         {/* Combined Stage + Chat Section */}
         <div className="px-4 pb-32 flex-1 overflow-y-auto">
-          {/* ===== STREAM/BROADCAST AREA ===== */}
-          {/* Stream Player - TV Receiver Style */}
-          {localActiveStream?.url ? (
-            <div className="mb-4 rounded-2xl overflow-hidden border border-white/10 relative">
-              <div className="aspect-video w-full bg-black relative" key={streamKey}>
-                {/* Channel indicator */}
-                <div className="absolute top-2 right-2 z-20 bg-black/70 px-3 py-1 rounded-lg">
-                  <span className="text-green-400 font-bold">CH {localActiveStream.slot}</span>
-                </div>
+          {/* ===== STREAM/BROADCAST AREA - Only show in stream view mode ===== */}
+          {viewMode === 'stream' && (
+            <>
+              {/* Stream Player - TV Receiver Style */}
+              {localActiveStream?.url ? (
+                <div className="mb-4 rounded-2xl overflow-hidden border border-white/10 relative">
+                  <div className="aspect-video w-full bg-black relative" key={streamKey}>
+                    {/* Channel indicator */}
+                    <div className="absolute top-2 right-2 z-20 bg-black/70 px-3 py-1 rounded-lg">
+                      <span className="text-green-400 font-bold">CH {localActiveStream.slot}</span>
+                    </div>
                 
                 {/* Stop button */}
                 <button
@@ -3705,6 +3708,8 @@ const YallaLiveRoom = ({ user }) => {
                 </div>
               )}
             </div>
+          )}
+            </>
           )}
           {/* ===== SPEAKERS STRIP ===== */}
           <div className="mb-4 p-3 rounded-2xl bg-[#141414] border border-white/10">
