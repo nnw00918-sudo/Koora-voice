@@ -3457,6 +3457,8 @@ const YallaLiveRoom = ({ user }) => {
                 {(() => {
                   const url = localActiveStream.url;
                   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+                  const isTwitch = url.includes('twitch.tv');
+                  const isKick = url.includes('kick.com');
                   
                   // Extract YouTube video ID
                   let youtubeVideoId = '';
@@ -3474,8 +3476,9 @@ const YallaLiveRoom = ({ user }) => {
                     }
                   }
                   
-                  console.log('📺 Rendering video - URL:', url, 'YouTube ID:', youtubeVideoId);
+                  console.log('📺 Rendering video - URL:', url);
                   
+                  // YouTube - ReactPlayer
                   if (isYouTube && youtubeVideoId) {
                     return (
                       <div 
@@ -3508,7 +3511,46 @@ const YallaLiveRoom = ({ user }) => {
                     );
                   }
                   
-                  // Other URLs - use iframe
+                  // Kick - Use player.kick.com embed (video only, no chat)
+                  if (isKick) {
+                    // Extract channel name from kick.com/channelname
+                    const channelName = url.split('kick.com/')[1]?.split('/')[0]?.split('?')[0];
+                    if (channelName) {
+                      const kickPlayerUrl = `https://player.kick.com/${channelName}`;
+                      console.log('📺 Kick Player URL:', kickPlayerUrl);
+                      return (
+                        <iframe
+                          key={streamKey}
+                          src={kickPlayerUrl}
+                          className="w-full h-full"
+                          allowFullScreen
+                          frameBorder="0"
+                          allow="autoplay; fullscreen; picture-in-picture"
+                        />
+                      );
+                    }
+                  }
+                  
+                  // Twitch - Use player.twitch.tv embed (video only)
+                  if (isTwitch) {
+                    const channelName = url.split('twitch.tv/')[1]?.split('/')[0]?.split('?')[0];
+                    if (channelName) {
+                      const twitchPlayerUrl = `https://player.twitch.tv/?channel=${channelName}&parent=${window.location.hostname}&muted=false`;
+                      console.log('📺 Twitch Player URL:', twitchPlayerUrl);
+                      return (
+                        <iframe
+                          key={streamKey}
+                          src={twitchPlayerUrl}
+                          className="w-full h-full"
+                          allowFullScreen
+                          frameBorder="0"
+                          allow="autoplay; fullscreen"
+                        />
+                      );
+                    }
+                  }
+                  
+                  // Other URLs - use iframe directly
                   return (
                     <iframe
                       key={streamKey}
