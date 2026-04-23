@@ -1890,29 +1890,36 @@ const YallaLiveRoom = ({ user }) => {
     const rawUrl = streamSlots[slot];
     if (!rawUrl) return;
     
-    // Convert to embed URL for proper iframe display
-    const embedUrl = convertToEmbedUrl(rawUrl);
-    console.log('Playing slot:', slot, 'Raw URL:', rawUrl, 'Embed URL:', embedUrl);
+    // Use raw URL for ReactPlayer (not embed URL)
+    console.log('Playing slot:', slot, 'Raw URL:', rawUrl);
     
     // Force refresh by updating key
-    setStreamKey(Date.now());
+    const newKey = Date.now();
+    setStreamKey(newKey);
     setActiveSlot(slot);
-    setStreamUrl(embedUrl);
+    setStreamUrl(rawUrl);
     setStreamActive(true);
     
-    // Update room state with EMBED URL for immediate display
-    setRoom(prev => ({
-      ...prev,
-      stream_url: embedUrl,
-      stream_url_raw: rawUrl // Keep original for reference
-    }));
+    // Update room state with RAW URL for ReactPlayer
+    setRoom(prev => {
+      const updated = {
+        ...prev,
+        stream_url: rawUrl,
+        stream_active: true,
+        active_slot: slot
+      };
+      console.log('Updated room state:', updated.stream_url);
+      return updated;
+    });
     
-    // Close modals
-    setShowStreamSettingsModal(false);
-    setShowStreamModal(false);
-    setEditingSlot(null);
+    // Close modals AFTER state update with small delay
+    setTimeout(() => {
+      setShowStreamSettingsModal(false);
+      setShowStreamModal(false);
+      setEditingSlot(null);
+    }, 100);
     
-    // Sync to server
+    // Sync to server (optional, won't affect local playback)
     try {
       await axios.post(`${API}/api/rooms/${roomId}/stream/play/${slot}`, {}, 
         { headers: { Authorization: `Bearer ${token}` } }
