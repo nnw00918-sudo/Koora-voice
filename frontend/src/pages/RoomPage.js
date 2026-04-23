@@ -3771,7 +3771,7 @@ const YallaLiveRoom = ({ user }) => {
             </>
           )}
           {/* ===== SPEAKERS STRIP ===== */}
-          <div className="mb-4 p-3 rounded-2xl bg-[#141414] border border-white/10">
+          <div className="mb-4 p-3 bg-transparent">
             
             {/* Horizontal Scrollable Speakers */}
             <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
@@ -3858,7 +3858,7 @@ const YallaLiveRoom = ({ user }) => {
           
           {/* ===== CHAT SECTION ===== */}
           <div 
-            className="rounded-2xl flex flex-col relative overflow-hidden bg-[#141414] border border-white/10"
+            className="flex flex-col relative overflow-hidden bg-transparent"
             style={{
               backgroundImage: chatBackground ? `url(${chatBackground})` : 'none',
               backgroundSize: 'cover',
@@ -3872,7 +3872,7 @@ const YallaLiveRoom = ({ user }) => {
             )}
             
             {/* Chat Header */}
-            <div className="flex items-center justify-between px-3 py-2 relative z-10 border-b border-slate-700/50">
+            <div className="flex items-center justify-between px-3 py-2 relative z-10">
               <span className="text-slate-400 text-xs font-cairo">💬 {isRTL ? 'الدردشة' : 'Chat'}</span>
               <div className="flex items-center gap-2">
                 <span className="text-slate-500 text-[10px]">{messages.length} {isRTL ? 'رسالة' : 'messages'}</span>
