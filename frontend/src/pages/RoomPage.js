@@ -252,6 +252,10 @@ const YallaLiveRoom = ({ user }) => {
   // Announcements state
   const [roomAnnouncements, setRoomAnnouncements] = useState([]);
   
+  // Room background state
+  const [roomBackground, setRoomBackground] = useState(null);
+  const [showRoomBackgroundModal, setShowRoomBackgroundModal] = useState(false);
+  
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -2871,14 +2875,31 @@ const YallaLiveRoom = ({ user }) => {
   const listeners = participants.filter(p => p.seat_number === null);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] fixed inset-0 overflow-hidden" dir="rtl">
+    <div 
+      className="min-h-screen fixed inset-0 overflow-hidden" 
+      dir="rtl"
+      style={{
+        backgroundColor: '#0A0A0A',
+        backgroundImage: roomBackground ? `url(${roomBackground})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      {/* Dark overlay for readability when background is set */}
+      {roomBackground && (
+        <div className="absolute inset-0 bg-black/60 pointer-events-none" />
+      )}
+      
       {/* Floating Reactions - Playback Feature */}
       <FloatingReactions reactions={floatingReactions} />
       
-      {/* Subtle Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-60 bg-gradient-to-b from-lime-500/5 to-transparent" />
-      </div>
+      {/* Subtle Background - only show if no custom background */}
+      {!roomBackground && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-60 bg-gradient-to-b from-lime-500/5 to-transparent" />
+        </div>
+      )}
 
       <div className="w-full max-w-[430px] mx-auto h-[100dvh] flex flex-col relative z-10">
         
@@ -3877,14 +3898,24 @@ const YallaLiveRoom = ({ user }) => {
               <div className="flex items-center gap-2">
                 <span className="text-slate-500 text-[10px]">{messages.length} {isRTL ? 'رسالة' : 'messages'}</span>
                 {room?.owner_id === user.id && (
-                  <button
-                    onClick={() => setShowBackgroundPicker(true)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 border border-lime-500/30 transition-colors"
-                    title={isRTL ? 'تغيير خلفية الدردشة' : 'Change chat background'}
-                  >
-                    <ImageIcon className="w-3.5 h-3.5 text-lime-400" />
-                    <span className="text-lime-400 text-[10px] font-cairo">{isRTL ? 'خلفية' : 'BG'}</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setShowRoomBackgroundModal(true)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 transition-colors"
+                      title={isRTL ? 'تغيير خلفية الغرفة' : 'Change room background'}
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
+                      <span className="text-purple-400 text-[10px] font-cairo">{isRTL ? 'الغرفة' : 'Room'}</span>
+                    </button>
+                    <button
+                      onClick={() => setShowBackgroundPicker(true)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 border border-lime-500/30 transition-colors"
+                      title={isRTL ? 'تغيير خلفية الدردشة' : 'Change chat background'}
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-lime-400" />
+                      <span className="text-lime-400 text-[10px] font-cairo">{isRTL ? 'الدردشة' : 'Chat'}</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -4371,6 +4402,106 @@ const YallaLiveRoom = ({ user }) => {
             onRemoveBackground={removeBackground}
             onUrlSubmit={handleBackgroundUrl}
           />
+        </AnimatePresence>
+
+        {/* Room Background Modal */}
+        <AnimatePresence>
+          {showRoomBackgroundModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+              onClick={() => setShowRoomBackgroundModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-[#1A1A1A] rounded-2xl p-6 w-full max-w-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-white text-lg font-bold font-cairo mb-4 text-center">خلفية الغرفة</h3>
+                
+                <div className="space-y-4">
+                  {/* Current background preview */}
+                  {roomBackground && (
+                    <div className="relative w-full h-32 rounded-xl overflow-hidden">
+                      <img src={roomBackground} alt="خلفية الغرفة" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setRoomBackground(null)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* URL input */}
+                  <div>
+                    <label className="text-white/60 text-sm font-cairo mb-2 block">رابط الصورة</label>
+                    <input
+                      type="text"
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-3 text-white font-cairo text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.target.value) {
+                          setRoomBackground(e.target.value);
+                          toast.success('تم تغيير خلفية الغرفة');
+                        }
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Preset backgrounds */}
+                  <div>
+                    <label className="text-white/60 text-sm font-cairo mb-2 block">خلفيات جاهزة</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        'https://images.unsplash.com/photo-1518134346856-a6c3e0379a00?w=800',
+                        'https://images.unsplash.com/photo-1557683316-973673baf926?w=800',
+                        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800',
+                        'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=800',
+                        'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800',
+                        'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=800',
+                      ].map((bg, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setRoomBackground(bg);
+                            toast.success('تم تغيير خلفية الغرفة');
+                          }}
+                          className="w-full h-16 rounded-lg overflow-hidden border-2 border-transparent hover:border-[#CCFF00] transition-all"
+                        >
+                          <img src={bg} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Remove button */}
+                  {roomBackground && (
+                    <button
+                      onClick={() => {
+                        setRoomBackground(null);
+                        toast.success('تم إزالة الخلفية');
+                      }}
+                      className="w-full py-3 bg-red-500/20 text-red-400 rounded-xl font-cairo hover:bg-red-500/30 transition-all"
+                    >
+                      إزالة الخلفية
+                    </button>
+                  )}
+                </div>
+                
+                <button
+                  onClick={() => setShowRoomBackgroundModal(false)}
+                  className="w-full mt-4 py-3 bg-[#CCFF00] text-black rounded-xl font-cairo font-bold"
+                >
+                  إغلاق
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Image URL Modal for Chat */}
