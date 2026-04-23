@@ -945,6 +945,11 @@ const YallaLiveRoom = ({ user }) => {
         setChatBackground(roomData.chat_background);
       }
       
+      // Set room background if exists
+      if (roomData.room_background) {
+        setRoomBackground(roomData.room_background);
+      }
+      
       // Check if room was closed and user should be kicked (only system owner stays)
       if (roomData.is_closed && user.role !== 'owner') {
         toast.error('تم إغلاق الغرفة');
@@ -1090,6 +1095,18 @@ const YallaLiveRoom = ({ user }) => {
             streamPlayerRef.current.seekTo?.(data.current_time, 'seconds');
           }
         }
+      }
+      
+      // Handle Room Background update from server
+      if (data.type === 'room_background_update' && data.room_id === roomId) {
+        console.log('Room background update received:', data.background_url);
+        setRoomBackground(data.background_url || null);
+      }
+      
+      // Handle Chat Background update from server
+      if (data.type === 'chat_background_update' && data.room_id === roomId) {
+        console.log('Chat background update received:', data.background_url);
+        setChatBackground(data.background_url || '');
       }
     };
     
@@ -1640,6 +1657,22 @@ const YallaLiveRoom = ({ user }) => {
       setShowBackgroundPicker(false);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل تحديث الخلفية');
+    }
+  };
+
+  // Handle Room Background change (saves to server)
+  const handleRoomBackgroundChange = async (url) => {
+    try {
+      await axios.put(`${API}/api/rooms/${roomId}/room-background`, 
+        { background_url: url || '' }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success(url ? 'تم تحديث خلفية الغرفة' : 'تم إزالة خلفية الغرفة');
+      setRoomBackground(url || null);
+      if (!url) setShowRoomBackgroundModal(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل تحديث خلفية الغرفة');
     }
   };
 
@@ -4418,22 +4451,19 @@ const YallaLiveRoom = ({ user }) => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-[#1A1A1A] rounded-2xl p-6 w-full max-w-sm"
+                className="bg-[#1A1A1A] rounded-2xl p-6 w-full max-w-sm max-h-[80vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
-                <h3 className="text-white text-lg font-bold font-cairo mb-4 text-center">خلفية الغرفة</h3>
+                <h3 className="text-white text-lg font-bold font-cairo mb-4 text-center">🎨 خلفية الغرفة</h3>
                 
                 <div className="space-y-4">
                   {/* Current background preview */}
                   {roomBackground && (
-                    <div className="relative w-full h-32 rounded-xl overflow-hidden">
+                    <div className="relative w-full h-32 rounded-xl overflow-hidden border border-[#CCFF00]/30">
                       <img src={roomBackground} alt="خلفية الغرفة" className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => setRoomBackground(null)}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <span className="text-white text-sm font-cairo bg-black/50 px-2 py-1 rounded">الخلفية الحالية</span>
+                      </div>
                     </div>
                   )}
                   
@@ -4444,34 +4474,34 @@ const YallaLiveRoom = ({ user }) => {
                       type="text"
                       placeholder="https://example.com/image.jpg"
                       className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-3 text-white font-cairo text-sm"
+                      dir="ltr"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && e.target.value) {
-                          setRoomBackground(e.target.value);
-                          toast.success('تم تغيير خلفية الغرفة');
+                          handleRoomBackgroundChange(e.target.value);
                         }
                       }}
                     />
+                    <p className="text-white/40 text-xs font-cairo mt-1">اضغط Enter لتطبيق الخلفية</p>
                   </div>
                   
-                  {/* Preset backgrounds */}
+                  {/* Preset backgrounds - Football themed */}
                   <div>
-                    <label className="text-white/60 text-sm font-cairo mb-2 block">خلفيات جاهزة</label>
+                    <label className="text-white/60 text-sm font-cairo mb-2 block">خلفيات جاهزة ⚽</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        'https://images.unsplash.com/photo-1518134346856-a6c3e0379a00?w=800',
-                        'https://images.unsplash.com/photo-1557683316-973673baf926?w=800',
-                        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800',
-                        'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=800',
-                        'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800',
-                        'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=800',
+                        'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800', // Stadium
+                        'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800', // Football field
+                        'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800', // Stadium lights
+                        'https://images.unsplash.com/photo-1518134346856-a6c3e0379a00?w=800', // Gradient
+                        'https://images.unsplash.com/photo-1557683316-973673baf926?w=800', // Purple gradient
+                        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800', // Colorful gradient
                       ].map((bg, idx) => (
                         <button
                           key={idx}
-                          onClick={() => {
-                            setRoomBackground(bg);
-                            toast.success('تم تغيير خلفية الغرفة');
-                          }}
-                          className="w-full h-16 rounded-lg overflow-hidden border-2 border-transparent hover:border-[#CCFF00] transition-all"
+                          onClick={() => handleRoomBackgroundChange(bg)}
+                          className={`w-full h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                            roomBackground === bg ? 'border-[#CCFF00]' : 'border-transparent hover:border-[#CCFF00]/50'
+                          }`}
                         >
                           <img src={bg} alt="" className="w-full h-full object-cover" />
                         </button>
@@ -4482,12 +4512,10 @@ const YallaLiveRoom = ({ user }) => {
                   {/* Remove button */}
                   {roomBackground && (
                     <button
-                      onClick={() => {
-                        setRoomBackground(null);
-                        toast.success('تم إزالة الخلفية');
-                      }}
-                      className="w-full py-3 bg-red-500/20 text-red-400 rounded-xl font-cairo hover:bg-red-500/30 transition-all"
+                      onClick={() => handleRoomBackgroundChange('')}
+                      className="w-full py-3 bg-red-500/20 text-red-400 rounded-xl font-cairo hover:bg-red-500/30 transition-all flex items-center justify-center gap-2"
                     >
+                      <Trash2 className="w-4 h-4" />
                       إزالة الخلفية
                     </button>
                   )}

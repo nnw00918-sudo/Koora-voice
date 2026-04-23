@@ -348,6 +348,7 @@ class RoomFull(BaseModel):
     stream_url: Optional[str] = None
     stream_active: bool = False
     chat_background: Optional[str] = None
+    room_background: Optional[str] = None
     room_type: str = "all"  # "all" or "diwaniya"
 
 class RoomCreate(BaseModel):
@@ -1313,6 +1314,38 @@ async def update_room_chat_background(room_id: str, data: dict, current_user: Us
         }, participant_ids)
     
     return {"message": "تم تحديث خلفية الدردشة", "chat_background": background_url}
+
+
+@api_router.put("/rooms/{room_id}/room-background")
+async def update_room_background(room_id: str, data: dict, current_user: User = Depends(get_current_user)):
+    """Update full room background image - Owner only"""
+    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
+    if not room:
+        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
+    
+    # Only room owner or system owner can change background
+    if room["owner_id"] != current_user.id and current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="فقط صاحب الغرفة يمكنه تغيير الخلفية")
+    
+    background_url = data.get("background_url", "")
+    
+    await db.rooms.update_one(
+        {"id": room_id},
+        {"$set": {"room_background": background_url}}
+    )
+    
+    # Broadcast background change to all users in room via WebSocket
+    participants = room.get("participants", [])
+    participant_ids = [p.get("user_id") for p in participants if p.get("user_id")]
+    
+    if participant_ids:
+        await ws_manager.broadcast_to_users({
+            "type": "room_background_update",
+            "room_id": room_id,
+            "background_url": background_url
+        }, participant_ids)
+    
+    return {"message": "تم تحديث خلفية الغرفة", "room_background": background_url}
 
 
 import os
