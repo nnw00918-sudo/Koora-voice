@@ -921,7 +921,17 @@ const YallaLiveRoom = ({ user }) => {
       // Fetch main room data first
       const roomRes = await axios.get(`${API}/api/rooms/${roomId}`);
       const roomData = roomRes.data;
-      setRoom(roomData);
+      
+      // Preserve local stream_url if it's set (to prevent polling from overwriting local playback)
+      setRoom(prev => {
+        // If we have a local stream_url that's different from server, keep local
+        if (prev?.stream_url && prev.stream_url.trim() !== '' && 
+            (!roomData.stream_url || roomData.stream_url !== prev.stream_url)) {
+          console.log('Preserving local stream_url:', prev.stream_url);
+          return { ...roomData, stream_url: prev.stream_url };
+        }
+        return roomData;
+      });
       
       // Set chat background if exists
       if (roomData.chat_background) {
