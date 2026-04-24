@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -162,12 +162,7 @@ const ThreadDetailPage = ({ user }) => {
     }
   };
 
-  useEffect(() => {
-    fetchThread();
-    fetchReplies();
-  }, [threadId]);
-
-  const fetchThread = async () => {
+  const fetchThread = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/threads/${threadId}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -179,9 +174,9 @@ const ThreadDetailPage = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [threadId, token, txt.notFound]);
 
-  const fetchReplies = async () => {
+  const fetchReplies = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/threads/${threadId}/replies`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -192,7 +187,12 @@ const ThreadDetailPage = ({ user }) => {
       console.error('Error fetching replies:', error);
       setReplies([]);
     }
-  };
+  }, [threadId, token]);
+
+  useEffect(() => {
+    fetchThread();
+    fetchReplies();
+  }, [fetchThread, fetchReplies]);
 
   const handleLike = async () => {
     if (!thread) return;
