@@ -1664,15 +1664,26 @@ const YallaLiveRoom = ({ user }) => {
   // Handle Room Background change (saves to server)
   const handleRoomBackgroundChange = async (url) => {
     try {
-      await axios.put(`${API}/api/rooms/${roomId}/room-background`, 
+      console.log('Changing room background to:', url);
+      
+      // Apply immediately for instant feedback
+      setRoomBackground(url || null);
+      
+      const response = await axios.put(`${API}/api/rooms/${roomId}/room-background`, 
         { background_url: url || '' }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      toast.success(url ? 'تم تحديث خلفية الغرفة' : 'تم إزالة خلفية الغرفة');
-      setRoomBackground(url || null);
-      if (!url) setShowRoomBackgroundModal(false);
+      console.log('Room background API response:', response.data);
+      toast.success(url ? 'تم تحديث خلفية الغرفة ✅' : 'تم إزالة خلفية الغرفة');
+      
+      // Close modal after success
+      setShowRoomBackgroundModal(false);
+      setRoomBackgroundUrlInput('');
     } catch (error) {
+      console.error('Room background error:', error.response?.data || error);
+      // Revert on error
+      setRoomBackground(null);
       toast.error(error.response?.data?.detail || 'فشل تحديث خلفية الغرفة');
     }
   };
@@ -4511,12 +4522,12 @@ const YallaLiveRoom = ({ user }) => {
                     <label className="text-white/60 text-sm font-cairo mb-2 block">خلفيات جاهزة ⚽</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800', // Stadium
-                        'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800', // Football field
-                        'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800', // Stadium lights
-                        'https://images.unsplash.com/photo-1518134346856-a6c3e0379a00?w=800', // Gradient
-                        'https://images.unsplash.com/photo-1557683316-973673baf926?w=800', // Purple gradient
-                        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800', // Colorful gradient
+                        'https://images.unsplash.com/photo-1679391029864-d46f366a456b?w=800&q=80', // Stadium crowd
+                        'https://images.unsplash.com/photo-1632380148925-ff9f845087f8?w=800&q=80', // Stadium night
+                        'https://images.pexels.com/photos/35898730/pexels-photo-35898730.jpeg?auto=compress&w=800', // Night match
+                        'https://images.unsplash.com/photo-1769751876022-4c672ac944bf?w=800&q=80', // Orange gradient
+                        'https://images.unsplash.com/photo-1766907460644-a1a558a122d5?w=800&q=80', // Brown orange
+                        'https://images.unsplash.com/photo-1774392795592-a1302faf1118?w=800&q=80', // Pink dark
                       ].map((bg, idx) => (
                         <button
                           key={idx}
