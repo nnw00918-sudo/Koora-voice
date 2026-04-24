@@ -804,15 +804,22 @@ const YallaLiveRoom = ({ user }) => {
           return prev;
         });
         
-        // Update messages - only if changed
+        // Update messages - merge new messages with existing ones
         const filteredMessages = messagesRes.data.filter(msg => 
           !msg.content?.toLowerCase().includes('test message') &&
           !msg.content?.toLowerCase().includes('voice test') &&
           !msg.username?.toLowerCase().includes('test_user')
         );
         setMessages(prev => {
-          if (prev.length !== filteredMessages.length) {
-            return filteredMessages;
+          // Get IDs of server messages
+          const serverMessageIds = new Set(filteredMessages.map(m => m.id));
+          // Keep local messages that aren't on server yet (optimistic updates)
+          const localOnlyMessages = prev.filter(m => m.isLocal && !serverMessageIds.has(m.id));
+          // Merge: server messages + local-only messages
+          const merged = [...filteredMessages, ...localOnlyMessages];
+          // Only update if actually different
+          if (JSON.stringify(prev.map(m => m.id).sort()) !== JSON.stringify(merged.map(m => m.id).sort())) {
+            return merged;
           }
           return prev;
         });
@@ -1068,8 +1075,34 @@ const YallaLiveRoom = ({ user }) => {
       const data = JSON.parse(event.data);
       
       if (data.type === 'room_message' && data.room_id === roomId) {
-        // Add new message to state
-        setMessages(prev => [...prev, data.message]);
+        // Add new message to state - replace local message if exists
+        setMessages(prev => {
+          const newMessage = data.message;
+          // Check if this is our own message coming back (replace local version)
+          const isOwnMessage = newMessage.user_id === user.id;
+          
+          if (isOwnMessage) {
+            // Remove any local messages with same content from same user (within last 5 seconds)
+            const fiveSecondsAgo = Date.now() - 5000;
+            const filtered = prev.filter(m => {
+              if (m.isLocal && m.user_id === user.id && m.content === newMessage.content) {
+                const msgTime = new Date(m.created_at).getTime();
+                if (msgTime > fiveSecondsAgo) {
+                  return false; // Remove this local message
+                }
+              }
+              return true;
+            });
+            return [...filtered, newMessage];
+          } else {
+            // Message from another user - just add it
+            // Check if already exists (by ID)
+            if (prev.some(m => m.id === newMessage.id)) {
+              return prev;
+            }
+            return [...prev, newMessage];
+          }
+        });
         // Auto-scroll to bottom
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1145,10 +1178,30 @@ const YallaLiveRoom = ({ user }) => {
 
   const sendMessageViaWebSocket = (content, replyData = null) => {
     if (roomWsRef.current && roomWsRef.current.readyState === WebSocket.OPEN) {
+      // Generate temporary local ID
+      const tempId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Add message locally immediately (optimistic update)
+      const localMessage = {
+        id: tempId,
+        content: content,
+        user_id: user.id,
+        username: user.username,
+        avatar: user.avatar || `https://ui-avatars.com/api/?name=${user.username}&background=CCFF00&color=000`,
+        is_vip: user.is_vip || false,
+        created_at: new Date().toISOString(),
+        isLocal: true, // Mark as local for merging logic
+        ...(replyData || {})
+      };
+      
+      setMessages(prev => [...prev, localMessage]);
+      
+      // Send via WebSocket
       roomWsRef.current.send(JSON.stringify({
         type: 'room_message',
         room_id: roomId,
         content: content,
+        temp_id: tempId, // Send temp ID so server can track
         ...(replyData || {})
       }));
       return true;
