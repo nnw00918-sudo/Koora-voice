@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
-import { API, BACKEND_URL } from '../config/api';
+import { API, WS_BACKEND_URL } from '../config/api';
 import { 
   ArrowRight, Search, Send, Check, CheckCheck, X, MessageCircle,
   Trash2, UserPlus, Sparkles
@@ -285,11 +285,9 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!token) return;
     
-    const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
-    
     const connectWebSocket = () => {
       try {
-        const ws = new WebSocket(`${WS_URL}/ws/${token}`);
+        const ws = new WebSocket(`${WS_BACKEND_URL}/ws/${token}`);
         
         ws.onopen = () => {
           console.log('WebSocket connected');

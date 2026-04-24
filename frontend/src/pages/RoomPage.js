@@ -23,7 +23,7 @@ import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
-import { BACKEND_URL, API, AGORA_APP_ID } from '../config/api';
+import { BACKEND_URL, API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
 // Custom Hooks for Room Features
 import { useRoomPlayback } from '../hooks/useRoomPlayback';
 import {
@@ -907,8 +907,7 @@ const YallaLiveRoom = ({ user }) => {
   const connectRoomWebSocket = () => {
     if (!token || roomWsRef.current) return;
     
-    const wsUrl = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
-    const ws = new WebSocket(`${wsUrl}/ws/${token}`);
+    const ws = new WebSocket(`${WS_BACKEND_URL}/ws/${token}`);
     
     ws.onopen = () => {
       

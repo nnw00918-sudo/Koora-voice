@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
-import { BACKEND_URL as API } from '../config/api';
+import { API } from '../config/api';
 
 const FollowListPage = ({ user }) => {
   const navigate = useNavigate();
@@ -45,7 +45,7 @@ const FollowListPage = ({ user }) => {
         if (targetId === user?.id) {
           setProfileUser(user);
         } else {
-          const res = await axios.get(`${API}/api/users/${targetId}/profile`, {
+          const res = await axios.get(`${API}/users/${targetId}/profile`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setProfileUser(res.data);
@@ -66,10 +66,10 @@ const FollowListPage = ({ user }) => {
         const targetId = userId || user?.id;
         
         const [followersRes, followingRes] = await Promise.all([
-          axios.get(`${API}/api/users/${targetId}/followers`, {
+          axios.get(`${API}/users/${targetId}/followers`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get(`${API}/api/users/${targetId}/following`, {
+          axios.get(`${API}/users/${targetId}/following`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
@@ -91,11 +91,11 @@ const FollowListPage = ({ user }) => {
     try {
       const token = localStorage.getItem('token');
       if (isFollowing) {
-        await axios.delete(`${API}/api/users/${targetUserId}/follow`, {
+        await axios.delete(`${API}/users/${targetUserId}/follow`, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post(`${API}/api/users/${targetUserId}/follow`, {}, {
+        await axios.post(`${API}/users/${targetUserId}/follow`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }

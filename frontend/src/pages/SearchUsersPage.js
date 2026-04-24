@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import BottomNavigation from '../components/BottomNavigation';
 import debounce from 'lodash/debounce';
-import { BACKEND_URL as API } from '../config/api';
+import { API } from '../config/api';
 
 const SearchUsersPage = ({ user }) => {
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ const SearchUsersPage = ({ user }) => {
       setSearched(true);
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get(`${API}/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
+        const res = await axios.get(`${API}/users/search?q=${encodeURIComponent(searchQuery)}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setResults(res.data.users || []);
@@ -55,11 +55,11 @@ const SearchUsersPage = ({ user }) => {
     try {
       const token = localStorage.getItem('token');
       if (isFollowing) {
-        await axios.delete(`${API}/api/users/${targetUserId}/follow`, {
+        await axios.delete(`${API}/users/${targetUserId}/follow`, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post(`${API}/api/users/${targetUserId}/follow`, {}, {
+        await axios.post(`${API}/users/${targetUserId}/follow`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
