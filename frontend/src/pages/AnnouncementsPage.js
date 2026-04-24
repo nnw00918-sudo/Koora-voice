@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import {
   Megaphone,
   ArrowRight,
@@ -39,17 +39,7 @@ const AnnouncementsPage = ({ user }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (user?.role !== 'owner') {
-      toast.error(isRTL ? 'غير مصرح لك بالدخول' : 'Unauthorized');
-      navigate('/dashboard');
-      return;
-    }
-    fetchAnnouncements();
-    fetchRooms();
-  }, [user, navigate, isRTL]);
-
-  const fetchAnnouncements = async () => {
+  const fetchAnnouncements = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/announcements`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -60,9 +50,9 @@ const AnnouncementsPage = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/announcements/rooms`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -71,7 +61,17 @@ const AnnouncementsPage = ({ user }) => {
     } catch (error) {
       console.error('Failed to fetch rooms:', error);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (user?.role !== 'owner') {
+      toast.error(isRTL ? 'غير مصرح لك بالدخول' : 'Unauthorized');
+      navigate('/dashboard');
+      return;
+    }
+    fetchAnnouncements();
+    fetchRooms();
+  }, [user?.role, navigate, isRTL, fetchAnnouncements, fetchRooms]);
 
   const handleCreateAnnouncement = async () => {
     if (!newText.trim() || selectedRooms.length === 0) {
