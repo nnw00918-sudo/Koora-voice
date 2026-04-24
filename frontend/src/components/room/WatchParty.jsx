@@ -1,28 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Tv, Volume2, VolumeX, Maximize2, Minimize2, RefreshCw, SkipForward, SkipBack, Play, Pause } from 'lucide-react';
-
-// Helper function to convert YouTube URL to embed URL
-const getYouTubeEmbedUrl = (url) => {
-  if (!url) return null;
-  
-  if (url.includes('/embed/')) return url;
-  
-  let videoId = null;
-  
-  const liveMatch = url.match(/youtube\.com\/live\/([^?&]+)/);
-  if (liveMatch) videoId = liveMatch[1];
-  
-  const watchMatch = url.match(/[?&]v=([^?&]+)/);
-  if (watchMatch) videoId = watchMatch[1];
-  
-  const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
-  if (shortMatch) videoId = shortMatch[1];
-  
-  if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&mute=0&enablejsapi=1`;
-  
-  return url;
-};
+import { buildYouTubeEmbedUrl } from '../../utils/youtube';
 
 // Watch Party Player Component with Channels - Enhanced
 export const WatchPartyPlayer = ({ 
@@ -46,9 +25,7 @@ export const WatchPartyPlayer = ({
 
   const currentChannel = channels.find(c => c.id === activeChannel);
   const currentUrl = currentChannel?.url || watchParty?.video_url;
-  const embedUrl = getYouTubeEmbedUrl(currentUrl);
-  const muteParam = isMuted ? '&mute=1' : '&mute=0';
-  const finalUrl = embedUrl ? `${embedUrl}${muteParam}` : null;
+  const finalUrl = buildYouTubeEmbedUrl(currentUrl, { mute: isMuted ? 1 : 0 });
 
   // All hooks must be called before any conditional returns
   const handleChannelChange = useCallback((channelId) => {
@@ -152,6 +129,7 @@ export const WatchPartyPlayer = ({
             src={finalUrl}
             className="absolute inset-0 w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
           />
         ) : (

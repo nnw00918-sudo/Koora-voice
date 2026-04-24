@@ -26,6 +26,7 @@ import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/sou
 import { BACKEND_URL, API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
 // Custom Hooks for Room Features
 import { useRoomPlayback } from '../hooks/useRoomPlayback';
+import { buildYouTubeEmbedUrl, isYouTubeUrl } from '../utils/youtube';
 import {
   Mic,
   MicOff,
@@ -1661,17 +1662,7 @@ const YallaLiveRoom = ({ user }) => {
     
     // YouTube Video - regular video or live
     if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
-      let videoId = '';
-      if (url.includes('youtube.com/watch')) {
-        videoId = url.split('v=')[1]?.split('&')[0] || '';
-      } else if (url.includes('youtube.com/live')) {
-        videoId = url.split('/live/')[1]?.split('?')[0] || '';
-      } else {
-        videoId = url.split('/').pop()?.split('?')[0] || '';
-      }
-      if (videoId) {
-        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1`;
-      }
+      return buildYouTubeEmbedUrl(url, { mute: 1 });
     }
     
     // Twitch
@@ -3153,18 +3144,15 @@ const YallaLiveRoom = ({ user }) => {
                   src={(() => {
                     let url = room.stream_url;
                     // Make sure it's in embed format with enablejsapi
-                    if (url.includes('youtube.com/watch')) {
-                      const videoId = url.split('v=')[1]?.split('&')[0];
-                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`;
-                    } else if (url.includes('youtu.be/')) {
-                      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                      url = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`;
+                    if (isYouTubeUrl(url)) {
+                      url = buildYouTubeEmbedUrl(url, { mute: isAudioMuted ? 1 : 0 });
                     } else if (!url.includes('enablejsapi')) {
                       url = url.includes('?') ? `${url}&enablejsapi=1` : `${url}?enablejsapi=1`;
                     }
                     return url;
                   })()}
                   className="w-full h-full"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
