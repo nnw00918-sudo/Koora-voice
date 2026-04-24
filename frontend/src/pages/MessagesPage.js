@@ -37,6 +37,28 @@ const ChatBackground = ({ isDarkMode }) => (
   </div>
 );
 
+const getMessagesTheme = (isDarkMode) => ({
+  bg: isDarkMode ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F5]',
+  headerBg: isDarkMode ? 'bg-black/70' : 'bg-white/90',
+  headerBorder: isDarkMode ? 'border-white/10' : 'border-black/5',
+  textPrimary: isDarkMode ? 'text-white' : 'text-[#171717]',
+  textSecondary: isDarkMode ? 'text-[#A3A3A3]' : 'text-[#525252]',
+  inputBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
+  inputBorder: isDarkMode ? 'border-[#262626]' : 'border-[#E5E5E5]',
+  cardBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
+  cardHover: isDarkMode ? 'hover:bg-[#141414]' : 'hover:bg-[#F9F9F9]',
+  border: isDarkMode ? 'border-[#1A1A1A]' : 'border-[#E5E5E5]',
+  primary: isDarkMode ? '#CCFF00' : '#84CC16',
+  ring: isDarkMode ? 'ring-[#262626]' : 'ring-[#E5E5E5]',
+  myBubbleBg: isDarkMode ? 'from-[#CCFF00] to-emerald-500' : 'from-[#84CC16] to-emerald-500',
+  otherBubbleBg: isDarkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E5E5E5]',
+});
+
+const formatChatTime = (dateStr) => {
+  const date = new Date(dateStr);
+  return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+};
+
 // ============ CHAT VIEW COMPONENT (Separate to prevent re-renders) ============
 const ChatView = memo(function ChatView({ 
   conversation, 
@@ -52,20 +74,7 @@ const ChatView = memo(function ChatView({
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   
-  // Theme classes
-  const theme = {
-    bg: isDarkMode ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F5]',
-    headerBg: isDarkMode ? 'bg-black/70' : 'bg-white/90',
-    headerBorder: isDarkMode ? 'border-white/10' : 'border-black/5',
-    textPrimary: isDarkMode ? 'text-white' : 'text-[#171717]',
-    textSecondary: isDarkMode ? 'text-[#A3A3A3]' : 'text-[#525252]',
-    inputBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
-    inputBorder: isDarkMode ? 'border-[#262626]' : 'border-[#E5E5E5]',
-    cardBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
-    primary: isDarkMode ? '#CCFF00' : '#84CC16',
-    myBubbleBg: isDarkMode ? 'from-[#CCFF00] to-emerald-500' : 'from-[#84CC16] to-emerald-500',
-    otherBubbleBg: isDarkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E5E5E5]',
-  };
+  const theme = getMessagesTheme(isDarkMode);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -105,11 +114,6 @@ const ChatView = memo(function ChatView({
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
     }
-  };
-
-  const formatTime = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -198,7 +202,7 @@ const ChatView = memo(function ChatView({
                   </p>
                   <div className={`flex items-center gap-1 mt-1.5 ${msg.is_mine ? 'justify-start' : 'justify-end'}`}>
                     <span className={`text-[11px] ${msg.is_mine ? 'text-black/60' : theme.textSecondary}`}>
-                      {formatTime(msg.created_at)}
+                      {formatChatTime(msg.created_at)}
                     </span>
                     {msg.is_mine && !msg.sending && (
                       msg.read 
@@ -276,10 +280,51 @@ export default function MessagesPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [wsConnected, setWsConnected] = useState(false);
   
   const token = localStorage.getItem('token');
   const wsRef = useRef(null);
+
+  const clearConversationSelection = useCallback(() => {
+    setCurrentView('list');
+    setCurrentConversation(null);
+    setMessages([]);
+  }, []);
+
+  const openConversationById = useCallback((convoId, convoData) => {
+    setCurrentConversation(convoData);
+    setCurrentView('chat');
+    navigate(`/messages/${convoId}`);
+  }, [navigate]);
+
+  const updateConversationLastMessage = useCallback((message) => {
+    setConversations((prevConversations) =>
+      prevConversations.map((conversation) =>
+        conversation.id === message.conversation_id
+          ? {
+              ...conversation,
+              last_message: {
+                content: message.content,
+                created_at: message.created_at,
+              },
+            }
+          : conversation
+      )
+    );
+  }, []);
+
+  const markTempMessageDelivered = useCallback((tempMessageId) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((message) =>
+        message.id === tempMessageId ? { ...message, sending: false } : message
+      )
+    );
+  }, []);
+
+  const removeMessageById = useCallback((messageId) => {
+    setMessages((prevMessages) =>
+      prevMessages.filter((message) => message.id !== messageId)
+    );
+  }, []);
   
   // WebSocket connection for real-time messages
   useEffect(() => {
@@ -289,10 +334,7 @@ export default function MessagesPage() {
       try {
         const ws = new WebSocket(`${WS_BACKEND_URL}/ws/${token}`);
         
-        ws.onopen = () => {
-          console.log('WebSocket connected');
-          setWsConnected(true);
-        };
+        ws.onopen = () => {};
         
         ws.onmessage = (event) => {
           try {
@@ -301,19 +343,16 @@ export default function MessagesPage() {
             if (data.type === 'new_message') {
               // Add new message to current conversation
               if (currentConversation && data.message.conversation_id === currentConversation.id) {
-                setMessages(prev => {
-                  // Avoid duplicates
-                  if (prev.some(m => m.id === data.message.id)) return prev;
-                  return [...prev, data.message];
+                setMessages((prevMessages) => {
+                  if (prevMessages.some((message) => message.id === data.message.id)) {
+                    return prevMessages;
+                  }
+                  return [...prevMessages, data.message];
                 });
               }
               
               // Update conversation list
-              setConversations(prev => prev.map(c => 
-                c.id === data.message.conversation_id 
-                  ? { ...c, last_message: { content: data.message.content, created_at: data.message.created_at } }
-                  : c
-              ));
+              updateConversationLastMessage(data.message);
             }
           } catch (err) {
             console.error('WebSocket message error:', err);
@@ -321,8 +360,6 @@ export default function MessagesPage() {
         };
         
         ws.onclose = () => {
-          console.log('WebSocket disconnected');
-          setWsConnected(false);
           // Reconnect after 3 seconds
           setTimeout(connectWebSocket, 3000);
         };
@@ -346,21 +383,7 @@ export default function MessagesPage() {
     };
   }, [token, currentConversation]);
 
-  // Theme classes
-  const theme = {
-    bg: isDarkMode ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F5]',
-    headerBg: isDarkMode ? 'bg-black/70' : 'bg-white/90',
-    headerBorder: isDarkMode ? 'border-white/10' : 'border-black/5',
-    textPrimary: isDarkMode ? 'text-white' : 'text-[#171717]',
-    textSecondary: isDarkMode ? 'text-[#A3A3A3]' : 'text-[#525252]',
-    inputBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
-    inputBorder: isDarkMode ? 'border-[#262626]' : 'border-[#E5E5E5]',
-    cardBg: isDarkMode ? 'bg-[#141414]' : 'bg-white',
-    cardHover: isDarkMode ? 'hover:bg-[#141414]' : 'hover:bg-[#F9F9F9]',
-    border: isDarkMode ? 'border-[#1A1A1A]' : 'border-[#E5E5E5]',
-    primary: isDarkMode ? '#CCFF00' : '#84CC16',
-    ring: isDarkMode ? 'ring-[#262626]' : 'ring-[#E5E5E5]',
-  };
+  const theme = getMessagesTheme(isDarkMode);
 
   const txt = {
     messages: 'الرسائل',
@@ -462,9 +485,7 @@ export default function MessagesPage() {
           conversation_id: currentConversation.id,
           content
         }));
-        setMessages(prev => prev.map(m => 
-          m.id === tempMessage.id ? { ...m, sending: false } : m
-        ));
+        markTempMessageDelivered(tempMessage.id);
       } else {
         // Fallback to HTTP
         await axios.post(
@@ -472,16 +493,14 @@ export default function MessagesPage() {
           { content },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setMessages(prev => prev.map(m => 
-          m.id === tempMessage.id ? { ...m, sending: false } : m
-        ));
+        markTempMessageDelivered(tempMessage.id);
       }
     } catch (error) {
       toast.error('فشل إرسال الرسالة');
-      setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+      removeMessageById(tempMessage.id);
       throw error;
     }
-  }, [currentConversation, token]);
+  }, [currentConversation, token, markTempMessageDelivered, removeMessageById]);
 
   const deleteConversation = useCallback(async () => {
     if (!currentConversation) return;
@@ -490,28 +509,23 @@ export default function MessagesPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('تم حذف المحادثة');
-      setCurrentView('list');
-      setCurrentConversation(null);
-      setMessages([]);
+      clearConversationSelection();
       navigate('/messages');
       fetchConversations();
     } catch (error) {
       toast.error('فشل حذف المحادثة');
     }
-  }, [currentConversation, token, navigate, fetchConversations]);
+  }, [currentConversation, token, navigate, fetchConversations, clearConversationSelection]);
 
   const openConversation = useCallback((convo) => {
-    setCurrentConversation(convo);
-    setCurrentView('chat');
+    openConversationById(convo.id, convo);
     loadConversation(convo.id);
-    navigate(`/messages/${convo.id}`);
-  }, [loadConversation, navigate]);
+  }, [loadConversation, openConversationById]);
 
   const handleBack = useCallback(() => {
-    setCurrentView('list');
-    setCurrentConversation(null);
+    clearConversationSelection();
     navigate('/messages');
-  }, [navigate]);
+  }, [navigate, clearConversationSelection]);
 
   useEffect(() => {
     fetchConversations();
@@ -525,8 +539,7 @@ export default function MessagesPage() {
       // First check if conversation exists in the list
       const convo = conversations.find(c => c.id === conversationId);
       if (convo) {
-        setCurrentConversation(convo);
-        setCurrentView('chat');
+        openConversationById(conversationId, convo);
         loadConversation(conversationId);
         return;
       }
@@ -543,8 +556,7 @@ export default function MessagesPage() {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data) {
-          setCurrentConversation(res.data);
-          setCurrentView('chat');
+          openConversationById(conversationId, res.data);
           loadConversation(conversationId);
         }
       } catch (error) {
@@ -555,17 +567,12 @@ export default function MessagesPage() {
     };
     
     loadDirectConversation();
-  }, [conversationId, conversations, loadConversation, token, loading, navigate]);
+  }, [conversationId, conversations, loadConversation, token, loading, navigate, openConversationById]);
 
   useEffect(() => {
     const timer = setTimeout(() => searchUsers(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery, searchUsers]);
-
-  const formatTime = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
-  };
 
   // ============ RENDER ============
   if (currentView === 'chat' && currentConversation) {
@@ -741,7 +748,7 @@ export default function MessagesPage() {
               <div className="flex-1 text-right min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#A3A3A3]">
-                    {convo.last_message?.created_at && formatTime(convo.last_message.created_at)}
+                    {convo.last_message?.created_at && formatChatTime(convo.last_message.created_at)}
                   </span>
                   <span className="text-white font-cairo font-bold truncate">
                     {convo.user?.name || convo.user?.username}
