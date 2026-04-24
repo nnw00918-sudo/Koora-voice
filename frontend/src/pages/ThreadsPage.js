@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import Stories from '../components/Stories';
 import BottomNavigation from '../components/BottomNavigation';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
   Share2, MoreHorizontal, Image, X, Video, MapPin, Smile, CalendarDays,
@@ -134,19 +134,7 @@ const ThreadsPage = ({ user }) => {
     }
   }[language];
 
-  useEffect(() => {
-    fetchThreads();
-  }, [activeTab]);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, [newThread]);
-
-  const fetchThreads = async () => {
+  const fetchThreads = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/threads`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -160,7 +148,34 @@ const ThreadsPage = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, token]);
+
+  useEffect(() => {
+    fetchThreads();
+  }, [fetchThreads]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [newThread]);
+
+  const updateThreadById = useCallback((threadId, updater) => {
+    setThreads((prevThreads) =>
+      prevThreads.map((thread) =>
+        thread.id === threadId ? updater(thread) : thread
+      )
+    );
+  }, []);
+
+  const incrementThreadRepliesCount = useCallback((threadId) => {
+    updateThreadById(threadId, (thread) => ({
+      ...thread,
+      replies_count: (thread.replies_count || 0) + 1,
+    }));
+  }, [updateThreadById]);
 
   const handleFileSelect = (e, type) => {
     const file = e.target.files[0];
@@ -217,12 +232,8 @@ const ThreadsPage = ({ user }) => {
   const handlePostThread = async () => {
     // Read directly from textarea ref for uncontrolled component
     const content = textareaRef.current?.value || newThread || '';
-    console.log('[THREADS] Posting thread with content:', content);
-    console.log('[THREADS] Selected media:', selectedMedia);
-    console.log('[THREADS] Twitter URL:', twitterUrl);
     
     if (!content.trim() && !selectedMedia && !twitterUrl) {
-      console.log('[THREADS] Nothing to post');
       return;
     }
     setPosting(true);
@@ -287,54 +298,22 @@ const ThreadsPage = ({ user }) => {
 
   // Direct reply without React state - for RTL fix
   const handleReplyDirect = async (threadId, content) => {
-    if (!content.trim()) return;
-    try {
-      await axios.post(`${API}/threads/${threadId}/reply`, {
-        content: content
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Clear the input
+    await submitReply(threadId, content, () => {
       if (replyInputRef.current) {
         replyInputRef.current.value = '';
+        replyInputRef.current.textContent = '';
       }
-      setReplyingTo(null);
-      // Refresh replies
-      fetchReplies(threadId);
-      // Update thread replies count
-      setThreads(prev => prev.map(t => 
-        t.id === threadId ? { ...t, replies_count: (t.replies_count || 0) + 1 } : t
-      ));
-      toast.success(isRTL ? 'تم الرد' : 'Reply sent');
-    } catch (error) {
-      toast.error(isRTL ? 'فشل الرد' : 'Failed to reply');
-    }
+    });
   };
 
   const handleReply = async (threadId) => {
-    if (!replyContent.trim()) return;
-    try {
-      await axios.post(`${API}/threads/${threadId}/reply`, {
-        content: replyContent
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Clear the contentEditable div
+    await submitReply(threadId, replyContent, () => {
       if (replyInputRef.current) {
+        replyInputRef.current.value = '';
         replyInputRef.current.textContent = '';
       }
       setReplyContent('');
-      setReplyingTo(null);
-      // Refresh replies
-      fetchReplies(threadId);
-      // Update thread replies count
-      setThreads(prev => prev.map(t => 
-        t.id === threadId ? { ...t, replies_count: (t.replies_count || 0) + 1 } : t
-      ));
-      toast.success(isRTL ? 'تم الرد' : 'Reply sent');
-    } catch (error) {
-      toast.error(isRTL ? 'فشل الرد' : 'Failed to reply');
-    }
+    });
   };
 
   const fetchReplies = async (threadId) => {
@@ -348,6 +327,24 @@ const ThreadsPage = ({ user }) => {
       console.error('Error fetching replies');
     } finally {
       setLoadingReplies(false);
+    }
+  };
+
+  const submitReply = async (threadId, content, clearInput) => {
+    if (!content.trim()) return;
+    try {
+      await axios.post(`${API}/threads/${threadId}/reply`, {
+        content,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      clearInput?.();
+      setReplyingTo(null);
+      fetchReplies(threadId);
+      incrementThreadRepliesCount(threadId);
+      toast.success(isRTL ? 'تم الرد' : 'Reply sent');
+    } catch (error) {
+      toast.error(isRTL ? 'فشل الرد' : 'Failed to reply');
     }
   };
 
@@ -367,11 +364,13 @@ const ThreadsPage = ({ user }) => {
       const res = await axios.post(`${API}/threads/${threadId}/repost`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setThreads(prev => prev.map(t => 
-        t.id === threadId 
-          ? { ...t, reposted: res.data.reposted, reposts_count: res.data.reposted ? (t.reposts_count || 0) + 1 : (t.reposts_count || 1) - 1 }
-          : t
-      ));
+      updateThreadById(threadId, (thread) => ({
+        ...thread,
+        reposted: res.data.reposted,
+        reposts_count: res.data.reposted
+          ? (thread.reposts_count || 0) + 1
+          : (thread.reposts_count || 1) - 1,
+      }));
       toast.success(res.data.reposted ? txt.reposted : txt.unreposted);
     } catch (error) {
       console.error('Repost failed');
@@ -383,11 +382,14 @@ const ThreadsPage = ({ user }) => {
       await axios.post(`${API}/threads/${threadId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setThreads(prev => prev.map(t => 
-        t.id === threadId 
-          ? { ...t, liked: !t.liked, likes_count: t.liked ? t.likes_count - 1 : t.likes_count + 1 }
-          : t
-      ));
+      updateThreadById(threadId, (thread) => {
+        const currentLikes = thread.likes_count || 0;
+        return {
+          ...thread,
+          liked: !thread.liked,
+          likes_count: thread.liked ? currentLikes - 1 : currentLikes + 1,
+        };
+      });
     } catch (error) {
       console.error('Like failed');
     }

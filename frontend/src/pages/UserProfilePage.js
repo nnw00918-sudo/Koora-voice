@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   ArrowRight, ArrowLeft, UserPlus, UserMinus, 
   MessageSquare, MoreHorizontal, Heart, MessageCircle,
@@ -219,6 +219,62 @@ const UserProfilePage = ({ currentUser }) => {
     }
   }[language];
 
+  const tabConfig = useMemo(
+    () => ({
+      posts: {
+        endpoint: `${API}/users/${userId}/threads`,
+        responseKey: 'threads',
+        emptyMessage: txt.noPosts,
+      },
+      likes: {
+        endpoint: `${API}/users/${userId}/liked-threads`,
+        responseKey: 'threads',
+        emptyMessage: txt.noLikes,
+      },
+      reposts: {
+        endpoint: `${API}/users/${userId}/reposts`,
+        responseKey: 'threads',
+        emptyMessage: txt.noReposts,
+      },
+      replies: {
+        endpoint: `${API}/users/${userId}/replies`,
+        responseKey: 'replies',
+        emptyMessage: txt.noReplies,
+      },
+    }),
+    [userId, txt.noPosts, txt.noLikes, txt.noReposts, txt.noReplies]
+  );
+
+  const contentByTab = useMemo(
+    () => ({
+      posts: userPosts,
+      likes: userLikes,
+      reposts: userReposts,
+      replies: userReplies,
+    }),
+    [userPosts, userLikes, userReposts, userReplies]
+  );
+
+  const setContentForTab = useCallback((tab, content) => {
+    switch (tab) {
+      case 'posts':
+        setUserPosts(content);
+        break;
+      case 'likes':
+        setUserLikes(content);
+        break;
+      case 'reposts':
+        setUserReposts(content);
+        break;
+      case 'replies':
+        setUserReplies(content);
+        break;
+      default:
+        setUserPosts(content);
+        break;
+    }
+  }, []);
+
   useEffect(() => {
     fetchUserProfile();
   }, [userId]);
@@ -244,53 +300,22 @@ const UserProfilePage = ({ currentUser }) => {
     }
   };
 
-  const fetchTabContent = async () => {
+  const fetchTabContent = useCallback(async () => {
     setLoadingContent(true);
     try {
-      let endpoint = '';
-      switch (activeTab) {
-        case 'posts':
-          endpoint = `${API}/users/${userId}/threads`;
-          break;
-        case 'likes':
-          endpoint = `${API}/users/${userId}/liked-threads`;
-          break;
-        case 'reposts':
-          endpoint = `${API}/users/${userId}/reposts`;
-          break;
-        case 'replies':
-          endpoint = `${API}/users/${userId}/replies`;
-          break;
-        default:
-          endpoint = `${API}/users/${userId}/threads`;
-      }
+      const activeTabConfig = tabConfig[activeTab] || tabConfig.posts;
       
-      const res = await axios.get(endpoint, {
+      const res = await axios.get(activeTabConfig.endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      switch (activeTab) {
-        case 'posts':
-          setUserPosts(res.data.threads || []);
-          break;
-        case 'likes':
-          setUserLikes(res.data.threads || []);
-          break;
-        case 'reposts':
-          setUserReposts(res.data.threads || []);
-          break;
-        case 'replies':
-          setUserReplies(res.data.replies || []);
-          break;
-        default:
-          setUserPosts(res.data.threads || []);
-      }
+
+      setContentForTab(activeTab, res.data[activeTabConfig.responseKey] || []);
     } catch (error) {
       console.error('Error fetching content');
     } finally {
       setLoadingContent(false);
     }
-  };
+  }, [activeTab, tabConfig, token, setContentForTab]);
 
   const handleFollow = async () => {
     setFollowLoading(true);
@@ -327,14 +352,14 @@ const UserProfilePage = ({ currentUser }) => {
       await axios.post(`${API}/threads/${threadId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const updateList = (list) => list.map(t => 
+      const updateList = (list) => list.map(t =>
         t.id === threadId 
           ? { ...t, liked: !t.liked, likes_count: t.liked ? t.likes_count - 1 : t.likes_count + 1 }
           : t
       );
-      if (activeTab === 'posts') setUserPosts(updateList);
-      else if (activeTab === 'likes') setUserLikes(updateList);
-      else if (activeTab === 'reposts') setUserReposts(updateList);
+      if (activeTab === 'posts' || activeTab === 'likes' || activeTab === 'reposts') {
+        setContentForTab(activeTab, updateList(contentByTab[activeTab] || []));
+      }
     } catch (error) {
       console.error('Like failed');
     }
@@ -372,25 +397,8 @@ const UserProfilePage = ({ currentUser }) => {
     { id: 'replies', label: txt.replies, icon: MessageCircle, count: userReplies.length },
   ];
 
-  const getCurrentContent = () => {
-    switch (activeTab) {
-      case 'posts': return userPosts;
-      case 'likes': return userLikes;
-      case 'reposts': return userReposts;
-      case 'replies': return userReplies;
-      default: return [];
-    }
-  };
-
-  const getEmptyMessage = () => {
-    switch (activeTab) {
-      case 'posts': return txt.noPosts;
-      case 'likes': return txt.noLikes;
-      case 'reposts': return txt.noReposts;
-      case 'replies': return txt.noReplies;
-      default: return '';
-    }
-  };
+  const getCurrentContent = () => contentByTab[activeTab] || [];
+  const getEmptyMessage = () => tabConfig[activeTab]?.emptyMessage || '';
 
   if (loading) {
     return (
