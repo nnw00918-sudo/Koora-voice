@@ -4577,12 +4577,12 @@ const YallaLiveRoom = ({ user }) => {
                     <label className="text-white/60 text-sm font-cairo mb-2 block">خلفيات جاهزة ⚽</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        'https://images.unsplash.com/photo-1679391029864-d46f366a456b?w=800&q=80', // Stadium crowd
-                        'https://images.unsplash.com/photo-1632380148925-ff9f845087f8?w=800&q=80', // Stadium night
-                        'https://images.pexels.com/photos/35898730/pexels-photo-35898730.jpeg?auto=compress&w=800', // Night match
-                        'https://images.unsplash.com/photo-1769751876022-4c672ac944bf?w=800&q=80', // Orange gradient
-                        'https://images.unsplash.com/photo-1766907460644-a1a558a122d5?w=800&q=80', // Brown orange
-                        'https://images.unsplash.com/photo-1774392795592-a1302faf1118?w=800&q=80', // Pink dark
+                        'https://picsum.photos/seed/stadium1/800/600', // Stadium 1
+                        'https://picsum.photos/seed/stadium2/800/600', // Stadium 2
+                        'https://picsum.photos/seed/field/800/600', // Field
+                        'https://picsum.photos/seed/dark1/800/600', // Dark 1
+                        'https://picsum.photos/seed/dark2/800/600', // Dark 2
+                        'https://picsum.photos/seed/night/800/600', // Night
                       ].map((bg, idx) => (
                         <button
                           key={idx}
