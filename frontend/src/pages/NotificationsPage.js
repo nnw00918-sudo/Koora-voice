@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -66,18 +66,22 @@ const NotificationsPage = ({ user }) => {
     }
   }[language];
 
-  useEffect(() => {
-    fetchNotifications();
-    connectWebSocket();
-    
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, []);
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API}/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(res.data.notifications || []);
+      setUnreadCount(res.data.unread_count || 0);
+    } catch (error) {
+      console.error('Error fetching notifications');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
-  const connectWebSocket = () => {
+  const connectWebSocket = useCallback(() => {
     if (!token) return;
     
     const ws = new WebSocket(`${WS_URL}/ws/${token}`);
@@ -99,7 +103,18 @@ const NotificationsPage = ({ user }) => {
     };
     
     wsRef.current = ws;
-  };
+  }, [token]);
+
+  useEffect(() => {
+    fetchNotifications();
+    connectWebSocket();
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [connectWebSocket, fetchNotifications]);
 
   const playNotificationSound = () => {
     try {
@@ -127,21 +142,6 @@ const NotificationsPage = ({ user }) => {
       oscillator2.stop(audioContext.currentTime + 0.25);
     } catch (error) {
       console.log('Audio not available');
-    }
-  };
-
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/notifications`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNotifications(res.data.notifications || []);
-      setUnreadCount(res.data.unread_count || 0);
-    } catch (error) {
-      console.error('Error fetching notifications');
-    } finally {
-      setLoading(false);
     }
   };
 

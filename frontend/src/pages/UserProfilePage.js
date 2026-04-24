@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   ArrowRight, ArrowLeft, UserPlus, UserMinus, 
   MessageSquare, MoreHorizontal, Heart, MessageCircle,
@@ -219,15 +219,7 @@ const UserProfilePage = ({ currentUser }) => {
     }
   }[language];
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, [userId]);
-
-  useEffect(() => {
-    if (user) fetchTabContent();
-  }, [user, activeTab]);
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API}/users/${userId}/profile`, {
@@ -242,9 +234,9 @@ const UserProfilePage = ({ currentUser }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, token, txt.userNotFound, navigate]);
 
-  const fetchTabContent = async () => {
+  const fetchTabContent = useCallback(async () => {
     setLoadingContent(true);
     try {
       let endpoint = '';
@@ -290,7 +282,15 @@ const UserProfilePage = ({ currentUser }) => {
     } finally {
       setLoadingContent(false);
     }
-  };
+  }, [activeTab, userId, token]);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
+    if (user) fetchTabContent();
+  }, [user, activeTab, fetchTabContent]);
 
   const handleFollow = async () => {
     setFollowLoading(true);

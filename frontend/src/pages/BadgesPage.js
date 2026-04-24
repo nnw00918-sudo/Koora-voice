@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -56,27 +56,14 @@ const BadgesPage = ({ user: propUser }) => {
     if (propUser && propUser.id !== user?.id) {
       setUser(propUser);
     }
-  }, [propUser]);
+  }, [propUser, user?.id]);
   
-  // Debug logging
-  useEffect(() => {
-    console.log('BadgesPage mounted, user:', user?.id, 'propUser:', propUser?.id);
-  }, []);
-
-  useEffect(() => {
-    console.log('User changed, fetching data:', user?.id);
-    if (user?.id) {
-      fetchData();
-    }
-  }, [user?.id]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user?.id) {
       return;
     }
     try {
       setLoading(true);
-      console.log('Fetching badges data for user:', user.id);
       const headers = { Authorization: `Bearer ${token}` };
       
       const [badgesRes, userBadgesRes, statsRes, leaderboardRes] = await Promise.all([
@@ -98,7 +85,13 @@ const BadgesPage = ({ user: propUser }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isRTL, token, user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchData();
+    }
+  }, [user?.id, fetchData]);
 
   const handleSelectTeam = async (badgeId) => {
     try {
