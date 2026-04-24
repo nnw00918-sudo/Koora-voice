@@ -1694,6 +1694,12 @@ const YallaLiveRoom = ({ user }) => {
     return url;
   };
 
+  const toProxyEmbedUrl = (url, mute = 0) => {
+    if (!url) return '';
+    const normalized = isYouTubeUrl(url) ? buildYouTubeEmbedUrl(url, { mute }) : url;
+    return `/api/youtube/embed?url=${encodeURIComponent(normalized)}`;
+  };
+
   // TV Receiver Style - Instant channel switch
   const handlePlaySlot = async (slot) => {
     const rawUrl = streamSlots[slot];
@@ -3141,11 +3147,12 @@ const YallaLiveRoom = ({ user }) => {
                 {/* YouTube iframe with postMessage volume control */}
                 <iframe
                   id="youtube-player"
+                  key={`${room?.stream_url || ''}-${isAudioMuted ? 'muted' : 'unmuted'}`}
                   src={(() => {
                     let url = room.stream_url;
                     // Make sure it's in embed format with enablejsapi
                     if (isYouTubeUrl(url)) {
-                      url = buildYouTubeEmbedUrl(url, { mute: isAudioMuted ? 1 : 0 });
+                      return toProxyEmbedUrl(url, isAudioMuted ? 1 : 0);
                     } else if (!url.includes('enablejsapi')) {
                       url = url.includes('?') ? `${url}&enablejsapi=1` : `${url}?enablejsapi=1`;
                     }

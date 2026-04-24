@@ -37,6 +37,24 @@ const getSafeOrigin = () => {
   return DEFAULT_YOUTUBE_ORIGIN;
 };
 
+const isNativeCapacitorRuntime = () => {
+  if (typeof window === 'undefined' || !window.Capacitor) return false;
+  try {
+    const platform = window.Capacitor.getPlatform?.();
+    return Boolean(platform && platform !== 'web');
+  } catch {
+    return false;
+  }
+};
+
+export const shouldUseYouTubeEmbedProxy = () => {
+  if (typeof window === 'undefined') return false;
+  const { protocol, hostname } = window.location;
+  const host = (hostname || '').toLowerCase();
+  const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(host) || host.endsWith('.local');
+  return protocol === 'file:' || isLocalhost || isNativeCapacitorRuntime();
+};
+
 export const isYouTubeUrl = (url) => {
   const parsed = ensureUrl(url);
   if (!parsed) return false;
@@ -133,4 +151,10 @@ export const buildYouTubeEmbedUrl = (url, { mute = 1 } = {}) => {
   embedUrl.searchParams.set('widget_referrer', origin);
 
   return embedUrl.toString();
+};
+
+export const buildYouTubeProxyUrl = (youtubeUrl) => {
+  const embedUrl = buildYouTubeEmbedUrl(youtubeUrl, { mute: 0 });
+  if (!embedUrl || !isYouTubeUrl(embedUrl)) return embedUrl;
+  return `/api/youtube/embed?url=${encodeURIComponent(embedUrl)}`;
 };
