@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Tv, Volume2, VolumeX, Maximize2, Minimize2, RefreshCw, SkipForward, SkipBack, Play, Pause } from 'lucide-react';
+import { X, Tv, Volume2, VolumeX, Maximize2, Minimize2, RefreshCw, SkipForward, SkipBack } from 'lucide-react';
 import { buildYouTubeEmbedUrl } from '../../utils/youtube';
 
 // Watch Party Player Component with Channels - Enhanced
@@ -19,9 +19,14 @@ export const WatchPartyPlayer = ({
   const [refreshKey, setRefreshKey] = useState(0);
   
   // Get channels from watchParty
-  const channels = watchParty?.channels || [
-    { id: 1, url: watchParty?.video_url, name: 'قناة 1' },
-  ];
+  const channels = useMemo(
+    () =>
+      watchParty?.channels || [
+        { id: 1, url: watchParty?.video_url, name: 'قناة 1' },
+      ],
+    [watchParty?.channels, watchParty?.video_url]
+  );
+  const availableChannels = useMemo(() => channels.filter(c => c.url), [channels]);
 
   const currentChannel = channels.find(c => c.id === activeChannel);
   const currentUrl = currentChannel?.url || watchParty?.video_url;
@@ -46,20 +51,18 @@ export const WatchPartyPlayer = ({
   }, []);
 
   const handleNextChannel = useCallback(() => {
-    const availableChannels = channels.filter(c => c.url);
     const currentIndex = availableChannels.findIndex(c => c.id === activeChannel);
     if (currentIndex < availableChannels.length - 1) {
       handleChannelChange(availableChannels[currentIndex + 1].id);
     }
-  }, [channels, activeChannel, handleChannelChange]);
+  }, [availableChannels, activeChannel, handleChannelChange]);
 
   const handlePrevChannel = useCallback(() => {
-    const availableChannels = channels.filter(c => c.url);
     const currentIndex = availableChannels.findIndex(c => c.id === activeChannel);
     if (currentIndex > 0) {
       handleChannelChange(availableChannels[currentIndex - 1].id);
     }
-  }, [channels, activeChannel, handleChannelChange]);
+  }, [availableChannels, activeChannel, handleChannelChange]);
   
   // Auto-hide controls after 3 seconds
   useEffect(() => {

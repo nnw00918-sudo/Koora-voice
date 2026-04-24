@@ -15,15 +15,19 @@ const FollowListPage = ({ user }) => {
   const [searchParams] = useSearchParams();
   const { isDarkMode } = useSettings();
   
-  // Determine tab from URL path or search params
-  const getInitialTab = () => {
-    const path = window.location.pathname;
-    if (path.includes('following')) return 'following';
-    if (path.includes('followers')) return 'followers';
+  const pathName = typeof window !== 'undefined' ? window.location.pathname : '';
+  const tabFromPath = pathName.includes('following')
+    ? 'following'
+    : pathName.includes('followers')
+      ? 'followers'
+      : null;
+
+  const initialTab = (() => {
+    if (tabFromPath) return tabFromPath;
     return searchParams.get('tab') || 'followers';
-  };
+  })();
   
-  const [activeTab, setActiveTab] = useState(getInitialTab());
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,8 +36,8 @@ const FollowListPage = ({ user }) => {
   
   // Update tab when URL changes
   useEffect(() => {
-    setActiveTab(getInitialTab());
-  }, [window.location.pathname]);
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   // Fetch profile user info
   useEffect(() => {

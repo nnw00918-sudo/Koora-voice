@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -18,7 +18,7 @@ const SearchUsersPage = ({ user }) => {
   const [followLoading, setFollowLoading] = useState({});
 
   // Debounced search function
-  const searchUsers = useCallback(
+  const searchUsers = useMemo(() =>
     debounce(async (searchQuery) => {
       if (!searchQuery || searchQuery.length < 1) {
         setResults([]);
@@ -41,12 +41,12 @@ const SearchUsersPage = ({ user }) => {
         setLoading(false);
       }
     }, 300),
-    []
-  );
+  []);
 
   // Handle search input change
   useEffect(() => {
     searchUsers(query);
+    return () => searchUsers.cancel();
   }, [query, searchUsers]);
 
   // Handle follow/unfollow
