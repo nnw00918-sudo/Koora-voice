@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
 import { API, WS_BACKEND_URL } from '../config/api';
@@ -262,7 +261,6 @@ const ChatView = memo(function ChatView({
 
 // ============ MAIN COMPONENT ============
 export default function MessagesPage() {
-  const { language } = useLanguage();
   const { isDarkMode } = useSettings();
   const navigate = useNavigate();
   const { conversationId } = useParams();
@@ -276,44 +274,129 @@ export default function MessagesPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [wsConnected, setWsConnected] = useState(false);
   
   const token = localStorage.getItem('token');
   const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const shouldReconnectRef = useRef(true);
+  const currentConversationRef = useRef(null);
+  const messagesSignatureRef = useRef('');
+  const conversationsSignatureRef = useRef('');
+
+  const buildMessagesSignature = useCallback((items = []) => (
+    items
+      .map((item) => `${item.id}|${item.created_at || ''}|${item.read ? 1 : 0}|${item.sending ? 1 : 0}|${item.content || ''}`)
+      .join('~')
+  ), []);
+
+  const buildConversationsSignature = useCallback((items = []) => (
+    items
+      .map((item) => `${item.id}|${item.unread_count || 0}|${item.last_message?.created_at || ''}|${item.last_message?.content || ''}`)
+      .join('~')
+  ), []);
+
+  const updateMessages = useCallback((updater) => {
+    setMessages((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const signature = buildMessagesSignature(next);
+      if (signature === messagesSignatureRef.current) {
+        return prev;
+      }
+      messagesSignatureRef.current = signature;
+      return next;
+    });
+  }, [buildMessagesSignature]);
+
+  const updateConversations = useCallback((updater) => {
+    setConversations((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const signature = buildConversationsSignature(next);
+      if (signature === conversationsSignatureRef.current) {
+        return prev;
+      }
+      conversationsSignatureRef.current = signature;
+      return next;
+    });
+  }, [buildConversationsSignature]);
+
+  const markTempMessageDelivered = useCallback((messageId) => {
+    updateMessages((prev) => {
+      let hasChanges = false;
+      const next = prev.map((item) => {
+        if (item.id !== messageId || !item.sending) {
+          return item;
+        }
+        hasChanges = true;
+        return { ...item, sending: false };
+      });
+      return hasChanges ? next : prev;
+    });
+  }, [updateMessages]);
+
+  const removeMessageById = useCallback((messageId) => {
+    updateMessages((prev) => prev.filter((item) => item.id !== messageId));
+  }, [updateMessages]);
+
+  const pushMessage = useCallback((message) => {
+    updateMessages((prev) => {
+      if (prev.some((item) => item.id === message.id)) {
+        return prev;
+      }
+      return [...prev, message];
+    });
+  }, [updateMessages]);
+
+  const updateConversationLastMessage = useCallback((conversationIdValue, lastMessage) => {
+    updateConversations((prev) => {
+      let hasChanges = false;
+      const next = prev.map((conversation) => {
+        if (conversation.id !== conversationIdValue) {
+          return conversation;
+        }
+
+        if (
+          conversation.last_message?.content === lastMessage.content &&
+          conversation.last_message?.created_at === lastMessage.created_at
+        ) {
+          return conversation;
+        }
+
+        hasChanges = true;
+        return { ...conversation, last_message: lastMessage };
+      });
+
+      return hasChanges ? next : prev;
+    });
+  }, [updateConversations]);
+
+  useEffect(() => {
+    currentConversationRef.current = currentConversation;
+  }, [currentConversation]);
   
   // WebSocket connection for real-time messages
   useEffect(() => {
     if (!token) return;
-    
+
+    shouldReconnectRef.current = true;
+
     const connectWebSocket = () => {
       try {
         const ws = new WebSocket(`${WS_BACKEND_URL}/ws/${token}`);
-        
-        ws.onopen = () => {
-          console.log('WebSocket connected');
-          setWsConnected(true);
-        };
         
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
             
             if (data.type === 'new_message') {
-              // Add new message to current conversation
-              if (currentConversation && data.message.conversation_id === currentConversation.id) {
-                setMessages(prev => {
-                  // Avoid duplicates
-                  if (prev.some(m => m.id === data.message.id)) return prev;
-                  return [...prev, data.message];
-                });
+              const activeConversationId = currentConversationRef.current?.id;
+              if (activeConversationId && data.message.conversation_id === activeConversationId) {
+                pushMessage(data.message);
               }
-              
-              // Update conversation list
-              setConversations(prev => prev.map(c => 
-                c.id === data.message.conversation_id 
-                  ? { ...c, last_message: { content: data.message.content, created_at: data.message.created_at } }
-                  : c
-              ));
+
+              updateConversationLastMessage(data.message.conversation_id, {
+                content: data.message.content,
+                created_at: data.message.created_at
+              });
             }
           } catch (err) {
             console.error('WebSocket message error:', err);
@@ -321,10 +404,13 @@ export default function MessagesPage() {
         };
         
         ws.onclose = () => {
-          console.log('WebSocket disconnected');
-          setWsConnected(false);
-          // Reconnect after 3 seconds
-          setTimeout(connectWebSocket, 3000);
+          if (!shouldReconnectRef.current) {
+            return;
+          }
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+          }
+          reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
         };
         
         ws.onerror = (error) => {
@@ -340,14 +426,18 @@ export default function MessagesPage() {
     connectWebSocket();
     
     return () => {
+      shouldReconnectRef.current = false;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       if (wsRef.current) {
         wsRef.current.close();
       }
     };
-  }, [token, currentConversation]);
+  }, [token, pushMessage, updateConversationLastMessage]);
 
   // Theme classes
-  const theme = {
+  const theme = useMemo(() => ({
     bg: isDarkMode ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F5]',
     headerBg: isDarkMode ? 'bg-black/70' : 'bg-white/90',
     headerBorder: isDarkMode ? 'border-white/10' : 'border-black/5',
@@ -360,9 +450,9 @@ export default function MessagesPage() {
     border: isDarkMode ? 'border-[#1A1A1A]' : 'border-[#E5E5E5]',
     primary: isDarkMode ? '#CCFF00' : '#84CC16',
     ring: isDarkMode ? 'ring-[#262626]' : 'ring-[#E5E5E5]',
-  };
+  }), [isDarkMode]);
 
-  const txt = {
+  const txt = useMemo(() => ({
     messages: 'الرسائل',
     searchUsers: 'ابحث عن مستخدم...',
     noConversations: 'لا توجد محادثات',
@@ -372,7 +462,7 @@ export default function MessagesPage() {
     you: 'أنت',
     noResults: 'لا توجد نتائج',
     startConversation: 'ابدأ المحادثة'
-  };
+  }), []);
 
   const fetchConversations = useCallback(async () => {
     if (!token) {
@@ -384,14 +474,14 @@ export default function MessagesPage() {
         headers: { Authorization: `Bearer ${token}` },
         timeout: 10000 // 10 second timeout
       });
-      setConversations(res.data.conversations || []);
+      updateConversations(res.data.conversations || []);
     } catch (error) {
       console.error('Error fetching conversations');
       // Don't show error to user, just show empty state
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, updateConversations]);
 
   const loadConversation = useCallback(async (convoId) => {
     if (!token) return;
@@ -399,11 +489,11 @@ export default function MessagesPage() {
       const res = await axios.get(`${API}/conversations/${convoId}/messages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessages(res.data.messages || []);
+      updateMessages(res.data.messages || []);
     } catch (error) {
       console.error('Error loading messages');
     }
-  }, [token]);
+  }, [token, updateMessages]);
 
   const searchUsers = useCallback(async (query) => {
     if (!query.trim() || !token) {
@@ -431,7 +521,7 @@ export default function MessagesPage() {
       });
       const convoId = res.data.conversation_id;
       setCurrentConversation({ id: convoId, user });
-      setMessages([]);
+      updateMessages([]);
       setCurrentView('chat');
       setShowSearch(false);
       setSearchQuery('');
@@ -439,7 +529,7 @@ export default function MessagesPage() {
     } catch (error) {
       toast.error('فشل بدء المحادثة');
     }
-  }, [token, navigate]);
+  }, [token, navigate, updateMessages]);
 
   const sendMessage = useCallback(async (content) => {
     if (!currentConversation) return;
@@ -452,7 +542,7 @@ export default function MessagesPage() {
       sending: true
     };
     
-    setMessages(prev => [...prev, tempMessage]);
+    pushMessage(tempMessage);
 
     try {
       // Try WebSocket first for instant delivery
@@ -462,9 +552,7 @@ export default function MessagesPage() {
           conversation_id: currentConversation.id,
           content
         }));
-        setMessages(prev => prev.map(m => 
-          m.id === tempMessage.id ? { ...m, sending: false } : m
-        ));
+        markTempMessageDelivered(tempMessage.id);
       } else {
         // Fallback to HTTP
         await axios.post(
@@ -472,16 +560,14 @@ export default function MessagesPage() {
           { content },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setMessages(prev => prev.map(m => 
-          m.id === tempMessage.id ? { ...m, sending: false } : m
-        ));
+        markTempMessageDelivered(tempMessage.id);
       }
     } catch (error) {
       toast.error('فشل إرسال الرسالة');
-      setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+      removeMessageById(tempMessage.id);
       throw error;
     }
-  }, [currentConversation, token]);
+  }, [currentConversation, token, markTempMessageDelivered, pushMessage, removeMessageById]);
 
   const deleteConversation = useCallback(async () => {
     if (!currentConversation) return;
@@ -492,13 +578,13 @@ export default function MessagesPage() {
       toast.success('تم حذف المحادثة');
       setCurrentView('list');
       setCurrentConversation(null);
-      setMessages([]);
+      updateMessages([]);
       navigate('/messages');
       fetchConversations();
     } catch (error) {
       toast.error('فشل حذف المحادثة');
     }
-  }, [currentConversation, token, navigate, fetchConversations]);
+  }, [currentConversation, token, navigate, fetchConversations, updateMessages]);
 
   const openConversation = useCallback((convo) => {
     setCurrentConversation(convo);
@@ -510,8 +596,9 @@ export default function MessagesPage() {
   const handleBack = useCallback(() => {
     setCurrentView('list');
     setCurrentConversation(null);
+    updateMessages([]);
     navigate('/messages');
-  }, [navigate]);
+  }, [navigate, updateMessages]);
 
   useEffect(() => {
     fetchConversations();
