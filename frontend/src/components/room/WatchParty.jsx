@@ -26,6 +26,7 @@ export const WatchPartyPlayer = ({
   const currentChannel = channels.find(c => c.id === activeChannel);
   const currentUrl = currentChannel?.url || watchParty?.video_url;
   const finalUrl = buildYouTubeEmbedUrl(currentUrl, { mute: isMuted ? 1 : 0 });
+  const proxiedFinalUrl = finalUrl ? `/api/youtube/embed?url=${encodeURIComponent(finalUrl)}` : null;
 
   // All hooks must be called before any conditional returns
   const handleChannelChange = useCallback((channelId) => {
@@ -123,10 +124,10 @@ export const WatchPartyPlayer = ({
     >
       {/* Video Player */}
       <div className="relative bg-black" style={{ height: isExpanded ? '100%' : '180px' }}>
-        {!isRefreshing && finalUrl ? (
+        {!isRefreshing && proxiedFinalUrl ? (
           <iframe
-            key={`${finalUrl}-${refreshKey}`}
-            src={finalUrl}
+            key={`${proxiedFinalUrl}-${refreshKey}`}
+            src={proxiedFinalUrl}
             className="absolute inset-0 w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             referrerPolicy="strict-origin-when-cross-origin"

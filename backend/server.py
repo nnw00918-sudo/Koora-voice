@@ -3731,6 +3731,58 @@ async def get_stream(room_id: str):
     }
 
 
+@api_router.get("/youtube/embed")
+async def youtube_embed_proxy(url: str):
+    """
+    Serve a same-origin HTML wrapper for YouTube embeds.
+    This helps mobile webviews keep a stable referer/client context and
+    avoids YouTube error 153 in some iOS/Capacitor environments.
+    """
+    embed_url = convert_stream_url_to_embed(url, mute=0)
+    parsed = urlparse(embed_url)
+    host = parsed.netloc.lower()
+    if "youtube.com" not in host and "youtube-nocookie.com" not in host:
+        raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+
+    html = f"""<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <style>
+      html, body {{
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }}
+      iframe {{
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+      }}
+    </style>
+  </head>
+  <body>
+    <iframe
+      src="{embed_url}"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+      allowfullscreen
+    ></iframe>
+  </body>
+</html>
+"""
+    response = Response(content=html, media_type="text/html")
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
 # ============== Room News (أخبار الغرفة/الدوانية) ==============
 
 class RoomNewsCreate(BaseModel):
