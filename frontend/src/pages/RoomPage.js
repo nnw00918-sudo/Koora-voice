@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -23,7 +23,7 @@ import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
-import { BACKEND_URL, API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
+import { API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
 // Custom Hooks for Room Features
 import { useRoomPlayback } from '../hooks/useRoomPlayback';
 import { buildYouTubeEmbedUrl, isYouTubeUrl } from '../utils/youtube';
@@ -71,6 +71,9 @@ import {
   ZoomOut
 } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
+
+const MAX_ROOM_MESSAGES = 200;
+const MAX_FLOATING_REACTIONS = 40;
 
 // Remote Video Circle Component for stage avatars
 const RemoteVideoCircle = ({ remoteUser }) => {
@@ -252,8 +255,67 @@ const YallaLiveRoom = ({ user }) => {
   const roomWsRef = useRef(null); // WebSocket for room messages
   const wsReconnectTimeoutRef = useRef(null);
   const roomInitializedRef = useRef(false); // Track if room has been initialized
+  const seatsSignatureRef = useRef('');
+  const participantsSignatureRef = useRef('');
+  const messagesSignatureRef = useRef('0');
+  const roomMembersSignatureRef = useRef('');
+  const screenSharesSignatureRef = useRef('');
 
   const token = localStorage.getItem('token');
+  const shouldAutoScrollRef = useRef(true);
+
+  const serializeForSignature = (value) => {
+    try {
+      return JSON.stringify(value ?? []);
+    } catch {
+      return '';
+    }
+  };
+
+  const buildMessagesSignature = (items = []) => {
+    if (!items.length) return '0';
+    const last = items[items.length - 1];
+    return `${items.length}:${last?.id || ''}:${last?.created_at || ''}`;
+  };
+
+  const filterRoomMessages = (rawMessages = []) =>
+    rawMessages.filter((msg) =>
+      !msg.content?.toLowerCase().includes('test message') &&
+      !msg.content?.toLowerCase().includes('voice test') &&
+      !msg.username?.toLowerCase().includes('test_user')
+    );
+
+  const setMessagesIfChanged = (nextMessagesOrUpdater) => {
+    setMessages((prev) => {
+      const next = typeof nextMessagesOrUpdater === 'function'
+        ? nextMessagesOrUpdater(prev)
+        : nextMessagesOrUpdater;
+      const nextSignature = buildMessagesSignature(next);
+      if (nextSignature === messagesSignatureRef.current) {
+        return prev;
+      }
+      messagesSignatureRef.current = nextSignature;
+      return next;
+    });
+  };
+
+  const updateMessagesFromServer = (incomingMessages = []) => {
+    const filtered = filterRoomMessages(incomingMessages);
+    setMessagesIfChanged(filtered);
+  };
+
+  const pushMessage = (message) => {
+    setMessagesIfChanged((prev) => {
+      if (prev.some((msg) => msg.id === message.id)) {
+        return prev;
+      }
+      return [...prev, message];
+    });
+  };
+
+  const removeMessageById = (messageId) => {
+    setMessagesIfChanged((prev) => prev.filter((msg) => msg.id !== messageId));
+  };
 
   // Keyboard visibility detection for iOS
   useEffect(() => {
@@ -372,8 +434,9 @@ const YallaLiveRoom = ({ user }) => {
   }, [canApproveSeatRequests]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!shouldAutoScrollRef.current) return;
+    requestAnimationFrame(() => scrollToBottom());
+  }, [messages.length]);
 
   // Keep remoteUsersRef in sync with remoteUsers state
   useEffect(() => {
@@ -673,17 +736,7 @@ const YallaLiveRoom = ({ user }) => {
         });
         
         // Update messages - only if changed
-        const filteredMessages = messagesRes.data.filter(msg => 
-          !msg.content?.toLowerCase().includes('test message') &&
-          !msg.content?.toLowerCase().includes('voice test') &&
-          !msg.username?.toLowerCase().includes('test_user')
-        );
-        setMessages(prev => {
-          if (prev.length !== filteredMessages.length) {
-            return filteredMessages;
-          }
-          return prev;
-        });
+        updateMessagesFromServer(messagesRes.data);
         
         // Update participants - only if changed
         const newParticipants = participantsRes.data;
@@ -833,12 +886,7 @@ const YallaLiveRoom = ({ user }) => {
       
       setSeats(seatsRes.data.seats || []);
       
-      const filteredMessages = (messagesRes.data || []).filter(msg => 
-        !msg.content?.toLowerCase().includes('test message') &&
-        !msg.content?.toLowerCase().includes('voice test') &&
-        !msg.username?.toLowerCase().includes('test_user')
-      );
-      setMessages(filteredMessages);
+      updateMessagesFromServer(messagesRes.data || []);
       setParticipants(participantsRes.data || []);
       
       // Check if current user is on stage
@@ -891,14 +939,7 @@ const YallaLiveRoom = ({ user }) => {
   const fetchMessages = async () => {
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/messages`);
-      const filteredMessages = response.data.filter(msg => 
-        !msg.content?.toLowerCase().includes('test message') &&
-        !msg.content?.toLowerCase().includes('voice test') &&
-        !msg.username?.toLowerCase().includes('test_user')
-      );
-      if (filteredMessages.length !== messages.length) {
-        setMessages(filteredMessages);
-      }
+      updateMessagesFromServer(response.data || []);
     } catch (error) {
       console.error('Failed to fetch messages');
     }
@@ -921,16 +962,12 @@ const YallaLiveRoom = ({ user }) => {
       
       if (data.type === 'room_message' && data.room_id === roomId) {
         // Add new message to state
-        setMessages(prev => [...prev, data.message]);
-        // Auto-scroll to bottom
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
+        pushMessage(data.message);
       }
       
       // Handle message deletion broadcast
       if (data.type === 'message_deleted' && data.room_id === roomId) {
-        setMessages(prev => prev.filter(m => m.id !== data.message_id));
+        removeMessageById(data.message_id);
       }
     };
     
@@ -2322,7 +2359,7 @@ const YallaLiveRoom = ({ user }) => {
       });
       
       // Add message to local state
-      setMessages(prev => [...prev, response.data]);
+      pushMessage(response.data);
       setSelectedImage(null);
       toast.success(isRTL ? 'تم إرسال الصورة' : 'Image sent');
     } catch (error) {
@@ -2365,7 +2402,7 @@ const YallaLiveRoom = ({ user }) => {
         content: messageContent,
         ...replyData
       }, { headers: { Authorization: `Bearer ${token}` } });
-      setMessages([...messages, response.data]);
+      pushMessage(response.data);
       setNewMessage('');
       setReplyingTo(null);
       setShowMentionList(false);
@@ -2447,7 +2484,7 @@ const YallaLiveRoom = ({ user }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Remove message from local state immediately
-      setMessages(prev => prev.filter(m => m.id !== messageId));
+      removeMessageById(messageId);
       toast.success(isRTL ? 'تم حذف الرسالة' : 'Message deleted');
     } catch (error) {
       toast.error(error.response?.data?.detail || (isRTL ? 'فشل حذف الرسالة' : 'Failed to delete message'));
