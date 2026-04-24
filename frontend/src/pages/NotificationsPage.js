@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -11,6 +11,22 @@ import {
 } from 'lucide-react';
 
 const WS_URL = WS_BACKEND_URL;
+const NOTIFICATION_TEXT_KEYS = {
+  like: 'likedYourPost',
+  reply: 'repliedToYour',
+  follow: 'startedFollowing',
+  message: 'sentMessage',
+  repost: 'reposted',
+};
+
+const NOTIFICATION_ICON_CONFIG = {
+  like: { Icon: Heart, className: 'w-5 h-5 text-red-500 fill-current' },
+  reply: { Icon: MessageCircle, className: 'w-5 h-5 text-sky-500' },
+  follow: { Icon: UserPlus, className: 'w-5 h-5 text-green-500' },
+  message: { Icon: MessageSquare, className: 'w-5 h-5 text-purple-500' },
+  repost: { Icon: Repeat2, className: 'w-5 h-5 text-green-500' },
+  default: { Icon: Bell, className: 'w-5 h-5 text-slate-500' },
+};
 
 const NotificationsPage = ({ user }) => {
   const navigate = useNavigate();
@@ -66,42 +82,7 @@ const NotificationsPage = ({ user }) => {
     }
   }[language];
 
-  useEffect(() => {
-    fetchNotifications();
-    connectWebSocket();
-    
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, []);
-
-  const connectWebSocket = () => {
-    if (!token) return;
-    
-    const ws = new WebSocket(`${WS_URL}/ws/${token}`);
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'notification') {
-        setNotifications(prev => [data.notification, ...prev]);
-        setUnreadCount(prev => prev + 1);
-        
-        // Play notification sound
-        playNotificationSound();
-        
-        // Vibrate if supported
-        if ('vibrate' in navigator) {
-          navigator.vibrate([100, 50, 100]);
-        }
-      }
-    };
-    
-    wsRef.current = ws;
-  };
-
-  const playNotificationSound = () => {
+  const playNotificationSound = useCallback(() => {
     try {
       // Create a simple notification sound using Web Audio API
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -126,11 +107,11 @@ const NotificationsPage = ({ user }) => {
       oscillator2.start(audioContext.currentTime + 0.15);
       oscillator2.stop(audioContext.currentTime + 0.25);
     } catch (error) {
-      console.log('Audio not available');
+      // Audio might be unavailable in some browsers/devices.
     }
-  };
+  }, []);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API}/notifications`, {
@@ -143,9 +124,58 @@ const NotificationsPage = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const markAllAsRead = async () => {
+  const connectWebSocket = useCallback(() => {
+    if (!token) return;
+    
+    const ws = new WebSocket(`${WS_URL}/ws/${token}`);
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'notification') {
+        setNotifications(prev => [data.notification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+        
+        // Play notification sound
+        playNotificationSound();
+        
+        // Vibrate if supported
+        if ('vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100]);
+        }
+      }
+    };
+    
+    wsRef.current = ws;
+  }, [token, playNotificationSound]);
+
+  useEffect(() => {
+    fetchNotifications();
+    connectWebSocket();
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [connectWebSocket, fetchNotifications]);
+
+  const markNotificationAsRead = useCallback(async (notifId) => {
+    try {
+      await axios.post(`${API}/notifications/${notifId}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n => 
+        n.id === notifId ? { ...n, read: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read');
+    }
+  }, [token]);
+
+  const markAllAsRead = useCallback(async () => {
     try {
       await axios.post(`${API}/notifications/read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
@@ -155,35 +185,34 @@ const NotificationsPage = ({ user }) => {
     } catch (error) {
       console.error('Error marking notifications as read');
     }
-  };
+  }, [token]);
 
-  const handleNotificationClick = async (notif) => {
+  const getNotificationPath = useCallback((notif) => {
+    if (notif.type === 'follow' && notif.from_user?.id) return `/user/${notif.from_user.id}`;
+    if (notif.type === 'message') return '/messages';
+    if (notif.thread_id) return '/threads';
+    return null;
+  }, []);
+
+  const navigateToUserProfile = useCallback((userId, event) => {
+    event?.stopPropagation();
+    if (!userId) return;
+    navigate(`/user/${userId}`);
+  }, [navigate]);
+
+  const handleNotificationClick = useCallback(async (notif) => {
     // Mark as read
     if (!notif.read) {
-      try {
-        await axios.post(`${API}/notifications/${notif.id}/read`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setNotifications(prev => prev.map(n => 
-          n.id === notif.id ? { ...n, read: true } : n
-        ));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      } catch (error) {
-        console.error('Error marking notification as read');
-      }
+      await markNotificationAsRead(notif.id);
     }
     
-    // Navigate based on type
-    if (notif.type === 'follow') {
-      navigate(`/user/${notif.from_user.id}`);
-    } else if (notif.type === 'message') {
-      navigate('/messages');
-    } else if (notif.thread_id) {
-      navigate('/threads');
+    const targetPath = getNotificationPath(notif);
+    if (targetPath) {
+      navigate(targetPath);
     }
-  };
+  }, [getNotificationPath, markNotificationAsRead, navigate]);
 
-  const formatTime = (timestamp) => {
+  const formatTime = useCallback((timestamp) => {
     if (!timestamp) return txt.justNow;
     const now = new Date();
     const date = new Date(timestamp);
@@ -193,40 +222,31 @@ const NotificationsPage = ({ user }) => {
     if (diff < 3600) return `${Math.floor(diff / 60)}${txt.minutesAgo}`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}${txt.hoursAgo}`;
     return `${Math.floor(diff / 86400)}${txt.daysAgo}`;
-  };
+  }, [txt]);
 
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'like': return <Heart className="w-5 h-5 text-red-500 fill-current" />;
-      case 'reply': return <MessageCircle className="w-5 h-5 text-sky-500" />;
-      case 'follow': return <UserPlus className="w-5 h-5 text-green-500" />;
-      case 'message': return <MessageSquare className="w-5 h-5 text-purple-500" />;
-      case 'repost': return <Repeat2 className="w-5 h-5 text-green-500" />;
-      default: return <Bell className="w-5 h-5 text-slate-500" />;
-    }
-  };
+  const getNotificationIcon = useCallback((type) => {
+    const iconConfig = NOTIFICATION_ICON_CONFIG[type] || NOTIFICATION_ICON_CONFIG.default;
+    const IconComponent = iconConfig.Icon;
+    return <IconComponent className={iconConfig.className} />;
+  }, []);
 
-  const getNotificationText = (type) => {
-    switch (type) {
-      case 'like': return txt.likedYourPost;
-      case 'reply': return txt.repliedToYour;
-      case 'follow': return txt.startedFollowing;
-      case 'message': return txt.sentMessage;
-      case 'repost': return txt.reposted;
-      default: return '';
-    }
-  };
+  const getNotificationText = useCallback((type) => {
+    const textKey = NOTIFICATION_TEXT_KEYS[type];
+    return textKey ? txt[textKey] : '';
+  }, [txt]);
+
+  const bottomNavItems = useMemo(() => ([
+    { icon: Home, label: txt.home, path: '/' },
+    { icon: MessageSquare, label: txt.threads, path: '/threads' },
+    { icon: Bell, label: txt.notifications, path: '/notifications', active: true, badge: unreadCount },
+    { icon: User, label: txt.profile, path: '/profile' },
+    { icon: Settings, label: txt.settings, path: '/settings' },
+  ]), [txt, unreadCount]);
 
   const BottomNav = () => (
     <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-slate-800 px-6 py-3 z-50">
       <div className="flex justify-around items-center max-w-lg mx-auto">
-        {[
-          { icon: Home, label: txt.home, path: '/' },
-          { icon: MessageSquare, label: txt.threads, path: '/threads' },
-          { icon: Bell, label: txt.notifications, path: '/notifications', active: true, badge: unreadCount },
-          { icon: User, label: txt.profile, path: '/profile' },
-          { icon: Settings, label: txt.settings, path: '/settings' },
-        ].map((item) => (
+        {bottomNavItems.map((item) => (
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
@@ -298,8 +318,7 @@ const NotificationsPage = ({ user }) => {
                     alt=""
                     className="w-10 h-10 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80"
                     onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/user/${notif.from_user.id}`);
+                      navigateToUserProfile(notif.from_user.id, e);
                     }}
                   />
                 )}
@@ -310,8 +329,7 @@ const NotificationsPage = ({ user }) => {
                     <span 
                       className="font-bold cursor-pointer hover:text-lime-400"
                       onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/user/${notif.from_user?.id}`);
+                        navigateToUserProfile(notif.from_user?.id, e);
                       }}
                     >
                       {notif.from_user?.name || notif.from_user?.username}

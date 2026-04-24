@@ -290,7 +290,6 @@ export default function MessagesPage() {
         const ws = new WebSocket(`${WS_BACKEND_URL}/ws/${token}`);
         
         ws.onopen = () => {
-          console.log('WebSocket connected');
           setWsConnected(true);
         };
         
@@ -321,7 +320,6 @@ export default function MessagesPage() {
         };
         
         ws.onclose = () => {
-          console.log('WebSocket disconnected');
           setWsConnected(false);
           // Reconnect after 3 seconds
           setTimeout(connectWebSocket, 3000);

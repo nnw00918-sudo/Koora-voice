@@ -23,7 +23,7 @@ import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
-import { BACKEND_URL, API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
+import { API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
 // Custom Hooks for Room Features
 import { useRoomPlayback } from '../hooks/useRoomPlayback';
 import { buildYouTubeEmbedUrl, isYouTubeUrl } from '../utils/youtube';
@@ -523,7 +523,6 @@ const YallaLiveRoom = ({ user }) => {
             // Apply saved volume level before playing
             const savedVolume = localStorage.getItem('koora_speakers_volume');
             const volumeLevel = savedVolume ? parseInt(savedVolume) : 100;
-            console.log(`New audio user ${remoteUser.uid} - applying volume ${volumeLevel}%`);
             remoteUser.audioTrack?.setVolume(volumeLevel);
             remoteUser.audioTrack?.play();
             setRemoteUsers(prev => {

@@ -18,10 +18,13 @@ export const WatchPartyPlayer = ({
   const [showControls, setShowControls] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   
-  // Get channels from watchParty
-  const channels = watchParty?.channels || [
-    { id: 1, url: watchParty?.video_url, name: 'قناة 1' },
-  ];
+  // Keep fallback channels stable for hook dependencies
+  const channels = useMemo(() => {
+    if (Array.isArray(watchParty?.channels) && watchParty.channels.length > 0) {
+      return watchParty.channels;
+    }
+    return [{ id: 1, url: watchParty?.video_url, name: 'قناة 1' }];
+  }, [watchParty?.channels, watchParty?.video_url]);
 
   const currentChannel = channels.find(c => c.id === activeChannel);
   const currentUrl = currentChannel?.url || watchParty?.video_url;
