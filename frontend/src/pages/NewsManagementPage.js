@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -49,16 +49,7 @@ const NewsManagementPage = ({ user }) => {
     { value: 'عاجل', label: 'أخبار عاجلة', icon: '🔴' }
   ];
 
-  useEffect(() => {
-    if (!canManageNews) {
-      toast.error('لا تملك صلاحيات للوصول');
-      navigate('/dashboard');
-      return;
-    }
-    fetchNews();
-  }, []);
-
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/news/admin`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -70,7 +61,16 @@ const NewsManagementPage = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (!canManageNews) {
+      toast.error('لا تملك صلاحيات للوصول');
+      navigate('/dashboard');
+      return;
+    }
+    fetchNews();
+  }, [canManageNews, fetchNews, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

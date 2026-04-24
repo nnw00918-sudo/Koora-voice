@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -53,11 +53,7 @@ const Stories = ({ user }) => {
     }
   }[language];
 
-  useEffect(() => {
-    fetchStories();
-  }, []);
-
-  const fetchStories = async () => {
+  const fetchStories = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/stories`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -68,17 +64,13 @@ const Stories = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const openStory = (userIndex) => {
-    setCurrentUserIndex(userIndex);
-    setCurrentStoryIndex(0);
-    setShowViewer(true);
-    setPaused(false);
-    markStoryViewed(storiesData[userIndex]?.stories[0]?.id);
-  };
+  useEffect(() => {
+    fetchStories();
+  }, [fetchStories]);
 
-  const markStoryViewed = async (storyId) => {
+  const markStoryViewed = useCallback(async (storyId) => {
     if (!storyId) return;
     try {
       await axios.post(`${API}/stories/${storyId}/view`, {}, {
@@ -87,9 +79,23 @@ const Stories = ({ user }) => {
     } catch (error) {
       console.error('Error marking story viewed');
     }
-  };
+  }, [token]);
 
-  const nextStory = () => {
+  const openStory = useCallback((userIndex) => {
+    setCurrentUserIndex(userIndex);
+    setCurrentStoryIndex(0);
+    setShowViewer(true);
+    setPaused(false);
+    markStoryViewed(storiesData[userIndex]?.stories[0]?.id);
+  }, [markStoryViewed, storiesData]);
+
+  const closeViewer = useCallback(() => {
+    setShowViewer(false);
+    setShowViewers(false);
+    fetchStories();
+  }, [fetchStories]);
+
+  const nextStory = useCallback(() => {
     const currentUser = storiesData[currentUserIndex];
     if (currentStoryIndex < currentUser.stories.length - 1) {
       const newIndex = currentStoryIndex + 1;
@@ -103,9 +109,9 @@ const Stories = ({ user }) => {
     } else {
       closeViewer();
     }
-  };
+  }, [storiesData, currentUserIndex, currentStoryIndex, markStoryViewed, closeViewer]);
 
-  const prevStory = () => {
+  const prevStory = useCallback(() => {
     if (currentStoryIndex > 0) {
       setCurrentStoryIndex(currentStoryIndex - 1);
     } else if (currentUserIndex > 0) {
@@ -114,13 +120,7 @@ const Stories = ({ user }) => {
       setCurrentUserIndex(newUserIndex);
       setCurrentStoryIndex(newUser.stories.length - 1);
     }
-  };
-
-  const closeViewer = () => {
-    setShowViewer(false);
-    setShowViewers(false);
-    fetchStories();
-  };
+  }, [currentStoryIndex, currentUserIndex, storiesData]);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
@@ -213,7 +213,7 @@ const Stories = ({ user }) => {
       
       return () => clearTimeout(timerRef.current);
     }
-  }, [showViewer, currentUserIndex, currentStoryIndex, paused]);
+  }, [showViewer, paused, nextStory]);
 
   const currentUser = storiesData[currentUserIndex];
   const currentStory = currentUser?.stories[currentStoryIndex];

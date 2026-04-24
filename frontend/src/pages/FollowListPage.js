@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { 
@@ -13,17 +13,18 @@ const FollowListPage = ({ user }) => {
   const navigate = useNavigate();
   const { userId } = useParams();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { isDarkMode } = useSettings();
   
   // Determine tab from URL path or search params
-  const getInitialTab = () => {
-    const path = window.location.pathname;
+  const initialTab = useMemo(() => {
+    const path = location.pathname;
     if (path.includes('following')) return 'following';
     if (path.includes('followers')) return 'followers';
     return searchParams.get('tab') || 'followers';
-  };
+  }, [location.pathname, searchParams]);
   
-  const [activeTab, setActiveTab] = useState(getInitialTab());
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,8 +33,8 @@ const FollowListPage = ({ user }) => {
   
   // Update tab when URL changes
   useEffect(() => {
-    setActiveTab(getInitialTab());
-  }, [window.location.pathname]);
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   // Fetch profile user info
   useEffect(() => {

@@ -134,19 +134,7 @@ const ThreadsPage = ({ user }) => {
     }
   }[language];
 
-  useEffect(() => {
-    fetchThreads();
-  }, [activeTab]);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, [newThread]);
-
-  const fetchThreads = async () => {
+  const fetchThreads = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/threads`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -160,7 +148,19 @@ const ThreadsPage = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, activeTab]);
+
+  useEffect(() => {
+    fetchThreads();
+  }, [fetchThreads]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [newThread]);
 
   const handleFileSelect = (e, type) => {
     const file = e.target.files[0];

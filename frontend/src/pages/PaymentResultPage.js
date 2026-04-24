@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
@@ -18,15 +18,7 @@ const PaymentResultPage = ({ success = true }) => {
   const token = localStorage.getItem('token');
   const sessionId = searchParams.get('session_id');
 
-  useEffect(() => {
-    if (success && sessionId) {
-      confirmPayment();
-    } else if (!success) {
-      setStatus('cancelled');
-    }
-  }, [success, sessionId]);
-
-  const confirmPayment = async () => {
+  const confirmPayment = useCallback(async () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       
@@ -44,7 +36,15 @@ const PaymentResultPage = ({ success = true }) => {
       setStatus('error');
       toast.error(error.response?.data?.detail || 'فشل تأكيد الدفع');
     }
-  };
+  }, [sessionId, token]);
+
+  useEffect(() => {
+    if (success && sessionId) {
+      confirmPayment();
+    } else if (!success) {
+      setStatus('cancelled');
+    }
+  }, [success, sessionId, confirmPayment]);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4" dir={isRTL ? 'rtl' : 'ltr'}>

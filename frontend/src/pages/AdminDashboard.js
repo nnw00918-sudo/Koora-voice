@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -44,16 +44,7 @@ const AdminDashboard = ({ user }) => {
   const isOwner = user.role === 'owner';
   const canPromoteUsers = user.role === 'owner'; // Only owner can change roles
 
-  useEffect(() => {
-    if (user.role !== 'owner') {
-      toast.error('لا تملك صلاحيات للوصول');
-      navigate('/dashboard');
-      return;
-    }
-    fetchAdminData();
-  }, []);
-
-  const fetchAdminData = async () => {
+  const fetchAdminData = useCallback(async () => {
     try {
       const [statsRes, usersRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, {
@@ -72,7 +63,16 @@ const AdminDashboard = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (user.role !== 'owner') {
+      toast.error('لا تملك صلاحيات للوصول');
+      navigate('/dashboard');
+      return;
+    }
+    fetchAdminData();
+  }, [fetchAdminData, navigate, user.role]);
 
   const handleCreateRoom = async (e) => {
     e.preventDefault();

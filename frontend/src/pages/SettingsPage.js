@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -67,17 +67,17 @@ const SettingsPage = ({ user, onLogout }) => {
     sendTest: sendTestPush
   } = usePushNotifications(token);
 
-  useEffect(() => { 
-    fetchUserStats(); 
-  }, []);
-
-  const fetchUserStats = async () => {
+  const fetchUserStats = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
       setUserStats({ followers_count: response.data.followers_count || 0, following_count: response.data.following_count || 0 });
       setProfileData(prev => ({ ...prev, name: response.data.name || response.data.username || prev.name, bio: response.data.bio || prev.bio }));
     } catch (error) { console.error('Failed to fetch user stats'); }
-  };
+  }, [token]);
+
+  useEffect(() => { 
+    fetchUserStats(); 
+  }, [fetchUserStats]);
 
   const fetchBlockedUsers = async () => {
     setLoadingBlocked(true);
