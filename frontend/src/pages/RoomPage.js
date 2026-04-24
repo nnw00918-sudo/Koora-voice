@@ -23,7 +23,7 @@ import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
-import { BACKEND_URL, API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
+import { API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
 // Custom Hooks for Room Features
 import { useRoomPlayback } from '../hooks/useRoomPlayback';
 import { buildYouTubeEmbedUrl, isYouTubeUrl } from '../utils/youtube';
@@ -484,6 +484,31 @@ const YallaLiveRoom = ({ user }) => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const appendRoomMessage = (message) => {
+    setMessages((prevMessages) => [...prevMessages, message]);
+  };
+
+  const removeRoomMessageById = (messageId) => {
+    setMessages((prevMessages) =>
+      prevMessages.filter((message) => message.id !== messageId)
+    );
+  };
+
+  const clearChatComposer = () => {
+    setNewMessage('');
+    setReplyingTo(null);
+    setShowMentionList(false);
+  };
+
+  const removeRemoteUserByUid = (uid, options = { audio: true, video: true }) => {
+    if (options.audio) {
+      setRemoteUsers((prevUsers) => prevUsers.filter((remoteUser) => remoteUser.uid !== uid));
+    }
+    if (options.video) {
+      setRemoteVideoUsers((prevUsers) => prevUsers.filter((remoteUser) => remoteUser.uid !== uid));
+    }
   };
 
   // Track if initialization is in progress
