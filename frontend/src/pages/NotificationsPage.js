@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { BACKEND_URL, API } from '../config/api';
+import { API, WS_BACKEND_URL } from '../config/api';
 import { 
   Home, MessageSquare, User, Settings, ArrowRight, ArrowLeft,
   Heart, MessageCircle, UserPlus, Bell, Check, Repeat2
 } from 'lucide-react';
 
-const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+const WS_URL = WS_BACKEND_URL;
 
 const NotificationsPage = ({ user }) => {
   const navigate = useNavigate();

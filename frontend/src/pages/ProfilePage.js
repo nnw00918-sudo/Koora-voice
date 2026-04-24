@@ -11,7 +11,7 @@ import {
 import BottomNavigation from '../components/BottomNavigation';
 import { GlowingAvatar, FRAME_COLORS, ProfileTabs } from '../components/profile';
 import { useSettings } from '../contexts/SettingsContext';
-import { BACKEND_URL as API } from '../config/api';
+import { API } from '../config/api';
 
 // Animated cover background
 const AnimatedCover = () => (
@@ -170,7 +170,7 @@ const ProfilePage = ({ user }) => {
           setLoading(false);
           return;
         }
-        const res = await axios.get(`${API}/api/auth/me`, {
+        const res = await axios.get(`${API}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setProfileData(res.data);
@@ -210,22 +210,22 @@ const ProfilePage = ({ user }) => {
       
       try {
         if (activeTab === 'posts') {
-          const res = await axios.get(`${API}/api/users/${userData.id}/threads`, {
+          const res = await axios.get(`${API}/users/${userData.id}/threads`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setMyPosts(res.data.threads || res.data || []);
         } else if (activeTab === 'likes') {
-          const res = await axios.get(`${API}/api/users/${userData.id}/liked-threads`, {
+          const res = await axios.get(`${API}/users/${userData.id}/liked-threads`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setMyLikes(res.data.threads || res.data || []);
         } else if (activeTab === 'reposts') {
-          const res = await axios.get(`${API}/api/users/${userData.id}/reposts`, {
+          const res = await axios.get(`${API}/users/${userData.id}/reposts`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setMyReposts(res.data.threads || res.data || []);
         } else if (activeTab === 'replies') {
-          const res = await axios.get(`${API}/api/users/${userData.id}/replies`, {
+          const res = await axios.get(`${API}/users/${userData.id}/replies`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setMyReplies(res.data.replies || res.data || []);
@@ -268,7 +268,7 @@ const ProfilePage = ({ user }) => {
     
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(`${API}/api/upload/image`, formData, {
+      const res = await axios.post(`${API}/upload/image`, formData, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
       });
       setEditData(prev => ({ ...prev, avatar: res.data.url }));
@@ -283,7 +283,7 @@ const ProfilePage = ({ user }) => {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API}/api/auth/profile`, editData, {
+      await axios.put(`${API}/auth/profile`, editData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('تم حفظ التغييرات');
@@ -301,7 +301,7 @@ const ProfilePage = ({ user }) => {
     e?.stopPropagation();
     const token = localStorage.getItem('token');
     try {
-      await axios.post(`${API}/api/threads/${threadId}/like`, {}, {
+      await axios.post(`${API}/threads/${threadId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const updateList = (list) => list.map(p => 
