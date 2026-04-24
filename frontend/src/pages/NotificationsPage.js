@@ -153,7 +153,7 @@ const NotificationsPage = () => {
       profile: 'Profile',
       settings: 'Settings',
     }
-  }), [language])[language];
+  }), [])[language];
 
   const unreadCount = useMemo(
     () => notifications.reduce((count, item) => count + (item.read ? 0 : 1), 0),
