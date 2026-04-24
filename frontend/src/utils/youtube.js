@@ -1,4 +1,7 @@
-const DEFAULT_YOUTUBE_ORIGIN = 'https://www.youtube.com';
+const DEFAULT_YOUTUBE_ORIGIN =
+  process.env.REACT_APP_FRONTEND_ORIGIN ||
+  process.env.REACT_APP_CANONICAL_ORIGIN ||
+  'https://pitch-chat.preview.emergentagent.com';
 
 const ensureUrl = (value) => {
   if (!value || typeof value !== 'string') return null;
@@ -22,8 +25,15 @@ const ensureUrl = (value) => {
 
 const getSafeOrigin = () => {
   if (typeof window === 'undefined') return DEFAULT_YOUTUBE_ORIGIN;
-  const { origin, protocol } = window.location;
-  if (origin && /^https?:$/i.test(protocol)) return origin;
+
+  const { origin, protocol, hostname } = window.location;
+  const isHttp = /^https?:$/i.test(protocol);
+  const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes((hostname || '').toLowerCase());
+
+  // iOS/Capacitor webviews often run on localhost which can trigger
+  // YouTube client-identification issues (error 153) for embeds.
+  if (origin && isHttp && !isLocalhost) return origin;
+
   return DEFAULT_YOUTUBE_ORIGIN;
 };
 
