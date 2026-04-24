@@ -3924,7 +3924,7 @@ const YallaLiveRoom = ({ user }) => {
           
           {/* ===== CHAT SECTION ===== */}
           <div 
-            className="flex flex-col relative overflow-hidden bg-transparent"
+            className={`flex flex-col relative overflow-hidden ${roomBackground ? 'bg-black/70 backdrop-blur-sm' : 'bg-transparent'}`}
             style={{
               backgroundImage: chatBackground ? `url(${chatBackground})` : 'none',
               backgroundSize: 'cover',
@@ -3987,8 +3987,10 @@ const YallaLiveRoom = ({ user }) => {
             {/* Messages - Scrollable area */}
             <div className="flex-1 overflow-y-auto space-y-2 hide-scrollbar relative z-10 p-2">
               {messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm font-cairo">
-                  {t('noMessages')}
+                <div className="flex items-center justify-center h-full">
+                  <span className="text-slate-300 text-sm font-cairo bg-slate-900/70 px-4 py-2 rounded-xl">
+                    {t('noMessages')}
+                  </span>
                 </div>
               ) : (
                 messages.slice(-20).map((message, index) => {
@@ -4085,7 +4087,7 @@ const YallaLiveRoom = ({ user }) => {
                       <p className={`font-almarai text-sm leading-relaxed ${
                         message.is_vip 
                           ? 'text-amber-200 bg-gradient-to-r from-amber-500/10 to-transparent px-2 py-1 rounded-lg border-r-2 border-amber-500/50' 
-                          : 'text-slate-300'
+                          : 'text-slate-200 bg-slate-900/60 px-2 py-1 rounded-lg'
                       }`}>
                         {renderMessageContent(message.content)}
                       </p>
