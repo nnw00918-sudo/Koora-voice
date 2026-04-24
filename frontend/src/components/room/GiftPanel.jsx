@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { X, Coins, Gift, Send, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { playGiftSound, playStadiumCheer } from '../../utils/soundManager';
-import { BACKEND_URL, API } from '../../config/api';
+import { API } from '../../config/api';
 
 /**
  * Gift Panel Component
@@ -100,8 +100,6 @@ const GiftPanel = ({
       setBalance(response.data.remaining_coins);
       
       // إضافة رسالة الهدية في الدردشة مباشرة
-      console.log('=== GIFT DEBUG: About to add message ===');
-      console.log('setMessages function exists:', !!setMessages);
       if (setMessages) {
         const giftMessage = {
           id: `gift_${Date.now()}`,
@@ -112,15 +110,7 @@ const GiftPanel = ({
           created_at: new Date().toISOString(),
           is_gift: true
         };
-        console.log('Gift message created:', giftMessage);
-        setMessages(prev => {
-          console.log('Previous messages count:', prev.length);
-          const newMessages = [...prev, giftMessage];
-          console.log('New messages count:', newMessages.length);
-          return newMessages;
-        });
-      } else {
-        console.log('setMessages is undefined!');
+        setMessages(prev => [...prev, giftMessage]);
       }
       
       setSelectedGift(null);

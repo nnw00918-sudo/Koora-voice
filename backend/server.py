@@ -1216,10 +1216,7 @@ async def update_room_chat_background(room_id: str, data: dict, current_user: Us
     return {"message": "تم تحديث خلفية الدردشة", "chat_background": background_url}
 
 
-import os
-import base64
 import uuid
-from pathlib import Path
 
 # Create uploads directory
 UPLOAD_DIR = Path("/app/backend/uploads")
@@ -1260,8 +1257,6 @@ async def upload_image(file: UploadFile = File(...), current_user: User = Depend
 @api_router.get("/uploads/{filename}")
 async def get_uploaded_file(filename: str):
     """Serve uploaded files"""
-    from fastapi.responses import FileResponse
-    
     file_path = UPLOAD_DIR / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="الملف غير موجود")

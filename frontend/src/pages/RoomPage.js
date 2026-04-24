@@ -24,8 +24,6 @@ import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
 import { BACKEND_URL, API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
-// Custom Hooks for Room Features
-import { useRoomPlayback } from '../hooks/useRoomPlayback';
 import { buildYouTubeEmbedUrl, isYouTubeUrl } from '../utils/youtube';
 import {
   Mic,
@@ -61,10 +59,8 @@ import {
   Edit3,
   Lock,
   Unlock,
-  Circle,
   StopCircle,
   Youtube,
-  BarChart3,
   Type,
   Download,
   ZoomIn,
