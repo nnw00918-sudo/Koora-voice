@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import Stories from '../components/Stories';
 import BottomNavigation from '../components/BottomNavigation';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
   Share2, MoreHorizontal, Image, X, Video, MapPin, Smile, CalendarDays,
@@ -134,19 +134,7 @@ const ThreadsPage = ({ user }) => {
     }
   }[language];
 
-  useEffect(() => {
-    fetchThreads();
-  }, [activeTab]);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, [newThread]);
-
-  const fetchThreads = async () => {
+  const fetchThreads = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/threads`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -160,7 +148,19 @@ const ThreadsPage = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, activeTab]);
+
+  useEffect(() => {
+    fetchThreads();
+  }, [fetchThreads]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [newThread]);
 
   const handleFileSelect = (e, type) => {
     const file = e.target.files[0];
@@ -217,12 +217,7 @@ const ThreadsPage = ({ user }) => {
   const handlePostThread = async () => {
     // Read directly from textarea ref for uncontrolled component
     const content = textareaRef.current?.value || newThread || '';
-    console.log('[THREADS] Posting thread with content:', content);
-    console.log('[THREADS] Selected media:', selectedMedia);
-    console.log('[THREADS] Twitter URL:', twitterUrl);
-    
     if (!content.trim() && !selectedMedia && !twitterUrl) {
-      console.log('[THREADS] Nothing to post');
       return;
     }
     setPosting(true);

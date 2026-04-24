@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { useLanguage, LanguageToggle } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import BottomNavigation from '../components/BottomNavigation';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   Users, 
   LogOut, 

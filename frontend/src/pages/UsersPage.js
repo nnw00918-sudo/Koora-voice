@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, UserPlus, UserCheck } from 'lucide-react';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 
 const UsersPage = ({ user }) => {
   const navigate = useNavigate();
@@ -15,11 +15,7 @@ const UsersPage = ({ user }) => {
 
   const token = localStorage.getItem('token');
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/users`);
       const filteredUsers = response.data.filter(u => u.id !== user.id);
@@ -29,7 +25,11 @@ const UsersPage = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.id]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleFollow = async (userId) => {
     const isFollowing = followingIds.has(userId);

@@ -160,7 +160,7 @@ export const SettingsProvider = ({ children }) => {
         setSettings(prev => ({ ...prev, ...serverSettings }));
       }
     } catch (error) {
-      console.log('Using local settings');
+      console.debug('Using local settings');
     }
   };
 
