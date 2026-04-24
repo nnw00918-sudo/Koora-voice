@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { ArrowLeft, Radio, Image as ImageIcon } from 'lucide-react';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 
 const CreateRoomPage = ({ user }) => {
   const navigate = useNavigate();

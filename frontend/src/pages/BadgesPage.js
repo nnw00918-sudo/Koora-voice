@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage, LanguageToggle } from '../contexts/LanguageContext';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import {
   Trophy,
   Medal,

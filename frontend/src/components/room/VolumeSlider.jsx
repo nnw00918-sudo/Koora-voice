@@ -16,7 +16,6 @@ export const VolumeSlider = ({
   
   const handleChange = (e) => {
     const newValue = parseInt(e.target.value, 10);
-    console.log('Volume slider changed to:', newValue);
     onChange(newValue);
   };
 

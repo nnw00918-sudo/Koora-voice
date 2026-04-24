@@ -88,9 +88,8 @@ export const playSound = (soundKey, customVolume) => {
     
     const playPromise = audio.play();
     if (playPromise !== undefined) {
-      playPromise.catch(error => {
+      playPromise.catch(() => {
         // Auto-play was prevented, user hasn't interacted with page yet
-        console.log('Sound play prevented:', error.message);
       });
     }
   } catch (error) {
