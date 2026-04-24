@@ -3519,9 +3519,14 @@ def _get_frontend_origin() -> str:
 
     parsed = urlparse(raw_origin)
     scheme = parsed.scheme if parsed.scheme in ("http", "https") else "https"
-    host = parsed.netloc or parsed.path
+    host = (parsed.netloc or parsed.path or "").strip().lower()
     if not host:
         host = "pitch-chat.preview.emergentagent.com"
+
+    # Localhost/file-based origins are not stable YouTube API clients
+    # and frequently trigger embed error 153 in mobile webviews.
+    if host in ("localhost", "127.0.0.1", "0.0.0.0") or host.endswith(".local"):
+        return "https://www.youtube.com"
 
     return f"{scheme}://{host}"
 
