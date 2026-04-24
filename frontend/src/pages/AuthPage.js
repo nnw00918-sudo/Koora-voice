@@ -29,8 +29,6 @@ const AuthPage = ({ onLogin }) => {
     if (loading) return;
     
     setLoading(true);
-    console.log('[AUTH] Starting login attempt...');
-    console.log('[AUTH] API URL:', API);
 
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
@@ -38,14 +36,9 @@ const AuthPage = ({ onLogin }) => {
         ? { identifier: formData.identifier, password: formData.password }
         : { email: formData.email, password: formData.password, username: formData.username };
 
-      console.log('[AUTH] Endpoint:', `${API}${endpoint}`);
-      console.log('[AUTH] Payload:', JSON.stringify(payload));
-
       const response = await axios.post(`${API}${endpoint}`, payload);
-      console.log('[AUTH] Response received:', response.status);
       
       const { access_token, user } = response.data;
-      console.log('[AUTH] Login successful for user:', user?.username);
 
       onLogin(user, access_token);
     } catch (error) {
@@ -60,7 +53,6 @@ const AuthPage = ({ onLogin }) => {
 
   // Handle button click/touch for iOS
   const handleButtonClick = (e) => {
-    console.log('[AUTH] Button clicked/touched');
     e.preventDefault();
     e.stopPropagation();
     handleSubmit(e);

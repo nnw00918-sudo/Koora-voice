@@ -217,12 +217,8 @@ const ThreadsPage = ({ user }) => {
   const handlePostThread = async () => {
     // Read directly from textarea ref for uncontrolled component
     const content = textareaRef.current?.value || newThread || '';
-    console.log('[THREADS] Posting thread with content:', content);
-    console.log('[THREADS] Selected media:', selectedMedia);
-    console.log('[THREADS] Twitter URL:', twitterUrl);
-    
+
     if (!content.trim() && !selectedMedia && !twitterUrl) {
-      console.log('[THREADS] Nothing to post');
       return;
     }
     setPosting(true);
