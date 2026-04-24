@@ -381,7 +381,7 @@ export default function MessagesPage() {
         wsRef.current.close();
       }
     };
-  }, [token, currentConversation]);
+  }, [token, currentConversation, updateConversationLastMessage]);
 
   const theme = getMessagesTheme(isDarkMode);
 
