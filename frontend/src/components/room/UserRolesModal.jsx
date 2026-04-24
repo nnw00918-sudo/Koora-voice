@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { BACKEND_URL, API } from '../../config/api';
+import { API } from '../../config/api';
 
 // Primary roles (user can have only one)
 const PRIMARY_ROLES = [

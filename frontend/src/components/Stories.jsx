@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   X, Plus, ChevronLeft, ChevronRight, Eye, Trash2, 
   Image as ImageIcon, Camera, Send, Pause, Play

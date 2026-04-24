@@ -9,7 +9,7 @@ import { usePushNotifications } from '../hooks/usePushNotifications';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import BottomNavigation from '../components/BottomNavigation';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   ArrowLeft, ArrowRight, Home, Trophy, Settings, Bell, Moon, Sun, Volume2, VolumeX,
   Shield, LogOut, ChevronLeft, ChevronRight, User, Lock, Eye, EyeOff, Globe, Palette,

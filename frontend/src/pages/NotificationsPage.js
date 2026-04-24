@@ -126,7 +126,7 @@ const NotificationsPage = ({ user }) => {
       oscillator2.start(audioContext.currentTime + 0.15);
       oscillator2.stop(audioContext.currentTime + 0.25);
     } catch (error) {
-      console.log('Audio not available');
+      // Silent fallback when audio APIs are unavailable.
     }
   };
 

@@ -66,7 +66,7 @@ if ('serviceWorker' in navigator) {
     if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
       // Handle notification click - navigate to URL
       const { url, notificationType, action } = event.data;
-      console.log('Notification clicked:', notificationType, action, url);
+      console.debug('Notification clicked:', notificationType, action, url);
       // The service worker already navigates, this is for additional handling if needed
     }
   });

@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   ArrowRight, ArrowLeft, UserPlus, UserMinus, 
   MessageSquare, MoreHorizontal, Heart, MessageCircle,

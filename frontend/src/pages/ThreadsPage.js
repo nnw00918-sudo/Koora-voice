@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
 import Stories from '../components/Stories';
 import BottomNavigation from '../components/BottomNavigation';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   Home, Trophy, Settings, MessageCircle, Heart, MessageSquare,
   Share2, MoreHorizontal, Image, X, Video, MapPin, Smile, CalendarDays,
@@ -217,12 +217,7 @@ const ThreadsPage = ({ user }) => {
   const handlePostThread = async () => {
     // Read directly from textarea ref for uncontrolled component
     const content = textareaRef.current?.value || newThread || '';
-    console.log('[THREADS] Posting thread with content:', content);
-    console.log('[THREADS] Selected media:', selectedMedia);
-    console.log('[THREADS] Twitter URL:', twitterUrl);
-    
     if (!content.trim() && !selectedMedia && !twitterUrl) {
-      console.log('[THREADS] Nothing to post');
       return;
     }
     setPosting(true);

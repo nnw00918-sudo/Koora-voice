@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage, LanguageToggle } from '../contexts/LanguageContext';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import {
   Trophy,
   Medal,
@@ -58,13 +58,7 @@ const BadgesPage = ({ user: propUser }) => {
     }
   }, [propUser]);
   
-  // Debug logging
   useEffect(() => {
-    console.log('BadgesPage mounted, user:', user?.id, 'propUser:', propUser?.id);
-  }, []);
-
-  useEffect(() => {
-    console.log('User changed, fetching data:', user?.id);
     if (user?.id) {
       fetchData();
     }
@@ -76,7 +70,6 @@ const BadgesPage = ({ user: propUser }) => {
     }
     try {
       setLoading(true);
-      console.log('Fetching badges data for user:', user.id);
       const headers = { Authorization: `Bearer ${token}` };
       
       const [badgesRes, userBadgesRes, statsRes, leaderboardRes] = await Promise.all([

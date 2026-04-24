@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { BACKEND_URL, API } from '../../config/api';
+import { API } from '../../config/api';
 import {
   Users,
   Mic,

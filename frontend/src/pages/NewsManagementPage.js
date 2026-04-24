@@ -19,7 +19,7 @@ import {
   Save,
   X
 } from 'lucide-react';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 
 const NewsManagementPage = ({ user }) => {
   const navigate = useNavigate();
