@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, XCircle, Loader2, Home, ArrowRight } from 'lucide-react';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 
 const PaymentResultPage = ({ success = true }) => {
   const navigate = useNavigate();
@@ -18,15 +18,7 @@ const PaymentResultPage = ({ success = true }) => {
   const token = localStorage.getItem('token');
   const sessionId = searchParams.get('session_id');
 
-  useEffect(() => {
-    if (success && sessionId) {
-      confirmPayment();
-    } else if (!success) {
-      setStatus('cancelled');
-    }
-  }, [success, sessionId]);
-
-  const confirmPayment = async () => {
+  const confirmPayment = useCallback(async () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       
@@ -44,7 +36,15 @@ const PaymentResultPage = ({ success = true }) => {
       setStatus('error');
       toast.error(error.response?.data?.detail || 'فشل تأكيد الدفع');
     }
-  };
+  }, [sessionId, token]);
+
+  useEffect(() => {
+    if (success && sessionId) {
+      confirmPayment();
+    } else if (!success) {
+      setStatus('cancelled');
+    }
+  }, [success, sessionId, confirmPayment]);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4" dir={isRTL ? 'rtl' : 'ltr'}>
