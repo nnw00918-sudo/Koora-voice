@@ -19,6 +19,7 @@ import time
 import json
 import httpx
 import functools
+from urllib.parse import urlparse, parse_qs, urlencode
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -3505,6 +3506,128 @@ class StreamRequest(BaseModel):
 class StreamSlotsUpdate(BaseModel):
     slots: dict  # {"1": "url1", "2": "url2", ...}
 
+
+def _get_frontend_origin() -> str:
+    raw_origin = (
+        os.environ.get("FRONTEND_ORIGIN")
+        or os.environ.get("FRONTEND_DOMAIN")
+        or "https://pitch-chat.preview.emergentagent.com"
+    ).strip()
+
+    if "://" not in raw_origin:
+        raw_origin = f"https://{raw_origin.lstrip('/')}"
+
+    parsed = urlparse(raw_origin)
+    scheme = parsed.scheme if parsed.scheme in ("http", "https") else "https"
+    host = parsed.netloc or parsed.path
+    if not host:
+        host = "pitch-chat.preview.emergentagent.com"
+
+    return f"{scheme}://{host}"
+
+
+def _extract_youtube_video_id(parsed_url) -> Optional[str]:
+    host = parsed_url.netloc.lower()
+    path_parts = [part for part in parsed_url.path.split("/") if part]
+    query = parse_qs(parsed_url.query)
+
+    if "youtu.be" in host:
+        return path_parts[0] if path_parts else None
+
+    if parsed_url.path == "/watch":
+        return query.get("v", [None])[0]
+
+    if path_parts and path_parts[0] in ("live", "shorts", "v") and len(path_parts) > 1:
+        return path_parts[1]
+
+    if path_parts and path_parts[0] == "embed" and len(path_parts) > 1 and path_parts[1] != "live_stream":
+        return path_parts[1]
+
+    return query.get("v", [None])[0]
+
+
+def _extract_youtube_channel_ref(parsed_url) -> Optional[str]:
+    path_parts = [part for part in parsed_url.path.split("/") if part]
+    query = parse_qs(parsed_url.query)
+
+    if path_parts and path_parts[0] == "embed" and len(path_parts) > 1 and path_parts[1] == "live_stream":
+        return query.get("channel", [None])[0]
+
+    if path_parts and path_parts[0].startswith("@"):
+        return path_parts[0][1:]
+
+    if path_parts and path_parts[0] in ("channel", "c") and len(path_parts) > 1:
+        return path_parts[1]
+
+    return None
+
+
+def convert_stream_url_to_embed(stream_url: str, mute: int = 0) -> str:
+    stream_url = (stream_url or "").strip()
+    if not stream_url:
+        return stream_url
+
+    origin = _get_frontend_origin()
+    frontend_host = urlparse(origin).hostname or "pitch-chat.preview.emergentagent.com"
+    lower_url = stream_url.lower()
+
+    parsed = urlparse(stream_url)
+    if not parsed.scheme and ("youtube" in lower_url or "youtu.be" in lower_url):
+        parsed = urlparse(f"https://{stream_url}")
+    host = parsed.netloc.lower()
+
+    # YouTube URLs
+    if any(domain in host for domain in ("youtube.com", "youtube-nocookie.com", "youtu.be")):
+        youtube_common = {
+            "autoplay": "1",
+            "playsinline": "1",
+            "enablejsapi": "1",
+            "rel": "0",
+            "modestbranding": "1",
+            "mute": str(1 if mute else 0),
+            "origin": origin,
+            "widget_referrer": origin,
+        }
+
+        channel_ref = _extract_youtube_channel_ref(parsed)
+        if channel_ref:
+            return f"https://www.youtube.com/embed/live_stream?{urlencode({**youtube_common, 'channel': channel_ref})}"
+
+        video_id = _extract_youtube_video_id(parsed)
+        if video_id:
+            return f"https://www.youtube.com/embed/{video_id}?{urlencode(youtube_common)}"
+
+        return stream_url
+
+    # Twitch URL conversion
+    if "twitch.tv" in lower_url:
+        channel = ""
+        if "twitch.tv/" in lower_url:
+            channel = stream_url.split("twitch.tv/")[1].split("/")[0].split("?")[0]
+        if channel:
+            twitch_params = urlencode({
+                "channel": channel,
+                "parent": frontend_host,
+                "autoplay": "true",
+                "muted": "false",
+            })
+            return f"https://player.twitch.tv/?{twitch_params}"
+
+    # Dailymotion support
+    if "dailymotion.com" in lower_url:
+        if "/video/" in lower_url:
+            video_id = stream_url.split("/video/")[1].split("?")[0]
+            return f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
+        if "/live/" in lower_url:
+            video_id = stream_url.split("/live/")[1].split("?")[0]
+            return f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
+
+    # Facebook Video support
+    if "facebook.com" in lower_url and "/videos/" in lower_url:
+        return f"https://www.facebook.com/plugins/video.php?href={stream_url}&autoplay=true"
+
+    return stream_url
+
 @api_router.post("/rooms/{room_id}/stream/start")
 async def start_stream(room_id: str, stream_data: StreamRequest, current_user: User = Depends(get_current_user)):
     """Start a live stream in the room - System Owner only"""
@@ -3515,52 +3638,8 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
-    # Convert YouTube/Twitch URLs to embed format
     stream_url = stream_data.url.strip()
-    embed_url = stream_url
-    
-    # YouTube Channel - live stream
-    if "youtube.com/@" in stream_url or "youtube.com/channel/" in stream_url or "youtube.com/c/" in stream_url:
-        channel_id = ""
-        if "youtube.com/@" in stream_url:
-            channel_id = stream_url.split("@")[1].split("/")[0].split("?")[0]
-        elif "youtube.com/channel/" in stream_url:
-            channel_id = stream_url.split("/channel/")[1].split("/")[0].split("?")[0]
-        elif "youtube.com/c/" in stream_url:
-            channel_id = stream_url.split("/c/")[1].split("/")[0].split("?")[0]
-        if channel_id:
-            embed_url = f"https://www.youtube.com/embed/live_stream?channel={channel_id}&autoplay=1"
-    
-    # YouTube Video URL conversion (including live streams)
-    elif "youtube.com/watch" in stream_url or "youtu.be" in stream_url or "youtube.com/live" in stream_url:
-        video_id = ""
-        if "youtube.com/watch" in stream_url:
-            video_id = stream_url.split("v=")[1].split("&")[0] if "v=" in stream_url else ""
-        elif "youtube.com/live" in stream_url:
-            video_id = stream_url.split("/live/")[1].split("?")[0] if "/live/" in stream_url else ""
-        else:
-            video_id = stream_url.split("/")[-1].split("?")[0]
-        if video_id:
-            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=0&playsinline=1"
-    
-    # Twitch URL conversion
-    elif "twitch.tv" in stream_url:
-        channel = stream_url.split("twitch.tv/")[1].split("/")[0] if "twitch.tv/" in stream_url else ""
-        if channel:
-            embed_url = f"https://player.twitch.tv/?channel={channel}&parent={os.environ.get('FRONTEND_DOMAIN', 'pitch-chat.preview.emergentagent.com')}"
-    
-    # Dailymotion support
-    elif "dailymotion.com" in stream_url:
-        if "/video/" in stream_url:
-            video_id = stream_url.split("/video/")[1].split("?")[0]
-            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
-        elif "/live/" in stream_url:
-            video_id = stream_url.split("/live/")[1].split("?")[0]
-            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
-    
-    # Facebook Video support
-    elif "facebook.com" in stream_url and "/videos/" in stream_url:
-        embed_url = f"https://www.facebook.com/plugins/video.php?href={stream_url}&autoplay=true"
+    embed_url = convert_stream_url_to_embed(stream_url, mute=0)
     
     await db.rooms.update_one(
         {"id": room_id},
@@ -3606,49 +3685,7 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
     if not stream_url:
         raise HTTPException(status_code=400, detail="هذا الرابط فارغ")
     
-    # Convert to embed URL
-    embed_url = stream_url
-    
-    # YouTube Channel - live stream
-    if "youtube.com/@" in stream_url or "youtube.com/channel/" in stream_url or "youtube.com/c/" in stream_url:
-        channel_id = ""
-        if "youtube.com/@" in stream_url:
-            channel_id = stream_url.split("@")[1].split("/")[0].split("?")[0]
-        elif "youtube.com/channel/" in stream_url:
-            channel_id = stream_url.split("/channel/")[1].split("/")[0].split("?")[0]
-        elif "youtube.com/c/" in stream_url:
-            channel_id = stream_url.split("/c/")[1].split("/")[0].split("?")[0]
-        if channel_id:
-            embed_url = f"https://www.youtube.com/embed/live_stream?channel={channel_id}&autoplay=1"
-    
-    # YouTube Video
-    elif "youtube.com/watch" in stream_url or "youtu.be" in stream_url or "youtube.com/live" in stream_url:
-        video_id = ""
-        if "youtube.com/watch" in stream_url:
-            video_id = stream_url.split("v=")[1].split("&")[0] if "v=" in stream_url else ""
-        elif "youtube.com/live" in stream_url:
-            video_id = stream_url.split("/live/")[1].split("?")[0] if "/live/" in stream_url else ""
-        else:
-            video_id = stream_url.split("/")[-1].split("?")[0]
-        if video_id:
-            embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1"
-    
-    # Twitch
-    elif "twitch.tv" in stream_url:
-        channel = stream_url.split("twitch.tv/")[1].split("/")[0] if "twitch.tv/" in stream_url else ""
-        if channel:
-            embed_url = f"https://player.twitch.tv/?channel={channel}&parent=pitch-chat.preview.emergentagent.com"
-    # Dailymotion support
-    elif "dailymotion.com" in stream_url:
-        if "/video/" in stream_url:
-            video_id = stream_url.split("/video/")[1].split("?")[0]
-            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
-        elif "/live/" in stream_url:
-            video_id = stream_url.split("/live/")[1].split("?")[0]
-            embed_url = f"https://www.dailymotion.com/embed/video/{video_id}?autoplay=1&quality=1080&ui-logo=0"
-    # Facebook Video support
-    elif "facebook.com" in stream_url and "/videos/" in stream_url:
-        embed_url = f"https://www.facebook.com/plugins/video.php?href={stream_url}&autoplay=true"
+    embed_url = convert_stream_url_to_embed(stream_url, mute=0)
     
     await db.rooms.update_one(
         {"id": room_id},
