@@ -49,6 +49,61 @@ const PageLoader = () => (
   </div>
 );
 
+class RoomPageErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    console.error('RoomPage crashed:', error);
+  }
+
+  handleReload = () => {
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
+
+  handleGoDashboard = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/dashboard';
+    }
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-6" dir="rtl">
+          <div className="max-w-sm w-full rounded-2xl border border-red-500/40 bg-[#141414] p-5 text-center">
+            <p className="text-white font-cairo text-base mb-4">حدث خطأ أثناء فتح الغرفة</p>
+            <div className="flex gap-2">
+              <button
+                onClick={this.handleReload}
+                className="flex-1 py-2.5 rounded-lg bg-lime-500 text-black font-cairo font-bold"
+              >
+                إعادة التحميل
+              </button>
+              <button
+                onClick={this.handleGoDashboard}
+                className="flex-1 py-2.5 rounded-lg bg-white/15 text-white font-cairo font-bold"
+              >
+                رجوع
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Register Push Notification Service Worker
 if ('serviceWorker' in navigator) {
   // Keep sw-push.js for push notifications, unregister others
@@ -130,7 +185,16 @@ function App() {
                 <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <AuthPage onLogin={handleLogin} isRegister />} />
                 <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" /> : <ForgotPasswordPage />} />
                 <Route path="/dashboard" element={user ? <DashboardPage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
-                <Route path="/room/:roomId" element={user ? <RoomPage user={user} updateUser={updateUser} /> : <Navigate to="/" />} />
+                <Route
+                  path="/room/:roomId"
+                  element={user ? (
+                    <RoomPageErrorBoundary>
+                      <RoomPage user={user} updateUser={updateUser} />
+                    </RoomPageErrorBoundary>
+                  ) : (
+                    <Navigate to="/" />
+                  )}
+                />
                 <Route path="/users" element={user ? <UsersPage user={user} /> : <Navigate to="/" />} />
                 <Route path="/admin" element={user?.role === 'owner' ? <AdminDashboard user={user} /> : <Navigate to="/dashboard" />} />
                 <Route path="/create-room" element={user ? <CreateRoomPage user={user} /> : <Navigate to="/" />} />
