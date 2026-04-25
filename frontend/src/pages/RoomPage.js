@@ -1814,9 +1814,15 @@ const YallaLiveRoom = ({ user }) => {
     return `${BACKEND_URL}${proxyPath}`;
   }, [convertToEmbedUrl]);
 
+  const streamSourceUrl = useMemo(() => {
+    const fromRoom = typeof room?.stream_url === 'string' ? room.stream_url.trim() : '';
+    if (fromRoom) return fromRoom;
+    return typeof streamUrl === 'string' ? streamUrl.trim() : '';
+  }, [room?.stream_url, streamUrl]);
+
   const streamEmbedUrl = useMemo(() => {
-    const rawUrl = room?.stream_url;
-    if (!rawUrl || !rawUrl.trim()) return '';
+    const rawUrl = streamSourceUrl;
+    if (!rawUrl) return '';
 
     let url = rawUrl;
     if (url.startsWith('/api/youtube/embed')) {
@@ -1838,13 +1844,64 @@ const YallaLiveRoom = ({ user }) => {
       url = url.includes('?') ? `${url}&enablejsapi=1` : `${url}?enablejsapi=1`;
     }
     return url;
-  }, [room?.stream_url, toProxyEmbedUrl]);
+  }, [streamSourceUrl, toProxyEmbedUrl]);
 
   useEffect(() => {
     if (!streamEmbedUrl) {
       setIsStreamExpanded(false);
+      setStreamLoadState('idle');
     }
   }, [streamEmbedUrl]);
+
+  useEffect(() => {
+    if (streamLoadTimeoutRef.current) {
+      clearTimeout(streamLoadTimeoutRef.current);
+      streamLoadTimeoutRef.current = null;
+    }
+
+    if (!streamEmbedUrl) {
+      return undefined;
+    }
+
+    setStreamLoadState('loading');
+    streamLoadTimeoutRef.current = setTimeout(() => {
+      setStreamLoadState((prev) => (prev === 'ready' ? prev : 'failed'));
+    }, 10000);
+
+    return () => {
+      if (streamLoadTimeoutRef.current) {
+        clearTimeout(streamLoadTimeoutRef.current);
+        streamLoadTimeoutRef.current = null;
+      }
+    };
+  }, [streamEmbedUrl, streamRenderNonce]);
+
+  const handleStreamIframeLoaded = useCallback(() => {
+    if (streamLoadTimeoutRef.current) {
+      clearTimeout(streamLoadTimeoutRef.current);
+      streamLoadTimeoutRef.current = null;
+    }
+    setStreamLoadState('ready');
+  }, []);
+
+  const handleStreamIframeError = useCallback(() => {
+    if (streamLoadTimeoutRef.current) {
+      clearTimeout(streamLoadTimeoutRef.current);
+      streamLoadTimeoutRef.current = null;
+    }
+    setStreamLoadState('failed');
+  }, []);
+
+  const handleRetryStreamLoad = useCallback(() => {
+    setStreamRenderNonce((prev) => prev + 1);
+    setStreamLoadState('loading');
+  }, []);
+
+  const handleOpenStreamExternally = useCallback(() => {
+    const externalUrl = streamSourceUrl || streamEmbedUrl;
+    if (!externalUrl || typeof window === 'undefined') return;
+    window.open(externalUrl, '_blank', 'noopener,noreferrer');
+  }, [streamEmbedUrl, streamSourceUrl]);
 
   useEffect(() => {
     setIsStreamExpanded(false);
@@ -1911,6 +1968,12 @@ const YallaLiveRoom = ({ user }) => {
       setStreamUrl('');
       setActiveSlot(null);
       setIsStreamExpanded(false);
+      setStreamLoadState('idle');
+      setStreamRenderNonce((prev) => prev + 1);
+      if (streamLoadTimeoutRef.current) {
+        clearTimeout(streamLoadTimeoutRef.current);
+        streamLoadTimeoutRef.current = null;
+      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل إيقاف البث');
     }
@@ -3296,22 +3359,55 @@ const YallaLiveRoom = ({ user }) => {
         {/* Combined Stage + Chat Section */}
         <div className="px-4 pb-32 flex-1 overflow-y-auto">
           {/* ===== STREAM/BROADCAST AREA ===== */}
-          {room?.stream_url && room.stream_url.trim() !== '' && (
+          {streamSourceUrl && (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative">
                 {streamEmbedUrl ? (
                   <iframe
                     id="youtube-player"
-                    key={`${streamEmbedUrl}-${isAudioMuted ? 'muted' : 'unmuted'}`}
+                    key={`${streamEmbedUrl}-${streamRenderNonce}-${isAudioMuted ? 'muted' : 'unmuted'}`}
                     src={streamEmbedUrl}
-                    className="w-full h-full"
+                    className={`w-full h-full transition-opacity ${streamLoadState === 'failed' ? 'opacity-0' : 'opacity-100'}`}
                     referrerPolicy="strict-origin-when-cross-origin"
                     allowFullScreen
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    onLoad={handleStreamIframeLoaded}
+                    onError={handleStreamIframeError}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-center px-4">
                     <p className="text-slate-300 font-cairo">جاري تحميل البث...</p>
+                  </div>
+                )}
+
+                {streamLoadState === 'loading' && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                    <div className="flex items-center gap-2 text-slate-200 font-cairo text-sm">
+                      <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
+                      جاري تحميل البث...
+                    </div>
+                  </div>
+                )}
+
+                {streamLoadState === 'failed' && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/80 px-4">
+                    <div className="text-center max-w-xs">
+                      <p className="text-white font-cairo text-sm mb-3">تعذر تحميل البث داخل التطبيق</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={handleRetryStreamLoad}
+                          className="px-3 py-2 rounded-lg bg-lime-500 text-black font-cairo text-xs font-bold"
+                        >
+                          إعادة المحاولة
+                        </button>
+                        <button
+                          onClick={handleOpenStreamExternally}
+                          className="px-3 py-2 rounded-lg bg-white/15 text-white font-cairo text-xs font-bold"
+                        >
+                          فتح خارجي
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
 
