@@ -1780,6 +1780,10 @@ const YallaLiveRoom = ({ user }) => {
     }
   }, [streamEmbedUrl]);
 
+  useEffect(() => {
+    setIsStreamExpanded(false);
+  }, [roomId]);
+
   // TV Receiver Style - Instant channel switch
   const handlePlaySlot = async (slot) => {
     const rawUrl = streamSlots[slot];
@@ -3227,25 +3231,33 @@ const YallaLiveRoom = ({ user }) => {
         <div className="px-4 pb-32 flex-1 overflow-y-auto">
           {/* ===== STREAM/BROADCAST AREA ===== */}
           {room?.stream_url && room.stream_url.trim() !== '' && (
-            <div className={`mb-4 rounded-2xl overflow-hidden border border-white/10 ${isStreamExpanded ? 'fixed inset-0 z-[70] rounded-none border-0 bg-black' : ''}`}>
-              <div className={`${isStreamExpanded ? 'h-full' : 'aspect-video'} w-full bg-black relative`}>
-                <iframe
-                  id="youtube-player"
-                  key={`${streamEmbedUrl}-${isAudioMuted ? 'muted' : 'unmuted'}-${isStreamExpanded ? 'full' : 'normal'}`}
-                  src={streamEmbedUrl}
-                  className="w-full h-full"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                />
+            <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+              <div className="aspect-video w-full bg-black relative">
+                {streamEmbedUrl ? (
+                  <iframe
+                    id="youtube-player"
+                    key={`${streamEmbedUrl}-${isAudioMuted ? 'muted' : 'unmuted'}`}
+                    src={streamEmbedUrl}
+                    className="w-full h-full"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-center px-4">
+                    <p className="text-slate-300 font-cairo">جاري تحميل البث...</p>
+                  </div>
+                )}
 
-                <button
-                  onClick={() => setIsStreamExpanded((prev) => !prev)}
-                  className="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center z-10"
-                  title={isStreamExpanded ? 'تصغير الفيديو' : 'تكبير الفيديو'}
-                >
-                  {isStreamExpanded ? <ZoomOut className="w-5 h-5" /> : <ZoomIn className="w-5 h-5" />}
-                </button>
+                {streamEmbedUrl && (
+                  <button
+                    onClick={() => setIsStreamExpanded(true)}
+                    className="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center z-10"
+                    title="تكبير الفيديو"
+                  >
+                    <ZoomIn className="w-5 h-5" />
+                  </button>
+                )}
               </div>
               
               {/* Channel Switcher - TV Remote Style */}
