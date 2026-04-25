@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, File, Form, UploadFile, WebSocket, WebSocketDisconnect, Header, Response
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, File, Form, UploadFile, WebSocket, WebSocketDisconnect, Header, Response, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -3507,16 +3507,12 @@ class StreamSlotsUpdate(BaseModel):
     slots: dict  # {"1": "url1", "2": "url2", ...}
 
 
-def _get_frontend_origin() -> str:
-    raw_origin = (
-        os.environ.get("FRONTEND_ORIGIN")
-        or os.environ.get("FRONTEND_DOMAIN")
-        or "https://pitch-chat.preview.emergentagent.com"
-    ).strip()
-
+def _normalize_youtube_origin(raw_origin: str) -> str:
+    raw_origin = (raw_origin or "").strip()
+    if not raw_origin:
+        raw_origin = "https://pitch-chat.preview.emergentagent.com"
     if "://" not in raw_origin:
         raw_origin = f"https://{raw_origin.lstrip('/')}"
-
     parsed = urlparse(raw_origin)
     scheme = parsed.scheme if parsed.scheme in ("http", "https") else "https"
     host = (parsed.netloc or parsed.path or "").strip().lower()
@@ -3529,6 +3525,33 @@ def _get_frontend_origin() -> str:
         return "https://www.youtube.com"
 
     return f"{scheme}://{host}"
+
+
+def _get_frontend_origin() -> str:
+    raw_origin = (
+        os.environ.get("FRONTEND_ORIGIN")
+        or os.environ.get("FRONTEND_DOMAIN")
+        or "https://pitch-chat.preview.emergentagent.com"
+    )
+    return _normalize_youtube_origin(raw_origin)
+
+
+def _get_request_origin(request: Optional[Request]) -> str:
+    if not request:
+        return _get_frontend_origin()
+
+    forwarded_proto = (request.headers.get("x-forwarded-proto") or request.url.scheme or "https").split(",")[0].strip()
+    forwarded_host = (
+        request.headers.get("x-forwarded-host")
+        or request.headers.get("host")
+        or request.url.netloc
+        or ""
+    ).split(",")[0].strip()
+
+    if forwarded_host:
+        return _normalize_youtube_origin(f"{forwarded_proto}://{forwarded_host}")
+
+    return _get_frontend_origin()
 
 
 def _extract_youtube_video_id(parsed_url) -> Optional[str]:
@@ -3567,12 +3590,12 @@ def _extract_youtube_channel_ref(parsed_url) -> Optional[str]:
     return None
 
 
-def convert_stream_url_to_embed(stream_url: str, mute: int = 0) -> str:
+def convert_stream_url_to_embed(stream_url: str, mute: int = 0, origin_override: Optional[str] = None) -> str:
     stream_url = (stream_url or "").strip()
     if not stream_url:
         return stream_url
 
-    origin = _get_frontend_origin()
+    origin = origin_override or _get_frontend_origin()
     frontend_host = urlparse(origin).hostname or "pitch-chat.preview.emergentagent.com"
     lower_url = stream_url.lower()
 
@@ -3732,20 +3755,14 @@ async def get_stream(room_id: str):
 
 
 @api_router.get("/youtube/embed")
-async def youtube_embed_proxy(url: str):
+async def youtube_embed_proxy(url: str, request: Request, mute: int = 0):
     """
     Serve a same-origin HTML wrapper for YouTube embeds.
     This helps mobile webviews keep a stable referer/client context and
     avoids YouTube error 153 in some iOS/Capacitor environments.
     """
-    # Accept either raw YouTube URLs or already-normalized embed URLs.
-    # Avoid re-normalizing /embed/live_stream links because converting them
-    # again can drop channel context and cause a black player screen.
-    parsed_input = urlparse((url or "").strip())
-    if "/embed/live_stream" in (parsed_input.path or "") and parsed_input.netloc:
-        embed_url = url
-    else:
-        embed_url = convert_stream_url_to_embed(url, mute=0)
+    resolved_origin = _get_request_origin(request)
+    embed_url = convert_stream_url_to_embed(url, mute=1 if mute else 0, origin_override=resolved_origin)
     parsed = urlparse(embed_url)
     host = parsed.netloc.lower()
     if "youtube.com" not in host and "youtube-nocookie.com" not in host:
