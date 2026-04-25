@@ -3996,24 +3996,14 @@ const YallaLiveRoom = ({ user }) => {
               <div className="flex items-center gap-2">
                 <span className="text-slate-500 text-[10px]">{messages.length} {isRTL ? 'رسالة' : 'messages'}</span>
                 {(room?.owner_id === user.id || isRoomLeader) && (
-                  <>
-                    <button
-                      onClick={() => setShowRoomBackgroundModal(true)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 transition-colors"
-                      title={isRTL ? 'تغيير خلفية الغرفة' : 'Change room background'}
-                    >
-                      <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
-                      <span className="text-purple-400 text-[10px] font-cairo">{isRTL ? 'الغرفة' : 'Room'}</span>
-                    </button>
-                    <button
-                      onClick={() => setShowBackgroundPicker(true)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 border border-lime-500/30 transition-colors"
-                      title={isRTL ? 'تغيير خلفية الدردشة' : 'Change chat background'}
-                    >
-                      <ImageIcon className="w-3.5 h-3.5 text-lime-400" />
-                      <span className="text-lime-400 text-[10px] font-cairo">{isRTL ? 'الدردشة' : 'Chat'}</span>
-                    </button>
-                  </>
+                  <button
+                    onClick={() => setShowRoomBackgroundModal(true)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 transition-colors"
+                    title={isRTL ? 'تغيير خلفية الغرفة' : 'Change room background'}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
+                    <span className="text-purple-400 text-[10px] font-cairo">{isRTL ? 'الخلفية' : 'Background'}</span>
+                  </button>
                 )}
               </div>
             </div>
