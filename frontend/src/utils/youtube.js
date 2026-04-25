@@ -158,21 +158,38 @@ export const buildYouTubeEmbedUrl = (url, { mute = 1 } = {}) => {
 
 export const buildYouTubeProxyUrl = (youtubeUrl, { mute = 0 } = {}) => {
   if (!youtubeUrl) return youtubeUrl;
+  const useBackendProxy = String(process.env.REACT_APP_USE_YOUTUBE_PROXY || '').toLowerCase() === 'true';
 
   try {
     const parsed = new URL(youtubeUrl);
     if (parsed.pathname.endsWith('/api/youtube/embed') && parsed.searchParams.get('url')) {
-      parsed.searchParams.set('mute', String(mute));
+      const rawUrl = parsed.searchParams.get('url');
+      const proxyMute = Number(parsed.searchParams.get('mute') || mute) ? 1 : 0;
+      if (!rawUrl) return youtubeUrl;
+      if (!useBackendProxy) {
+        return buildYouTubeEmbedUrl(rawUrl, { mute: proxyMute });
+      }
+      parsed.searchParams.set('mute', String(proxyMute));
       return parsed.toString();
     }
     if (parsed.pathname.endsWith('/youtube/embed') && parsed.searchParams.get('url')) {
-      parsed.searchParams.set('mute', String(mute));
-      return youtubeUrl;
+      const rawUrl = parsed.searchParams.get('url');
+      const proxyMute = Number(parsed.searchParams.get('mute') || mute) ? 1 : 0;
+      if (!rawUrl) return youtubeUrl;
+      if (!useBackendProxy) {
+        return buildYouTubeEmbedUrl(rawUrl, { mute: proxyMute });
+      }
+      parsed.searchParams.set('mute', String(proxyMute));
+      return parsed.toString();
     }
   } catch {
     // Keep processing; relative/non-URL strings are handled below.
   }
 
   if (!isYouTubeUrl(youtubeUrl)) return youtubeUrl;
+  const embedUrl = buildYouTubeEmbedUrl(youtubeUrl, { mute: mute ? 1 : 0 });
+  if (!useBackendProxy) {
+    return embedUrl;
+  }
   return `${API}/youtube/embed?url=${encodeURIComponent(youtubeUrl)}&mute=${mute ? 1 : 0}`;
 };

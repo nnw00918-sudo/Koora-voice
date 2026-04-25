@@ -26,7 +26,7 @@ import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/sou
 import { API, BACKEND_URL, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
 // Custom Hooks for Room Features
 import { useRoomPlayback } from '../hooks/useRoomPlayback';
-import { buildYouTubeEmbedUrl, buildYouTubeProxyUrl, isYouTubeUrl } from '../utils/youtube';
+import { buildYouTubeProxyUrl, isYouTubeUrl } from '../utils/youtube';
 import {
   Mic,
   MicOff,
@@ -1697,9 +1697,9 @@ const YallaLiveRoom = ({ user }) => {
       }
     }
     
-    // YouTube Video - regular video or live
+    // Keep raw YouTube URL; backend proxy will normalize reliably per runtime.
     if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
-      return buildYouTubeEmbedUrl(url, { mute: 1 });
+      return url;
     }
     
     // Twitch
