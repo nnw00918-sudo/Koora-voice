@@ -200,6 +200,8 @@ const YallaLiveRoom = ({ user }) => {
   const [editingSlot, setEditingSlot] = useState(null);
   const [streamKey, setStreamKey] = useState(0); // Force iframe reload
   const [isStreamExpanded, setIsStreamExpanded] = useState(false);
+  const [streamLoadState, setStreamLoadState] = useState('idle'); // idle | loading | ready | failed
+  const [streamRenderNonce, setStreamRenderNonce] = useState(0);
   
   // Screen sharing states
   const [screenShares, setScreenShares] = useState([]);
@@ -245,6 +247,7 @@ const YallaLiveRoom = ({ user }) => {
   const reactionsPollingRef = useRef(null);
   const pollPollingRef = useRef(null);
   const watchPartyPollingRef = useRef(null);
+  const streamLoadTimeoutRef = useRef(null);
   
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
