@@ -199,6 +199,7 @@ const YallaLiveRoom = ({ user }) => {
   const [activeSlot, setActiveSlot] = useState(null); // Global active slot (set by owner)
   const [editingSlot, setEditingSlot] = useState(null);
   const [streamKey, setStreamKey] = useState(0); // Force iframe reload
+  const [isStreamExpanded, setIsStreamExpanded] = useState(false);
   
   // Screen sharing states
   const [screenShares, setScreenShares] = useState([]);
@@ -1641,6 +1642,12 @@ const YallaLiveRoom = ({ user }) => {
   const canAddRoomNews = isOwner || isRoomNewsReporter;
 
   // Stream functions
+  useEffect(() => {
+    if (!room?.stream_url || !room.stream_url.trim()) {
+      setIsStreamExpanded(false);
+    }
+  }, [room?.stream_url]);
+
   const fetchStreamStatus = async () => {
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/stream`);
@@ -1733,7 +1740,7 @@ const YallaLiveRoom = ({ user }) => {
     return url;
   };
 
-  const toProxyEmbedUrl = (url) => {
+  const toProxyEmbedUrl = useCallback((url) => {
     if (!url) return '';
     if (
       !isYouTubeUrl(url) &&
@@ -1746,7 +1753,32 @@ const YallaLiveRoom = ({ user }) => {
     if (!proxyPath) return '';
     if (/^https?:\/\//i.test(proxyPath)) return proxyPath;
     return `${BACKEND_URL}${proxyPath}`;
-  };
+  }, []);
+
+  const streamEmbedUrl = useMemo(() => {
+    const rawUrl = room?.stream_url;
+    if (!rawUrl || !rawUrl.trim()) return '';
+
+    let url = rawUrl;
+    if (
+      isYouTubeUrl(url) ||
+      url.includes('twitch.tv') ||
+      url.includes('kick.com')
+    ) {
+      return toProxyEmbedUrl(url);
+    }
+
+    if (!url.includes('enablejsapi')) {
+      url = url.includes('?') ? `${url}&enablejsapi=1` : `${url}?enablejsapi=1`;
+    }
+    return url;
+  }, [room?.stream_url, toProxyEmbedUrl]);
+
+  useEffect(() => {
+    if (!streamEmbedUrl) {
+      setIsStreamExpanded(false);
+    }
+  }, [streamEmbedUrl]);
 
   // TV Receiver Style - Instant channel switch
   const handlePlaySlot = async (slot) => {
@@ -1765,9 +1797,13 @@ const YallaLiveRoom = ({ user }) => {
     
     // Sync to server
     try {
-      await axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
+      const response = await axios.post(`${API}/rooms/${roomId}/stream/play/${slot}`, {}, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      if (response?.data?.stream_url) {
+        setStreamUrl(response.data.stream_url);
+        setRoom(prev => ({ ...prev, stream_url: response.data.stream_url }));
+      }
     } catch (error) {
       // Still works locally even if server sync fails
       
@@ -1804,6 +1840,7 @@ const YallaLiveRoom = ({ user }) => {
       setStreamActive(false);
       setStreamUrl('');
       setActiveSlot(null);
+      setIsStreamExpanded(false);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'فشل إيقاف البث');
     }
@@ -3190,27 +3227,25 @@ const YallaLiveRoom = ({ user }) => {
         <div className="px-4 pb-32 flex-1 overflow-y-auto">
           {/* ===== STREAM/BROADCAST AREA ===== */}
           {room?.stream_url && room.stream_url.trim() !== '' && (
-            <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
-              <div className="aspect-video w-full bg-black relative">
-                {/* YouTube iframe with postMessage volume control */}
+            <div className={`mb-4 rounded-2xl overflow-hidden border border-white/10 ${isStreamExpanded ? 'fixed inset-0 z-[70] rounded-none border-0 bg-black' : ''}`}>
+              <div className={`${isStreamExpanded ? 'h-full' : 'aspect-video'} w-full bg-black relative`}>
                 <iframe
                   id="youtube-player"
-                  key={`${room?.stream_url || ''}-${isAudioMuted ? 'muted' : 'unmuted'}`}
-                  src={(() => {
-                    let url = room.stream_url;
-                    // Make sure it's in embed format with enablejsapi
-                    if (isYouTubeUrl(url)) {
-                      return toProxyEmbedUrl(url);
-                    } else if (!url.includes('enablejsapi')) {
-                      url = url.includes('?') ? `${url}&enablejsapi=1` : `${url}?enablejsapi=1`;
-                    }
-                    return url;
-                  })()}
+                  key={`${streamEmbedUrl}-${isAudioMuted ? 'muted' : 'unmuted'}-${isStreamExpanded ? 'full' : 'normal'}`}
+                  src={streamEmbedUrl}
                   className="w-full h-full"
                   referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
+
+                <button
+                  onClick={() => setIsStreamExpanded((prev) => !prev)}
+                  className="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center z-10"
+                  title={isStreamExpanded ? 'تصغير الفيديو' : 'تكبير الفيديو'}
+                >
+                  {isStreamExpanded ? <ZoomOut className="w-5 h-5" /> : <ZoomIn className="w-5 h-5" />}
+                </button>
               </div>
               
               {/* Channel Switcher - TV Remote Style */}
