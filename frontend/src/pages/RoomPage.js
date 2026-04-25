@@ -1686,84 +1686,147 @@ const YallaLiveRoom = ({ user }) => {
   };
 
   // Convert URL to embed format - with controls for sound
-  const convertToEmbedUrl = (url) => {
+  const convertToEmbedUrl = useCallback((url) => {
     if (!url) return '';
-    
+
+    const trimmedUrl = String(url).trim();
+    const lowerUrl = trimmedUrl.toLowerCase();
+    const parseUrl = () => {
+      try {
+        return new URL(trimmedUrl);
+      } catch {
+        try {
+          return new URL(`https://${trimmedUrl}`);
+        } catch {
+          return null;
+        }
+      }
+    };
+    const parsed = parseUrl();
+
     // YouTube Channel - live stream
-    if (url.includes('youtube.com/@') || url.includes('youtube.com/channel/') || url.includes('youtube.com/c/')) {
+    if (lowerUrl.includes('youtube.com/@') || lowerUrl.includes('youtube.com/channel/') || lowerUrl.includes('youtube.com/c/')) {
       let channelId = '';
-      if (url.includes('youtube.com/@')) {
-        // Handle @username format - need to use the username
-        const username = url.split('@')[1]?.split('/')[0]?.split('?')[0] || '';
+      if (lowerUrl.includes('youtube.com/@')) {
+        const username = trimmedUrl.split('@')[1]?.split('/')[0]?.split('?')[0] || '';
         if (username) {
-          // For @username, we use the channel's live stream URL
           return `https://www.youtube-nocookie.com/embed/live_stream?channel=${username}&autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1`;
         }
-      } else if (url.includes('youtube.com/channel/')) {
-        channelId = url.split('/channel/')[1]?.split('/')[0]?.split('?')[0] || '';
-      } else if (url.includes('youtube.com/c/')) {
-        channelId = url.split('/c/')[1]?.split('/')[0]?.split('?')[0] || '';
+      } else if (lowerUrl.includes('youtube.com/channel/')) {
+        channelId = trimmedUrl.split('/channel/')[1]?.split('/')[0]?.split('?')[0] || '';
+      } else if (lowerUrl.includes('youtube.com/c/')) {
+        channelId = trimmedUrl.split('/c/')[1]?.split('/')[0]?.split('?')[0] || '';
       }
       if (channelId) {
         return `https://www.youtube-nocookie.com/embed/live_stream?channel=${channelId}&autoplay=1&mute=1&modestbranding=1&rel=0&vq=hd1080&playsinline=1`;
       }
     }
-    
+
     // Keep raw YouTube URL; backend proxy will normalize reliably per runtime.
-    if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
-      return url;
+    if (lowerUrl.includes('youtube.com/watch') || lowerUrl.includes('youtu.be') || lowerUrl.includes('youtube.com/live')) {
+      return trimmedUrl;
     }
-    
-    // Twitch and Kick are normalized on backend for consistent parent/embed params.
-    if (url.includes('twitch.tv') || url.includes('kick.com')) {
-      return url;
+
+    // Twitch conversion
+    if (lowerUrl.includes('player.twitch.tv')) {
+      return trimmedUrl;
     }
-    
+    if (lowerUrl.includes('twitch.tv')) {
+      const pathParts = parsed?.pathname?.split('/').filter(Boolean) || [];
+      const candidate = pathParts[0] || '';
+      const reserved = ['videos', 'directory', 'settings', 'search', 'downloads'];
+      if (candidate && !reserved.includes(candidate.toLowerCase())) {
+        const parentHost = typeof window !== 'undefined'
+          ? (window.location.hostname || 'localhost')
+          : 'localhost';
+        return `https://player.twitch.tv/?channel=${candidate}&parent=${parentHost}&autoplay=true&muted=true`;
+      }
+      return trimmedUrl;
+    }
+
+    // Kick conversion
+    if (lowerUrl.includes('player.kick.com')) {
+      return trimmedUrl;
+    }
+    if (lowerUrl.includes('kick.com')) {
+      const pathParts = parsed?.pathname?.split('/').filter(Boolean) || [];
+      const candidate = pathParts[0] || '';
+      const reserved = ['video', 'categories', 'search', 'settings', 'downloads'];
+      if (candidate && !reserved.includes(candidate.toLowerCase())) {
+        return `https://player.kick.com/${candidate}?autoplay=true&muted=true`;
+      }
+      return trimmedUrl;
+    }
+
     // Dailymotion
-    if (url.includes('dailymotion.com')) {
+    if (lowerUrl.includes('dailymotion.com')) {
       let videoId = '';
-      if (url.includes('/video/')) {
-        videoId = url.split('/video/')[1]?.split('?')[0] || '';
-      } else if (url.includes('/live/')) {
-        videoId = url.split('/live/')[1]?.split('?')[0] || '';
+      if (lowerUrl.includes('/video/')) {
+        videoId = trimmedUrl.split('/video/')[1]?.split('?')[0] || '';
+      } else if (lowerUrl.includes('/live/')) {
+        videoId = trimmedUrl.split('/live/')[1]?.split('?')[0] || '';
       }
       if (videoId) {
         return `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1&mute=1&quality=1080`;
       }
     }
-    
+
     // Facebook
-    if (url.includes('facebook.com') && url.includes('/videos/')) {
-      return `https://www.facebook.com/plugins/video.php?href=${url}&autoplay=true&mute=1`;
+    if (lowerUrl.includes('facebook.com') && lowerUrl.includes('/videos/')) {
+      return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(trimmedUrl)}&autoplay=true&mute=1`;
     }
-    
-    return url;
-  };
+
+    return trimmedUrl;
+  }, []);
 
   const toProxyEmbedUrl = useCallback((url) => {
     if (!url) return '';
-    if (
-      !isYouTubeUrl(url) &&
-      !url.includes('twitch.tv') &&
-      !url.includes('kick.com')
-    ) {
-      return url;
+    const trimmedUrl = String(url).trim();
+
+    if (trimmedUrl.startsWith('/api/youtube/embed')) {
+      return `${BACKEND_URL}${trimmedUrl}`;
     }
-    const proxyPath = buildYouTubeProxyUrl(url);
+    if (trimmedUrl.startsWith('api/youtube/embed')) {
+      return `${BACKEND_URL}/${trimmedUrl}`;
+    }
+
+    if (
+      trimmedUrl.includes('player.twitch.tv') ||
+      trimmedUrl.includes('player.kick.com')
+    ) {
+      return trimmedUrl;
+    }
+
+    if (trimmedUrl.includes('twitch.tv') || trimmedUrl.includes('kick.com')) {
+      return convertToEmbedUrl(trimmedUrl);
+    }
+
+    if (!isYouTubeUrl(trimmedUrl)) {
+      return trimmedUrl;
+    }
+
+    const proxyPath = buildYouTubeProxyUrl(trimmedUrl);
     if (!proxyPath) return '';
     if (/^https?:\/\//i.test(proxyPath)) return proxyPath;
     return `${BACKEND_URL}${proxyPath}`;
-  }, []);
+  }, [convertToEmbedUrl]);
 
   const streamEmbedUrl = useMemo(() => {
     const rawUrl = room?.stream_url;
     if (!rawUrl || !rawUrl.trim()) return '';
 
     let url = rawUrl;
+    if (url.startsWith('/api/youtube/embed')) {
+      return `${BACKEND_URL}${url}`;
+    }
+
     if (
       isYouTubeUrl(url) ||
       url.includes('twitch.tv') ||
-      url.includes('kick.com')
+      url.includes('kick.com') ||
+      url.includes('player.twitch.tv') ||
+      url.includes('player.kick.com') ||
+      url.includes('/api/youtube/embed')
     ) {
       return toProxyEmbedUrl(url);
     }
