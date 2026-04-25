@@ -4,9 +4,9 @@
  */
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Mic, MicOff, Video, VideoOff, Hand, 
-  Tv, Gift, BarChart3, Circle, StopCircle,
+import {
+  Mic, MicOff, Video, VideoOff, Hand,
+  Gift, BarChart3, Circle, StopCircle,
   ArrowDown
 } from 'lucide-react';
 
@@ -26,7 +26,6 @@ export const RoomControlBar = ({
   onRequestSeat,
   onToggleRecording,
   onShowGiftModal,
-  onShowStreamModal,
   onShowPollModal,
   onShowWatchPartyModal
 }) => {
@@ -139,17 +138,6 @@ export const RoomControlBar = ({
         {/* Secondary Controls (for admins/owners) */}
         {isRoomAdmin && (
           <div className="flex items-center justify-center gap-3 mt-3 pt-3 border-t border-white/10">
-            {/* Stream Button */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={onShowStreamModal}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-500/20 border border-violet-500/50"
-              data-testid="stream-btn"
-            >
-              <Tv className="w-4 h-4 text-violet-400" />
-              <span className="text-violet-300 text-xs font-cairo">بث</span>
-            </motion.button>
-
             {/* Poll Button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
