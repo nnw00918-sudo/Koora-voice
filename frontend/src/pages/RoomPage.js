@@ -23,10 +23,10 @@ import { ExpandedVideoModal } from '../components/room/ExpandedVideoModal';
 import { UserRolesModal } from '../components/room/UserRolesModal';
 import { VIPBadge, VIPAvatarFrame } from '../components/room/VIPBadge';
 import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/soundManager';
-import { API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
+import { API, BACKEND_URL, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
 // Custom Hooks for Room Features
 import { useRoomPlayback } from '../hooks/useRoomPlayback';
-import { buildYouTubeEmbedUrl, isYouTubeUrl } from '../utils/youtube';
+import { buildYouTubeEmbedUrl, buildYouTubeProxyUrl, isYouTubeUrl } from '../utils/youtube';
 import {
   Mic,
   MicOff,
@@ -1731,10 +1731,13 @@ const YallaLiveRoom = ({ user }) => {
     return url;
   };
 
-  const toProxyEmbedUrl = (url, mute = 0) => {
+  const toProxyEmbedUrl = (url) => {
     if (!url) return '';
-    const normalized = isYouTubeUrl(url) ? buildYouTubeEmbedUrl(url, { mute }) : url;
-    return `/api/youtube/embed?url=${encodeURIComponent(normalized)}`;
+    if (!isYouTubeUrl(url)) return url;
+    const proxyPath = buildYouTubeProxyUrl(url);
+    if (!proxyPath) return '';
+    if (/^https?:\/\//i.test(proxyPath)) return proxyPath;
+    return `${BACKEND_URL}${proxyPath}`;
   };
 
   // TV Receiver Style - Instant channel switch
@@ -3189,7 +3192,7 @@ const YallaLiveRoom = ({ user }) => {
                     let url = room.stream_url;
                     // Make sure it's in embed format with enablejsapi
                     if (isYouTubeUrl(url)) {
-                      return toProxyEmbedUrl(url, isAudioMuted ? 1 : 0);
+                      return toProxyEmbedUrl(url);
                     } else if (!url.includes('enablejsapi')) {
                       url = url.includes('?') ? `${url}&enablejsapi=1` : `${url}?enablejsapi=1`;
                     }
