@@ -373,17 +373,23 @@ const YallaLiveRoom = ({ user }) => {
         await globalDisconnect();
       }
       
-      // Initialize fresh connection
-      fetchCurrentUserRole();
-      initializeAgora();
-      joinRoom();
-      fetchRoomData();
-      startPolling();
-      startHeartbeat();
-      if (ROOM_STREAMING_ENABLED) {
-        fetchStreamStatus();
+      try {
+        // Initialize fresh connection
+        fetchCurrentUserRole();
+        initializeAgora();
+        joinRoom();
+        fetchRoomData();
+        startPolling();
+        startHeartbeat();
+        if (ROOM_STREAMING_ENABLED) {
+          fetchStreamStatus();
+        }
+        connectRoomWebSocket(); // Connect WebSocket for real-time messages
+      } catch (error) {
+        console.error('Room initialization failed:', error);
+        setRoomLoadError('حدث خطأ أثناء تهيئة الغرفة');
+        setLoading(false);
       }
-      connectRoomWebSocket(); // Connect WebSocket for real-time messages
     };
     
     initRoom();
