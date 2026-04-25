@@ -74,6 +74,7 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 
 const MAX_ROOM_MESSAGES = 200;
 const MAX_FLOATING_REACTIONS = 40;
+const ROOM_STREAMING_ENABLED = false;
 
 // Remote Video Circle Component for stage avatars
 const RemoteVideoCircle = ({ remoteUser }) => {
@@ -360,7 +361,9 @@ const YallaLiveRoom = ({ user }) => {
         fetchRoomData();
         startPolling();
         startHeartbeat();
-        fetchStreamStatus();
+        if (ROOM_STREAMING_ENABLED) {
+          fetchStreamStatus();
+        }
         fetchCurrentUserRole();
         return;
       }
@@ -377,14 +380,18 @@ const YallaLiveRoom = ({ user }) => {
       fetchRoomData();
       startPolling();
       startHeartbeat();
-      fetchStreamStatus();
+      if (ROOM_STREAMING_ENABLED) {
+        fetchStreamStatus();
+      }
       connectRoomWebSocket(); // Connect WebSocket for real-time messages
     };
     
     initRoom();
 
     // Poll stream status every 10 seconds
-    const streamPoll = setInterval(fetchStreamStatus, 10000);
+    const streamPoll = ROOM_STREAMING_ENABLED
+      ? setInterval(fetchStreamStatus, 10000)
+      : null;
     
     // Poll room news every 8 seconds (for دوانية rooms)
     const newsPoll = setInterval(() => fetchRoomNews(true), 8000);
@@ -410,7 +417,9 @@ const YallaLiveRoom = ({ user }) => {
       
       stopPolling();
       stopHeartbeat();
-      clearInterval(streamPoll);
+      if (streamPoll) {
+        clearInterval(streamPoll);
+      }
       clearInterval(newsPoll);
       clearInterval(rolesPoll);
       
@@ -1658,6 +1667,13 @@ const YallaLiveRoom = ({ user }) => {
   }, [room?.stream_url]);
 
   const fetchStreamStatus = async () => {
+    if (!ROOM_STREAMING_ENABLED) {
+      setStreamActive(false);
+      setStreamUrl('');
+      setActiveSlot(null);
+      setStreamSlots({});
+      return;
+    }
     try {
       const response = await axios.get(`${API}/rooms/${roomId}/stream`);
       setStreamActive(response.data.stream_active);
@@ -3392,7 +3408,7 @@ const YallaLiveRoom = ({ user }) => {
         {/* Combined Stage + Chat Section */}
         <div className="px-4 pb-32 flex-1 overflow-y-auto">
           {/* ===== STREAM/BROADCAST AREA ===== */}
-          {room?.stream_active && streamSourceUrl && (
+          {ROOM_STREAMING_ENABLED && room?.stream_active && streamSourceUrl && (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative">
                 {streamEmbedUrl ? (
@@ -3823,7 +3839,7 @@ const YallaLiveRoom = ({ user }) => {
             </motion.button>
 
             {/* Stream/Broadcast Button - Owner/Admin only */}
-            {(room?.owner_id === user.id || user.role === 'admin' || user.role === 'owner') && (
+            {ROOM_STREAMING_ENABLED && (room?.owner_id === user.id || user.role === 'admin' || user.role === 'owner') && (
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShowStreamModal(true)}
@@ -4074,7 +4090,8 @@ const YallaLiveRoom = ({ user }) => {
             onStartRecording={startRecording}
             onStopRecording={stopRecording}
             streamActive={streamActive}
-            onShowStreamModal={() => setShowStreamModal(true)}
+            onShowStreamModal={ROOM_STREAMING_ENABLED ? (() => setShowStreamModal(true)) : undefined}
+            streamEnabled={ROOM_STREAMING_ENABLED}
             onToggleRoom={handleToggleRoom}
             onDeleteRoom={handleDeleteRoom}
             activePoll={activePoll}
@@ -4112,7 +4129,7 @@ const YallaLiveRoom = ({ user }) => {
 
         {/* Stream Modal - 5 Slots */}
         <AnimatePresence>
-          {showStreamModal && user.role === 'owner' && (
+          {ROOM_STREAMING_ENABLED && showStreamModal && user.role === 'owner' && (
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 

@@ -39,7 +39,7 @@ export const RoomSettingsModal = ({
   formatRecordingTime,
   onStartRecording,
   onStopRecording,
-  // Stream
+  // Stream (disabled)
   streamActive,
   onShowStreamModal,
   // Room controls
@@ -211,17 +211,7 @@ export const RoomSettingsModal = ({
           </button>
         )}
         
-        {/* Stream Controls - Only for System Owner */}
-        {user.role === 'owner' && !streamActive && (
-          <button 
-            onClick={() => setCurrentPage('stream')}
-            className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/50 transition-colors"
-          >
-            <Video className="w-6 h-6 text-violet-400" />
-            <span className="text-violet-400 font-cairo font-bold flex-1 text-right">تشغيل بث مباشر</span>
-            <ArrowRight className="w-5 h-5 text-violet-400 rotate-180" />
-          </button>
-        )}
+        {/* Stream controls intentionally hidden: broadcast feature disabled */}
         
         {/* Lock/Unlock Room */}
         <button 
@@ -639,7 +629,6 @@ export const RoomSettingsModal = ({
       case 'roles': return <RolesPage />;
       case 'poll': return <PollPage />;
       case 'record': return <RecordPage />;
-      case 'stream': return <StreamPage />;
       case 'lock': return <LockPage />;
       case 'delete': return <DeletePage />;
       default: return <MainPage />;

@@ -3713,6 +3713,7 @@ async def start_stream(
     current_user: User = Depends(get_current_user),
 ):
     """Start a live stream in the room - System Owner only"""
+    raise HTTPException(status_code=403, detail="ميزة البث معطلة حالياً")
     if current_user.role != "owner":
         raise HTTPException(status_code=403, detail="فقط الأونر يمكنه تشغيل البث")
     
@@ -3737,6 +3738,7 @@ async def start_stream(
 @api_router.post("/rooms/{room_id}/stream/slots")
 async def update_stream_slots(room_id: str, slots_data: StreamSlotsUpdate, current_user: User = Depends(get_current_user)):
     """Update saved stream slots - System Owner only"""
+    raise HTTPException(status_code=403, detail="ميزة البث معطلة حالياً")
     if current_user.role != "owner":
         raise HTTPException(status_code=403, detail="فقط الأونر يمكنه تعديل الروابط")
     
@@ -3763,6 +3765,7 @@ async def play_stream_slot(
     current_user: User = Depends(get_current_user),
 ):
     """Play a saved stream slot - Anyone can switch channels when stream is active"""
+    raise HTTPException(status_code=403, detail="ميزة البث معطلة حالياً")
     if slot < 1 or slot > 5:
         raise HTTPException(status_code=400, detail="رقم الرابط يجب أن يكون من 1 إلى 5")
     
@@ -3796,6 +3799,7 @@ async def play_stream_slot(
 @api_router.post("/rooms/{room_id}/stream/stop")
 async def stop_stream(room_id: str, current_user: User = Depends(get_current_user)):
     """Stop the live stream - System Owner only"""
+    raise HTTPException(status_code=403, detail="ميزة البث معطلة حالياً")
     if current_user.role != "owner":
         raise HTTPException(status_code=403, detail="فقط الأونر يمكنه إيقاف البث")
     
@@ -3813,15 +3817,11 @@ async def stop_stream(room_id: str, current_user: User = Depends(get_current_use
 @api_router.get("/rooms/{room_id}/stream")
 async def get_stream(room_id: str):
     """Get current stream status"""
-    room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
-    if not room:
-        raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
-    
     return {
-        "stream_active": room.get("stream_active", False),
-        "stream_url": room.get("stream_url"),
-        "stream_slots": room.get("stream_slots", {}),
-        "active_slot": room.get("active_slot")
+        "stream_active": False,
+        "stream_url": None,
+        "stream_slots": {},
+        "active_slot": None
     }
 
 
