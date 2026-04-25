@@ -1,3 +1,5 @@
+import { API } from '../config/api';
+
 const DEFAULT_YOUTUBE_ORIGIN =
   process.env.REACT_APP_FRONTEND_ORIGIN ||
   process.env.REACT_APP_CANONICAL_ORIGIN ||
@@ -154,7 +156,17 @@ export const buildYouTubeEmbedUrl = (url, { mute = 1 } = {}) => {
 };
 
 export const buildYouTubeProxyUrl = (youtubeUrl) => {
-  const embedUrl = buildYouTubeEmbedUrl(youtubeUrl, { mute: 0 });
-  if (!embedUrl || !isYouTubeUrl(embedUrl)) return embedUrl;
-  return `/api/youtube/embed?url=${encodeURIComponent(embedUrl)}`;
+  if (!youtubeUrl) return youtubeUrl;
+
+  try {
+    const parsed = new URL(youtubeUrl);
+    if (parsed.pathname.endsWith('/api/youtube/embed') && parsed.searchParams.get('url')) {
+      return youtubeUrl;
+    }
+  } catch {
+    // Keep processing; relative/non-URL strings are handled below.
+  }
+
+  if (!isYouTubeUrl(youtubeUrl)) return youtubeUrl;
+  return `${API}/youtube/embed?url=${encodeURIComponent(youtubeUrl)}`;
 };

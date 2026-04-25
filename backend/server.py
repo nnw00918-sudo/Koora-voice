@@ -3738,7 +3738,14 @@ async def youtube_embed_proxy(url: str):
     This helps mobile webviews keep a stable referer/client context and
     avoids YouTube error 153 in some iOS/Capacitor environments.
     """
-    embed_url = convert_stream_url_to_embed(url, mute=0)
+    # Accept either raw YouTube URLs or already-normalized embed URLs.
+    # Avoid re-normalizing /embed/live_stream links because converting them
+    # again can drop channel context and cause a black player screen.
+    parsed_input = urlparse((url or "").strip())
+    if "/embed/live_stream" in (parsed_input.path or "") and parsed_input.netloc:
+        embed_url = url
+    else:
+        embed_url = convert_stream_url_to_embed(url, mute=0)
     parsed = urlparse(embed_url)
     host = parsed.netloc.lower()
     if "youtube.com" not in host and "youtube-nocookie.com" not in host:

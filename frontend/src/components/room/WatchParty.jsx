@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Tv, Volume2, VolumeX, Maximize2, Minimize2, RefreshCw, SkipForward, SkipBack, Play, Pause } from 'lucide-react';
-import { buildYouTubeEmbedUrl } from '../../utils/youtube';
+import { buildYouTubeProxyUrl } from '../../utils/youtube';
 
 // Watch Party Player Component with Channels - Enhanced
 export const WatchPartyPlayer = ({ 
@@ -25,8 +25,7 @@ export const WatchPartyPlayer = ({
 
   const currentChannel = channels.find(c => c.id === activeChannel);
   const currentUrl = currentChannel?.url || watchParty?.video_url;
-  const finalUrl = buildYouTubeEmbedUrl(currentUrl, { mute: isMuted ? 1 : 0 });
-  const proxiedFinalUrl = finalUrl ? `/api/youtube/embed?url=${encodeURIComponent(finalUrl)}` : null;
+  const proxiedFinalUrl = buildYouTubeProxyUrl(currentUrl, { mute: isMuted ? 1 : 0 });
 
   // All hooks must be called before any conditional returns
   const handleChannelChange = useCallback((channelId) => {
