@@ -330,29 +330,6 @@ const StorePage = () => {
                 )}
               </div>
             </motion.div>
-
-            {/* Restore Purchases */}
-            {isIOS && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="mt-4 text-center"
-              >
-                <button
-                  onClick={handleRestore}
-                  disabled={restoring}
-                  className="text-white/50 hover:text-white text-sm font-almarai flex items-center gap-2 mx-auto"
-                >
-                  {restoring ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4" />
-                  )}
-                  {isRTL ? 'استعادة المشتريات' : 'Restore Purchases'}
-                </button>
-              </motion.div>
-            )}
           </>
         )}
 
