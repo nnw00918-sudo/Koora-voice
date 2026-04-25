@@ -3590,6 +3590,19 @@ def _extract_youtube_channel_ref(parsed_url) -> Optional[str]:
     return None
 
 
+def _is_youtube_stream_url(stream_url: str) -> bool:
+    stream_url = (stream_url or "").strip()
+    if not stream_url:
+        return False
+
+    parsed = urlparse(stream_url)
+    if not parsed.scheme:
+        parsed = urlparse(f"https://{stream_url}")
+
+    host = (parsed.netloc or "").lower()
+    return any(domain in host for domain in ("youtube.com", "youtube-nocookie.com", "youtu.be"))
+
+
 def convert_stream_url_to_embed(stream_url: str, mute: int = 0, origin_override: Optional[str] = None) -> str:
     stream_url = (stream_url or "").strip()
     if not stream_url:
@@ -3667,6 +3680,9 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
     stream_url = stream_data.url.strip()
+    if stream_data.slot == 1 and not _is_youtube_stream_url(stream_url):
+        raise HTTPException(status_code=400, detail="الرابط الأول مخصص ليوتيوب فقط")
+
     embed_url = convert_stream_url_to_embed(stream_url, mute=0)
     
     await db.rooms.update_one(
@@ -3686,6 +3702,10 @@ async def update_stream_slots(room_id: str, slots_data: StreamSlotsUpdate, curre
     if not room:
         raise HTTPException(status_code=404, detail="الغرفة غير موجودة")
     
+    slot_one_url = (slots_data.slots or {}).get("1") or (slots_data.slots or {}).get(1)
+    if slot_one_url and not _is_youtube_stream_url(slot_one_url):
+        raise HTTPException(status_code=400, detail="الرابط الأول مخصص ليوتيوب فقط")
+
     await db.rooms.update_one(
         {"id": room_id},
         {"$set": {"stream_slots": slots_data.slots}}
@@ -3712,6 +3732,9 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
     
     if not stream_url:
         raise HTTPException(status_code=400, detail="هذا الرابط فارغ")
+
+    if slot == 1 and not _is_youtube_stream_url(stream_url):
+        raise HTTPException(status_code=400, detail="الرابط الأول مخصص ليوتيوب فقط")
     
     embed_url = convert_stream_url_to_embed(stream_url, mute=0)
     

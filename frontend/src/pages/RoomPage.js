@@ -1658,6 +1658,11 @@ const YallaLiveRoom = ({ user }) => {
       toast.error('أدخل رابط البث');
       return;
     }
+
+    if (slot === 1 && !isYouTubeUrl(streamInputUrl)) {
+      toast.error('الرابط 1 مخصص ليوتيوب فقط');
+      return;
+    }
     try {
       const newSlots = { ...streamSlots, [slot]: streamInputUrl };
       await axios.post(`${API}/rooms/${roomId}/stream/slots`, 
