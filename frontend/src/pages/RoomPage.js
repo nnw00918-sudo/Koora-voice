@@ -1707,12 +1707,9 @@ const YallaLiveRoom = ({ user }) => {
       return url;
     }
     
-    // Twitch
-    if (url.includes('twitch.tv')) {
-      const channel = url.split('twitch.tv/')[1]?.split('/')[0] || '';
-      if (channel) {
-        return `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true`;
-      }
+    // Twitch and Kick are normalized on backend for consistent parent/embed params.
+    if (url.includes('twitch.tv') || url.includes('kick.com')) {
+      return url;
     }
     
     // Dailymotion
@@ -1738,7 +1735,13 @@ const YallaLiveRoom = ({ user }) => {
 
   const toProxyEmbedUrl = (url) => {
     if (!url) return '';
-    if (!isYouTubeUrl(url)) return url;
+    if (
+      !isYouTubeUrl(url) &&
+      !url.includes('twitch.tv') &&
+      !url.includes('kick.com')
+    ) {
+      return url;
+    }
     const proxyPath = buildYouTubeProxyUrl(url);
     if (!proxyPath) return '';
     if (/^https?:\/\//i.test(proxyPath)) return proxyPath;

@@ -3507,7 +3507,7 @@ class StreamSlotsUpdate(BaseModel):
     slots: dict  # {"1": "url1", "2": "url2", ...}
 
 
-def _normalize_youtube_origin(raw_origin: str) -> str:
+def _normalize_embed_origin(raw_origin: str) -> str:
     raw_origin = (raw_origin or "").strip()
     if not raw_origin:
         raw_origin = "https://pitch-chat.preview.emergentagent.com"
@@ -3519,12 +3519,20 @@ def _normalize_youtube_origin(raw_origin: str) -> str:
     if not host:
         host = "pitch-chat.preview.emergentagent.com"
 
+    return f"{scheme}://{host}"
+
+
+def _normalize_youtube_origin(raw_origin: str) -> str:
+    normalized_origin = _normalize_embed_origin(raw_origin)
+    parsed = urlparse(normalized_origin)
+    host = (parsed.netloc or parsed.path or "").strip().lower()
+
     # Localhost/file-based origins are not stable YouTube API clients
     # and frequently trigger embed error 153 in mobile webviews.
     if host in ("localhost", "127.0.0.1", "0.0.0.0") or host.endswith(".local"):
         return "https://www.youtube.com"
 
-    return f"{scheme}://{host}"
+    return normalized_origin
 
 
 def _get_frontend_origin() -> str:
@@ -3540,6 +3548,10 @@ def _get_request_origin(request: Optional[Request]) -> str:
     if not request:
         return _get_frontend_origin()
 
+    request_origin = (request.headers.get("origin") or "").split(",")[0].strip()
+    if request_origin:
+        return _normalize_embed_origin(request_origin)
+
     forwarded_proto = (request.headers.get("x-forwarded-proto") or request.url.scheme or "https").split(",")[0].strip()
     forwarded_host = (
         request.headers.get("x-forwarded-host")
@@ -3549,7 +3561,7 @@ def _get_request_origin(request: Optional[Request]) -> str:
     ).split(",")[0].strip()
 
     if forwarded_host:
-        return _normalize_youtube_origin(f"{forwarded_proto}://{forwarded_host}")
+        return _normalize_embed_origin(f"{forwarded_proto}://{forwarded_host}")
 
     return _get_frontend_origin()
 
@@ -3603,17 +3615,32 @@ def _is_youtube_stream_url(stream_url: str) -> bool:
     return any(domain in host for domain in ("youtube.com", "youtube-nocookie.com", "youtu.be"))
 
 
+def _extract_kick_channel(parsed_url) -> Optional[str]:
+    path_parts = [part for part in parsed_url.path.split("/") if part]
+    if not path_parts:
+        return None
+
+    first_segment = path_parts[0].lower()
+    # Avoid non-channel routes.
+    if first_segment in ("video", "categories", "search", "settings"):
+        return None
+
+    return path_parts[0]
+
+
 def convert_stream_url_to_embed(stream_url: str, mute: int = 0, origin_override: Optional[str] = None) -> str:
     stream_url = (stream_url or "").strip()
     if not stream_url:
         return stream_url
 
-    origin = origin_override or _get_frontend_origin()
-    frontend_host = urlparse(origin).hostname or "pitch-chat.preview.emergentagent.com"
+    resolved_origin = origin_override or _get_frontend_origin()
+    youtube_origin = _normalize_youtube_origin(resolved_origin)
+    embed_origin = _normalize_embed_origin(resolved_origin)
+    frontend_host = urlparse(embed_origin).hostname or "pitch-chat.preview.emergentagent.com"
     lower_url = stream_url.lower()
 
     parsed = urlparse(stream_url)
-    if not parsed.scheme and ("youtube" in lower_url or "youtu.be" in lower_url):
+    if not parsed.scheme and ("youtube" in lower_url or "youtu.be" in lower_url or "twitch.tv" in lower_url or "kick.com" in lower_url):
         parsed = urlparse(f"https://{stream_url}")
     host = parsed.netloc.lower()
 
@@ -3626,8 +3653,8 @@ def convert_stream_url_to_embed(stream_url: str, mute: int = 0, origin_override:
             "rel": "0",
             "modestbranding": "1",
             "mute": str(1 if mute else 0),
-            "origin": origin,
-            "widget_referrer": origin,
+            "origin": youtube_origin,
+            "widget_referrer": youtube_origin,
         }
 
         channel_ref = _extract_youtube_channel_ref(parsed)
@@ -3642,17 +3669,26 @@ def convert_stream_url_to_embed(stream_url: str, mute: int = 0, origin_override:
 
     # Twitch URL conversion
     if "twitch.tv" in lower_url:
-        channel = ""
-        if "twitch.tv/" in lower_url:
-            channel = stream_url.split("twitch.tv/")[1].split("/")[0].split("?")[0]
+        path_parts = [part for part in parsed.path.split("/") if part]
+        channel = path_parts[0] if path_parts else ""
         if channel:
             twitch_params = urlencode({
                 "channel": channel,
                 "parent": frontend_host,
                 "autoplay": "true",
-                "muted": "false",
+                "muted": "true" if mute else "false",
             })
             return f"https://player.twitch.tv/?{twitch_params}"
+
+    # Kick live stream support
+    if "kick.com" in lower_url:
+        channel = _extract_kick_channel(parsed)
+        if channel:
+            kick_params = urlencode({
+                "autoplay": "true",
+                "muted": "true" if mute else "false",
+            })
+            return f"https://player.kick.com/{channel}?{kick_params}"
 
     # Dailymotion support
     if "dailymotion.com" in lower_url:
@@ -3670,7 +3706,12 @@ def convert_stream_url_to_embed(stream_url: str, mute: int = 0, origin_override:
     return stream_url
 
 @api_router.post("/rooms/{room_id}/stream/start")
-async def start_stream(room_id: str, stream_data: StreamRequest, current_user: User = Depends(get_current_user)):
+async def start_stream(
+    room_id: str,
+    stream_data: StreamRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
     """Start a live stream in the room - System Owner only"""
     if current_user.role != "owner":
         raise HTTPException(status_code=403, detail="فقط الأونر يمكنه تشغيل البث")
@@ -3683,7 +3724,8 @@ async def start_stream(room_id: str, stream_data: StreamRequest, current_user: U
     if stream_data.slot == 1 and not _is_youtube_stream_url(stream_url):
         raise HTTPException(status_code=400, detail="الرابط الأول مخصص ليوتيوب فقط")
 
-    embed_url = convert_stream_url_to_embed(stream_url, mute=0)
+    resolved_origin = _get_request_origin(request)
+    embed_url = convert_stream_url_to_embed(stream_url, mute=0, origin_override=resolved_origin)
     
     await db.rooms.update_one(
         {"id": room_id},
@@ -3714,7 +3756,12 @@ async def update_stream_slots(room_id: str, slots_data: StreamSlotsUpdate, curre
     return {"message": "تم حفظ الروابط", "slots": slots_data.slots}
 
 @api_router.post("/rooms/{room_id}/stream/play/{slot}")
-async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends(get_current_user)):
+async def play_stream_slot(
+    room_id: str,
+    slot: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
     """Play a saved stream slot - Anyone can switch channels when stream is active"""
     if slot < 1 or slot > 5:
         raise HTTPException(status_code=400, detail="رقم الرابط يجب أن يكون من 1 إلى 5")
@@ -3736,7 +3783,8 @@ async def play_stream_slot(room_id: str, slot: int, current_user: User = Depends
     if slot == 1 and not _is_youtube_stream_url(stream_url):
         raise HTTPException(status_code=400, detail="الرابط الأول مخصص ليوتيوب فقط")
     
-    embed_url = convert_stream_url_to_embed(stream_url, mute=0)
+    resolved_origin = _get_request_origin(request)
+    embed_url = convert_stream_url_to_embed(stream_url, mute=0, origin_override=resolved_origin)
     
     await db.rooms.update_one(
         {"id": room_id},
