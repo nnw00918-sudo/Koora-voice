@@ -200,6 +200,7 @@ const YallaLiveRoom = ({ user }) => {
   const [editingSlot, setEditingSlot] = useState(null);
   const [streamKey, setStreamKey] = useState(0); // Force iframe reload
   const [isStreamExpanded, setIsStreamExpanded] = useState(false);
+  const [roomLoadError, setRoomLoadError] = useState('');
   const [streamLoadState, setStreamLoadState] = useState('idle'); // idle | loading | ready | failed
   const [streamRenderNonce, setStreamRenderNonce] = useState(0);
   
@@ -851,6 +852,9 @@ const YallaLiveRoom = ({ user }) => {
 
   const fetchRoomData = async (retryCount = 0) => {
     try {
+      if (retryCount === 0) {
+        setRoomLoadError('');
+      }
       // Fetch main room data first
       const roomRes = await axios.get(`${API}/rooms/${roomId}`);
       const roomData = roomRes.data;
@@ -923,8 +927,10 @@ const YallaLiveRoom = ({ user }) => {
         setTimeout(() => fetchRoomData(retryCount + 1), 1000);
         return;
       }
-      toast.error('فشل تحميل بيانات الغرفة');
-      navigate('/dashboard');
+      const loadErrorText = 'فشل تحميل بيانات الغرفة';
+      setRoomLoadError(loadErrorText);
+      toast.error(loadErrorText);
+      setLoading(false);
     }
   };
 
@@ -2808,6 +2814,33 @@ const YallaLiveRoom = ({ user }) => {
     );
   }
 
+  if (!room && roomLoadError) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-6" dir="rtl">
+        <div className="max-w-sm w-full rounded-2xl border border-red-500/40 bg-[#141414] p-5 text-center">
+          <p className="text-white font-cairo text-base mb-4">{roomLoadError}</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setLoading(true);
+                fetchRoomData(0);
+              }}
+              className="flex-1 py-2.5 rounded-lg bg-lime-500 text-black font-cairo font-bold"
+            >
+              إعادة المحاولة
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex-1 py-2.5 rounded-lg bg-white/15 text-white font-cairo font-bold"
+            >
+              رجوع
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const speakers = seats.filter(s => s.occupied);
   const listeners = participants.filter(p => p.seat_number === null);
 
@@ -3359,7 +3392,7 @@ const YallaLiveRoom = ({ user }) => {
         {/* Combined Stage + Chat Section */}
         <div className="px-4 pb-32 flex-1 overflow-y-auto">
           {/* ===== STREAM/BROADCAST AREA ===== */}
-          {streamSourceUrl && (
+          {room?.stream_active && streamSourceUrl && (
             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
               <div className="aspect-video w-full bg-black relative">
                 {streamEmbedUrl ? (
