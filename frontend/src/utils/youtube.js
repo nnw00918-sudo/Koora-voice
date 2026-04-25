@@ -153,8 +153,7 @@ export const buildYouTubeEmbedUrl = (url, { mute = 1 } = {}) => {
   return embedUrl.toString();
 };
 
-export const buildYouTubeProxyUrl = (youtubeUrl) => {
-  const embedUrl = buildYouTubeEmbedUrl(youtubeUrl, { mute: 0 });
-  if (!embedUrl || !isYouTubeUrl(embedUrl)) return embedUrl;
-  return `/api/youtube/embed?url=${encodeURIComponent(embedUrl)}`;
+export const buildYouTubeProxyUrl = (youtubeUrl, { mute = 0 } = {}) => {
+  if (!youtubeUrl || !isYouTubeUrl(youtubeUrl)) return youtubeUrl;
+  return `/api/youtube/embed?url=${encodeURIComponent(youtubeUrl)}&mute=${mute ? 1 : 0}`;
 };

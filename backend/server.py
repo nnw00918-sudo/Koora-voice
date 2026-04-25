@@ -3732,13 +3732,13 @@ async def get_stream(room_id: str):
 
 
 @api_router.get("/youtube/embed")
-async def youtube_embed_proxy(url: str):
+async def youtube_embed_proxy(url: str, mute: int = 0):
     """
     Serve a same-origin HTML wrapper for YouTube embeds.
     This helps mobile webviews keep a stable referer/client context and
     avoids YouTube error 153 in some iOS/Capacitor environments.
     """
-    embed_url = convert_stream_url_to_embed(url, mute=0)
+    embed_url = convert_stream_url_to_embed(url, mute=1 if mute else 0)
     parsed = urlparse(embed_url)
     host = parsed.netloc.lower()
     if "youtube.com" not in host and "youtube-nocookie.com" not in host:
@@ -3781,6 +3781,54 @@ async def youtube_embed_proxy(url: str):
     response.headers["Cache-Control"] = "no-store"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
+
+
+@api_router.get("/youtube/oembed/check")
+async def youtube_oembed_check(url: str):
+    """
+    Lightweight runtime diagnostics: verify whether a YouTube URL can be
+    resolved by YouTube oEmbed from the server side.
+    """
+    embed_url = convert_stream_url_to_embed(url, mute=0)
+    parsed = urlparse(embed_url)
+    host = parsed.netloc.lower()
+    if "youtube.com" not in host and "youtube-nocookie.com" not in host:
+        raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+
+    # Convert embed URL to watch URL for oEmbed validation.
+    path_parts = [part for part in parsed.path.split("/") if part]
+    watch_url = None
+    if len(path_parts) >= 2 and path_parts[0] == "embed" and path_parts[1] != "live_stream":
+        watch_url = f"https://www.youtube.com/watch?v={path_parts[1]}"
+
+    if not watch_url:
+        watch_url = url
+
+    oembed_url = "https://www.youtube.com/oembed"
+    params = {"url": watch_url, "format": "json"}
+    try:
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client_http:
+            oembed_resp = await client_http.get(oembed_url, params=params)
+        ok = oembed_resp.status_code == 200
+        payload = None
+        if ok:
+            payload = oembed_resp.json()
+        return {
+            "ok": ok,
+            "status_code": oembed_resp.status_code,
+            "watch_url": watch_url,
+            "embed_url": embed_url,
+            "title": payload.get("title") if payload else None,
+            "author_name": payload.get("author_name") if payload else None,
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "status_code": None,
+            "watch_url": watch_url,
+            "embed_url": embed_url,
+            "error": str(exc),
+        }
 
 
 # ============== Room News (أخبار الغرفة/الدوانية) ==============

@@ -26,7 +26,7 @@ import { playNotificationSound, toggleSound, isSoundEnabled } from '../utils/sou
 import { API, WS_BACKEND_URL, AGORA_APP_ID } from '../config/api';
 // Custom Hooks for Room Features
 import { useRoomPlayback } from '../hooks/useRoomPlayback';
-import { buildYouTubeEmbedUrl, isYouTubeUrl } from '../utils/youtube';
+import { buildYouTubeProxyUrl, isYouTubeUrl } from '../utils/youtube';
 import {
   Mic,
   MicOff,
@@ -1699,7 +1699,7 @@ const YallaLiveRoom = ({ user }) => {
     
     // YouTube Video - regular video or live
     if (url.includes('youtube.com/watch') || url.includes('youtu.be') || url.includes('youtube.com/live')) {
-      return buildYouTubeEmbedUrl(url, { mute: 1 });
+      return buildYouTubeProxyUrl(url, { mute: 1 });
     }
     
     // Twitch
@@ -1733,8 +1733,7 @@ const YallaLiveRoom = ({ user }) => {
 
   const toProxyEmbedUrl = (url, mute = 0) => {
     if (!url) return '';
-    const normalized = isYouTubeUrl(url) ? buildYouTubeEmbedUrl(url, { mute }) : url;
-    return `/api/youtube/embed?url=${encodeURIComponent(normalized)}`;
+    return buildYouTubeProxyUrl(url, { mute });
   };
 
   // TV Receiver Style - Instant channel switch
