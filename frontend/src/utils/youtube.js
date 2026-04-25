@@ -3,7 +3,8 @@ import { API } from '../config/api';
 const DEFAULT_YOUTUBE_ORIGIN =
   process.env.REACT_APP_FRONTEND_ORIGIN ||
   process.env.REACT_APP_CANONICAL_ORIGIN ||
-  'https://pitch-chat.preview.emergentagent.com';
+  process.env.REACT_APP_BACKEND_URL ||
+  'https://www.youtube.com';
 
 const ensureUrl = (value) => {
   if (!value || typeof value !== 'string') return null;
@@ -155,12 +156,17 @@ export const buildYouTubeEmbedUrl = (url, { mute = 1 } = {}) => {
   return embedUrl.toString();
 };
 
-export const buildYouTubeProxyUrl = (youtubeUrl) => {
+export const buildYouTubeProxyUrl = (youtubeUrl, { mute = 0 } = {}) => {
   if (!youtubeUrl) return youtubeUrl;
 
   try {
     const parsed = new URL(youtubeUrl);
     if (parsed.pathname.endsWith('/api/youtube/embed') && parsed.searchParams.get('url')) {
+      parsed.searchParams.set('mute', String(mute));
+      return parsed.toString();
+    }
+    if (parsed.pathname.endsWith('/youtube/embed') && parsed.searchParams.get('url')) {
+      parsed.searchParams.set('mute', String(mute));
       return youtubeUrl;
     }
   } catch {
@@ -168,5 +174,5 @@ export const buildYouTubeProxyUrl = (youtubeUrl) => {
   }
 
   if (!isYouTubeUrl(youtubeUrl)) return youtubeUrl;
-  return `${API}/youtube/embed?url=${encodeURIComponent(youtubeUrl)}`;
+  return `${API}/youtube/embed?url=${encodeURIComponent(youtubeUrl)}&mute=${mute ? 1 : 0}`;
 };
