@@ -124,6 +124,13 @@ const StorePage = () => {
             productId,
             transactionId: result.customerInfo?.originalAppUserId,
           }, { headers });
+          
+          // Refresh user data to update is_vip status
+          const userResponse = await axios.get(`${API}/api/auth/me`, { headers });
+          if (userResponse.data) {
+            localStorage.setItem('user', JSON.stringify(userResponse.data));
+            window.dispatchEvent(new Event('userUpdated'));
+          }
         } catch (e) {
           console.log('Backend sync will happen later');
         }

@@ -2582,7 +2582,7 @@ const YallaLiveRoom = ({ user }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Check if user can send images (Admin, Owner, Room Owner, Mod)
+  // Check if user can send images (Admin, Owner, Room Owner, Mod, VIP, or Subscriber)
   const canSendImages = () => {
     // Owner and Admin can always send images
     if (user?.role === 'owner' || user?.role === 'admin') return true;
@@ -2590,6 +2590,8 @@ const YallaLiveRoom = ({ user }) => {
     if (room?.owner_id === user?.id) return true;
     // VIP users can send images
     if (user?.is_vip) return true;
+    // Subscribers can send images (check subscription_type)
+    if (user?.subscription_type === 'all' || user?.subscription_type === 'monthly' || user?.subscription_type === 'yearly') return true;
     // Room admins/mods can send images
     const userRole = participants.find(p => p.id === user?.id);
     if (userRole?.role === 'admin' || userRole?.role === 'mod') return true;
