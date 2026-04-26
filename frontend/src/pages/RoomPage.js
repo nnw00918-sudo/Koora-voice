@@ -2003,16 +2003,39 @@ const YallaLiveRoom = ({ user }) => {
     
     console.log('📺 Playing Channel:', slot, 'URL:', rawUrl);
     
-    // Check if YouTube and iOS - open in Safari instead
+    // Check if YouTube and iOS
     const isYouTube = rawUrl.includes('youtube.com') || rawUrl.includes('youtu.be');
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     
+    // Reset YouTube states
+    setYoutubeDirectUrl(null);
+    setYoutubeError(null);
+    setYoutubeLoading(false);
+    
     if (isYouTube && isIOS) {
-      // Open YouTube in Safari/external browser
-      window.open(rawUrl, '_blank');
-      toast.info('يتم فتح YouTube في المتصفح');
-      return;
+      // Try to get direct URL from API first
+      setYoutubeLoading(true);
+      try {
+        const response = await axios.get(`${API}/api/stream/youtube-direct`, {
+          params: { url: rawUrl },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data?.direct_url) {
+          setYoutubeDirectUrl(response.data.direct_url);
+          setYoutubeInfo(response.data);
+          console.log('✅ Got YouTube direct URL:', response.data.direct_url);
+        } else {
+          throw new Error('No direct URL');
+        }
+      } catch (error) {
+        console.error('❌ YouTube direct URL failed:', error);
+        setYoutubeError('فشل تحميل الفيديو');
+        // Don't return - will show "Open in Safari" button
+      } finally {
+        setYoutubeLoading(false);
+      }
     }
     
     // Set LOCAL active stream (this won't be overwritten by polling)
@@ -3618,7 +3641,66 @@ const YallaLiveRoom = ({ user }) => {
                   
                   console.log('📺 Rendering video - URL:', url);
                   
-                  // YouTube - ReactPlayer
+                  // Check if iOS
+                  const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                  
+                  // YouTube on iOS - Use direct URL from API or open in Safari
+                  if (isYouTube && youtubeVideoId && isIOSDevice) {
+                    // If we have a direct URL from the API, use it
+                    if (youtubeDirectUrl && !youtubeError) {
+                      return (
+                        <div className="w-full h-full">
+                          <ReactPlayer
+                            key={streamKey}
+                            url={youtubeDirectUrl}
+                            width="100%"
+                            height="100%"
+                            playing={true}
+                            controls={true}
+                            playsinline={true}
+                            config={{
+                              file: {
+                                forceVideo: true,
+                                attributes: {
+                                  playsInline: true,
+                                  'webkit-playsinline': 'true'
+                                }
+                              }
+                            }}
+                            onError={(e) => console.error('Direct URL error:', e)}
+                          />
+                        </div>
+                      );
+                    } else {
+                      // Show loading or open in Safari button
+                      return (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-black text-white">
+                          {youtubeLoading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mb-4"></div>
+                              <p className="text-sm">جاري تحميل الفيديو...</p>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-16 h-16 text-red-500 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                              </svg>
+                              <p className="text-sm mb-4">YouTube لا يعمل داخل التطبيق على iOS</p>
+                              <button
+                                onClick={() => window.open(url, '_blank')}
+                                className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-bold"
+                              >
+                                فتح في Safari
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    }
+                  }
+                  
+                  // YouTube on Web/Android - ReactPlayer
                   if (isYouTube && youtubeVideoId) {
                     return (
                       <div 
