@@ -3838,7 +3838,7 @@ const YallaLiveRoom = ({ user }) => {
                 <div className="flex items-center justify-center gap-1.5 overflow-x-auto pb-1" dir="ltr">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(slot => {
                     const hasChannel = streamSlots[slot];
-                    const isActive = localActiveStream === streamSlots[slot] && streamSlots[slot];
+                    const isActive = localActiveStream?.slot === slot;
                     return (
                       <button
                         key={slot}
@@ -4709,7 +4709,7 @@ const YallaLiveRoom = ({ user }) => {
                 
                 <div className="space-y-3">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((slot) => (
-                    <div key={slot} className={`p-3 rounded-xl border ${activeSlot === slot && streamActive ? 'bg-violet-500/20 border-violet-500' : 'bg-white/5 border-white/10'}`}>
+                    <div key={slot} className={`p-3 rounded-xl border ${localActiveStream?.slot === slot ? 'bg-violet-500/20 border-violet-500' : 'bg-white/5 border-white/10'}`}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-white font-cairo font-bold">رابط {slot}</span>
                         <div className="flex items-center gap-2">
@@ -4717,14 +4717,14 @@ const YallaLiveRoom = ({ user }) => {
                             <motion.button
                               whileTap={{ scale: 0.9 }}
                               onClick={() => handlePlaySlot(slot)}
-                              disabled={activeSlot === slot && streamActive}
+                              disabled={localActiveStream?.slot === slot}
                               className={`px-3 py-1 rounded-full text-xs font-cairo font-bold ${
-                                activeSlot === slot && streamActive 
+                                localActiveStream?.slot === slot 
                                   ? 'bg-green-500 text-white' 
                                   : 'bg-violet-500 hover:bg-violet-400 text-white'
                               }`}
                             >
-                              {activeSlot === slot && streamActive ? 'يعمل الآن' : 'تشغيل'}
+                              {localActiveStream?.slot === slot ? 'يعمل الآن' : 'تشغيل'}
                             </motion.button>
                           )}
                           <motion.button
