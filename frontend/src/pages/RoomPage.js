@@ -814,14 +814,20 @@ const YallaLiveRoom = ({ user }) => {
           // Get IDs of server messages
           const serverMessageIds = new Set(filteredMessages.map(m => m.id));
           // Keep local messages that aren't on server yet (optimistic updates)
-          const localOnlyMessages = prev.filter(m => m.isLocal && !serverMessageIds.has(m.id));
+          // Keep them for 30 seconds to give time for server sync
+          const thirtySecondsAgo = Date.now() - 30000;
+          const localOnlyMessages = prev.filter(m => {
+            if (m.isLocal && !serverMessageIds.has(m.id)) {
+              const msgTime = new Date(m.created_at).getTime();
+              return msgTime > thirtySecondsAgo; // Keep if less than 30 seconds old
+            }
+            return false;
+          });
           // Merge: server messages + local-only messages
           const merged = [...filteredMessages, ...localOnlyMessages];
-          // Only update if actually different
-          if (JSON.stringify(prev.map(m => m.id).sort()) !== JSON.stringify(merged.map(m => m.id).sort())) {
-            return merged;
-          }
-          return prev;
+          // Sort by created_at
+          merged.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+          return merged;
         });
         
         // Update participants - only if changed
