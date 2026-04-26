@@ -3222,31 +3222,13 @@ async def send_image_url_message(
 
 @api_router.get("/rooms/{room_id}/messages", response_model=List[Message])
 async def get_room_messages(room_id: str, limit: int = 50):
-    # Get messages from both collections and merge
-    http_messages = await db.messages.find(
+    messages = await db.messages.find(
         {"room_id": room_id},
         {"_id": 0}
     ).sort("timestamp", -1).limit(limit).to_list(limit)
     
-    ws_messages = await db.room_messages.find(
-        {"room_id": room_id},
-        {"_id": 0}
-    ).sort("created_at", -1).limit(limit).to_list(limit)
-    
-    # Convert ws_messages to same format
-    for msg in ws_messages:
-        if "created_at" in msg and "timestamp" not in msg:
-            msg["timestamp"] = msg["created_at"]
-        if "user_id" in msg and "sender_id" not in msg:
-            msg["sender_id"] = msg["user_id"]
-    
-    # Merge and sort
-    all_messages = http_messages + ws_messages
-    all_messages.sort(key=lambda x: x.get("timestamp") or x.get("created_at", ""), reverse=True)
-    all_messages = all_messages[:limit]
-    all_messages.reverse()
-    
-    return all_messages
+    messages.reverse()
+    return messages
 
 
 @api_router.delete("/rooms/{room_id}/messages/{message_id}")
@@ -5864,17 +5846,19 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     except:
                         pass
                 
-                # Save message to room_messages collection
+                # Save message to messages collection (same as HTTP API)
                 message_id = str(int(time.time() * 1000))
                 new_message = {
                     "id": message_id,
                     "room_id": room_id,
                     "user_id": user_id,
+                    "sender_id": user_id,  # For compatibility with HTTP API
                     "username": sender.get("username"),
                     "avatar": sender.get("avatar") or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_id}",
                     "content": content,
                     "is_vip": is_vip,
-                    "created_at": datetime.now(timezone.utc).isoformat()
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat()  # For compatibility
                 }
                 
                 # Add reply info if present
@@ -5883,7 +5867,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     new_message["reply_to_username"] = reply_to_username
                     new_message["reply_to_content"] = reply_to_content
                 
-                await db.room_messages.insert_one(new_message)
+                await db.messages.insert_one(new_message)
                 
                 # Award XP for sending message
                 try:
