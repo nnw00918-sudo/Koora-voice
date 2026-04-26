@@ -3222,13 +3222,31 @@ async def send_image_url_message(
 
 @api_router.get("/rooms/{room_id}/messages", response_model=List[Message])
 async def get_room_messages(room_id: str, limit: int = 50):
-    messages = await db.messages.find(
+    # Get messages from both collections and merge
+    http_messages = await db.messages.find(
         {"room_id": room_id},
         {"_id": 0}
     ).sort("timestamp", -1).limit(limit).to_list(limit)
     
-    messages.reverse()
-    return [Message(**m) for m in messages]
+    ws_messages = await db.room_messages.find(
+        {"room_id": room_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    # Convert ws_messages to same format
+    for msg in ws_messages:
+        if "created_at" in msg and "timestamp" not in msg:
+            msg["timestamp"] = msg["created_at"]
+        if "user_id" in msg and "sender_id" not in msg:
+            msg["sender_id"] = msg["user_id"]
+    
+    # Merge and sort
+    all_messages = http_messages + ws_messages
+    all_messages.sort(key=lambda x: x.get("timestamp") or x.get("created_at", ""), reverse=True)
+    all_messages = all_messages[:limit]
+    all_messages.reverse()
+    
+    return all_messages
 
 
 @api_router.delete("/rooms/{room_id}/messages/{message_id}")
