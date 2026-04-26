@@ -14,8 +14,8 @@ import { API } from '../config/api';
 // Product IDs from App Store Connect
 export const PRODUCT_IDS = {
   ALL_MONTHLY: 'com.kooravoice.all.monthly',
-  ALL_6MONTHS: 'com.kooravoice.all.6months',
-  ALL_YEARLY: 'com.kooravoice.all.yearly',
+  ALL_6MONTHS: 'com.kooravoice.all.yearly',  // 6 months subscription
+  ALL_YEARLY: 'com.kooravoice.all.12months', // 12 months subscription
 };
 
 // Check if running on native iOS
