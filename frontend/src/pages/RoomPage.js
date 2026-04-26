@@ -2003,6 +2003,18 @@ const YallaLiveRoom = ({ user }) => {
     
     console.log('📺 Playing Channel:', slot, 'URL:', rawUrl);
     
+    // Check if YouTube and iOS - open in Safari instead
+    const isYouTube = rawUrl.includes('youtube.com') || rawUrl.includes('youtu.be');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isYouTube && isIOS) {
+      // Open YouTube in Safari/external browser
+      window.open(rawUrl, '_blank');
+      toast.info('يتم فتح YouTube في المتصفح');
+      return;
+    }
+    
     // Set LOCAL active stream (this won't be overwritten by polling)
     setLocalActiveStream({
       url: rawUrl,
