@@ -1,7 +1,10 @@
 /**
  * Apple In-App Purchases Service
  * Using @capgo/native-purchases for iOS StoreKit 2 integration (iOS 15+)
- * Product IDs: com.kooravoice.all.monthly ($4.99), com.kooravoice.all.yearly ($49.99)
+ * Product IDs: 
+ *   - com.kooravoice.all.monthly ($9.99)
+ *   - com.kooravoice.all.6months ($49.99)
+ *   - com.kooravoice.all.yearly ($99.99)
  */
 
 import { Capacitor } from '@capacitor/core';
@@ -11,6 +14,7 @@ import { API } from '../config/api';
 // Product IDs from App Store Connect
 export const PRODUCT_IDS = {
   ALL_MONTHLY: 'com.kooravoice.all.monthly',
+  ALL_6MONTHS: 'com.kooravoice.all.6months',
   ALL_YEARLY: 'com.kooravoice.all.yearly',
 };
 
@@ -102,15 +106,22 @@ export const getProducts = async () => {
         identifier: PRODUCT_IDS.ALL_MONTHLY,
         title: 'جميع المميزات - شهري',
         description: 'احصل على جميع مميزات التطبيق',
-        priceString: '$4.99',
-        price: 4.99,
+        priceString: '$9.99',
+        price: 9.99,
+      },
+      {
+        identifier: PRODUCT_IDS.ALL_6MONTHS,
+        title: 'جميع المميزات - 6 شهور',
+        description: 'احصل على جميع المميزات لمدة 6 شهور',
+        priceString: '$49.99',
+        price: 49.99,
       },
       {
         identifier: PRODUCT_IDS.ALL_YEARLY,
         title: 'جميع المميزات - سنوي',
         description: 'احصل على جميع المميزات لمدة سنة كاملة',
-        priceString: '$49.99',
-        price: 49.99,
+        priceString: '$99.99',
+        price: 99.99,
       },
     ];
   } catch (error) {
@@ -119,14 +130,20 @@ export const getProducts = async () => {
       {
         identifier: PRODUCT_IDS.ALL_MONTHLY,
         title: 'جميع المميزات - شهري',
-        priceString: '$4.99',
-        price: 4.99,
+        priceString: '$9.99',
+        price: 9.99,
+      },
+      {
+        identifier: PRODUCT_IDS.ALL_6MONTHS,
+        title: 'جميع المميزات - 6 شهور',
+        priceString: '$49.99',
+        price: 49.99,
       },
       {
         identifier: PRODUCT_IDS.ALL_YEARLY,
         title: 'جميع المميزات - سنوي',
-        priceString: '$49.99',
-        price: 49.99,
+        priceString: '$99.99',
+        price: 99.99,
       },
     ];
   }

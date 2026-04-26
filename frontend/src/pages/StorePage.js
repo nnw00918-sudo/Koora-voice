@@ -174,8 +174,9 @@ const StorePage = () => {
                               featuresStatus.colored_messages && featuresStatus.profile_frame;
 
   const monthlyProduct = products.find(p => p.identifier === PRODUCT_IDS.ALL_MONTHLY);
+  const sixMonthsProduct = products.find(p => p.identifier === PRODUCT_IDS.ALL_6MONTHS);
   const yearlyProduct = products.find(p => p.identifier === PRODUCT_IDS.ALL_YEARLY);
-  const currentProduct = selectedPeriod === 'monthly' ? monthlyProduct : yearlyProduct;
+  const currentProduct = selectedPeriod === 'monthly' ? monthlyProduct : selectedPeriod === '6months' ? sixMonthsProduct : yearlyProduct;
 
   if (loading) {
     return (
@@ -242,6 +243,16 @@ const StorePage = () => {
                   {isRTL ? 'شهري' : 'Monthly'}
                 </button>
                 <button
+                  onClick={() => setSelectedPeriod('6months')}
+                  className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                    selectedPeriod === '6months'
+                      ? 'bg-lime-500 text-slate-900'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  {isRTL ? '6 شهور' : '6 Months'}
+                </button>
+                <button
                   onClick={() => setSelectedPeriod('yearly')}
                   className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
                     selectedPeriod === 'yearly'
@@ -286,10 +297,10 @@ const StorePage = () => {
                 {/* Price */}
                 <div className="text-center mb-6">
                   <span className="text-4xl font-black text-lime-400">
-                    {currentProduct?.priceString || (selectedPeriod === 'monthly' ? '$4.99' : '$49.99')}
+                    {currentProduct?.priceString || (selectedPeriod === 'monthly' ? '$9.99' : selectedPeriod === '6months' ? '$49.99' : '$99.99')}
                   </span>
                   <span className="text-white/50 text-lg">
-                    /{selectedPeriod === 'monthly' ? (isRTL ? 'شهر' : 'mo') : (isRTL ? 'سنة' : 'yr')}
+                    /{selectedPeriod === 'monthly' ? (isRTL ? 'شهر' : 'mo') : selectedPeriod === '6months' ? (isRTL ? '6 شهور' : '6mo') : (isRTL ? 'سنة' : 'yr')}
                   </span>
                 </div>
 
@@ -318,7 +329,9 @@ const StorePage = () => {
                     onClick={() => {
                       const productId = selectedPeriod === 'monthly' 
                         ? PRODUCT_IDS.ALL_MONTHLY 
-                        : PRODUCT_IDS.ALL_YEARLY;
+                        : selectedPeriod === '6months'
+                          ? PRODUCT_IDS.ALL_6MONTHS
+                          : PRODUCT_IDS.ALL_YEARLY;
                       console.log('Purchasing product:', productId);
                       handlePurchase(productId);
                     }}
