@@ -3831,28 +3831,30 @@ const YallaLiveRoom = ({ user }) => {
               </div>
               
               {/* Channel Switcher */}
-              {Object.keys(streamSlots).filter(k => streamSlots[k]).length > 0 && (
-                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-2 border-t border-white/10">
-                  <div className="flex items-center justify-center gap-2 overflow-x-auto" dir="ltr">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(slot => {
-                      const hasChannel = streamSlots[slot];
-                      const isActive = room.stream_url === streamSlots[slot];
-                      if (!hasChannel) return null;
-                      return (
-                        <button
-                          key={slot}
-                          onClick={() => handlePlaySlot(slot)}
-                          className={`min-w-[40px] h-9 rounded-xl font-bold text-sm transition-all flex items-center justify-center ${
-                            isActive ? 'bg-[#CCFF00] text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                          }`}
-                        >
-                          {slot}
-                        </button>
-                      );
-                    })}
-                  </div>
+              {/* Channel Switcher - Always visible */}
+              <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-2 border-t border-white/10">
+                <div className="flex items-center justify-center gap-1.5 overflow-x-auto pb-1" dir="ltr">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(slot => {
+                    const hasChannel = streamSlots[slot];
+                    const isActive = localActiveStream === streamSlots[slot] && streamSlots[slot];
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => hasChannel && handlePlaySlot(slot)}
+                        className={`min-w-[36px] h-8 rounded-lg font-bold text-xs transition-all flex items-center justify-center ${
+                          isActive 
+                            ? 'bg-[#CCFF00] text-black' 
+                            : hasChannel 
+                              ? 'bg-slate-700 text-white hover:bg-slate-600' 
+                              : 'bg-slate-800/50 text-slate-600 cursor-default'
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
             </div>
           ) : (
             /* No Stream */
@@ -3866,25 +3868,27 @@ const YallaLiveRoom = ({ user }) => {
                 <p className="text-slate-500 text-sm">لا يوجد بث</p>
               </div>
               
-              {/* Channel Switcher */}
-              {Object.keys(streamSlots).filter(k => streamSlots[k]).length > 0 && (
-                <div className="bg-slate-900 p-2 border-t border-white/10">
-                  <div className="flex items-center justify-center gap-2 overflow-x-auto" dir="ltr">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(slot => {
-                      if (!streamSlots[slot]) return null;
-                      return (
-                        <button
-                          key={slot}
-                          onClick={() => handlePlaySlot(slot)}
-                          className="min-w-[40px] h-9 rounded-xl font-bold text-sm bg-slate-800 text-slate-400 hover:bg-[#CCFF00] hover:text-black"
-                        >
-                          {slot}
-                        </button>
-                      );
-                    })}
-                  </div>
+              {/* Channel Switcher - Always visible */}
+              <div className="bg-slate-900 p-2 border-t border-white/10">
+                <div className="flex items-center justify-center gap-1.5 overflow-x-auto pb-1" dir="ltr">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(slot => {
+                    const hasChannel = streamSlots[slot];
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => hasChannel && handlePlaySlot(slot)}
+                        className={`min-w-[36px] h-8 rounded-lg font-bold text-xs transition-all ${
+                          hasChannel 
+                            ? 'bg-slate-700 text-white hover:bg-[#CCFF00] hover:text-black' 
+                            : 'bg-slate-800/50 text-slate-600 cursor-default'
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
             </div>
           )}
             </>
