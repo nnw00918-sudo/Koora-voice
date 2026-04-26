@@ -66,23 +66,30 @@ export const getProducts = async () => {
       {
         identifier: PRODUCT_IDS.ALL_MONTHLY,
         title: 'جميع المميزات - شهري',
-        description: 'احصل على جميع مميزات التطبيق',
-        priceString: '$4.99',
-        price: 4.99,
+        description: 'احصل على جميع مميزات التطبيق لمدة شهر',
+        priceString: '$9.99',
+        price: 9.99,
+      },
+      {
+        identifier: PRODUCT_IDS.ALL_6MONTHS,
+        title: 'جميع المميزات - 6 شهور',
+        description: 'احصل على جميع المميزات لمدة 6 شهور',
+        priceString: '$49.99',
+        price: 49.99,
       },
       {
         identifier: PRODUCT_IDS.ALL_YEARLY,
         title: 'جميع المميزات - سنوي',
         description: 'احصل على جميع المميزات لمدة سنة كاملة',
-        priceString: '$49.99',
-        price: 49.99,
+        priceString: '$99.99',
+        price: 99.99,
       },
     ];
   }
 
   try {
     const { NativePurchases, PURCHASE_TYPE } = await import('@capgo/native-purchases');
-    const productIdentifiers = [PRODUCT_IDS.ALL_MONTHLY, PRODUCT_IDS.ALL_YEARLY];
+    const productIdentifiers = [PRODUCT_IDS.ALL_MONTHLY, PRODUCT_IDS.ALL_6MONTHS, PRODUCT_IDS.ALL_YEARLY];
     const result = await NativePurchases.getProducts({ 
       productIdentifiers: productIdentifiers,
       productType: PURCHASE_TYPE.SUBS  // For subscriptions
