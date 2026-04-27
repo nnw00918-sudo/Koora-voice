@@ -3,8 +3,8 @@
  * Using @capgo/native-purchases for iOS StoreKit 2 integration (iOS 15+)
  * Product IDs: 
  *   - com.kooravoice.all.monthly ($9.99)
- *   - com.kooravoice.all.6months ($49.99)
- *   - com.kooravoice.all.yearly ($99.99)
+ *   - com.kooravoice.all.yearly ($49.99) - 6 months
+ *   - com.kooravoice.all.annual ($99.99) - 12 months
  */
 
 import { Capacitor } from '@capacitor/core';
@@ -15,7 +15,7 @@ import { API } from '../config/api';
 export const PRODUCT_IDS = {
   ALL_MONTHLY: 'com.kooravoice.all.monthly',
   ALL_6MONTHS: 'com.kooravoice.all.yearly',  // 6 months subscription
-  ALL_YEARLY: 'com.kooravoice.all.12months', // 12 months subscription
+  ALL_YEARLY: 'com.kooravoice.all.annual',   // 12 months subscription (annual)
 };
 
 // Check if running on native iOS
