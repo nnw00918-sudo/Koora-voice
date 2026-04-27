@@ -63,8 +63,23 @@ const PrivacyPolicyPage = () => {
         <section className="mb-8">
           <h2 className="text-xl font-bold text-white mb-4">7. الاتصال بنا</h2>
           <p className="text-slate-300 leading-relaxed">
-            إذا كان لديك أي أسئلة حول سياسة الخصوصية، يرجى التواصل معنا عبر البريد الإلكتروني.
+            إذا كان لديك أي أسئلة حول سياسة الخصوصية، يرجى التواصل معنا عبر البريد الإلكتروني:
           </p>
+          <a href="mailto:support@kooravoice.com" className="text-lime-400 font-bold hover:underline">
+            support@kooravoice.com
+          </a>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-xl font-bold text-white mb-4">8. روابط مهمة</h2>
+          <div className="space-y-3">
+            <a href="/terms" className="block text-lime-400 hover:underline">
+              شروط الاستخدام
+            </a>
+            <a href="/support" className="block text-lime-400 hover:underline">
+              الدعم الفني
+            </a>
+          </div>
         </section>
 
         <div className="border-t border-slate-700 pt-6 mt-8">

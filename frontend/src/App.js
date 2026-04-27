@@ -34,6 +34,8 @@ const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
 const BadgesPage = lazy(() => import('./pages/BadgesPage'));
 const StorePage = lazy(() => import('./pages/StorePage'));
 const PaymentResultPage = lazy(() => import('./pages/PaymentResultPage'));
+const TermsOfUsePage = lazy(() => import('./pages/TermsOfUsePage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
 
 // Non-lazy components (always needed)
 import PWAInstallPrompt from './components/PWAInstallPrompt';
@@ -155,6 +157,8 @@ function App() {
                 <Route path="/payment/success" element={user ? <PaymentResultPage /> : <Navigate to="/" />} />
                 <Route path="/payment/cancel" element={user ? <PaymentResultPage /> : <Navigate to="/" />} />
                 <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                <Route path="/terms" element={<TermsOfUsePage />} />
+                <Route path="/support" element={<SupportPage />} />
               </Routes>
             </Suspense>
             <MiniAudioPlayer />
