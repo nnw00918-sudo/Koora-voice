@@ -9,7 +9,7 @@ import { usePushNotifications } from '../hooks/usePushNotifications';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import BottomNavigation from '../components/BottomNavigation';
-import { BACKEND_URL, API } from '../config/api';
+import { API } from '../config/api';
 import { 
   ArrowLeft, ArrowRight, Home, Trophy, Settings, Bell, Moon, Sun, Volume2, VolumeX,
   Shield, LogOut, ChevronLeft, ChevronRight, User, Lock, Eye, EyeOff, Globe, Palette,
@@ -55,6 +55,13 @@ const SettingsPage = ({ user, onLogout }) => {
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
   const token = localStorage.getItem('token');
+
+  const navigateToView = (view) => setCurrentView(view);
+  const goToMainView = () => navigateToView('main');
+  const openBlockedUsersView = () => {
+    fetchBlockedUsers();
+    setShowBlockedUsers(true);
+  };
 
   // Push Notifications Hook
   const {
@@ -439,6 +446,63 @@ const SettingsPage = ({ user, onLogout }) => {
     }
   };
 
+  const setPasswordField = (field, value) => {
+    setPasswordData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
+  };
+
+  const renderPasswordField = (fieldKey, placeholder) => (
+    <div className="relative">
+      <Input
+        type={showPasswords[fieldKey] ? 'text' : 'password'}
+        placeholder={placeholder}
+        value={passwordData[fieldKey]}
+        onChange={(e) => setPasswordField(fieldKey, e.target.value)}
+        className="bg-slate-800 border-slate-700 text-white pr-12"
+      />
+      <button
+        onClick={() => togglePasswordVisibility(fieldKey)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+      >
+        {showPasswords[fieldKey] ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+      </button>
+    </div>
+  );
+
+  const notificationActivityItems = [
+    { key: 'message', icon: MessageSquare, title: txt.messageNotif, desc: txt.messageNotifDesc },
+    { key: 'likes', icon: Heart, title: txt.likesNotif, desc: txt.likesNotifDesc },
+    { key: 'comments', icon: MessageSquare, title: txt.commentsNotif, desc: txt.commentsNotifDesc },
+    { key: 'follow', icon: UserPlus, title: txt.followNotif, desc: txt.followNotifDesc },
+    { key: 'mentions', icon: AtSign, title: txt.mentionsNotif, desc: txt.mentionsNotifDesc },
+  ];
+
+  const kooraNotificationItems = [
+    { key: 'room', icon: Users, title: txt.roomNotif, desc: txt.roomNotifDesc },
+  ];
+
+  const renderNotificationToggleItems = (items) =>
+    items.map((item) => (
+      <div key={item.key} className={`flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className="w-11 h-11 rounded-xl bg-slate-700/50 flex items-center justify-center">
+            <item.icon className="w-5 h-5 text-slate-400" />
+          </div>
+          <div className={isRTL ? 'text-right' : 'text-left'}>
+            <p className="text-white font-cairo font-bold">{item.title}</p>
+            <p className="text-slate-500 text-sm font-almarai">{item.desc}</p>
+          </div>
+        </div>
+        <ToggleSwitch
+          enabled={settings[`${item.key}Notif`]}
+          onChange={(val) => updateSetting(`${item.key}Notif`, val)}
+        />
+      </div>
+    ));
+
   // Toggle Switch Component
   const ToggleSwitch = ({ enabled, onChange, disabled = false }) => (
     <button
@@ -492,65 +556,56 @@ const SettingsPage = ({ user, onLogout }) => {
     </div>
   );
 
+  const ownerQuickLinks = [
+    {
+      id: 'admin-dashboard',
+      icon: Shield,
+      title: isRTL ? 'لوحة التحكم' : 'Admin Dashboard',
+      description: isRTL ? 'إدارة المستخدمين والغرف' : 'Manage users and rooms',
+      onClick: () => navigate('/admin'),
+    },
+    {
+      id: 'announcements',
+      icon: Megaphone,
+      title: isRTL ? 'الإعلانات' : 'Announcements',
+      description: isRTL ? 'إرسال إعلانات للغرف' : 'Send announcements to rooms',
+      onClick: () => navigate('/announcements'),
+    },
+  ];
+
+  const mainNavigationItems = [
+    { view: 'account', icon: Lock, title: txt.account, description: txt.accountDesc },
+    { view: 'privacy', icon: Eye, title: txt.privacy, description: txt.privacyDesc },
+    { view: 'security', icon: Shield, title: txt.security, description: txt.securityDesc },
+    { view: 'notifications', icon: Bell, title: txt.notifications, description: txt.notificationsDesc },
+    { view: 'display', icon: Palette, title: txt.display, description: txt.displayDesc },
+    { view: 'language', icon: Globe, title: txt.language, description: txt.languageDesc },
+  ];
+
   // Main Settings View
   const MainView = () => (
     <div className="space-y-3">
-      {/* Admin Dashboard Link - Only for owner */}
       {user?.role === 'owner' && (
-        <SettingItem 
-          icon={Shield} 
-          title={isRTL ? 'لوحة التحكم' : 'Admin Dashboard'} 
-          description={isRTL ? 'إدارة المستخدمين والغرف' : 'Manage users and rooms'}
-          onClick={() => navigate('/admin')} 
-        />
+        ownerQuickLinks.map((item) => (
+          <SettingItem
+            key={item.id}
+            icon={item.icon}
+            title={item.title}
+            description={item.description}
+            onClick={item.onClick}
+          />
+        ))
       )}
       
-      {/* Announcements Link - Only for owner */}
-      {user?.role === 'owner' && (
-        <SettingItem 
-          icon={Megaphone} 
-          title={isRTL ? 'الإعلانات' : 'Announcements'} 
-          description={isRTL ? 'إرسال إعلانات للغرف' : 'Send announcements to rooms'}
-          onClick={() => navigate('/announcements')} 
+      {mainNavigationItems.map((item) => (
+        <SettingItem
+          key={item.view}
+          icon={item.icon}
+          title={item.title}
+          description={item.description}
+          onClick={() => navigateToView(item.view)}
         />
-      )}
-      
-      <SettingItem 
-        icon={Lock} 
-        title={txt.account} 
-        description={txt.accountDesc}
-        onClick={() => setCurrentView('account')} 
-      />
-      <SettingItem 
-        icon={Eye} 
-        title={txt.privacy} 
-        description={txt.privacyDesc}
-        onClick={() => setCurrentView('privacy')} 
-      />
-      <SettingItem 
-        icon={Shield} 
-        title={txt.security} 
-        description={txt.securityDesc}
-        onClick={() => setCurrentView('security')} 
-      />
-      <SettingItem 
-        icon={Bell} 
-        title={txt.notifications} 
-        description={txt.notificationsDesc}
-        onClick={() => setCurrentView('notifications')} 
-      />
-      <SettingItem 
-        icon={Palette} 
-        title={txt.display} 
-        description={txt.displayDesc}
-        onClick={() => setCurrentView('display')} 
-      />
-      <SettingItem 
-        icon={Globe} 
-        title={txt.language} 
-        description={txt.languageDesc}
-        onClick={() => setCurrentView('language')} 
-      />
+      ))}
       
       <div className="pt-4" />
       
@@ -562,7 +617,7 @@ const SettingsPage = ({ user, onLogout }) => {
       <SettingItem 
         icon={Info} 
         title={txt.about}
-        onClick={() => setCurrentView('about')} 
+        onClick={() => navigateToView('about')} 
       />
       
       <div className="pt-4" />
@@ -690,14 +745,11 @@ const SettingsPage = ({ user, onLogout }) => {
       </div>
 
       <SectionHeader title={isRTL ? 'الحظر' : 'Blocking'} icon={Ban} />
-      <SettingItem 
+      <SettingItem
         icon={UserX}
         title={txt.blockedUsers}
         description={txt.blockedUsersDesc}
-        onClick={() => {
-          fetchBlockedUsers();
-          setShowBlockedUsers(true);
-        }}
+        onClick={openBlockedUsersView}
       />
     </div>
   );
@@ -879,52 +931,12 @@ const SettingsPage = ({ user, onLogout }) => {
 
       <SectionHeader title={isRTL ? 'الأنشطة' : 'Activities'} icon={Heart} />
       <div className="space-y-3">
-        {[
-          { key: 'message', icon: MessageSquare, title: txt.messageNotif, desc: txt.messageNotifDesc },
-          { key: 'likes', icon: Heart, title: txt.likesNotif, desc: txt.likesNotifDesc },
-          { key: 'comments', icon: MessageSquare, title: txt.commentsNotif, desc: txt.commentsNotifDesc },
-          { key: 'follow', icon: UserPlus, title: txt.followNotif, desc: txt.followNotifDesc },
-          { key: 'mentions', icon: AtSign, title: txt.mentionsNotif, desc: txt.mentionsNotifDesc },
-        ].map(item => (
-          <div key={item.key} className={`flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div className="w-11 h-11 rounded-xl bg-slate-700/50 flex items-center justify-center">
-                <item.icon className="w-5 h-5 text-slate-400" />
-              </div>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
-                <p className="text-white font-cairo font-bold">{item.title}</p>
-                <p className="text-slate-500 text-sm font-almarai">{item.desc}</p>
-              </div>
-            </div>
-            <ToggleSwitch 
-              enabled={settings[item.key + 'Notif']}
-              onChange={(val) => updateSetting(item.key + 'Notif', val)}
-            />
-          </div>
-        ))}
+        {renderNotificationToggleItems(notificationActivityItems)}
       </div>
 
       <SectionHeader title={isRTL ? 'كورة فويس' : 'Koora Voice'} icon={Trophy} />
       <div className="space-y-3">
-        {[
-          { key: 'room', icon: Users, title: txt.roomNotif, desc: txt.roomNotifDesc },
-        ].map(item => (
-          <div key={item.key} className={`flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div className="w-11 h-11 rounded-xl bg-slate-700/50 flex items-center justify-center">
-                <item.icon className="w-5 h-5 text-slate-400" />
-              </div>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
-                <p className="text-white font-cairo font-bold">{item.title}</p>
-                <p className="text-slate-500 text-sm font-almarai">{item.desc}</p>
-              </div>
-            </div>
-            <ToggleSwitch 
-              enabled={settings[item.key + 'Notif']}
-              onChange={(val) => updateSetting(item.key + 'Notif', val)}
-            />
-          </div>
-        ))}
+        {renderNotificationToggleItems(kooraNotificationItems)}
       </div>
     </div>
   );
@@ -1209,6 +1221,32 @@ const SettingsPage = ({ user, onLogout }) => {
     </div>
   );
 
+  const settingsViewTitles = {
+    main: txt.settings,
+    profile: txt.profile,
+    account: txt.account,
+    privacy: txt.privacy,
+    security: txt.security,
+    notifications: txt.notifications,
+    display: txt.display,
+    language: txt.language,
+    about: txt.about,
+  };
+
+  const settingsViewComponents = {
+    main: MainView,
+    profile: ProfileView,
+    account: AccountView,
+    privacy: PrivacyView,
+    security: SecurityView,
+    notifications: NotificationsView,
+    display: DisplayView,
+    language: LanguageView,
+    about: AboutView,
+  };
+
+  const ActiveViewComponent = settingsViewComponents[currentView] || MainView;
+
   return (
     <div className={`min-h-screen pb-24 transition-colors duration-300 ${isDarkMode ? 'bg-slate-950' : 'bg-gray-50'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Background Effects */}
@@ -1229,22 +1267,14 @@ const SettingsPage = ({ user, onLogout }) => {
             {currentView !== 'main' && (
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setCurrentView('main')}
+                onClick={goToMainView}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-slate-800/50' : 'bg-gray-100'}`}
               >
                 <BackIcon className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
               </motion.button>
             )}
             <h1 className={`text-xl font-cairo font-black flex-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              {currentView === 'main' && txt.settings}
-              {currentView === 'profile' && txt.profile}
-              {currentView === 'account' && txt.account}
-              {currentView === 'privacy' && txt.privacy}
-              {currentView === 'security' && txt.security}
-              {currentView === 'notifications' && txt.notifications}
-              {currentView === 'display' && txt.display}
-              {currentView === 'language' && txt.language}
-              {currentView === 'about' && txt.about}
+              {settingsViewTitles[currentView] || txt.settings}
             </h1>
           </div>
         </div>
@@ -1259,15 +1289,7 @@ const SettingsPage = ({ user, onLogout }) => {
               exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
               transition={{ duration: 0.2 }}
             >
-              {currentView === 'main' && <MainView />}
-              {currentView === 'profile' && <ProfileView />}
-              {currentView === 'account' && <AccountView />}
-              {currentView === 'privacy' && <PrivacyView />}
-              {currentView === 'security' && <SecurityView />}
-              {currentView === 'notifications' && <NotificationsView />}
-              {currentView === 'display' && <DisplayView />}
-              {currentView === 'language' && <LanguageView />}
-              {currentView === 'about' && <AboutView />}
+              <ActiveViewComponent />
             </motion.div>
           </AnimatePresence>
         </div>
@@ -1382,51 +1404,9 @@ const SettingsPage = ({ user, onLogout }) => {
             >
               <h3 className="text-xl font-cairo font-bold text-white text-center mb-6">{txt.changePassword}</h3>
               <div className="space-y-4">
-                <div className="relative">
-                  <Input
-                    type={showPasswords.current ? 'text' : 'password'}
-                    placeholder={txt.currentPassword}
-                    value={passwordData.current}
-                    onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
-                    className="bg-slate-800 border-slate-700 text-white pr-12"
-                  />
-                  <button
-                    onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  >
-                    {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                <div className="relative">
-                  <Input
-                    type={showPasswords.new ? 'text' : 'password'}
-                    placeholder={txt.newPassword}
-                    value={passwordData.new}
-                    onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
-                    className="bg-slate-800 border-slate-700 text-white pr-12"
-                  />
-                  <button
-                    onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  >
-                    {showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                <div className="relative">
-                  <Input
-                    type={showPasswords.confirm ? 'text' : 'password'}
-                    placeholder={txt.confirmPassword}
-                    value={passwordData.confirm}
-                    onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
-                    className="bg-slate-800 border-slate-700 text-white pr-12"
-                  />
-                  <button
-                    onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  >
-                    {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
+                {renderPasswordField('current', txt.currentPassword)}
+                {renderPasswordField('new', txt.newPassword)}
+                {renderPasswordField('confirm', txt.confirmPassword)}
               </div>
               <div className="flex gap-3 mt-6">
                 <Button
